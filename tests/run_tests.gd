@@ -2,6 +2,7 @@ extends SceneTree
 
 const SUITES := [
 	"res://tests/test_smoke.gd",
+	"res://tests/test_still_rng.gd",
 ]
 
 func _init() -> void:
