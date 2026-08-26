@@ -25,11 +25,17 @@ func test_shiny_quadruples_price() -> void:
 	var shiny := CaughtFish.make(&"test_fish", 10.0, 2, true)
 	assert_eq(Economy.sell_price(shiny, f, _rarity(1.0)), Economy.sell_price(plain, f, _rarity(1.0)) * 4)
 
-func test_quality_multiplier_applies() -> void:
+func test_quality_multiplier_table_matches_spec() -> void:
+	# Verankert die Qualitaetsmultiplikator-Tabelle gegen unabhaengig berechnete
+	# Literale statt gegen den eigenen sell_price()-Output. base_value=100,
+	# value_mult=1.0, weight=weight_max -> pct=1.0 -> Faktor (0.5+pct)=1.5.
+	# price = 100 * mult * 1.5, floor. Mit python3 nachgerechnet.
 	var f := _fish()
-	var c_quality := CaughtFish.make(&"test_fish", 10.0, 2, false)   # C = 1.0
-	var s_plus := CaughtFish.make(&"test_fish", 10.0, 6, false)      # S+ = 3.5
-	assert_eq(Economy.sell_price(s_plus, f, _rarity(1.0)), int(floor(float(Economy.sell_price(c_quality, f, _rarity(1.0))) * 3.5)))
+	var r := _rarity(1.0)
+	var expected := [90, 120, 150, 195, 255, 360, 525]
+	for q in expected.size():
+		var c := CaughtFish.make(&"test_fish", 10.0, q, false)
+		assert_eq(Economy.sell_price(c, f, r), expected[q], "Qualitaet %d" % q)
 
 func test_lightest_fish_is_worth_half_the_weight_factor() -> void:
 	var f := _fish()

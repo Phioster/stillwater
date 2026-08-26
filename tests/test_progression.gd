@@ -11,9 +11,13 @@ func _rarity(mult: float) -> RarityData:
 	return r
 
 func test_xp_curve_matches_spec() -> void:
+	# Unabhaengig mit python3 nachgerechnet: round(80 * n^1.55) fuer n = 1, 2, 3, 5, 10, 20.
 	assert_eq(Progression.xp_needed(1), 80)
-	assert_eq(Progression.xp_needed(2), int(round(80.0 * pow(2.0, 1.55))))
-	assert_true(Progression.xp_needed(10) > Progression.xp_needed(9))
+	assert_eq(Progression.xp_needed(2), 234)
+	assert_eq(Progression.xp_needed(3), 439)
+	assert_eq(Progression.xp_needed(5), 969)
+	assert_eq(Progression.xp_needed(10), 2839)
+	assert_eq(Progression.xp_needed(20), 8312)
 
 func test_xp_for_catch_scales_with_quality() -> void:
 	var f := _fish(100)
