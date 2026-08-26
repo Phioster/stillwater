@@ -28,8 +28,8 @@ func _init() -> void:
 			failed += 1
 			continue
 		if not script.can_instantiate():
-			# load() liefert bei einem Parse-Fehler kein null, sondern ein Script,
-			# das sich nicht instanziieren laesst (script.new() wuerde abstuerzen).
+			# load() liefert bei einem Parse-Fehler kein null. script.new() wuerde
+			# die Coroutine vor quit() abbrechen und den Prozess haengen lassen.
 			push_error("Parse-Fehler in Testdatei: %s" % path)
 			failed += 1
 			continue
