@@ -25,6 +25,10 @@ func load_all() -> void:
 	fish = _load_folder(_FOLDERS["fish"])
 	zones = _load_folder(_FOLDERS["zones"])
 	upgrades = _load_folder(_FOLDERS["upgrades"])
+	# Kaputte Verweise sollen beim Start auffallen, nicht erst beim ersten Biss -
+	# aber ein Datenfehler soll das Spiel nicht am Starten hindern.
+	for problem in validate():
+		push_error("Dateninhalt: %s" % problem)
 
 func _load_folder(path: String) -> Dictionary:
 	var out := {}

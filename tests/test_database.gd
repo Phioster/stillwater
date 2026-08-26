@@ -44,10 +44,8 @@ func test_zone_two_is_gated() -> void:
 	assert_eq(z.unlock_cost, 1500)
 
 func test_zone_fish_are_the_same_instances_as_database_fish() -> void:
-	# ZoneData.fish muss auf dieselben Resourcen zeigen wie Database.fish -
-	# sonst würfelt FishingSim (das über zone.fish iteriert) mit veralteten
-	# Werten, während Journal/UI (die über Database.fish gehen) die aktuellen
-	# aus data/fish/*.tres zeigen.
+	# FishingSim würfelt über zone.fish - ohne diese Identität würde sie mit
+	# veralteten Kopien statt den aktuellen data/fish/*.tres-Werten rechnen.
 	for zone_id in Database.zones:
 		var z: ZoneData = Database.zones[zone_id]
 		for zf: FishData in z.fish:
