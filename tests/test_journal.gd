@@ -52,3 +52,11 @@ func test_dict_roundtrip() -> void:
 	other.load_dict(j.to_dict())
 	assert_eq(other.entry(&"bluegill")["caught_count"], 1)
 	assert_true(other.entry(&"bluegill")["shiny_found"])
+
+func test_dict_roundtrip_is_isolated_from_later_changes() -> void:
+	var j := Journal.new()
+	j.record(CaughtFish.make(&"bluegill", 3.0, 5, true))
+	var other := Journal.new()
+	other.load_dict(j.to_dict())
+	j.record(CaughtFish.make(&"bluegill", 99.0, 5, false))
+	assert_almost_eq(other.entry(&"bluegill")["best_weight"], 3.0, 0.0001, "geladener Stand darf sich nicht mit der Quelle mitändern")

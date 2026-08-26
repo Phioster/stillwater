@@ -12,12 +12,10 @@ const SUITES := [
 ]
 
 func _init() -> void:
-	# Autoloads existieren in _init() noch NICHT — sie werden erst beim ersten
-	# Frame in den Baum gehängt. Ohne dieses await sind Database, Game und
-	# SaveManager in den Tests null. Empirisch bestätigt mit Godot 4.7.2.
+	# Autoloads existieren in _init() noch NICHT (erst ab dem ersten Frame),
+	# ohne dieses await sind Database, Game und SaveManager hier null.
 	await process_frame
 	# Die Simulation darf während der Tests nicht nebenher weiterlaufen.
-	# (Das Autoload Game entsteht erst in Task 11.)
 	if root.has_node("Game"):
 		root.get_node("Game").paused = true
 
@@ -30,11 +28,8 @@ func _init() -> void:
 			failed += 1
 			continue
 		if not script.can_instantiate():
-			# load() liefert bei einem Parse-Fehler kein null, sondern ein
-			# gueltiges GDScript-Objekt, das sich nicht instanziieren laesst.
-			# script.new() wuerde hier einen nicht abfangbaren Laufzeitfehler
-			# werfen und die Coroutine ohne quit() abbrechen (Godot 4.7.2,
-			# empirisch bestaetigt).
+			# load() liefert bei einem Parse-Fehler kein null, sondern ein Script,
+			# das sich nicht instanziieren laesst (script.new() wuerde abstuerzen).
 			push_error("Parse-Fehler in Testdatei: %s" % path)
 			failed += 1
 			continue

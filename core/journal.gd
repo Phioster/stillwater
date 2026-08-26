@@ -41,6 +41,7 @@ func is_discovered(id: StringName) -> bool:
 func entry(id: StringName) -> Dictionary:
 	return entries.get(id, _blank())
 
+## In Slice 1 immer 0 — Erhöhung kommt erst nach dem Slice (siehe Spec).
 func fish_level(id: StringName) -> int:
 	return int(entry(id)["fish_level"])
 
@@ -65,7 +66,7 @@ func has_any_secret() -> bool:
 func to_dict() -> Dictionary:
 	var out := {"secret_found": _secret_found, "entries": {}}
 	for id in entries:
-		out["entries"][String(id)] = entries[id]
+		out["entries"][String(id)] = (entries[id] as Dictionary).duplicate()
 	return out
 
 func load_dict(d: Dictionary) -> void:
@@ -73,4 +74,4 @@ func load_dict(d: Dictionary) -> void:
 	_secret_found = bool(d.get("secret_found", false))
 	var raw: Dictionary = d.get("entries", {})
 	for key in raw:
-		entries[StringName(key)] = raw[key]
+		entries[StringName(key)] = (raw[key] as Dictionary).duplicate()
