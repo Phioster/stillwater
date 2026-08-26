@@ -32,10 +32,12 @@ func weighted_pick(weights: PackedFloat64Array) -> int:
 		return -1
 	var roll := _rng.randf() * total
 	var acc := 0.0
+	var last_positive := -1
 	for i in weights.size():
 		if weights[i] <= 0.0:
 			continue
+		last_positive = i
 		acc += weights[i]
 		if roll < acc:
 			return i
-	return weights.size() - 1
+	return last_positive
