@@ -61,10 +61,11 @@
 - Create: `tests/test_smoke.gd`
 - Create: `.gitignore`
 - Create: `tools/godot.sh`
+- Create: `tools/gen_class_cache.py`
 
 **Interfaces:**
 - Consumes: nichts
-- Produces: `TestCase` mit `assert_eq(actual, expected, msg := "")`, `assert_true(value: bool, msg := "")`, `assert_false(value: bool, msg := "")`, `assert_almost_eq(a: float, b: float, eps := 0.0001, msg := "")`, `assert_between(v: float, lo: float, hi: float, msg := "")` und `var failures: Array[String]`. Testdateien erweitern `TestCase`, Methoden mit Präfix `test_` werden gefunden. `tools/godot.sh` startet Godot headless im proot-Debian.
+- Produces: `TestCase` mit `assert_eq(actual, expected, msg := "")`, `assert_true(value: bool, msg := "")`, `assert_false(value: bool, msg := "")`, `assert_almost_eq(a: float, b: float, eps := 0.0001, msg := "")`, `assert_between(v: float, lo: float, hi: float, msg := "")` und `var failures: Array[String]`. Testdateien erweitern `TestCase`, Methoden mit Präfix `test_` werden gefunden. `tools/godot.sh` startet Godot headless im proot-Debian und erneuert vorher den Script-Class-Cache.
 
 - [ ] **Step 1: Godot im proot-Debian bereitstellen**
 
@@ -92,11 +93,25 @@ Dieser Schritt wurde am 2026-08-26 auf dem Zielgerät verifiziert.
 ```bash
 #!/usr/bin/env bash
 # Startet Godot headless im proot-Debian mit dem Projekt aus dem Termux-Home.
+#
+# Erzeugt vorher den Script-Class-Cache neu. Das uebernimmt sonst der Godot-
+# Editor, der auf diesem Geraet aber deterministisch abstuerzt (siehe
+# tools/gen_class_cache.py). Ohne den Cache loest kein `class_name` auf.
 set -euo pipefail
 PROJECT="${PROJECT:-$HOME/stillwater}"
+python3 "$PROJECT/tools/gen_class_cache.py" "$PROJECT" >/dev/null
 exec proot-distro login debian --bind "$PROJECT:/work" -- \
   /bin/bash -lc 'export GODOT_SILENCE_ROOT_WARNING=1; cd /work && godot --headless "$@"' -- "$@"
 ```
+
+Dazu gehoert `tools/gen_class_cache.py`, das `.godot/global_script_class_cache.cfg`
+aus dem Quellcode erzeugt: es sucht in allen `.gd`-Dateien nach `class_name` und
+dem zugehoerigen `extends` und schreibt Godots Cache-Format. Notwendig, weil auf
+diesem Geraet jeder Editor-Modus abstuerzt -- `--editor` ebenso wie
+`--headless --import`, beide mit `signal 11` in `__libc_free`. In der CI
+(x86_64) erzeugt Godot die Datei selbst per `--headless --import`; das Skript
+ist reine Geraete-Hilfe und die erzeugte Datei liegt unter dem gitignorierten
+`.godot/`.
 
 ```bash
 chmod +x tools/godot.sh
@@ -235,7 +250,7 @@ func test_runner_reports_failures() -> void:
 
 - [ ] **Step 8: Testlauf — muss rot sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `FAIL  test_smoke.gd::test_runner_reports_failures`, Schlusszeile `1 Tests, 1 fehlgeschlagen`, Exit-Code 1.
 
 - [ ] **Step 9: Rauchtest auf grün drehen**
@@ -252,14 +267,14 @@ func test_assert_between_accepts_bounds() -> void:
 
 - [ ] **Step 10: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `2 Tests, 0 fehlgeschlagen`, Exit-Code 0.
 
 - [ ] **Step 11: Commit**
 
 ```bash
 cd ~/stillwater
-git add project.godot .gitignore tools/godot.sh tests/
+git add project.godot .gitignore tools/godot.sh tools/gen_class_cache.py tests/
 git commit -m "Godot-Projekt, Testrunner und Testbasis"
 ```
 
@@ -317,7 +332,7 @@ func test_weighted_pick_returns_minus_one_on_empty() -> void:
 
 `tests/run_tests.gd` SUITES um `"res://tests/test_still_rng.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: Parse-Fehler oder `Identifier "StillRNG" not declared`.
 
 - [ ] **Step 3: Implementieren**
@@ -370,7 +385,7 @@ func weighted_pick(weights: PackedFloat64Array) -> int:
 
 - [ ] **Step 4: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `6 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 5: Commit**
@@ -439,7 +454,7 @@ func test_fish_data_defaults_are_sane() -> void:
 
 SUITES um `"res://tests/test_conditions.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "BaitCondition" not declared`.
 
 - [ ] **Step 3: Bedingungen implementieren**
@@ -596,7 +611,7 @@ func value_at(level: int) -> float:
 
 - [ ] **Step 5: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `10 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
@@ -717,7 +732,7 @@ func test_strength_scales_with_weight_and_rarity() -> void:
 
 SUITES um `"res://tests/test_fish_roll.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "FishRoll" not declared`.
 
 - [ ] **Step 3: Implementieren**
@@ -763,7 +778,7 @@ static func strength_for(fish: FishData, rarity: RarityData, pct: float) -> floa
 
 - [ ] **Step 4: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `19 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 5: Commit**
@@ -901,7 +916,7 @@ func test_apply_xp_keeps_remainder() -> void:
 
 SUITES um `"res://tests/test_economy.gd"` und `"res://tests/test_progression.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "CaughtFish" not declared`.
 
 - [ ] **Step 3: `CaughtFish` implementieren**
@@ -1005,7 +1020,7 @@ static func apply_xp(level: int, xp: int, gained: int) -> Dictionary:
 
 - [ ] **Step 6: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `30 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 7: Commit**
@@ -1144,7 +1159,7 @@ func test_dict_roundtrip() -> void:
 
 SUITES um `"res://tests/test_inventory.gd"` und `"res://tests/test_journal.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "Inventory" not declared`.
 
 - [ ] **Step 3: `Inventory` implementieren**
@@ -1291,7 +1306,7 @@ func load_dict(d: Dictionary) -> void:
 
 - [ ] **Step 5: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `40 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
@@ -1462,7 +1477,7 @@ func test_unlimited_bait_is_never_consumed() -> void:
 
 SUITES um `"res://tests/test_fish_selection.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "SimContext" not declared`.
 
 - [ ] **Step 3: `SimContext` implementieren**
@@ -1591,7 +1606,7 @@ static func _roll_fish_of_rarity(ctx: SimContext, rarity_id: StringName, rng: St
 
 - [ ] **Step 5: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `49 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
@@ -1761,7 +1776,7 @@ func test_many_catches_over_an_hour() -> void:
 
 SUITES um `"res://tests/test_fishing_sim.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Invalid access to constant 'State'` oder `Invalid call to function 'tick'`.
 
 - [ ] **Step 3: Zustandsautomat implementieren**
@@ -1913,7 +1928,7 @@ func _escape(events: Array) -> void:
 
 - [ ] **Step 4: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `60 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 5: Commit**
@@ -2048,7 +2063,7 @@ func test_zero_elapsed_changes_nothing() -> void:
 
 SUITES um `"res://tests/test_offline_sim.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "OfflineSim" not declared`. Der Gleichheitstest läuft dagegen sofort — er braucht `OfflineSim` gar nicht, weil beide Wege derselbe `tick` sind.
 
 - [ ] **Step 3: Implementieren**
@@ -2103,7 +2118,7 @@ static func run(elapsed_seconds: float, sim: FishingSim, ctx: SimContext, rng: S
 
 - [ ] **Step 4: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `65 Tests, 0 fehlgeschlagen`. Der Gleichheitstest braucht am längsten (18 000 Ticks); wenn er grün ist, ist die Fehlerklasse ausgeschlossen, an der Idle-Spiele üblicherweise sterben.
 
 - [ ] **Step 5: Commit**
@@ -2282,7 +2297,7 @@ func _init() -> void:
 
 - [ ] **Step 2: Seeder ausführen**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tools/build_data.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tools/build_data.gd`
 Expected: eine Zeile pro Datei, Schlusszeile `fertig`. Danach liegen 5 + 2 + 11 + 2 + 4 = 24 `.tres`-Dateien unter `data/`.
 
 - [ ] **Step 3: Failing test schreiben**
@@ -2340,7 +2355,7 @@ func test_zone_two_is_gated() -> void:
 
 SUITES um `"res://tests/test_database.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "Database" not declared`.
 
 - [ ] **Step 5: `Database` implementieren**
@@ -2454,7 +2469,7 @@ Database="*res://autoload/Database.gd"
 
 - [ ] **Step 7: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `72 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 8: Commit**
@@ -2581,7 +2596,7 @@ func test_travel_only_to_unlocked_zones() -> void:
 
 SUITES um `"res://tests/test_game_actions.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "Game" not declared`.
 
 - [ ] **Step 3: Implementieren**
@@ -2805,7 +2820,7 @@ Game="*res://autoload/Game.gd"
 
 - [ ] **Step 5: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `83 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
@@ -2921,7 +2936,7 @@ func test_offline_summary_is_produced_on_load() -> void:
 
 SUITES um `"res://tests/test_save_manager.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "SaveManager" not declared`.
 
 - [ ] **Step 3: Implementieren**
@@ -3117,7 +3132,7 @@ SaveManager="*res://autoload/SaveManager.gd"
 
 - [ ] **Step 5: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `90 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
@@ -3171,7 +3186,7 @@ func test_palette_has_no_duplicates() -> void:
 
 SUITES um `"res://tests/test_palette.gd"` erweitern.
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `Identifier "Palette" not declared`.
 
 - [ ] **Step 3: Palette festlegen**
@@ -3220,7 +3235,7 @@ Magenta als Fehlfarbe ist Absicht: ein falscher Farbname fällt sofort auf.
 
 - [ ] **Step 4: Testlauf — muss grün sein**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `93 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 5: Generator schreiben**
@@ -3440,7 +3455,7 @@ func _init() -> void:
 
 - [ ] **Step 6: Generator ausführen**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tools/gen_sprites.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tools/gen_sprites.gd`
 Expected: eine Zeile pro Datei, Schlusszeile `fertig`. Danach liegen unter `assets/art/` der Hintergrund, der Steg, 15 Charakterbögen, 22 Fischdateien, Orb und Bobber.
 
 - [ ] **Step 7: Sichtprüfung**
@@ -3701,7 +3716,7 @@ anchor_bottom = 1.0
 
 - [ ] **Step 7: Szene startet ohne Fehler**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --quit-after 120 res://scenes/main.tscn 2>&1 | tail -20`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --quit-after 120 res://scenes/main.tscn 2>&1 | tail -20`
 Expected: keine `SCRIPT ERROR`- und keine `ERROR`-Zeilen. Headless zeigt nichts an, prüft aber Szenenaufbau, Skriptbindung und Ressourcenpfade.
 
 - [ ] **Step 8: Commit**
@@ -3941,7 +3956,7 @@ und oben die Ressource eintragen:
 
 - [ ] **Step 6: Szene startet ohne Fehler**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --quit-after 300 res://scenes/main.tscn 2>&1 | tail -20`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --quit-after 300 res://scenes/main.tscn 2>&1 | tail -20`
 Expected: keine `SCRIPT ERROR`-Zeilen.
 
 - [ ] **Step 7: Commit**
@@ -4215,7 +4230,7 @@ func _apply_safe_area() -> void:
 
 - [ ] **Step 8: Szene startet ohne Fehler**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --quit-after 180 res://scenes/main.tscn 2>&1 | tail -20`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --quit-after 180 res://scenes/main.tscn 2>&1 | tail -20`
 Expected: keine `SCRIPT ERROR`-Zeilen.
 
 - [ ] **Step 9: Commit**
@@ -4700,12 +4715,12 @@ In `scenes/main.tscn` als letztes Kind von `Main` einhängen, damit es über all
 
 - [ ] **Step 10: Szene startet ohne Fehler**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --quit-after 300 res://scenes/main.tscn 2>&1 | tail -30`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --quit-after 300 res://scenes/main.tscn 2>&1 | tail -30`
 Expected: keine `SCRIPT ERROR`-Zeilen.
 
 - [ ] **Step 11: Volle Testsuite bleibt grün**
 
-Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
+Run: `PROJECT=$HOME/stillwater bash ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
 Expected: `93 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 12: Commit**
@@ -4965,7 +4980,7 @@ Inhalt, jeweils als eigener Abschnitt:
 - **Was Stillwater ist** — zwei Sätze, plus der Hinweis, dass Inhalte eigenständig sind und reale Fischarten frei verwendet werden
 - **Voraussetzungen** — Godot 4.7.2 stable; für den Android-Export zusätzlich JDK 17 und das Android SDK, beides nur in der CI nötig
 - **Starten** — `godot res://scenes/main.tscn`, dazu der Termux-Weg über `tools/godot.sh`
-- **Tests** — `PROJECT=$HOME/stillwater ./tools/godot.sh --script res://tests/run_tests.gd`
+- **Tests** — `PROJECT=$HOME/stillwater bash ./tools/godot.sh --script res://tests/run_tests.gd`
 - **Inhalte neu erzeugen** — `--script res://tools/build_data.gd` für die `.tres`, `--script res://tools/gen_sprites.gd` für die Platzhalter-Sprites
 - **Android bauen** — `gh workflow run build.yml`, danach `gh run download` und `adb install -r`
 - **Projektstruktur** — die Tabelle aus dem Abschnitt „Dateistruktur" dieses Plans
@@ -5017,7 +5032,7 @@ git commit -m "README, Game-Design, Architektur und TODO"
 
 Der Slice ist fertig, wenn:
 
-1. `PROJECT=$HOME/stillwater ./tools/godot.sh --script res://tests/run_tests.gd` grün ist, insbesondere `test_offline_equals_online`
+1. `PROJECT=$HOME/stillwater bash ./tools/godot.sh --script res://tests/run_tests.gd` grün ist, insbesondere `test_offline_equals_online`
 2. `Database.validate()` keine Probleme meldet
 3. `scenes/main.tscn` headless ohne `SCRIPT ERROR` startet
 4. die CI beide Workflows grün durchläuft
