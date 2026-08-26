@@ -42,3 +42,15 @@ func test_zone_two_is_gated() -> void:
 	var z: ZoneData = Database.zones[&"sunset_coast"]
 	assert_eq(z.unlock_level, 6)
 	assert_eq(z.unlock_cost, 1500)
+
+func test_zone_fish_are_the_same_instances_as_database_fish() -> void:
+	# ZoneData.fish muss auf dieselben Resourcen zeigen wie Database.fish -
+	# sonst würfelt FishingSim (das über zone.fish iteriert) mit veralteten
+	# Werten, während Journal/UI (die über Database.fish gehen) die aktuellen
+	# aus data/fish/*.tres zeigen.
+	for zone_id in Database.zones:
+		var z: ZoneData = Database.zones[zone_id]
+		for zf: FishData in z.fish:
+			var db_f: FishData = Database.fish[zf.id]
+			assert_true(db_f == zf, "Fisch %s: Zone-Kopie ist nicht dieselbe Instanz wie Database.fish" % zf.id)
+			assert_eq(db_f.resource_path, zf.resource_path, "Fisch %s: unterschiedlicher resource_path" % zf.id)

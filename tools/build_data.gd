@@ -6,6 +6,9 @@ func _save(res: Resource, path: String) -> void:
 	if err != OK:
 		push_error("konnte %s nicht speichern: %d" % [path, err])
 	else:
+		# ResourceSaver.save() setzt resource_path nicht selbst - ohne das hier
+		# landet der Fisch beim Einbetten in ZoneData.fish als Kopie statt als Referenz.
+		res.resource_path = path
 		print("  ", path)
 
 func _rarity(id: StringName, name: String, color: Color, v: float, x: float, s: float, bias: float) -> RarityData:

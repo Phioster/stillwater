@@ -1,71 +1,18 @@
 [gd_resource type="Resource" script_class="ZoneData" format=3]
 
-[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_6cipc"]
-[ext_resource type="Script" path="res://resources/catch_condition.gd" id="2_i5dvp"]
-[ext_resource type="Script" path="res://resources/zone_data.gd" id="3_hl15x"]
-
-[sub_resource type="Resource" id="Resource_2ldad"]
-script = ExtResource("1_6cipc")
-id = &"mackerel"
-display_name = "Makrele"
-zone_id = &"sunset_coast"
-base_value = 18
-strength = 20.0
-xp = 8
-weight_min = 0.3
-
-[sub_resource type="Resource" id="Resource_t4kh8"]
-script = ExtResource("1_6cipc")
-id = &"garfish"
-display_name = "Hornhecht"
-zone_id = &"sunset_coast"
-base_value = 24
-strength = 26.0
-xp = 10
-weight_min = 0.4
-weight_max = 1.6
-
-[sub_resource type="Resource" id="Resource_u15gd"]
-script = ExtResource("1_6cipc")
-id = &"red_mullet"
-display_name = "Meerbarbe"
-zone_id = &"sunset_coast"
-rarity_id = &"uncommon"
-base_value = 55
-strength = 44.0
-xp = 26
-weight_min = 0.25
-weight_max = 1.4
-
-[sub_resource type="Resource" id="Resource_we1y1"]
-script = ExtResource("1_6cipc")
-id = &"sea_bass"
-display_name = "Wolfsbarsch"
-zone_id = &"sunset_coast"
-rarity_id = &"uncommon"
-base_value = 70
-strength = 52.0
-xp = 32
-weight_min = 1.0
-weight_max = 7.0
-
-[sub_resource type="Resource" id="Resource_w12qj"]
-script = ExtResource("1_6cipc")
-id = &"ember_ray"
-display_name = "Glutrochen"
-zone_id = &"sunset_coast"
-rarity_id = &"rare"
-base_value = 180
-strength = 88.0
-xp = 75
-weight_min = 2.0
-weight_max = 12.0
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_t4kh8"]
+[ext_resource type="Resource" path="res://data/fish/mackerel.tres" id="2_u15gd"]
+[ext_resource type="Resource" path="res://data/fish/garfish.tres" id="3_we1y1"]
+[ext_resource type="Resource" path="res://data/fish/red_mullet.tres" id="4_w12qj"]
+[ext_resource type="Resource" path="res://data/fish/sea_bass.tres" id="5_736ml"]
+[ext_resource type="Resource" path="res://data/fish/ember_ray.tres" id="6_grt6l"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="7_evpby"]
 
 [resource]
-script = ExtResource("3_hl15x")
+script = ExtResource("7_evpby")
 id = &"sunset_coast"
 display_name = "Sunset Coast"
-fish = Array[ExtResource("1_6cipc")]([SubResource("Resource_2ldad"), SubResource("Resource_t4kh8"), SubResource("Resource_u15gd"), SubResource("Resource_we1y1"), SubResource("Resource_w12qj")])
+fish = Array[ExtResource("1_t4kh8")]([ExtResource("2_u15gd"), ExtResource("3_we1y1"), ExtResource("4_w12qj"), ExtResource("5_736ml"), ExtResource("6_grt6l")])
 bite_time_min = 35.0
 bite_time_max = 60.0
 rarity_weights = {
