@@ -19,13 +19,9 @@ var hooked_weight: float = 0.0
 var hooked_quality: int = 0
 var hooked_shiny: bool = false
 
-## Rechnet delta Sekunden Spielzeit ab und gibt die aufgetretenen
-## Ereignisse zurück.
-##
 ## Bewusst segmentweise geschlossen gerechnet statt in festen Schritten:
 ## dadurch liefert ein einziger tick(43200.0) dasselbe Ergebnis wie
-## 432000 mal tick(0.1). Genau das macht den Offline-Fortschritt zum
-## selben System statt zu einem zweiten.
+## 432000 mal tick(0.1) — genau das braucht der Offline-Fortschritt.
 func tick(delta: float, ctx: SimContext, rng: StillRNG) -> Array:
 	var events: Array = []
 	var remaining := delta

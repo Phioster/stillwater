@@ -157,3 +157,23 @@ func test_tick_is_delta_independent() -> void:
 	assert_almost_eq(sim_big.timer, sim_small.timer)
 	assert_eq(ctx_big.inventory.fish.size(), ctx_small.inventory.fish.size())
 	assert_eq(_types(events_big), _types(events_small))
+
+## Wie oben, aber das Delta endet mitten im Kampf (Biss bei 11 s, 13,5 s
+## liegen 2,5 s in der Stärkereduktion) -- der einzige Zweig, in dem
+## tatsächlich mit `remaining` statt nur mit Timern gerechnet wird.
+func test_tick_is_delta_independent_mid_fight() -> void:
+	var sim_big := FishingSim.new()
+	var ctx_big := _ctx(20.0)
+	sim_big.tick(13.5, ctx_big, StillRNG.new(1))
+
+	var sim_small := FishingSim.new()
+	var ctx_small := _ctx(20.0)
+	var rng_small := StillRNG.new(1)
+	for i in 13:
+		sim_small.tick(1.0, ctx_small, rng_small)
+	sim_small.tick(0.5, ctx_small, rng_small)
+
+	assert_eq(sim_big.state, FishingSim.State.FIGHT, "Vergleich ist nur aussagekräftig, wenn beide noch kämpfen")
+	assert_eq(sim_big.state, sim_small.state)
+	assert_almost_eq(sim_big.hooked_strength, sim_small.hooked_strength)
+	assert_almost_eq(sim_big.timer, sim_small.timer)
