@@ -34,11 +34,11 @@ static func _conditions_met(fish: FishData, state: Dictionary) -> bool:
 	return true
 
 static func _roll_rarity(ctx: SimContext, rng: StillRNG) -> StringName:
-	# Nur Raritäten zulassen, für die es auch einen (nicht-geheimen) Fisch
-	# gibt — sonst könnte eine leere Raritätsstufe gezogen werden.
+	# Nur Raritäten zulassen, die einen ziehbaren Fisch haben — sonst
+	# könnte eine leere oder komplett abgeschaltete Stufe gezogen werden.
 	var available := {}
 	for f in ctx.zone.fish:
-		if not f.is_secret:
+		if not f.is_secret and f.spawn_weight > 0.0:
 			available[f.rarity_id] = true
 	var ids: Array = ctx.zone.rarity_weights.keys()
 	var weights := PackedFloat64Array()

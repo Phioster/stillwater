@@ -37,9 +37,8 @@ func condition_state() -> Dictionary:
 		"zone_id": zone.id if zone != null else &"",
 	}
 
-## Verbraucht einen Köder. Der Grundköder ist unbegrenzt; läuft ein
-## gekaufter Köder leer, wird automatisch auf ihn zurückgeschaltet, damit
-## eine lange Idle-Session nie an leerem Köder stehen bleibt.
+## Verbraucht einen Köder; läuft ein gekaufter Köder leer, schaltet
+## automatisch auf den Grundköder zurück, damit Idle-Sessions nie hängen.
 func consume_bait() -> void:
 	if bait == null or bait.unlimited:
 		return

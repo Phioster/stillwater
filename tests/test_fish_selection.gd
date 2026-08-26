@@ -131,3 +131,19 @@ func test_unlimited_bait_is_never_consumed() -> void:
 	ctx.bait_counts = {}
 	ctx.consume_bait()
 	assert_eq(ctx.bait.id, &"pond_grub")
+
+func test_disabled_fish_rarity_is_never_drawn() -> void:
+	var off := _fish(&"u", &"uncommon", 0.0)
+	var fish: Array[FishData] = [_fish(&"c", &"common"), off]
+	var ctx := _ctx(fish)
+	ctx.zone.rarity_weights = {&"common": 1.0, &"uncommon": 1.0}
+	var rng := StillRNG.new(50)
+	for i in 3000:
+		var result := FishingSim.select_fish(ctx, rng)
+		assert_true(result != null, "select_fish darf nicht null liefern, wenn ein ziehbarer Fisch existiert")
+		assert_eq(result.id, &"c", "eine Rarität, deren einziger Fisch spawn_weight 0 hat, darf nie gezogen werden")
+
+func test_empty_zone_returns_null() -> void:
+	var ctx := _ctx([])
+	var rng := StillRNG.new(51)
+	assert_eq(FishingSim.select_fish(ctx, rng), null, "eine Zone ohne Fische darf nicht abstürzen")
