@@ -1,0 +1,269 @@
+## Spielstand. Schreibt erst in eine Temp-Datei und benennt dann um —
+## ein Absturz mitten im Schreiben darf den Spielstand nicht zerlegen.
+##
+## Die Datei liegt beim Spieler auf dem Gerät und kann fehlen, leer oder
+## kaputt sein, veraltete oder fehlende Felder haben, falsch typisierte Werte
+## enthalten oder aus einer neueren Version stammen. Nichts davon darf
+## abstürzen -- migrate() normalisiert jeden dieser Fälle auf einen
+## vollständigen, richtig typisierten Zustand.
+extends Node
+
+signal offline_ready(summary: Dictionary)
+
+const SAVE_VERSION: int = 1
+## Kein const: Tests tauschen den Pfad gegen einen eigenen, damit ein
+## Testlauf nie den echten Spielstand des Entwicklers überschreibt.
+var SAVE_PATH: String = "user://save.json"
+const AUTOSAVE_INTERVAL: float = 60.0
+
+var pending_offline: Dictionary = {}
+var _autosave_timer: float = 0.0
+
+func _ready() -> void:
+	if has_save():
+		load_game()
+
+func _process(delta: float) -> void:
+	_autosave_timer += delta
+	if _autosave_timer >= AUTOSAVE_INTERVAL:
+		_autosave_timer = 0.0
+		save()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED \
+			or what == NOTIFICATION_WM_CLOSE_REQUEST \
+			or what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		save()
+
+func _temp_path() -> String:
+	return SAVE_PATH + ".tmp"
+
+# --- Serialisierung ---------------------------------------------------------
+
+func serialize() -> Dictionary:
+	var upgrades := {}
+	for id in Game.upgrade_levels:
+		upgrades[String(id)] = int(Game.upgrade_levels[id])
+	var baits := {}
+	for id in Game.ctx.bait_counts:
+		baits[String(id)] = int(Game.ctx.bait_counts[id])
+	var zones := []
+	for z in Game.unlocked_zones:
+		zones.append(String(z))
+	return {
+		"save_version": SAVE_VERSION,
+		"coins": Game.coins,
+		"player_level": Game.ctx.player_level,
+		"xp": Game.ctx.player_xp,
+		"current_zone": String(Game.ctx.zone.id),
+		"unlocked_zones": zones,
+		"upgrade_levels": upgrades,
+		"bait_inventory": baits,
+		"active_bait": String(Game.ctx.bait.id),
+		"fish_inventory": Game.ctx.inventory.to_array(),
+		"journal": Game.ctx.journal.to_dict(),
+		"cosmetics": Game.cosmetics,
+		"active_consumables": [],
+		"settings": {},
+		"statistics": {},
+		"last_seen_unix": int(Time.get_unix_time_from_system()),
+		"rng_state": Game.rng.get_state(),
+	}
+
+## Setzt Game/ctx aus einem (bereits migrierten) Rohzustand. Ein Stand aus
+## einer neueren Version wird verweigert statt geraten -- naives Laden könnte
+## Felder falsch interpretieren und Fortschritt stillschweigend verwerfen.
+func deserialize(raw: Dictionary) -> void:
+	if _is_future_version(raw):
+		push_error("Spielstand stammt aus einer neueren Version, wird nicht geladen")
+		return
+	var d := migrate(raw)
+	Game.coins = int(d["coins"])
+	Game.ctx.player_level = int(d["player_level"])
+	Game.ctx.player_xp = int(d["xp"])
+
+	Game.unlocked_zones.clear()
+	for z in d["unlocked_zones"]:
+		Game.unlocked_zones.append(StringName(z))
+
+	Game.upgrade_levels.clear()
+	for id in d["upgrade_levels"]:
+		Game.upgrade_levels[StringName(id)] = int(d["upgrade_levels"][id])
+
+	Game.ctx.bait_counts.clear()
+	for id in d["bait_inventory"]:
+		Game.ctx.bait_counts[StringName(id)] = int(d["bait_inventory"][id])
+
+	var zone: ZoneData = Database.zones.get(StringName(d["current_zone"]))
+	if zone != null:
+		Game.ctx.zone = zone
+	var bait: BaitData = Database.baits.get(StringName(d["active_bait"]))
+	Game.ctx.bait = bait if bait != null else Database.basic_bait()
+
+	Game.ctx.inventory.load_array(d["fish_inventory"])
+	Game.ctx.journal.load_dict(d["journal"])
+	Game.cosmetics = d["cosmetics"]
+	Game.ctx.cosmetics = Game.cosmetics
+	Game.rng.set_state(int(d["rng_state"]))
+	Game.apply_upgrades()
+
+	_run_offline(int(d["last_seen_unix"]))
+	Game.state_changed.emit()
+
+func _run_offline(last_seen: int) -> void:
+	var elapsed := float(int(Time.get_unix_time_from_system()) - last_seen)
+	if elapsed <= 0.0:
+		pending_offline = {}
+		return
+	pending_offline = OfflineSim.run(elapsed, Game.sim, Game.ctx, Game.rng, Database.fish)
+	if int(pending_offline.get("caught", 0)) > 0:
+		offline_ready.emit(pending_offline)
+
+func _is_future_version(d: Dictionary) -> bool:
+	return _safe_int(d.get("save_version"), 0) > SAVE_VERSION
+
+# --- Migration ---------------------------------------------------------------
+
+## Hebt einen alten oder beschädigten Spielstand auf die aktuelle Version.
+## Fehlende UND falsch typisierte Felder bekommen den Standardwert eines
+## neuen Spiels -- danach kann sich deserialize() blind auf die Form
+## verlassen, ohne selbst noch gegen kaputte Typen abzusichern.
+func migrate(raw: Dictionary) -> Dictionary:
+	var defaults := _defaults()
+	var d := {}
+
+	d["coins"] = _safe_int(raw.get("coins"), defaults["coins"])
+	d["player_level"] = _safe_int(raw.get("player_level"), defaults["player_level"])
+	d["xp"] = _safe_int(raw.get("xp"), defaults["xp"])
+	d["current_zone"] = _safe_string(raw.get("current_zone"), defaults["current_zone"])
+	d["active_bait"] = _safe_string(raw.get("active_bait"), defaults["active_bait"])
+	d["last_seen_unix"] = _safe_int(raw.get("last_seen_unix"), defaults["last_seen_unix"])
+	d["rng_state"] = _safe_int(raw.get("rng_state"), defaults["rng_state"])
+	d["cosmetics"] = _safe_dict(raw.get("cosmetics"), defaults["cosmetics"])
+	d["active_consumables"] = _safe_array(raw.get("active_consumables"), [])
+	d["settings"] = _safe_dict(raw.get("settings"), {})
+	d["statistics"] = _safe_dict(raw.get("statistics"), {})
+
+	var zones: Array = []
+	for z in _safe_array(raw.get("unlocked_zones"), []):
+		if typeof(z) == TYPE_STRING or typeof(z) == TYPE_STRING_NAME:
+			zones.append(String(z))
+	d["unlocked_zones"] = zones if not zones.is_empty() else defaults["unlocked_zones"]
+
+	d["upgrade_levels"] = _safe_int_map(raw.get("upgrade_levels"), defaults["upgrade_levels"])
+	d["bait_inventory"] = _safe_int_map(raw.get("bait_inventory"), {})
+
+	var fish: Array = []
+	for entry in _safe_array(raw.get("fish_inventory"), []):
+		if typeof(entry) == TYPE_DICTIONARY:
+			fish.append(entry)
+	d["fish_inventory"] = fish
+
+	var journal_raw := _safe_dict(raw.get("journal"), defaults["journal"])
+	var entries_raw := _safe_dict(journal_raw.get("entries"), {})
+	var entries := {}
+	for key in entries_raw:
+		if typeof(entries_raw[key]) == TYPE_DICTIONARY:
+			entries[key] = entries_raw[key]
+	d["journal"] = {
+		"secret_found": _safe_bool(journal_raw.get("secret_found"), false),
+		"entries": entries,
+	}
+
+	# Künftige Schritte hier anhängen:
+	# if _safe_int(raw.get("save_version"), 0) < 2: d = _migrate_1_to_2(d)
+	d["save_version"] = SAVE_VERSION
+	return d
+
+func _defaults() -> Dictionary:
+	return {
+		"coins": 0,
+		"player_level": 1,
+		"xp": 0,
+		"current_zone": "willow_lake",
+		"unlocked_zones": ["willow_lake"],
+		"upgrade_levels": {"rod_power": 0, "orb_power": 0, "fish_inventory": 0, "bait_capacity": 0},
+		"active_bait": String(Database.basic_bait().id) if Database.basic_bait() != null else "",
+		"journal": {"secret_found": false, "entries": {}},
+		"cosmetics": {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0},
+		"last_seen_unix": int(Time.get_unix_time_from_system()),
+		"rng_state": 0,
+	}
+
+## Wandelt Zahl, Bool oder numerische Zeichenkette in int; alles andere
+## (insbesondere Array/Dictionary aus einer manipulierten Datei) bekommt den
+## Fallback statt einen GDScript-Konstruktorfehler auszulösen.
+func _safe_int(v, fallback: int) -> int:
+	if typeof(v) in [TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_BOOL]:
+		return int(v)
+	return fallback
+
+func _safe_string(v, fallback: String) -> String:
+	if typeof(v) in [TYPE_STRING, TYPE_STRING_NAME, TYPE_INT, TYPE_FLOAT, TYPE_BOOL]:
+		return str(v)
+	return fallback
+
+func _safe_bool(v, fallback: bool) -> bool:
+	if typeof(v) in [TYPE_BOOL, TYPE_INT, TYPE_FLOAT]:
+		return bool(v)
+	return fallback
+
+func _safe_dict(v, fallback: Dictionary) -> Dictionary:
+	return v if typeof(v) == TYPE_DICTIONARY else fallback
+
+func _safe_array(v, fallback: Array) -> Array:
+	return v if typeof(v) == TYPE_ARRAY else fallback
+
+func _safe_int_map(v, fallback: Dictionary) -> Dictionary:
+	if typeof(v) != TYPE_DICTIONARY:
+		return fallback.duplicate()
+	var out := {}
+	for key in v:
+		out[key] = _safe_int(v[key], 0)
+	return out
+
+# --- Datei --------------------------------------------------------------------
+
+func has_save() -> bool:
+	return FileAccess.file_exists(SAVE_PATH)
+
+func delete_save() -> void:
+	if has_save():
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+
+func save() -> bool:
+	if Game.ctx == null:
+		return false
+	var f := FileAccess.open(_temp_path(), FileAccess.WRITE)
+	if f == null:
+		push_error("Spielstand nicht schreibbar: %d" % FileAccess.get_open_error())
+		return false
+	f.store_string(JSON.stringify(serialize()))
+	f.close()
+	var dir := DirAccess.open(SAVE_PATH.get_base_dir())
+	if dir == null:
+		return false
+	if dir.file_exists(SAVE_PATH.get_file()):
+		dir.remove(SAVE_PATH.get_file())
+	return dir.rename(_temp_path().get_file(), SAVE_PATH.get_file()) == OK
+
+func load_game() -> bool:
+	if not has_save():
+		return false
+	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if f == null:
+		return false
+	var text := f.get_as_text()
+	f.close()
+	if text.is_empty():
+		push_error("Spielstand leer, wird ignoriert")
+		return false
+	var parsed = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_error("Spielstand unlesbar, wird ignoriert")
+		return false
+	if _is_future_version(parsed):
+		push_error("Spielstand stammt aus einer neueren Version, wird nicht geladen")
+		return false
+	deserialize(parsed)
+	return true
