@@ -64,7 +64,7 @@
 
 **Interfaces:**
 - Consumes: nichts
-- Produces: `TestCase` mit `assert_eq(actual, expected, msg := "")`, `assert_true(value: bool, msg := "")`, `assert_almost_eq(a: float, b: float, eps := 0.0001, msg := "")`, `assert_between(v: float, lo: float, hi: float, msg := "")` und `var failures: Array[String]`. Testdateien erweitern `TestCase`, Methoden mit Präfix `test_` werden gefunden. `tools/godot.sh` startet Godot headless im proot-Debian.
+- Produces: `TestCase` mit `assert_eq(actual, expected, msg := "")`, `assert_true(value: bool, msg := "")`, `assert_false(value: bool, msg := "")`, `assert_almost_eq(a: float, b: float, eps := 0.0001, msg := "")`, `assert_between(v: float, lo: float, hi: float, msg := "")` und `var failures: Array[String]`. Testdateien erweitern `TestCase`, Methoden mit Präfix `test_` werden gefunden. `tools/godot.sh` startet Godot headless im proot-Debian.
 
 - [ ] **Step 1: Godot im proot-Debian bereitstellen**
 
@@ -185,6 +185,13 @@ const SUITES := [
 ]
 
 func _init() -> void:
+	# Autoloads existieren in _init() noch NICHT — sie werden erst beim ersten
+	# Frame in den Baum gehängt. Ohne dieses await sind Database, Game und
+	# SaveManager in den Tests null. Empirisch bestätigt mit Godot 4.7.2.
+	await process_frame
+	# Die Simulation darf während der Tests nicht nebenher weiterlaufen.
+	Game.paused = true
+
 	var total := 0
 	var failed := 0
 	for path in SUITES:
@@ -1023,7 +1030,7 @@ git commit -m "Gefangener Fisch, Preisformel und XP-Fortschritt"
 **Interfaces:**
 - Consumes: `CaughtFish`, `FishData`, `FishRoll`
 - Produces:
-  - `Inventory` mit `capacity: int`, `fish: Array[CaughtFish]`, `is_full() -> bool`, `free_space() -> int`, `add(c: CaughtFish) -> bool`, `remove_at(i: int) -> CaughtFish`, `sellable() -> Array[CaughtFish]`, `take_sellable() -> Array[CaughtFish]`, `to_array() -> Array`, `load_array(a: Array) -> void`
+  - `Inventory` mit `capacity: int`, `fish: Array[CaughtFish]`, `is_full() -> bool`, `add(c: CaughtFish) -> bool`, `remove_at(i: int) -> CaughtFish`, `sellable() -> Array[CaughtFish]`, `take_sellable() -> Array[CaughtFish]`, `to_array() -> Array`, `load_array(a: Array) -> void`
   - `Journal` mit `entries: Dictionary`, `record(c: CaughtFish, is_secret: bool = false) -> bool`, `is_discovered(id: StringName) -> bool`, `entry(id: StringName) -> Dictionary`, `completion(all_fish: Array[FishData]) -> float`, `has_any_secret() -> bool`, `to_dict() -> Dictionary`, `load_dict(d: Dictionary) -> void`
 
 - [ ] **Step 1: Failing tests schreiben**
@@ -1041,12 +1048,6 @@ func test_add_until_full() -> void:
 	assert_true(inv.is_full())
 	assert_false(inv.add(CaughtFish.make(&"a", 1.0, 0, false)), "voll heißt: nichts geht mehr rein")
 	assert_eq(inv.fish.size(), 3)
-
-func test_free_space() -> void:
-	var inv := Inventory.new()
-	inv.capacity = 5
-	inv.add(CaughtFish.make(&"a", 1.0, 0, false))
-	assert_eq(inv.free_space(), 4)
 
 func test_favorites_are_not_sellable() -> void:
 	var inv := Inventory.new()
@@ -1161,9 +1162,6 @@ var fish: Array[CaughtFish] = []
 
 func is_full() -> bool:
 	return fish.size() >= capacity
-
-func free_space() -> int:
-	return maxi(capacity - fish.size(), 0)
 
 func add(c: CaughtFish) -> bool:
 	if is_full():
@@ -1294,7 +1292,7 @@ func load_dict(d: Dictionary) -> void:
 - [ ] **Step 5: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `41 Tests, 0 fehlgeschlagen`.
+Expected: `40 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
 
@@ -1594,7 +1592,7 @@ static func _roll_fish_of_rarity(ctx: SimContext, rarity_id: StringName, rng: St
 - [ ] **Step 5: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `50 Tests, 0 fehlgeschlagen`.
+Expected: `49 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
 
@@ -1916,7 +1914,7 @@ func _escape(events: Array) -> void:
 - [ ] **Step 4: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `61 Tests, 0 fehlgeschlagen`.
+Expected: `60 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 5: Commit**
 
@@ -2106,7 +2104,7 @@ static func run(elapsed_seconds: float, sim: FishingSim, ctx: SimContext, rng: S
 - [ ] **Step 4: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `66 Tests, 0 fehlgeschlagen`. Der Gleichheitstest braucht am längsten (18 000 Ticks); wenn er grün ist, ist die Fehlerklasse ausgeschlossen, an der Idle-Spiele üblicherweise sterben.
+Expected: `65 Tests, 0 fehlgeschlagen`. Der Gleichheitstest braucht am längsten (18 000 Ticks); wenn er grün ist, ist die Fehlerklasse ausgeschlossen, an der Idle-Spiele üblicherweise sterben.
 
 - [ ] **Step 5: Commit**
 
@@ -2177,6 +2175,7 @@ func _fish(id: StringName, name: String, zone: StringName, rarity: StringName,
 	return f
 
 func _init() -> void:
+	# Kein await nötig: dieser Seeder legt Resources an und liest keine Autoloads.
 	print("Raritäten")
 	_rarity(&"common",    "Gewöhnlich", Color("9aa79f"),  1.0,  1.0,  1.0, 0.00)
 	_rarity(&"uncommon",  "Ungewöhnlich", Color("5fa77c"), 2.5,  2.0,  2.2, 0.10)
@@ -2456,7 +2455,7 @@ Database="*res://autoload/Database.gd"
 - [ ] **Step 7: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `73 Tests, 0 fehlgeschlagen`.
+Expected: `72 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 8: Commit**
 
@@ -2807,7 +2806,7 @@ Game="*res://autoload/Game.gd"
 - [ ] **Step 5: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `84 Tests, 0 fehlgeschlagen`.
+Expected: `83 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
 
@@ -3119,7 +3118,7 @@ SaveManager="*res://autoload/SaveManager.gd"
 - [ ] **Step 5: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `91 Tests, 0 fehlgeschlagen`.
+Expected: `90 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 6: Commit**
 
@@ -3222,7 +3221,7 @@ Magenta als Fehlfarbe ist Absicht: ein falscher Farbname fällt sofort auf.
 - [ ] **Step 4: Testlauf — muss grün sein**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `94 Tests, 0 fehlgeschlagen`.
+Expected: `93 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 5: Generator schreiben**
 
@@ -3414,6 +3413,9 @@ func _bobber() -> void:
 	_save(img, "bobber")
 
 func _init() -> void:
+	# Wartet auf die Autoloads — _fishes() braucht Database. Siehe die
+	# gleichlautende Anmerkung in tests/run_tests.gd.
+	await process_frame
 	print("Hintergrund")
 	_background()
 	_dock()
@@ -4704,7 +4706,7 @@ Expected: keine `SCRIPT ERROR`-Zeilen.
 - [ ] **Step 11: Volle Testsuite bleibt grün**
 
 Run: `PROJECT=$HOME/stillwater ~/stillwater/tools/godot.sh --script res://tests/run_tests.gd`
-Expected: `94 Tests, 0 fehlgeschlagen`.
+Expected: `93 Tests, 0 fehlgeschlagen`.
 
 - [ ] **Step 12: Commit**
 
