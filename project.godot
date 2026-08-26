@@ -9,6 +9,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 [autoload]
 
 Database="*res://autoload/Database.gd"
+Game="*res://autoload/Game.gd"
 
 [display]
 window/size/viewport_width=1280
