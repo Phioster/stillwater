@@ -85,19 +85,12 @@ func test_offline_equals_online() -> void:
 		"gleiches Inventar (jeder Fisch mit Gewicht/Qualität/Shiny)")
 	assert_eq(offline_sim.state, online_sim.state, "gleicher Sim-Zustand")
 	assert_almost_eq(offline_sim.timer, online_sim.timer, 0.0001, "gleicher Timer")
-	# hooked_strength/-weight/-quality/-shiny sind nur waehrend eines Kampfes
-	# gepflegt -- nach _land()/_escape() bleiben sie als Datenmuell liegen und
-	# werden erst beim naechsten Biss ueberschrieben (siehe fishing_sim.gd).
-	# Ausserhalb von FIGHT unterscheidet sich dieser Muell zwischen den beiden
-	# Weegen (die geschlossene Segmentrechnung ueberspringt ihn), ohne dass das
-	# Spielverhalten davon betroffen waere. Aussagekraeftig ist der Vergleich
-	# nur, wenn am Ende wirklich noch gekaempft wird -- und genau dafuer sorgt
-	# test_offline_equals_online_mid_fight deterministisch.
-	if offline_sim.state == FishingSim.State.FIGHT:
-		assert_almost_eq(offline_sim.hooked_strength, online_sim.hooked_strength, 0.0001, "gleiche Kampfstärke im offenen Kampf")
-		assert_almost_eq(offline_sim.hooked_weight, online_sim.hooked_weight, 0.0001, "gleiches Gewicht im offenen Kampf")
-		assert_eq(offline_sim.hooked_quality, online_sim.hooked_quality, "gleiche Qualität im offenen Kampf")
-		assert_eq(offline_sim.hooked_shiny, online_sim.hooked_shiny, "gleicher Shiny-Status im offenen Kampf")
+	# Nach einem abgeschlossenen Kampf setzt fishing_sim.gd diese Felder zurueck
+	# -- der Vergleich ist deshalb unbedingt moeglich, nicht nur waehrend FIGHT.
+	assert_almost_eq(offline_sim.hooked_strength, online_sim.hooked_strength, 0.0001, "gleiche Kampfstärke")
+	assert_almost_eq(offline_sim.hooked_weight, online_sim.hooked_weight, 0.0001, "gleiches Gewicht")
+	assert_eq(offline_sim.hooked_quality, online_sim.hooked_quality, "gleiche Qualität")
+	assert_eq(offline_sim.hooked_shiny, online_sim.hooked_shiny, "gleicher Shiny-Status")
 	assert_eq(offline_rng.get_state(), online_rng.get_state(), "gleicher RNG-Zustand")
 
 ## Wie oben, aber mit fester Bisszeit und fester Gewichtsspanne extra so

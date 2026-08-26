@@ -126,7 +126,7 @@ func _land(ctx: SimContext, events: Array) -> void:
 	})
 	if int(after["levels_gained"]) > 0:
 		events.append({"type": "level_up", "level": ctx.player_level})
-	hooked = null
+	_clear_hooked()
 	if ctx.inventory.is_full():
 		state = State.INVENTORY_FULL
 		events.append({"type": "inventory_full"})
@@ -136,9 +136,20 @@ func _land(ctx: SimContext, events: Array) -> void:
 
 func _escape(events: Array) -> void:
 	events.append({"type": "escaped", "fish": hooked})
-	hooked = null
+	_clear_hooked()
 	state = State.CASTING
 	timer = ESCAPE_COOLDOWN
+
+## Ein beendeter Kampf darf keine Reste hinterlassen -- sonst zeigt die
+## Kampfansicht (Task 15) oder ein Offline-Vergleich Werte aus dem letzten,
+## längst abgeschlossenen Kampf statt keinen Kampf.
+func _clear_hooked() -> void:
+	hooked = null
+	hooked_strength = 0.0
+	hooked_max_strength = 0.0
+	hooked_weight = 0.0
+	hooked_quality = 0
+	hooked_shiny = false
 
 ## Wählt den Fisch für einen Biss.
 ## Reihenfolge: erst der Secret-Durchgang, dann Rarität, dann Art.
