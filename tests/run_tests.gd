@@ -25,6 +25,15 @@ func _init() -> void:
 			push_error("Testdatei nicht ladbar: %s" % path)
 			failed += 1
 			continue
+		if not script.can_instantiate():
+			# load() liefert bei einem Parse-Fehler kein null, sondern ein
+			# gueltiges GDScript-Objekt, das sich nicht instanziieren laesst.
+			# script.new() wuerde hier einen nicht abfangbaren Laufzeitfehler
+			# werfen und die Coroutine ohne quit() abbrechen (Godot 4.7.2,
+			# empirisch bestaetigt).
+			push_error("Parse-Fehler in Testdatei: %s" % path)
+			failed += 1
+			continue
 		var suite = script.new()
 		if not (suite is TestCase):
 			push_error("Keine TestCase: %s" % path)
