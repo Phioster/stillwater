@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RarityData" format=3]
+
+[ext_resource type="Script" path="res://resources/rarity_data.gd" id="1_w4wvk"]
+
+[resource]
+script = ExtResource("1_w4wvk")
+id = &"rare"
+display_name = "Selten"
+color = Color(0.30980393, 0.56078434, 0.8156863, 1)
+value_mult = 7.0
+xp_mult = 4.5
+strength_mult = 4.5
+quality_bias = 0.2

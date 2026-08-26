@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BaitData" format=3]
+
+[ext_resource type="Script" path="res://resources/bait_data.gd" id="1_2gocp"]
+
+[resource]
+script = ExtResource("1_2gocp")
+id = &"mayfly_nymph"
+display_name = "Eintagsfliegen-Nymphe"
+cost = 15
+rarity_weight_bonus = {
+&"rare": 2.2,
+&"uncommon": 1.4
+}

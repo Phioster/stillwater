@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_jyilb"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_as5vk"]
+
+[resource]
+script = ExtResource("2_as5vk")
+id = &"ember_ray"
+display_name = "Glutrochen"
+zone_id = &"sunset_coast"
+rarity_id = &"rare"
+base_value = 180
+strength = 88.0
+xp = 75
+weight_min = 2.0
+weight_max = 12.0

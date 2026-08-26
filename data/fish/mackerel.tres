@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_npds6"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_epqub"]
+
+[resource]
+script = ExtResource("2_epqub")
+id = &"mackerel"
+display_name = "Makrele"
+zone_id = &"sunset_coast"
+base_value = 18
+strength = 20.0
+xp = 8
+weight_min = 0.3

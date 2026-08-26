@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_lrwkk"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_t7jr7"]
+
+[resource]
+script = ExtResource("2_t7jr7")
+id = &"perch"
+display_name = "Flussbarsch"
+zone_id = &"willow_lake"
+rarity_id = &"uncommon"
+base_value = 22
+strength = 32.0
+xp = 12
+weight_min = 0.15
+weight_max = 1.2

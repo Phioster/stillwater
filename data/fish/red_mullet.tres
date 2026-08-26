@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_2wh0n"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_c1kk5"]
+
+[resource]
+script = ExtResource("2_c1kk5")
+id = &"red_mullet"
+display_name = "Meerbarbe"
+zone_id = &"sunset_coast"
+rarity_id = &"uncommon"
+base_value = 55
+strength = 44.0
+xp = 26
+weight_min = 0.25
+weight_max = 1.4

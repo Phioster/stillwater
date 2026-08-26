@@ -1,0 +1,99 @@
+[gd_resource type="Resource" script_class="ZoneData" format=3]
+
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_ema53"]
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="2_ll4t3"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_7okvu"]
+[ext_resource type="Script" path="res://resources/bait_condition.gd" id="4_tpa7w"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="5_jlfdw"]
+
+[sub_resource type="Resource" id="Resource_xirk1"]
+script = ExtResource("1_ema53")
+id = &"bluegill"
+display_name = "Bluegill"
+zone_id = &"willow_lake"
+base_value = 8
+strength = 12.0
+xp = 4
+weight_min = 0.05
+weight_max = 0.35
+
+[sub_resource type="Resource" id="Resource_gp3an"]
+script = ExtResource("1_ema53")
+id = &"roach"
+display_name = "Rotauge"
+zone_id = &"willow_lake"
+base_value = 10
+strength = 15.0
+xp = 5
+weight_max = 0.8
+
+[sub_resource type="Resource" id="Resource_fhgja"]
+script = ExtResource("1_ema53")
+id = &"perch"
+display_name = "Flussbarsch"
+zone_id = &"willow_lake"
+rarity_id = &"uncommon"
+base_value = 22
+strength = 32.0
+xp = 12
+weight_min = 0.15
+weight_max = 1.2
+
+[sub_resource type="Resource" id="Resource_704qv"]
+script = ExtResource("1_ema53")
+id = &"mirror_carp"
+display_name = "Spiegelkarpfen"
+zone_id = &"willow_lake"
+rarity_id = &"uncommon"
+base_value = 30
+strength = 40.0
+xp = 16
+weight_min = 1.0
+weight_max = 6.5
+
+[sub_resource type="Resource" id="Resource_ldo3o"]
+script = ExtResource("1_ema53")
+id = &"lantern_tench"
+display_name = "Laternenschleie"
+zone_id = &"willow_lake"
+rarity_id = &"rare"
+base_value = 85
+strength = 70.0
+xp = 40
+weight_min = 0.8
+weight_max = 3.5
+
+[sub_resource type="Resource" id="Resource_a00b7"]
+script = ExtResource("3_7okvu")
+min_level = 5
+
+[sub_resource type="Resource" id="Resource_comfb"]
+script = ExtResource("4_tpa7w")
+bait_id = &"mayfly_nymph"
+
+[sub_resource type="Resource" id="Resource_pkrp3"]
+script = ExtResource("1_ema53")
+id = &"hollowfin"
+display_name = "Hohlflosse"
+zone_id = &"willow_lake"
+rarity_id = &"rare"
+base_value = 400
+strength = 95.0
+xp = 200
+weight_min = 0.5
+weight_max = 2.0
+is_secret = true
+secret_chance = 0.02
+secret_hint = "Etwas meidet hier den gewöhnlichen Köder."
+conditions = Array[ExtResource("2_ll4t3")]([SubResource("Resource_a00b7"), SubResource("Resource_comfb")])
+
+[resource]
+script = ExtResource("5_jlfdw")
+id = &"willow_lake"
+display_name = "Willow Lake"
+fish = Array[ExtResource("1_ema53")]([SubResource("Resource_xirk1"), SubResource("Resource_gp3an"), SubResource("Resource_fhgja"), SubResource("Resource_704qv"), SubResource("Resource_ldo3o"), SubResource("Resource_pkrp3")])
+rarity_weights = {
+&"common": 70.0,
+&"rare": 5.0,
+&"uncommon": 25.0
+}
