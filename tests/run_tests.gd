@@ -4,6 +4,7 @@ const SUITES := [
 	"res://tests/test_smoke.gd",
 	"res://tests/test_still_rng.gd",
 	"res://tests/test_conditions.gd",
+	"res://tests/test_fish_roll.gd",
 ]
 
 func _init() -> void:
