@@ -24,7 +24,11 @@ func _init() -> void:
 			push_error("Testdatei nicht ladbar: %s" % path)
 			failed += 1
 			continue
-		var suite: TestCase = script.new()
+		var suite = script.new()
+		if not (suite is TestCase):
+			push_error("Keine TestCase: %s" % path)
+			failed += 1
+			continue
 		for method in suite.get_method_list():
 			var name: String = method.name
 			if not name.begins_with("test_"):
