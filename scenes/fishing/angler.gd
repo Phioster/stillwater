@@ -17,9 +17,12 @@ var _frame: int = 0
 
 func _ready() -> void:
 	set_cosmetics(Game.cosmetics)
-	Game.bite.connect(_on_bite)
-	Game.caught.connect(_on_caught)
-	Game.escaped.connect(_on_escaped)
+	if not Game.bite.is_connected(_on_bite):
+		Game.bite.connect(_on_bite)
+	if not Game.caught.is_connected(_on_caught):
+		Game.caught.connect(_on_caught)
+	if not Game.escaped.is_connected(_on_escaped):
+		Game.escaped.connect(_on_escaped)
 
 func set_cosmetics(c: Dictionary) -> void:
 	_set_layer("Skin", int(c.get("skin", 0)))
@@ -59,8 +62,8 @@ func _tint_hair(color_index: int) -> void:
 	sprite.material = mat
 
 ## 0 ruhig, 1 Ausholen, 2 Wurf
-func play_state(frame: int) -> void:
-	_frame = clampi(frame, 0, 2)
+func play_state(state: int) -> void:
+	_frame = clampi(state, 0, 2)
 	for name in LAYERS:
 		(get_node(name) as Sprite2D).frame = _frame
 

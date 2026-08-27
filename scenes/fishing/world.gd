@@ -13,13 +13,17 @@ func _ready() -> void:
 	_background.texture = _load_texture("res://assets/art/bg_lake.png")
 	_bobber.texture = _load_texture("res://assets/art/bobber.png")
 	_bobber_home = _bobber.position
-	Game.bite.connect(_on_bite)
+	if not Game.bite.is_connected(_on_bite):
+		Game.bite.connect(_on_bite)
 
 ## Läuft ohne Import-Schritt: die Editor-Ressourcenimportierer stürzen in
 ## dieser Umgebung ab, daher werden Sprites als Image statt als Texture2D-
 ## Ressource geladen (siehe tests/test_sprite_assets.gd).
 func _load_texture(path: String) -> Texture2D:
-	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+	var full_path := ProjectSettings.globalize_path(path)
+	if not FileAccess.file_exists(full_path):
+		return null
+	var img := Image.load_from_file(full_path)
 	if img == null or img.is_empty():
 		return null
 	return ImageTexture.create_from_image(img)
