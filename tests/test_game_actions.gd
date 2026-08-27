@@ -69,6 +69,19 @@ func test_buying_bait_respects_capacity() -> void:
 	assert_eq(Game.coins, 10000 - 150)
 	assert_false(Game.buy_bait(&"mayfly_nymph", 1000), "über die Ködertasche hinaus geht nichts")
 
+## bait_cost() ist die einzige Stelle, die den Preis kennt -- buy_bait() muss
+## exakt so viel abziehen, wie bait_cost() für dieselbe Menge nennt.
+func test_bait_cost_matches_what_buy_bait_actually_charges() -> void:
+	_fresh()
+	assert_eq(Game.bait_cost(&"mayfly_nymph", 10), 150)
+	Game.coins = 10000
+	Game.buy_bait(&"mayfly_nymph", 10)
+	assert_eq(Game.coins, 10000 - Game.bait_cost(&"mayfly_nymph", 10))
+
+func test_bait_cost_for_unknown_bait_is_zero() -> void:
+	_fresh()
+	assert_eq(Game.bait_cost(&"nonexistent_bait", 5), 0)
+
 func test_zone_two_needs_level_and_coins() -> void:
 	_fresh()
 	Game.coins = 5000

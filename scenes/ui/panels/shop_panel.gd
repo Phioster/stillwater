@@ -46,11 +46,12 @@ func _row(b: BaitData) -> Control:
 
 	if not b.unlimited:
 		for amount in [1, 10]:
+			var cost := Game.bait_cost(b.id, amount)
 			var buy := Button.new()
-			buy.text = "%d ×  %d" % [amount, b.cost * amount]
+			buy.text = "%d ×  %d" % [amount, cost]
 			buy.custom_minimum_size = Vector2(0, 96)
 			buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			buy.disabled = Game.coins < b.cost * amount or Game.bait_used() + amount > Game.bait_capacity()
+			buy.disabled = Game.coins < cost or Game.bait_used() + amount > Game.bait_capacity()
 			buy.pressed.connect(func() -> void: Game.buy_bait(b.id, amount))
 			row.add_child(buy)
 

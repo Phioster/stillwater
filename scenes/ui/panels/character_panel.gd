@@ -1,6 +1,5 @@
-## Charakteranpassung. Rein kosmetisch: keine dieser Auswahlmöglichkeiten
-## verändert einen einzigen Spielwert. Sie können später aber
-## Fangbedingungen erfüllen.
+## Charakteranpassung. Rein kosmetisch -- keine Wahl hier ändert einen
+## Spielwert, kann aber später eine Fangbedingung erfüllen.
 extends PanelBase
 
 const SLOTS := [

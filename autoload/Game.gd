@@ -159,13 +159,21 @@ func toggle_favorite(index: int) -> void:
 
 # --- Köder --------------------------------------------------------------------
 
+## Einzige Stelle, die den Preis fuer eine Koeder-Kaufmenge kennt --
+## buy_bait() und die Laden-Anzeige fragen beide hier ab statt selbst zu rechnen.
+func bait_cost(id: StringName, amount: int) -> int:
+	var b: BaitData = Database.baits.get(id)
+	if b == null:
+		return 0
+	return b.cost * amount
+
 func buy_bait(id: StringName, amount: int) -> bool:
 	var b: BaitData = Database.baits.get(id)
 	if b == null or b.unlimited or amount <= 0:
 		return false
 	if bait_used() + amount > bait_capacity():
 		return false
-	var cost := b.cost * amount
+	var cost := bait_cost(id, amount)
 	if coins < cost:
 		return false
 	ctx.bait_counts[id] = int(ctx.bait_counts.get(id, 0)) + amount
