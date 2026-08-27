@@ -85,3 +85,19 @@ widerspruchsfrei (§6.7 gegen §6.3/§6.8/§10); maßgeblich ist diese Entscheid
 Falls sich das im Spiel schlecht anfühlt, ist der kleinste Eingriff eine
 Senkung der `strength`-Werte in `data/fish/*.tres` — eine Datenänderung ohne
 Code.
+
+## CI: Debug-Keystore wird bei jedem Lauf neu erzeugt
+
+`.github/workflows/build.yml` erzeugt den Debug-Keystore per `keytool` bei
+jedem Lauf frisch. Dadurch hat jede APK eine andere Signatur, und ein Update
+über eine bereits installierte Version schlägt fehl:
+
+    INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match
+
+In der Praxis heißt das: vor jeder Installation muss deinstalliert werden —
+und damit ist jedes Mal der Spielstand weg. Für ein Spiel, dessen Kern der
+Offline-Fortschritt ist, ist das auf Dauer untragbar.
+
+Lösung, wenn es stört: einen festen Debug-Keystore einmal lokal erzeugen, ihn
+als GitHub-Secret hinterlegen (base64) und im Workflow daraus wiederherstellen.
+Der Keystore selbst gehört **nicht** ins Repo.
