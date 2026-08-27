@@ -47,16 +47,7 @@ func _ready() -> void:
 	toast.offset_bottom = 180.0
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)
-	_diag()
 
-## VORUEBERGEHEND
-func _diag() -> void:
-	await get_tree().create_timer(2.0).timeout
-	print("WDIAG Welt=", size, " Wasserlinie=", size.y * WATERLINE)
-	print("WDIAG Dock pos=", _dock.position, " tex=", _dock.texture, " sichtbar=", _dock.visible, " z=", _dock.z_index)
-	print("WDIAG Angler pos=", _angler.position, " scale=", _angler.scale)
-	print("WDIAG Bobber pos=", _bobber.position, " home=", _bobber_home)
-	print("WDIAG Line pts=", _line.points, " sichtbar=", _line.visible)
 
 ## Steg ans Ufer, Figur darauf, Schwimmer aufs Wasser -- aus der Weltgroesse
 ## gerechnet statt fest eingetragen.
