@@ -58,12 +58,14 @@ func _layout() -> void:
 	var dock_h := 24.0 * PIXEL_SCALE
 	# Der Steg liegt mit seiner Oberkante knapp ueber der Wasserlinie, die
 	# Pfosten ragen ins Wasser.
-	_dock.position = Vector2(size.x * 0.03, water_y - 6.0 * PIXEL_SCALE)
+	# Buendig mit dem linken Rand: ein Steg, der frei im Wasser beginnt, sieht
+	# abgeschnitten aus statt am Ufer angebaut.
+	_dock.position = Vector2(0.0, water_y - 6.0 * PIXEL_SCALE)
 	var deck_y := _dock.position.y
 	# Die Figur ist 32x32 und mittig verankert: Fuesse auf das Deck setzen.
 	# Fuesse auf die Deckoberkante: der Sprite haengt an seiner oberen linken
 	# Ecke, also ist die Unterkante position.y + 32 * scale.
-	_angler.position = Vector2(_dock.position.x + 15.0 * PIXEL_SCALE, deck_y - CHAR_SIZE * PIXEL_SCALE)
+	_angler.position = Vector2(_dock.position.x + 25.0 * PIXEL_SCALE, deck_y - CHAR_SIZE * PIXEL_SCALE)
 	_bobber_home = Vector2(size.x * 0.42, water_y + size.y * 0.14)
 	_bobber.position = _bobber_home
 
