@@ -1,11 +1,6 @@
-## Spielstand. Schreibt erst in eine Temp-Datei und benennt dann um —
-## ein Absturz mitten im Schreiben darf den Spielstand nicht zerlegen.
-##
-## Die Datei liegt beim Spieler auf dem Gerät und kann fehlen, leer oder
-## kaputt sein, veraltete oder fehlende Felder haben, falsch typisierte Werte
-## enthalten oder aus einer neueren Version stammen. Nichts davon darf
-## abstürzen -- migrate() normalisiert jeden dieser Fälle auf einen
-## vollständigen, richtig typisierten Zustand.
+## Spielstand: atomares Schreiben (Temp-Datei + rename), Migration alter/
+## kaputter Stände, Offline-Auswertung beim Laden. Die Datei liegt beim
+## Spieler auf dem Gerät -- migrate() darf ihr nie ungeprüft vertrauen.
 extends Node
 
 signal offline_ready(summary: Dictionary)
@@ -62,7 +57,10 @@ func serialize() -> Dictionary:
 		"active_bait": String(Game.ctx.bait.id),
 		"fish_inventory": Game.ctx.inventory.to_array(),
 		"journal": Game.ctx.journal.to_dict(),
-		"cosmetics": Game.cosmetics,
+		# Duplikat: Game.cosmetics darf nicht dieselbe Dictionary-Instanz wie
+		# der gespeicherte Blob teilen (derselbe Aliasing-Fehler wie beim
+		# Journal in Task 6).
+		"cosmetics": Game.cosmetics.duplicate(),
 		"active_consumables": [],
 		"settings": {},
 		"statistics": {},
@@ -70,9 +68,8 @@ func serialize() -> Dictionary:
 		"rng_state": Game.rng.get_state(),
 	}
 
-## Setzt Game/ctx aus einem (bereits migrierten) Rohzustand. Ein Stand aus
-## einer neueren Version wird verweigert statt geraten -- naives Laden könnte
-## Felder falsch interpretieren und Fortschritt stillschweigend verwerfen.
+## Ein Stand aus einer neueren Version wird verweigert statt geraten --
+## sonst könnten unbekannte Felder Fortschritt stillschweigend verwerfen.
 func deserialize(raw: Dictionary) -> void:
 	if _is_future_version(raw):
 		push_error("Spielstand stammt aus einer neueren Version, wird nicht geladen")
@@ -102,7 +99,7 @@ func deserialize(raw: Dictionary) -> void:
 
 	Game.ctx.inventory.load_array(d["fish_inventory"])
 	Game.ctx.journal.load_dict(d["journal"])
-	Game.cosmetics = d["cosmetics"]
+	Game.cosmetics = (d["cosmetics"] as Dictionary).duplicate()
 	Game.ctx.cosmetics = Game.cosmetics
 	Game.rng.set_state(int(d["rng_state"]))
 	Game.apply_upgrades()
@@ -124,10 +121,8 @@ func _is_future_version(d: Dictionary) -> bool:
 
 # --- Migration ---------------------------------------------------------------
 
-## Hebt einen alten oder beschädigten Spielstand auf die aktuelle Version.
-## Fehlende UND falsch typisierte Felder bekommen den Standardwert eines
-## neuen Spiels -- danach kann sich deserialize() blind auf die Form
-## verlassen, ohne selbst noch gegen kaputte Typen abzusichern.
+## Normalisiert jedes Feld auf den erwarteten Typ, bis in Inventar- und
+## Journal-Einträge hinein -- deserialize() verlässt sich danach blind auf die Form.
 func migrate(raw: Dictionary) -> Dictionary:
 	var defaults := _defaults()
 	var d := {}
@@ -156,7 +151,7 @@ func migrate(raw: Dictionary) -> Dictionary:
 	var fish: Array = []
 	for entry in _safe_array(raw.get("fish_inventory"), []):
 		if typeof(entry) == TYPE_DICTIONARY:
-			fish.append(entry)
+			fish.append(_sanitize_fish_entry(entry))
 	d["fish_inventory"] = fish
 
 	var journal_raw := _safe_dict(raw.get("journal"), defaults["journal"])
@@ -164,7 +159,7 @@ func migrate(raw: Dictionary) -> Dictionary:
 	var entries := {}
 	for key in entries_raw:
 		if typeof(entries_raw[key]) == TYPE_DICTIONARY:
-			entries[key] = entries_raw[key]
+			entries[String(key)] = _sanitize_journal_entry(entries_raw[key])
 	d["journal"] = {
 		"secret_found": _safe_bool(journal_raw.get("secret_found"), false),
 		"entries": entries,
@@ -174,6 +169,29 @@ func migrate(raw: Dictionary) -> Dictionary:
 	# if _safe_int(raw.get("save_version"), 0) < 2: d = _migrate_1_to_2(d)
 	d["save_version"] = SAVE_VERSION
 	return d
+
+## Bringt einen Inventar-Eintrag auf die Form von CaughtFish.from_dict() --
+## ein falsch typisiertes fish_id/quality darf nicht bis zu dessen Konstruktoren durchlaufen.
+func _sanitize_fish_entry(entry: Dictionary) -> Dictionary:
+	return {
+		"fish_id": _safe_string(entry.get("fish_id"), ""),
+		"weight": _safe_float(entry.get("weight"), 0.0),
+		"quality": _safe_int(entry.get("quality"), 0),
+		"is_shiny": _safe_bool(entry.get("is_shiny"), false),
+		"is_favorite": _safe_bool(entry.get("is_favorite"), false),
+	}
+
+## Bringt einen Journal-Eintrag auf die Form von Journal._blank() -- dieselbe
+## Absicherung wie bei Inventar-Einträgen, gegen dieselbe Fehlerklasse.
+func _sanitize_journal_entry(e: Dictionary) -> Dictionary:
+	return {
+		"caught_count": _safe_int(e.get("caught_count"), 0),
+		"best_weight": _safe_float(e.get("best_weight"), 0.0),
+		"worst_weight": _safe_float(e.get("worst_weight"), 0.0),
+		"best_quality": _safe_int(e.get("best_quality"), 0),
+		"shiny_found": _safe_bool(e.get("shiny_found"), false),
+		"fish_level": _safe_int(e.get("fish_level"), 0),
+	}
 
 func _defaults() -> Dictionary:
 	return {
@@ -190,12 +208,16 @@ func _defaults() -> Dictionary:
 		"rng_state": 0,
 	}
 
-## Wandelt Zahl, Bool oder numerische Zeichenkette in int; alles andere
-## (insbesondere Array/Dictionary aus einer manipulierten Datei) bekommt den
-## Fallback statt einen GDScript-Konstruktorfehler auszulösen.
+## Sichere Umwandlung roher JSON-Werte: Array/Dictionary/null würden sonst
+## einen GDScript-Laufzeitfehler auslösen, der die aufrufende Funktion stumm abbricht.
 func _safe_int(v, fallback: int) -> int:
 	if typeof(v) in [TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_BOOL]:
 		return int(v)
+	return fallback
+
+func _safe_float(v, fallback: float) -> float:
+	if typeof(v) in [TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_BOOL]:
+		return float(v)
 	return fallback
 
 func _safe_string(v, fallback: String) -> String:
@@ -231,6 +253,8 @@ func delete_save() -> void:
 	if has_save():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
+## dir.rename() ersetzt eine bestehende Zieldatei atomar (auf dem proot-Debian-
+## Zielsystem gemessen: liefert OK, Inhalt stimmt danach) -- vorheriges Löschen würde das zerstören.
 func save() -> bool:
 	if Game.ctx == null:
 		return false
@@ -243,8 +267,6 @@ func save() -> bool:
 	var dir := DirAccess.open(SAVE_PATH.get_base_dir())
 	if dir == null:
 		return false
-	if dir.file_exists(SAVE_PATH.get_file()):
-		dir.remove(SAVE_PATH.get_file())
 	return dir.rename(_temp_path().get_file(), SAVE_PATH.get_file()) == OK
 
 func load_game() -> bool:

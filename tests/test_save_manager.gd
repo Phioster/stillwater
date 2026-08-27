@@ -174,3 +174,52 @@ func test_future_version_file_is_refused_without_crashing() -> void:
 	assert_false(SaveManager.load_game(), "eine Zukunftsversion darf nicht als geladen gelten")
 	assert_eq(Game.coins, 3, "der aktuelle Zustand bleibt unangetastet")
 	_restore_path(original)
+
+# --- Nachbesserung nach Review: verschachtelte Felder, Uhr-Rückstellung,
+# Aliasing zwischen gespeichertem Blob und Live-Zustand -----------------------
+
+func test_inventory_and_journal_entries_with_wrong_field_types_do_not_crash() -> void:
+	var broken := {
+		"save_version": 1,
+		"fish_inventory": [
+			{"fish_id": ["nicht", "richtig"], "weight": 0.4, "quality": "zwei", "is_shiny": true, "is_favorite": false},
+		],
+		"journal": {
+			"secret_found": false,
+			"entries": {
+				"roach": {"caught_count": "viel", "best_weight": {"x": 1}, "worst_weight": 0.1, "best_quality": 2, "shiny_found": 1, "fish_level": 0},
+			},
+		},
+	}
+	var migrated := SaveManager.migrate(broken)
+	var fish_entry: Dictionary = migrated["fish_inventory"][0]
+	assert_true(fish_entry["fish_id"] is String, "fish_id muss nach der Migration ein String sein")
+	assert_true(fish_entry["quality"] is int, "quality muss nach der Migration ein int sein")
+	var journal_entry: Dictionary = migrated["journal"]["entries"]["roach"]
+	assert_true(journal_entry["caught_count"] is int, "caught_count muss ein int sein")
+	assert_true(journal_entry["best_weight"] is float, "best_weight muss ein float sein")
+
+	# Ohne den Fix bricht deserialize() hier mitten in CaughtFish.from_dict() ab.
+	Game.new_game()
+	SaveManager.deserialize(broken)
+	assert_eq(Game.ctx.inventory.fish.size(), 1, "darf trotz falscher Feldtypen nicht abstürzen")
+	assert_true(Game.ctx.journal.is_discovered(&"roach"))
+
+func test_last_seen_unix_in_the_future_yields_no_offline_progress() -> void:
+	Game.new_game()
+	var blob := SaveManager.serialize()
+	blob["last_seen_unix"] = int(Time.get_unix_time_from_system()) + 3600  # Uhr wurde zurückgestellt
+	Game.new_game()
+	SaveManager.deserialize(blob)
+	assert_true(SaveManager.pending_offline.is_empty(),
+		"eine Zeitangabe aus der Zukunft darf keinen Offline-Fortschritt erzeugen")
+
+func test_cosmetics_do_not_alias_between_saved_blob_and_live_state() -> void:
+	Game.new_game()
+	Game.cosmetics["hat"] = 3
+	var blob := SaveManager.serialize()
+	Game.new_game()
+	SaveManager.deserialize(blob)
+	Game.cosmetics["hat"] = 99
+	assert_eq(int(blob["cosmetics"]["hat"]), 3,
+		"der gespeicherte Blob darf sich nicht mitändern, wenn der Live-Zustand danach mutiert")
