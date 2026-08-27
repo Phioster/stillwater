@@ -13,6 +13,10 @@ func _ready() -> void:
 	_background.texture = TextureLoader.load_texture("res://assets/art/bg_lake.png")
 	_bobber.texture = TextureLoader.load_texture("res://assets/art/bobber.png")
 	_bobber_home = _bobber.position
+	# Die Wurzel einer instanzierten Szene kommt im Android-Export mit
+	# Standardankern an (auf dem Geraet gemessen: 0/0/0/0 statt 0/0/1/1).
+	# Deshalb hier setzen statt sich auf die Szenendatei zu verlassen.
+	$CatchView.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)
 

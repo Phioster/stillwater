@@ -26,8 +26,6 @@ position = Vector2(430, 470)
 scale = Vector2(4, 4)
 
 [node name="CatchView" parent="." instance=ExtResource("3")]
-; Anker hier ausdruecklich setzen: geerbte Wurzelanker einer instanzierten
-; Szene kamen im Android-Export nicht an, CatchView war dort 0x0 gross.
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
