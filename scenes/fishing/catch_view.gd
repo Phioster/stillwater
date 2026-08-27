@@ -45,7 +45,7 @@ func _on_bite(fish: FishData) -> void:
 	_name.text = fish.display_name
 	_spawn_timer = 0.25
 
-func _on_caught(_c: CaughtFish, _f: FishData) -> void:
+func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
 	_clear_orbs()
 
 func _on_escaped(_f: FishData) -> void:

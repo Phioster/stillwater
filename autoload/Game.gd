@@ -8,7 +8,7 @@ signal state_changed
 ## selbst ruft.
 signal progress_changed
 signal bite(fish: FishData)
-signal caught(fish_caught: CaughtFish, fish: FishData)
+signal caught(fish_caught: CaughtFish, fish: FishData, discovered: bool, record: bool)
 signal escaped(fish: FishData)
 signal level_up(level: int)
 signal inventory_full
@@ -82,7 +82,7 @@ func _dispatch(events: Array) -> void:
 			"bite":
 				bite.emit(e["fish"])
 			"caught":
-				caught.emit(e["caught"], e["fish"])
+				caught.emit(e["caught"], e["fish"], bool(e["discovered"]), bool(e["record"]))
 			"escaped":
 				escaped.emit(e["fish"])
 			"level_up":

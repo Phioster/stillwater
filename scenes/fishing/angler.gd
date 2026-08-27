@@ -68,7 +68,7 @@ func _process(_delta: float) -> void:
 func _on_bite(_fish: FishData) -> void:
 	play_state(1)
 
-func _on_caught(_c: CaughtFish, _f: FishData) -> void:
+func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
 	play_state(0)
 
 func _on_escaped(_f: FishData) -> void:

@@ -14,9 +14,8 @@ func _ready() -> void:
 	if not get_viewport().size_changed.is_connected(_apply_safe_area):
 		get_viewport().size_changed.connect(_apply_safe_area)
 	show_tab(-1)
-	_diagnose_rects()
 
-## VORUEBERGEHEND: misst die echten Rechtecke auf dem Geraet. Wird nach der
+
 ## Auswertung wieder entfernt.
 func _diagnose_rects() -> void:
 	await get_tree().create_timer(2.0).timeout

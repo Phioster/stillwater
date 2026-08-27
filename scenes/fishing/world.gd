@@ -17,6 +17,15 @@ func _ready() -> void:
 	# Standardankern an (auf dem Geraet gemessen: 0/0/0/0 statt 0/0/1/1).
 	# Deshalb hier setzen statt sich auf die Szenendatei zu verlassen.
 	$CatchView.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Gleiche Falle wie oben: die Karte haengt mittig oben, das muss hier
+	# gesetzt werden, weil die Szenenwurzel ihre Anker im Export verliert.
+	var toast: Control = $CatchToast
+	toast.anchor_left = 0.5
+	toast.anchor_right = 0.5
+	toast.offset_left = -220.0
+	toast.offset_right = 220.0
+	toast.offset_top = 110.0
+	toast.offset_bottom = 180.0
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)
 

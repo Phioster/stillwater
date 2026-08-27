@@ -137,7 +137,7 @@ func test_caught_fires_exactly_once_per_catch() -> void:
 	Game.sim.hooked_quality = 2
 	Game.sim.hooked_shiny = false
 	var fire_count := [0]
-	var handler := func(_c, _f): fire_count[0] += 1
+	var handler := func(_c, _f, _d, _r): fire_count[0] += 1
 	Game.caught.connect(handler)
 	Game.tap()
 	Game.caught.disconnect(handler)

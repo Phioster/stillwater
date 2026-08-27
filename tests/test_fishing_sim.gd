@@ -177,3 +177,40 @@ func test_tick_is_delta_independent_mid_fight() -> void:
 	assert_eq(sim_big.state, sim_small.state)
 	assert_almost_eq(sim_big.hooked_strength, sim_small.hooked_strength)
 	assert_almost_eq(sim_big.timer, sim_small.timer)
+
+func _ctx_with_journal() -> SimContext:
+	var ctx := _ctx(20.0)
+	return ctx
+
+## Die Fangkarte zeigt "neue Art" und "neuer Rekord" -- beides ist nur im
+## Moment des Eintragens bekannt, danach IST das Gewicht der Bestwert.
+func test_caught_event_reports_new_species_and_record() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx_with_journal()
+	var fish: FishData = ctx.zone.fish[0]
+
+	var first := _land_with(sim, ctx, fish, 1.0)
+	assert_true(bool(first["discovered"]), "erster Fang der Art ist eine Entdeckung")
+	assert_true(bool(first["record"]), "erster Fang ist immer Rekord")
+
+	var lighter := _land_with(sim, ctx, fish, 0.5)
+	assert_false(bool(lighter["discovered"]), "zweiter Fang ist keine Entdeckung mehr")
+	assert_false(bool(lighter["record"]), "leichter als der Bestwert ist kein Rekord")
+
+	var heavier := _land_with(sim, ctx, fish, 2.0)
+	assert_false(bool(heavier["discovered"]), "immer noch keine Entdeckung")
+	assert_true(bool(heavier["record"]), "schwerer als der Bestwert ist ein Rekord")
+
+func _land_with(sim: FishingSim, ctx: SimContext, fish: FishData, weight: float) -> Dictionary:
+	sim.state = FishingSim.State.FIGHT
+	sim.hooked = fish
+	sim.hooked_weight = weight
+	sim.hooked_quality = 2
+	sim.hooked_shiny = false
+	sim.hooked_strength = 0.01
+	sim.hooked_max_strength = 0.01
+	var events := sim.tick(0.05, ctx, StillRNG.new(7))
+	for e in events:
+		if e["type"] == "caught":
+			return e
+	return {}

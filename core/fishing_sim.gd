@@ -111,7 +111,12 @@ func _land(ctx: SimContext, events: Array) -> void:
 	var caught := CaughtFish.make(fish.id, hooked_weight, hooked_quality, hooked_shiny)
 	var rarity := ctx.rarity_of(fish)
 	var stored := ctx.inventory.add(caught)
+	# Vor dem Eintragen lesen: danach IST das Gewicht der neue Bestwert.
+	var previous_best := 0.0
+	if ctx.journal.is_discovered(fish.id):
+		previous_best = float(ctx.journal.entry(fish.id)["best_weight"])
 	var discovered := ctx.journal.record(caught, fish.is_secret)
+	var is_record := discovered or hooked_weight > previous_best
 	var xp := Progression.xp_for_catch(fish, rarity, hooked_quality)
 	var after := Progression.apply_xp(ctx.player_level, ctx.player_xp, xp)
 	ctx.player_level = int(after["level"])
@@ -122,6 +127,7 @@ func _land(ctx: SimContext, events: Array) -> void:
 		"caught": caught,
 		"xp": xp,
 		"discovered": discovered,
+		"record": is_record,
 		"stored": stored,
 	})
 	if int(after["levels_gained"]) > 0:
