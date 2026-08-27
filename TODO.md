@@ -101,3 +101,36 @@ Offline-Fortschritt ist, ist das auf Dauer untragbar.
 Lösung, wenn es stört: einen festen Debug-Keystore einmal lokal erzeugen, ihn
 als GitHub-Secret hinterlegen (base64) und im Workflow daraus wiederherstellen.
 Der Keystore selbst gehört **nicht** ins Repo.
+
+## Kunstrichtung: hochauflösende Pixelart, weibliche Figur
+
+**Entschieden (2026-08-27):** Die endgültige Grafik soll **hochauflösende
+Pixelart** werden — in der Machart von *Dead Cells*, also viele Bildpunkte pro
+Figur, weiche Schattierung und flüssige Animation. **Nicht** die grobe
+Low-Res-Optik der Platzhalter. Die Spielfigur ist **weiblich**.
+
+Die aktuellen Sprites sind ausdrücklich Platzhalter aus `tools/gen_sprites.gd`
+(32×32 je Frame, vierfach vergrößert).
+
+**Was der Code dafür schon mitbringt:**
+- Die Figur besteht aus getrennten Ebenen (Haut, Hose, Oberteil, Haare, Hut,
+  Rute). Neue Kunst tauscht Texturen, ohne dass Logik sich ändert.
+- Der Palettentausch-Shader färbt Haare über einen Farbwert statt über eigene
+  Bilder — bei mehr Farbtiefe bleibt das nutzbar.
+- Alle Positionen werden aus der Weltgröße und benannten Konstanten gerechnet,
+  nicht fest eingetragen.
+- Kosmetik liegt als Daten vor: mehr Varianten heißen mehr `.tres`, kein Code.
+
+**Was beim Wechsel angefasst werden muss** (in `scenes/fishing/world.gd`,
+sofern die Bildgrößen sich ändern):
+- `PIXEL_SCALE` (jetzt 4) — bei hochauflösender Kunst vermutlich 1 oder 2.
+- `CHAR_SIZE` (32) und `CHAR_FEET` (30) — die Zeile, auf der die Füße stehen.
+- `ROD_TIP` (Frame-Pixel 31, 6) — der Punkt, an dem die Schnur ansetzt.
+- `WATERLINE` (84/180) — die Wasserlinie im Hintergrundbild.
+- `tools/gen_sprites.gd` wird dann überflüssig oder erzeugt nur noch
+  Ersatzbilder für fehlende Kunst.
+- `textures/canvas_textures/default_texture_filter` steht auf Nearest; das ist
+  für Pixelart weiterhin richtig, auch bei höherer Auflösung.
+
+Die Sprite-Prüfung in `tests/test_sprite_assets.gd` prüft feste Maße — sie
+muss beim Wechsel mit angepasst werden, sonst wird sie zur Bremse.
