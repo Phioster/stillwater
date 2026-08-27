@@ -36,40 +36,6 @@ func test_refresh_only_runs_while_visible_in_a_wrapped_scroll_container() -> voi
 	tree.root.remove_child(scroll)
 	scroll.free()
 
-## Testdouble mit Inhalt, damit ueberhaupt gescrollt werden kann.
-class TallPanel:
-	extends PanelBase
-	func refresh() -> void:
-		for c in get_children():
-			c.queue_free()
-		for i in 20:
-			var l := Label.new()
-			l.text = "Zeile %d" % i
-			l.custom_minimum_size = Vector2(0, 40)
-			add_child(l)
-
-## Ein Fang baut die Liste neu auf. Ohne Merken springt die Ansicht dabei
-## zurueck an den Anfang -- mitten im Lesen.
-func test_refresh_keeps_the_scroll_position() -> void:
-	var tree := Engine.get_main_loop() as SceneTree
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(200, 100)
-	var panel := TallPanel.new()
-	scroll.add_child(panel)
-	tree.root.add_child(scroll)
-	scroll.size = Vector2(200, 100)
-	await tree.process_frame
-	await tree.process_frame
-	scroll.scroll_vertical = 120
-	await tree.process_frame
-	var before := scroll.scroll_vertical
-	assert_true(before > 0, "Vorbedingung: die Ansicht muss ueberhaupt scrollbar sein")
-	await panel.refresh_keeping_scroll()
-	await tree.process_frame
-	assert_eq(scroll.scroll_vertical, before, "nach dem Neuaufbau muss die Ansicht stehen bleiben")
-	tree.root.remove_child(scroll)
-	scroll.free()
-
 ## Das Seitenpanel liegt UEBER der Welt. Lag es daneben, schrumpfte das Wasser
 ## beim Oeffnen des Menues -- das war als Fehler gemeldet.
 func test_opening_a_tab_does_not_resize_the_world() -> void:

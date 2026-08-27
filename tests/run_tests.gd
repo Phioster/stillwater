@@ -70,7 +70,7 @@ func _init() -> void:
 				continue
 			total += 1
 			suite.failures.clear()
-			suite.call(name)
+			await suite.call(name)
 			if suite.failures.is_empty():
 				print("  ok    %s::%s" % [path.get_file(), name])
 			else:
