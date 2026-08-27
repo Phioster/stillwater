@@ -23,6 +23,7 @@ func _ready() -> void:
 		Game.caught.connect(_on_caught)
 	if not Game.escaped.is_connected(_on_escaped):
 		Game.escaped.connect(_on_escaped)
+	add_to_group("angler")
 
 func set_cosmetics(c: Dictionary) -> void:
 	_set_layer("Skin", int(c.get("skin", 0)))

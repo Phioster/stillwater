@@ -1,9 +1,16 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/tab_rail.tscn" id="4"]
+[ext_resource type="Script" path="res://scenes/ui/panels/fish_panel.gd" id="5"]
+[ext_resource type="Script" path="res://scenes/ui/panels/journal_panel.gd" id="6"]
+[ext_resource type="Script" path="res://scenes/ui/panels/shop_panel.gd" id="7"]
+[ext_resource type="Script" path="res://scenes/ui/panels/upgrade_panel.gd" id="8"]
+[ext_resource type="Script" path="res://scenes/ui/panels/world_panel.gd" id="9"]
+[ext_resource type="Script" path="res://scenes/ui/panels/character_panel.gd" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
 
 [node name="Main" type="Control"]
 anchors_preset = 15
@@ -27,8 +34,64 @@ visible = false
 
 [node name="Panels" type="Control" parent="Row/SidePanel"]
 
+[node name="FishScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="FishPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/FishScroll"]
+size_flags_horizontal = 3
+script = ExtResource("5")
+
+[node name="JournalScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="JournalPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/JournalScroll"]
+size_flags_horizontal = 3
+script = ExtResource("6")
+
+[node name="ShopScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="ShopPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/ShopScroll"]
+size_flags_horizontal = 3
+script = ExtResource("7")
+
+[node name="UpgradeScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="UpgradePanel" type="VBoxContainer" parent="Row/SidePanel/Panels/UpgradeScroll"]
+size_flags_horizontal = 3
+script = ExtResource("8")
+
+[node name="WorldScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="WorldPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/WorldScroll"]
+size_flags_horizontal = 3
+script = ExtResource("9")
+
+[node name="CharacterScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="CharacterPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/CharacterScroll"]
+size_flags_horizontal = 3
+script = ExtResource("10")
+
 [node name="TabRail" parent="Row" instance=ExtResource("4")]
 
 [node name="Hud" parent="." instance=ExtResource("3")]
 offset_left = 16.0
 offset_top = 16.0
+
+[node name="WelcomeBack" parent="." instance=ExtResource("11")]
