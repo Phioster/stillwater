@@ -16,6 +16,10 @@ const PIXEL_SCALE := 4.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
 const CHAR_SIZE := 32.0
+## Die Schuhe enden im 32er-Frame bei Zeile 30 (Generator: _pants zeichnet sie
+## bei 27..29). Die letzten zwei Reihen sind leer -- wer die Sprite-Unterkante
+## aufs Deck setzt, laesst die Figur um 8 Pixel schweben.
+const CHAR_FEET := 30.0
 ## Rutenspitze im 32x32-Frame bei (31, 6).
 const ROD_TIP := Vector2(31.0, 6.0) * PIXEL_SCALE
 
@@ -65,7 +69,7 @@ func _layout() -> void:
 	# Die Figur ist 32x32 und mittig verankert: Fuesse auf das Deck setzen.
 	# Fuesse auf die Deckoberkante: der Sprite haengt an seiner oberen linken
 	# Ecke, also ist die Unterkante position.y + 32 * scale.
-	_angler.position = Vector2(_dock.position.x + 25.0 * PIXEL_SCALE, deck_y - CHAR_SIZE * PIXEL_SCALE)
+	_angler.position = Vector2(_dock.position.x + 25.0 * PIXEL_SCALE, deck_y - CHAR_FEET * PIXEL_SCALE)
 	_bobber_home = Vector2(size.x * 0.42, water_y + size.y * 0.14)
 	_bobber.position = _bobber_home
 
