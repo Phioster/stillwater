@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/fishing/world.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/angler.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/fishing/catch_view.tscn" id="3"]
 
 [node name="World" type="Control"]
 anchors_preset = 15
@@ -29,3 +30,5 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
+
+[node name="CatchView" parent="." instance=ExtResource("3")]

@@ -1,0 +1,58 @@
+## Ein antippbarer Orb. Verschwindet nach seiner Lebenszeit von allein.
+extends Control
+
+signal tapped
+
+const FADE_TIME: float = 0.15
+
+@onready var _visual: TextureRect = $Visual
+
+var _life: float = 2.0
+var _age: float = 0.0
+var _dead: bool = false
+
+func _ready() -> void:
+	_visual.texture = _load_texture("res://assets/art/orb.png")
+	$Button.pressed.connect(_on_pressed)
+	pivot_offset = size * 0.5
+	scale = Vector2.ZERO
+
+## Läuft ohne Import-Schritt: die Editor-Ressourcenimportierer stürzen in
+## dieser Umgebung ab, daher werden Sprites als Image statt als Texture2D-
+## Ressource geladen (siehe tests/test_sprite_assets.gd).
+func _load_texture(path: String) -> Texture2D:
+	var full_path := ProjectSettings.globalize_path(path)
+	if not FileAccess.file_exists(full_path):
+		return null
+	var img := Image.load_from_file(full_path)
+	if img == null or img.is_empty():
+		return null
+	return ImageTexture.create_from_image(img)
+
+func setup(pos: Vector2, lifetime: float) -> void:
+	position = pos - size * 0.5
+	_life = lifetime
+
+func _process(delta: float) -> void:
+	if _dead:
+		return
+	_age += delta
+	# Kurzes Aufploppen, dann ruhiges Pulsieren.
+	if _age < FADE_TIME:
+		scale = Vector2.ONE * (_age / FADE_TIME)
+	else:
+		scale = Vector2.ONE * (1.0 + sin(_age * 6.0) * 0.06)
+	modulate.a = clampf((_life - _age) / 0.4, 0.0, 1.0)
+	if _age >= _life:
+		_expire()
+
+func _on_pressed() -> void:
+	if _dead:
+		return
+	_dead = true
+	tapped.emit()
+	queue_free()
+
+func _expire() -> void:
+	_dead = true
+	queue_free()
