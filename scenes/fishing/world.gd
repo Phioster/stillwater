@@ -2,7 +2,7 @@
 ## und stellt die Fläche bereit, über der die Orbs erscheinen dürfen.
 extends Control
 
-@onready var orb_area: Control = $OrbArea
+@onready var orb_area: Control = $CatchView.spawn_area
 @onready var _bobber: Sprite2D = $Bobber
 @onready var _background: TextureRect = $Background
 
