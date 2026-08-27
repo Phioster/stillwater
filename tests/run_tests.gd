@@ -20,6 +20,7 @@ const SUITES := [
 	"res://tests/test_palette.gd",
 	"res://tests/test_project_settings.gd",
 	"res://tests/test_resource_names.gd",
+	"res://tests/test_scenes_compile.gd",
 	"res://tests/test_sprite_assets.gd",
 ]
 

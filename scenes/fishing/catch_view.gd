@@ -6,6 +6,13 @@ const ORB_SCENE := preload("res://scenes/fishing/orb.tscn")
 const ORB_INTERVAL: float = 0.9
 const ORB_LIFETIME: float = 2.2
 const ORB_MARGIN: float = 80.0
+## Die Orbs erscheinen rund um den Schwimmer statt ueber dem ganzen Bild.
+const ORB_RADIUS: float = 190.0
+
+## Mittelpunkt des Fangbereichs, von der Welt jeden Frame auf den Schwimmer
+## gesetzt. Ohne Welt bleibt es die Mitte der Flaeche, damit CatchView
+## eigenstaendig laedt.
+var focus_point: Vector2 = Vector2.ZERO
 
 @onready var _panel: PanelContainer = $Panel
 @onready var _name: Label = $Panel/Box/FishName
@@ -58,10 +65,19 @@ func _clear_orbs() -> void:
 func _spawn_orb() -> void:
 	var orb := ORB_SCENE.instantiate()
 	spawn_area.add_child(orb)
-	var area := spawn_area.size
-	var pos := Vector2(
-		randf_range(ORB_MARGIN, maxf(area.x - ORB_MARGIN, ORB_MARGIN + 1.0)),
-		randf_range(ORB_MARGIN, maxf(area.y - ORB_MARGIN, ORB_MARGIN + 1.0))
-	)
-	orb.setup(pos, ORB_LIFETIME)
+	orb.setup(_orb_position(), ORB_LIFETIME)
 	orb.tapped.connect(Game.tap)
+
+## Ein Punkt im Kreis um den Schwimmer, aber immer so weit vom Rand entfernt,
+## dass der Orb vollstaendig im Bild bleibt -- sonst waere er am Ufer halb ab.
+func _orb_position() -> Vector2:
+	var area := spawn_area.size
+	var center := focus_point if focus_point != Vector2.ZERO else area * 0.5
+	var angle := randf() * TAU
+	var distance := sqrt(randf()) * ORB_RADIUS
+	var pos := center + Vector2(cos(angle), sin(angle)) * distance
+	return Vector2(
+		clampf(pos.x, ORB_MARGIN, maxf(area.x - ORB_MARGIN, ORB_MARGIN + 1.0)),
+		clampf(pos.y, ORB_MARGIN, maxf(area.y - ORB_MARGIN, ORB_MARGIN + 1.0))
+	)
+

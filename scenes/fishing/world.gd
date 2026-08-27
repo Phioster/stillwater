@@ -5,6 +5,16 @@ extends Control
 @onready var orb_area: Control = $CatchView.spawn_area
 @onready var _bobber: Sprite2D = $Bobber
 @onready var _background: TextureRect = $Background
+@onready var _dock: Sprite2D = $Dock
+@onready var _angler: Node2D = $Angler
+@onready var _line: Line2D = $Line
+
+## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
+## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
+const WATERLINE := 84.0 / 180.0
+const PIXEL_SCALE := 4.0
+## Die Rutenspitze liegt im 32x32-Frame bei (31, 6), also rechts oben.
+const ROD_TIP := Vector2(15.0, -10.0) * PIXEL_SCALE
 
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
@@ -12,7 +22,13 @@ var _bobber_home: Vector2
 func _ready() -> void:
 	_background.texture = TextureLoader.load_texture("res://assets/art/bg_lake.png")
 	_bobber.texture = TextureLoader.load_texture("res://assets/art/bobber.png")
-	_bobber_home = _bobber.position
+	_dock.texture = TextureLoader.load_texture("res://assets/art/dock.png")
+	_dock.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_layout()
+	if not resized.is_connected(_layout):
+		resized.connect(_layout)
 	# Die Wurzel einer instanzierten Szene kommt im Android-Export mit
 	# Standardankern an (auf dem Geraet gemessen: 0/0/0/0 statt 0/0/1/1).
 	# Deshalb hier setzen statt sich auf die Szenendatei zu verlassen.
@@ -29,12 +45,36 @@ func _ready() -> void:
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)
 
+## Steg ans Ufer, Figur darauf, Schwimmer aufs Wasser -- aus der Weltgroesse
+## gerechnet statt fest eingetragen.
+func _layout() -> void:
+	if size.x <= 0.0 or size.y <= 0.0:
+		return
+	var water_y := size.y * WATERLINE
+	var dock_h := 24.0 * PIXEL_SCALE
+	# Der Steg liegt mit seiner Oberkante knapp ueber der Wasserlinie, die
+	# Pfosten ragen ins Wasser.
+	_dock.position = Vector2(size.x * 0.03, water_y - 6.0 * PIXEL_SCALE)
+	var deck_y := _dock.position.y
+	# Die Figur ist 32x32 und mittig verankert: Fuesse auf das Deck setzen.
+	_angler.position = Vector2(_dock.position.x + 20.0 * PIXEL_SCALE, deck_y - 16.0 * PIXEL_SCALE)
+	_bobber_home = Vector2(size.x * 0.42, water_y + size.y * 0.14)
+	_bobber.position = _bobber_home
+	_dock.z_index = -1
+
 func _process(delta: float) -> void:
 	_bob_time += delta
 	var visible_states := [FishingSim.State.WAITING, FishingSim.State.FIGHT]
 	_bobber.visible = Game.sim.state in visible_states
 	var amplitude := 10.0 if Game.sim.state == FishingSim.State.FIGHT else 3.0
 	_bobber.position.y = _bobber_home.y + sin(_bob_time * 3.0) * amplitude
+	# Schnur von der Rutenspitze zum Schwimmer -- folgt dadurch von selbst
+	# dem Auf und Ab und dem Zappeln im Kampf.
+	_line.visible = _bobber.visible
+	if _line.visible:
+		_line.points = PackedVector2Array([_angler.position + ROD_TIP, _bobber.position])
+	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
+	$CatchView.focus_point = _bobber.position
 
 func _on_bite(_fish: FishData) -> void:
 	_bob_time = 0.0
