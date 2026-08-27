@@ -13,8 +13,11 @@ extends Control
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
 const WATERLINE := 84.0 / 180.0
 const PIXEL_SCALE := 4.0
-## Die Rutenspitze liegt im 32x32-Frame bei (31, 6), also rechts oben.
-const ROD_TIP := Vector2(15.0, -10.0) * PIXEL_SCALE
+## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
+## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
+const CHAR_SIZE := 32.0
+## Rutenspitze im 32x32-Frame bei (31, 6).
+const ROD_TIP := Vector2(31.0, 6.0) * PIXEL_SCALE
 
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
@@ -67,10 +70,11 @@ func _layout() -> void:
 	_dock.position = Vector2(size.x * 0.03, water_y - 6.0 * PIXEL_SCALE)
 	var deck_y := _dock.position.y
 	# Die Figur ist 32x32 und mittig verankert: Fuesse auf das Deck setzen.
-	_angler.position = Vector2(_dock.position.x + 20.0 * PIXEL_SCALE, deck_y - 16.0 * PIXEL_SCALE)
+	# Fuesse auf die Deckoberkante: der Sprite haengt an seiner oberen linken
+	# Ecke, also ist die Unterkante position.y + 32 * scale.
+	_angler.position = Vector2(_dock.position.x + 15.0 * PIXEL_SCALE, deck_y - CHAR_SIZE * PIXEL_SCALE)
 	_bobber_home = Vector2(size.x * 0.42, water_y + size.y * 0.14)
 	_bobber.position = _bobber_home
-	_dock.z_index = -1
 
 func _process(delta: float) -> void:
 	_bob_time += delta
