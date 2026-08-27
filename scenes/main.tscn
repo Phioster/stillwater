@@ -1,10 +1,34 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="1"]
+[ext_resource type="Script" path="res://scenes/main.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/tab_rail.tscn" id="4"]
 
 [node name="Main" type="Control"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+script = ExtResource("1")
 
-[node name="World" parent="." instance=ExtResource("1")]
+[node name="Row" type="HBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 0
+
+[node name="World" parent="Row" instance=ExtResource("2")]
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+
+[node name="SidePanel" type="PanelContainer" parent="Row"]
+custom_minimum_size = Vector2(420, 0)
+visible = false
+
+[node name="Panels" type="Control" parent="Row/SidePanel"]
+
+[node name="TabRail" parent="Row" instance=ExtResource("4")]
+
+[node name="Hud" parent="." instance=ExtResource("3")]
+offset_left = 16.0
+offset_top = 16.0
