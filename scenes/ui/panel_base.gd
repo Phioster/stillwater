@@ -18,11 +18,23 @@ func _exit_tree() -> void:
 
 func _on_state_changed() -> void:
 	if is_visible_in_tree():
-		refresh()
+		refresh_keeping_scroll()
 
 func _on_visibility_changed() -> void:
 	if is_visible_in_tree():
-		refresh()
+		refresh_keeping_scroll()
+
+## Ein Fang loest state_changed aus, und refresh() baut die Liste neu auf --
+## dabei springt die Ansicht sonst zurueck an den Anfang, mitten im Lesen.
+func refresh_keeping_scroll() -> void:
+	var scroll: ScrollContainer = get_parent() as ScrollContainer
+	var y := scroll.scroll_vertical if scroll != null else 0
+	refresh()
+	if scroll != null and y > 0:
+		# Erst nach dem Neuaufbau, sonst ist die Liste noch leer und der
+		# Wert wird auf 0 zurechtgestutzt.
+		await get_tree().process_frame
+		scroll.scroll_vertical = y
 
 ## Von jedem Panel überschrieben.
 func refresh() -> void:

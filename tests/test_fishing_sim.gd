@@ -214,3 +214,13 @@ func _land_with(sim: FishingSim, ctx: SimContext, fish: FishData, weight: float)
 		if e["type"] == "caught":
 			return e
 	return {}
+
+## Wer schnell tippt, soll nicht auf die volle Pause warten: die Wartezeit bis
+## zum naechsten Fangpunkt wird nach einem Treffer verkuerzt, nie verlaengert.
+func test_tapping_shortens_the_wait_for_the_next_orb() -> void:
+	var CatchViewScript := load("res://scenes/fishing/catch_view.gd")
+	assert_true(CatchViewScript != null and CatchViewScript.can_instantiate(), "catch_view.gd kompiliert")
+	var after_tap: float = CatchViewScript.get_script_constant_map()["ORB_AFTER_TAP"]
+	var normal: float = CatchViewScript.get_script_constant_map()["ORB_INTERVAL"]
+	assert_true(after_tap < normal, "nach einem Treffer muss es schneller gehen als sonst: %f vs %f" % [after_tap, normal])
+	assert_true(after_tap > 0.0, "aber nicht sofort, sonst ueberrennt es den Spieler")

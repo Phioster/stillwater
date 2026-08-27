@@ -4,6 +4,9 @@ extends Control
 
 const ORB_SCENE := preload("res://scenes/fishing/orb.tscn")
 const ORB_INTERVAL: float = 0.9
+## Wer schnell tippt, soll nicht auf die volle Pause warten muessen: nach
+## einem Treffer kommt der naechste Punkt deutlich frueher.
+const ORB_AFTER_TAP: float = 0.22
 const ORB_LIFETIME: float = 2.2
 const ORB_MARGIN: float = 80.0
 ## Die Orbs erscheinen rund um den Schwimmer statt ueber dem ganzen Bild.
@@ -67,6 +70,10 @@ func _spawn_orb() -> void:
 	spawn_area.add_child(orb)
 	orb.setup(_orb_position(), ORB_LIFETIME)
 	orb.tapped.connect(Game.tap)
+	orb.tapped.connect(_on_orb_tapped)
+
+func _on_orb_tapped() -> void:
+	_spawn_timer = minf(_spawn_timer, ORB_AFTER_TAP)
 
 ## Ein Punkt im Kreis um den Schwimmer, aber immer so weit vom Rand entfernt,
 ## dass der Orb vollstaendig im Bild bleibt -- sonst waere er am Ufer halb ab.
