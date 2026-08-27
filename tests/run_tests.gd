@@ -14,6 +14,8 @@ const SUITES := [
 	"res://tests/test_offline_sim.gd",
 	"res://tests/test_database.gd",
 	"res://tests/test_game_actions.gd",
+	"res://tests/test_panel_base.gd",
+	"res://tests/test_upgrade_panel.gd",
 	"res://tests/test_save_manager.gd",
 	"res://tests/test_palette.gd",
 	"res://tests/test_sprite_assets.gd",
@@ -26,6 +28,16 @@ func _init() -> void:
 	# Die Simulation darf während der Tests nicht nebenher weiterlaufen.
 	if root.has_node("Game"):
 		root.get_node("Game").paused = true
+
+	# Seit dem ereignisgetriebenen Autosave (Game.progress_changed) lösen
+	# Game.sell_all()/buy_upgrade()/travel_to() in test_game_actions.gd einen
+	# echten SaveManager.save() aus. Ohne diesen Pfadtausch würde jeder
+	# Testlauf den echten Spielstand des Entwicklers überschreiben.
+	var save_manager: Node = root.get_node("SaveManager") if root.has_node("SaveManager") else null
+	var original_save_path := ""
+	if save_manager != null:
+		original_save_path = save_manager.SAVE_PATH
+		save_manager.SAVE_PATH = "user://test_run_all.json"
 
 	var total := 0
 	var failed := 0
@@ -60,6 +72,10 @@ func _init() -> void:
 				print("  FAIL  %s::%s" % [path.get_file(), name])
 				for f in suite.failures:
 					print("        %s" % f)
+	if save_manager != null:
+		save_manager.delete_save()
+		save_manager.SAVE_PATH = original_save_path
+
 	print("")
 	print("%d Tests, %d fehlgeschlagen" % [total, failed])
 	quit(1 if failed > 0 else 0)

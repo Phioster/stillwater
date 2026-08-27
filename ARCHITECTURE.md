@@ -101,7 +101,7 @@ Darstellungscode mitgezählt hätte.
 
 Ein `SceneTree`-Skript ohne externes Plugin
 (`tests/run_tests.gd`, gestartet mit
-`godot --headless --script res://tests/run_tests.gd`), lädt 16
+`godot --headless --script res://tests/run_tests.gd`), lädt 18
 `test_*.gd`-Suiten, die jeweils von `TestCase` (`tests/test_case.gd`)
 erben. Ein Parse-Fehler in einer Testdatei zählt als Fehlschlag statt
 den Prozess hängen zu lassen (`script.can_instantiate()`-Prüfung). Der
@@ -129,10 +129,14 @@ betrifft zwei Dinge:
    zwei verschiedene Umgebungen gebaut.
 2. **PNG-Einbindung.** `[ext_resource type="Texture2D"]` und
    `load("res://assets/art/x.png")` brauchen einen `.import`-Cache,
-   den nur der Editor erzeugt. Szenenskripte laden PNGs deshalb selbst
-   zur Laufzeit: `Image.load_from_file(pfad)` und daraus
-   `ImageTexture.create_from_image(img)` — so in
+   den nur der Editor erzeugt — auf diesem Gerät gibt es ihn nie. Im
+   **Export** lief der Import-Schritt dagegen (CI/Android-Build), dort
+   existiert die Quell-PNG im PCK nicht mehr, nur noch die importierte
+   Ressource. `core/texture_loader.gd` (`TextureLoader.load_texture()`)
+   bedient beide Fälle an einer Stelle: erst `ResourceLoader.exists()` +
+   `load()` (trägt im Export), erst wenn das nichts liefert der Rückfall
+   auf `Image.load_from_file()` (trägt auf diesem Gerät). Genutzt von
    `scenes/fishing/angler.gd`, `scenes/fishing/orb.gd`,
-   `scenes/fishing/world.gd`, `scenes/ui/panels/journal_panel.gd` und
-   `tests/test_sprite_assets.gd`. `.tscn`-Dateien nutzen `ext_resource`
-   nur für Scripts und `PackedScene`s, nie für Texturen.
+   `scenes/fishing/world.gd` und `scenes/ui/panels/journal_panel.gd`.
+   `.tscn`-Dateien nutzen `ext_resource` nur für Scripts und
+   `PackedScene`s, nie für Texturen.

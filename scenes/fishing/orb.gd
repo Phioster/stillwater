@@ -12,22 +12,10 @@ var _age: float = 0.0
 var _dead: bool = false
 
 func _ready() -> void:
-	_visual.texture = _load_texture("res://assets/art/orb.png")
+	_visual.texture = TextureLoader.load_texture("res://assets/art/orb.png")
 	$Button.pressed.connect(_on_pressed)
 	pivot_offset = size * 0.5
 	scale = Vector2.ZERO
-
-## Läuft ohne Import-Schritt: die Editor-Ressourcenimportierer stürzen in
-## dieser Umgebung ab, daher werden Sprites als Image statt als Texture2D-
-## Ressource geladen (siehe tests/test_sprite_assets.gd).
-func _load_texture(path: String) -> Texture2D:
-	var full_path := ProjectSettings.globalize_path(path)
-	if not FileAccess.file_exists(full_path):
-		return null
-	var img := Image.load_from_file(full_path)
-	if img == null or img.is_empty():
-		return null
-	return ImageTexture.create_from_image(img)
 
 func setup(pos: Vector2, lifetime: float) -> void:
 	position = pos - size * 0.5

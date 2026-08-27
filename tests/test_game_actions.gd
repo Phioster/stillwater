@@ -23,6 +23,13 @@ func test_buying_an_upgrade_costs_coins_and_raises_the_value() -> void:
 	assert_almost_eq(Game.upgrade_value(&"rod_power"), 6.0)
 	assert_almost_eq(Game.ctx.rod_power, 6.0, 0.0001, "der Kontext muss mitziehen")
 
+func test_upgrade_cost_matches_what_buy_upgrade_actually_charges() -> void:
+	_fresh()
+	Game.coins = 10000
+	var before_cost := Game.upgrade_cost(&"rod_power")
+	assert_true(Game.buy_upgrade(&"rod_power"))
+	assert_eq(Game.coins, 10000 - before_cost)
+
 func test_upgrade_is_refused_without_coins() -> void:
 	_fresh()
 	Game.coins = 10

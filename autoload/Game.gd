@@ -3,6 +3,9 @@
 extends Node
 
 signal state_changed
+## Feuert genau nach Verkauf, Upgrade-Kauf und Zonenwechsel -- SaveManager
+## hängt den Autosave hier ein, statt dass jede Aktion save() selbst ruft.
+signal progress_changed
 signal bite(fish: FishData)
 signal caught(fish_caught: CaughtFish, fish: FishData)
 signal escaped(fish: FishData)
@@ -104,6 +107,7 @@ func buy_upgrade(id: StringName) -> bool:
 	apply_upgrades()
 	coins -= cost
 	state_changed.emit()
+	progress_changed.emit()
 	return true
 
 ## Setzt Rutenkraft/Orb-Kraft/Kapazität aus den aktuellen Upgrade-Stufen neu —
@@ -137,6 +141,7 @@ func sell_all() -> int:
 		earned += _price(c)
 	coins += earned
 	state_changed.emit()
+	progress_changed.emit()
 	return earned
 
 func sell_one(index: int) -> int:
@@ -149,6 +154,7 @@ func sell_one(index: int) -> int:
 	var earned := _price(c)
 	coins += earned
 	state_changed.emit()
+	progress_changed.emit()
 	return earned
 
 func toggle_favorite(index: int) -> void:
@@ -212,4 +218,5 @@ func travel_to(id: StringName) -> bool:
 	ctx.zone = z
 	sim = FishingSim.new()
 	state_changed.emit()
+	progress_changed.emit()
 	return true

@@ -17,7 +17,7 @@ func _row(u: UpgradeData) -> Control:
 
 	var detail := Label.new()
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail.text = "%s\nJetzt %.0f → danach %.0f" % [u.description, u.value_at(level), u.value_at(level + 1)]
+	detail.text = "%s\nJetzt %.0f → danach %.0f" % [u.description, Game.upgrade_value(u.id), u.value_at(level + 1)]
 	box.add_child(detail)
 
 	var buy := Button.new()
@@ -26,7 +26,7 @@ func _row(u: UpgradeData) -> Control:
 		buy.text = "Maximum erreicht"
 		buy.disabled = true
 	else:
-		var cost := u.cost_at(level)
+		var cost := Game.upgrade_cost(u.id)
 		buy.text = "Ausbauen  %d Münzen" % cost
 		buy.disabled = Game.coins < cost
 		buy.pressed.connect(func() -> void: Game.buy_upgrade(u.id))

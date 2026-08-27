@@ -37,22 +37,10 @@ func set_cosmetics(c: Dictionary) -> void:
 func _set_layer(name: String, index: int) -> void:
 	var sprite: Sprite2D = get_node(name)
 	var path := "res://assets/art/%s_%d.png" % [TEX_PREFIX[name], index]
-	var tex := _load_texture(path)
+	var tex := TextureLoader.load_texture(path)
 	if tex != null:
 		sprite.texture = tex
 	sprite.frame = _frame
-
-## Läuft ohne Import-Schritt: die Editor-Ressourcenimportierer stürzen in
-## dieser Umgebung ab, daher werden Sprites als Image statt als Texture2D-
-## Ressource geladen (siehe tests/test_sprite_assets.gd).
-func _load_texture(path: String) -> Texture2D:
-	var full_path := ProjectSettings.globalize_path(path)
-	if not FileAccess.file_exists(full_path):
-		return null
-	var img := Image.load_from_file(full_path)
-	if img == null or img.is_empty():
-		return null
-	return ImageTexture.create_from_image(img)
 
 func _tint_hair(color_index: int) -> void:
 	var sprite: Sprite2D = $Hair

@@ -15,8 +15,15 @@ var pending_offline: Dictionary = {}
 var _autosave_timer: float = 0.0
 
 func _ready() -> void:
+	if not Game.progress_changed.is_connected(_on_progress_changed):
+		Game.progress_changed.connect(_on_progress_changed)
 	if has_save():
 		load_game()
+
+## Verkauf, Upgrade-Kauf und Zonenwechsel lösen sofort einen Save aus, statt
+## auf den 60-s-Takt zu warten -- siehe Spec §11.1.
+func _on_progress_changed() -> void:
+	save()
 
 func _process(delta: float) -> void:
 	_autosave_timer += delta

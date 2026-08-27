@@ -66,6 +66,37 @@ func test_missing_file_loads_nothing() -> void:
 	assert_false(SaveManager.load_game())
 	_restore_path(original)
 
+# --- I3: Autosave nach Verkauf, Upgrade und Zonenwechsel (Game.progress_changed) --
+
+func test_selling_triggers_an_autosave() -> void:
+	var original := _use_test_path()
+	SaveManager.delete_save()
+	Game.new_game()
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.3, 4, false))
+	Game.sell_all()
+	assert_true(SaveManager.has_save(), "Verkauf muss sofort speichern, nicht erst nach 60 s")
+	_restore_path(original)
+
+func test_buying_an_upgrade_triggers_an_autosave() -> void:
+	var original := _use_test_path()
+	SaveManager.delete_save()
+	Game.new_game()
+	Game.coins = 1000
+	Game.buy_upgrade(&"rod_power")
+	assert_true(SaveManager.has_save(), "Upgrade-Kauf muss sofort speichern")
+	_restore_path(original)
+
+func test_traveling_triggers_an_autosave() -> void:
+	var original := _use_test_path()
+	Game.new_game()
+	Game.coins = 100000
+	Game.ctx.player_level = 99
+	Game.unlock_zone(&"sunset_coast")
+	SaveManager.delete_save()  # unlock_zone loest keinen Autosave aus, nur travel_to
+	Game.travel_to(&"sunset_coast")
+	assert_true(SaveManager.has_save(), "Zonenwechsel muss sofort speichern")
+	_restore_path(original)
+
 func test_migration_fills_a_missing_field() -> void:
 	var old := {"save_version": 0, "coins": 42}
 	var migrated := SaveManager.migrate(old)

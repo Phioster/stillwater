@@ -14,8 +14,7 @@ func refresh() -> void:
 
 		for f in fish:
 			if f.is_secret and not Game.ctx.journal.is_discovered(f.id):
-				if Game.ctx.journal.has_any_secret():
-					add_child(_locked(f))
+				add_child(_locked(f))
 				continue
 			add_child(_entry(f))
 
@@ -29,14 +28,7 @@ func _entry(f: FishData) -> Control:
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var suffix := "" if known else "_silhouette"
-	# PNGs haben auf diesem Gerät keinen Import-Cache; load() würde daran
-	# scheitern (siehe WORKFLOW.md), deshalb Image.load_from_file() wie in
-	# angler.gd und world.gd.
-	var full_path := ProjectSettings.globalize_path("res://assets/art/fish_%s%s.png" % [f.id, suffix])
-	if FileAccess.file_exists(full_path):
-		var img := Image.load_from_file(full_path)
-		if img != null and not img.is_empty():
-			icon.texture = ImageTexture.create_from_image(img)
+	icon.texture = TextureLoader.load_texture("res://assets/art/fish_%s%s.png" % [f.id, suffix])
 	row.add_child(icon)
 
 	var label := Label.new()
@@ -44,9 +36,9 @@ func _entry(f: FishData) -> Control:
 	if known:
 		var e := Game.ctx.journal.entry(f.id)
 		var shiny := "  ✦" if bool(e["shiny_found"]) else ""
-		label.text = "%s%s\n%dx · beste %s · %.2f–%.2f kg" % [
+		label.text = "%s%s\n%dx · beste %s · Level %d · %.2f–%.2f kg" % [
 			f.display_name, shiny, int(e["caught_count"]),
-			FishRoll.QUALITY_NAMES[int(e["best_quality"])],
+			FishRoll.QUALITY_NAMES[int(e["best_quality"])], int(e["fish_level"]),
 			float(e["worst_weight"]), float(e["best_weight"])
 		]
 		label.modulate = Game.ctx.rarity_of(f).color

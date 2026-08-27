@@ -9,7 +9,7 @@ func _ready() -> void:
 		Game.state_changed.connect(_on_state_changed)
 	if not visibility_changed.is_connected(_on_visibility_changed):
 		visibility_changed.connect(_on_visibility_changed)
-	if visible:
+	if is_visible_in_tree():
 		refresh()
 
 func _exit_tree() -> void:
@@ -17,11 +17,11 @@ func _exit_tree() -> void:
 		Game.state_changed.disconnect(_on_state_changed)
 
 func _on_state_changed() -> void:
-	if visible:
+	if is_visible_in_tree():
 		refresh()
 
 func _on_visibility_changed() -> void:
-	if visible:
+	if is_visible_in_tree():
 		refresh()
 
 ## Von jedem Panel überschrieben.

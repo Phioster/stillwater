@@ -67,8 +67,10 @@ berechnet (`core/economy.gd`): Grundwert × Raritäts-Multiplikator ×
 Qualitäts-Multiplikator × (0.5 + Perzentil) × Shiny-Multiplikator (4.0,
 falls zutreffend) × Consumable-Bonus. Nirgendwo sonst im Projekt wird
 ein Preis gerechnet. Upgrade-Kosten sind eine eigene Formel in
-`UpgradeData.cost_at()` (`resources/upgrade_data.gd`), Köderpreise
-laufen über `Game.bait_cost()` (`autoload/Game.gd`). Spec §6.5, §6.7.
+`UpgradeData.cost_at()` (`resources/upgrade_data.gd`), abgefragt
+ausschließlich über `Game.upgrade_cost()`/`Game.upgrade_value()` — auch
+das Upgrade-Panel rechnet nicht selbst. Köderpreise laufen genauso
+gebündelt über `Game.bait_cost()` (`autoload/Game.gd`). Spec §6.5, §6.7.
 
 ## Fortschritt
 
