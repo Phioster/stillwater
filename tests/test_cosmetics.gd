@@ -33,9 +33,8 @@ func test_validate_catches_a_category_missing_variant_zero() -> void:
 	fake.category = &"skin"
 	fake.variant = 7
 	Database.cosmetics[&"fake_broken_only"] = fake
-	# skin behaelt seine echte Variante 0 -- der Fehler muss stattdessen von der
-	# doppelten Kombinationspruefung unabhaengig eine fehlende Variante 0 fuer
-	# eine ganz neue Kategorie erkennen.
+	# skin behaelt seine echte Variante 0 -- die fehlende muss von einer
+	# ganz neuen Kategorie kommen, unabhaengig von der Dopplungspruefung.
 	var lonely := CosmeticData.new()
 	lonely.id = &"lonely_1"
 	lonely.category = &"lonely_category"
@@ -159,3 +158,56 @@ func test_buying_a_cosmetic_triggers_an_autosave() -> void:
 	assert_true(SaveManager.has_save(), "ein Kauf muss sofort speichern")
 	SaveManager.delete_save()
 	SaveManager.SAVE_PATH = original
+
+# --- Review-Fix: cosmetic_state() als einzige Regelquelle ------------------
+
+func test_cosmetic_state_unknown_for_missing_combo() -> void:
+	_fresh()
+	assert_eq(Game.cosmetic_state(&"hat", 99), Game.CosmeticState.UNKNOWN)
+
+func test_cosmetic_state_owned_for_variant_zero() -> void:
+	_fresh()
+	assert_eq(Game.cosmetic_state(&"hat", 0), Game.CosmeticState.OWNED)
+
+func test_cosmetic_state_locked_level_before_locked_coins() -> void:
+	_fresh()
+	Game.coins = 0
+	Game.ctx.player_level = 1
+	assert_eq(Game.cosmetic_state(&"hat", 2), Game.CosmeticState.LOCKED_LEVEL)
+
+func test_cosmetic_state_locked_coins_once_level_is_reached() -> void:
+	_fresh()
+	Game.coins = 0
+	Game.ctx.player_level = 10
+	assert_eq(Game.cosmetic_state(&"hat", 1), Game.CosmeticState.LOCKED_COINS)
+
+func test_cosmetic_state_buyable_with_level_and_coins() -> void:
+	_fresh()
+	Game.coins = 100000
+	Game.ctx.player_level = 10
+	assert_eq(Game.cosmetic_state(&"hat", 1), Game.CosmeticState.BUYABLE)
+
+func test_cosmetic_state_owned_after_purchase() -> void:
+	_fresh()
+	Game.coins = 100000
+	Game.ctx.player_level = 10
+	Game.buy_cosmetic(&"hat", 1)
+	assert_eq(Game.cosmetic_state(&"hat", 1), Game.CosmeticState.OWNED)
+
+# --- Review-Fix: Variante 0 muss wirklich kostenlos und erreichbar sein ----
+
+func test_validate_catches_a_priced_variant_zero() -> void:
+	var priced_zero := CosmeticData.new()
+	priced_zero.id = &"skin_zero_broken"
+	priced_zero.category = &"skin"
+	priced_zero.variant = 0
+	priced_zero.cost = 100
+	var real_skin_zero: CosmeticData = Database.cosmetics[&"skin_0"]
+	Database.cosmetics[&"skin_0"] = priced_zero
+	var problems := Database.validate()
+	Database.cosmetics[&"skin_0"] = real_skin_zero
+	var found := false
+	for p in problems:
+		if "skin" in p and "kostenlos" in p:
+			found = true
+	assert_true(found, "eine bepreiste Variante 0 muss gemeldet werden")

@@ -239,9 +239,25 @@ func travel_to(id: StringName) -> bool:
 
 # --- Kosmetik -----------------------------------------------------------------
 
+enum CosmeticState { UNKNOWN, OWNED, LOCKED_LEVEL, LOCKED_COINS, BUYABLE }
+
 func owns_cosmetic(category: StringName, variant: int) -> bool:
 	var owned: Array = owned_cosmetics.get(String(category), [])
 	return variant in owned
+
+## Einzige Stelle, die die Freischaltregel kennt -- buy_cosmetic() entscheidet
+## danach, das Charakter-Panel zeigt danach an. Keine zweite Kopie der Regel.
+func cosmetic_state(category: StringName, variant: int) -> CosmeticState:
+	var c: CosmeticData = Database.cosmetic_of(category, variant)
+	if c == null:
+		return CosmeticState.UNKNOWN
+	if owns_cosmetic(category, variant):
+		return CosmeticState.OWNED
+	if ctx.player_level < c.unlock_level:
+		return CosmeticState.LOCKED_LEVEL
+	if coins < c.cost:
+		return CosmeticState.LOCKED_COINS
+	return CosmeticState.BUYABLE
 
 ## Einzige Stelle, die den Kosmetik-Preis kennt -- buy_cosmetic() und das
 ## Charakter-Panel fragen beide hier ab statt selbst zu rechnen.
@@ -250,11 +266,9 @@ func cosmetic_cost(category: StringName, variant: int) -> int:
 	return c.cost if c != null else 0
 
 func buy_cosmetic(category: StringName, variant: int) -> bool:
+	if cosmetic_state(category, variant) != CosmeticState.BUYABLE:
+		return false
 	var c: CosmeticData = Database.cosmetic_of(category, variant)
-	if c == null or owns_cosmetic(category, variant):
-		return false
-	if ctx.player_level < c.unlock_level or coins < c.cost:
-		return false
 	var key := String(category)
 	var owned: Array = owned_cosmetics.get(key, [])
 	owned.append(variant)

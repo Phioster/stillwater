@@ -1,8 +1,7 @@
 extends TestCase
 
-## Reihenfolge folgt character_panel.gd::SLOTS: skin, hair, hair_color,
-## shirt, pants, hat -- Kindindex 0 ist der Hinweistext, danach eine Zeile
-## pro Kategorie.
+## Reihenfolge folgt character_panel.gd::SLOTS. Kindindex 0 ist der
+## Hinweistext, HAT_ROW_INDEX zeigt auf die letzte Kategoriezeile.
 const HAT_ROW_INDEX := 6
 
 func _panel() -> PanelBase:

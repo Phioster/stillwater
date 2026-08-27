@@ -112,11 +112,22 @@ func deserialize(raw: Dictionary) -> void:
 	Game.cosmetics = (d["cosmetics"] as Dictionary).duplicate()
 	Game.ctx.cosmetics = Game.cosmetics
 	Game.owned_cosmetics = (d["owned_cosmetics"] as Dictionary).duplicate(true)
+	_own_the_worn_cosmetics()
 	Game.rng.set_state(int(d["rng_state"]))
 	Game.apply_upgrades()
 
 	_run_offline(int(d["last_seen_unix"]))
 	Game.state_changed.emit()
+
+## Ein Stand von vor Task 20 trug Varianten, ohne sie zu "besitzen" -- ohne
+## das hier wuerde das Laden eine Variante zeigen, die dem Spieler nicht gehoert.
+func _own_the_worn_cosmetics() -> void:
+	for category in Game.cosmetics:
+		var variant := int(Game.cosmetics[category])
+		var owned: Array = Game.owned_cosmetics.get(category, [0])
+		if not owned.has(variant):
+			owned.append(variant)
+			Game.owned_cosmetics[category] = owned
 
 func _run_offline(last_seen: int) -> void:
 	var elapsed := float(int(Time.get_unix_time_from_system()) - last_seen)
@@ -258,8 +269,7 @@ func _safe_int_map(v, fallback: Dictionary) -> Dictionary:
 	return out
 
 ## Bringt owned_cosmetics auf Kategorie -> Array[int]. Ein alter Stand ohne
-## das Feld, oder eine Kategorie darin, bekommt "nur Variante 0" -- die darf
-## nie fehlen, sonst würde ein Anziehversuch der Grundvariante scheitern.
+## das Feld -- oder eine kaputte Kategorie darin -- bekommt "nur Variante 0".
 func _safe_owned_cosmetics(v, fallback: Dictionary) -> Dictionary:
 	var out := {}
 	if typeof(v) == TYPE_DICTIONARY:

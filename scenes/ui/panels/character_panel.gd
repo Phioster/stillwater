@@ -45,36 +45,36 @@ func _variant_count(category: StringName) -> int:
 			count += 1
 	return count
 
-## Preis und Sperrgrund kommen ausschliesslich aus Game.cosmetic_cost() und
-## Game.owns_cosmetic() -- das Panel rechnet nicht selbst.
+## Preis und Sperrgrund kommen ausschliesslich aus Game.cosmetic_state() --
+## das Panel rechnet die Freischaltregel nicht selbst nach.
 func _variant_button(category: StringName, variant: int, current: int) -> Button:
 	var c: CosmeticData = Database.cosmetic_of(category, variant)
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(0, 96)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var display_name := c.display_name if c != null else str(variant + 1)
-
-	if Game.owns_cosmetic(category, variant):
-		b.toggle_mode = true
-		b.button_pressed = (variant == current)
-		b.text = "%s\n(gekauft)" % display_name
-		b.pressed.connect(_wear.bind(category, variant))
-		return b
-
 	var cost := Game.cosmetic_cost(category, variant)
-	var reason := "nicht verfügbar"
-	var affordable := false
-	if c != null:
-		if Game.ctx.player_level < c.unlock_level:
-			reason = "Stufe %d nötig" % c.unlock_level
-		elif Game.coins < cost:
-			reason = "zu wenig Münzen"
-		else:
-			reason = "kaufen"
-			affordable = true
-	b.text = "%s\n%d Münzen – %s" % [display_name, cost, reason]
-	b.disabled = not affordable
-	b.pressed.connect(_buy.bind(category, variant))
+
+	match Game.cosmetic_state(category, variant):
+		Game.CosmeticState.OWNED:
+			b.toggle_mode = true
+			b.button_pressed = (variant == current)
+			b.text = "%s\n(gekauft)" % display_name
+			b.pressed.connect(_wear.bind(category, variant))
+		Game.CosmeticState.LOCKED_LEVEL:
+			b.text = "%s\n%d Münzen – Stufe %d nötig" % [display_name, cost, c.unlock_level]
+			b.disabled = true
+			b.pressed.connect(_buy.bind(category, variant))
+		Game.CosmeticState.LOCKED_COINS:
+			b.text = "%s\n%d Münzen – zu wenig Münzen" % [display_name, cost]
+			b.disabled = true
+			b.pressed.connect(_buy.bind(category, variant))
+		Game.CosmeticState.BUYABLE:
+			b.text = "%s\n%d Münzen – kaufen" % [display_name, cost]
+			b.pressed.connect(_buy.bind(category, variant))
+		_:
+			b.text = "%s\nnicht verfügbar" % display_name
+			b.disabled = true
 	return b
 
 func _wear(category: StringName, variant: int) -> void:

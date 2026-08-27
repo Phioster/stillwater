@@ -143,6 +143,9 @@ func validate() -> Array[String]:
 			if not FileAccess.file_exists(sprite_path):
 				problems.append("Kosmetik %s zeigt auf fehlendes Sprite %s" % [c.id, sprite_path])
 	for category in categories_seen:
-		if cosmetic_of(category, 0) == null:
+		var zero := cosmetic_of(category, 0)
+		if zero == null:
 			problems.append("Kategorie %s hat keine Variante 0" % category)
+		elif zero.cost != 0 or zero.unlock_level > 1:
+			problems.append("Variante 0 von %s muss kostenlos und ab Stufe 1 verfuegbar sein" % category)
 	return problems

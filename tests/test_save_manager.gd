@@ -320,3 +320,15 @@ func test_migrate_sanitizes_a_wrongly_typed_owned_cosmetics_entry() -> void:
 	Game.new_game()
 	SaveManager.deserialize(broken)
 	assert_true(Game.owns_cosmetic(&"shirt", 1))
+
+func test_legacy_save_without_owned_cosmetics_grants_ownership_of_the_worn_variant() -> void:
+	var raw := {
+		"save_version": 1,
+		"coins": 10,
+		"cosmetics": {"skin": 0, "hair": 2, "hair_color": 0, "shirt": 0, "pants": 1, "hat": 0},
+	}
+	Game.new_game()
+	SaveManager.deserialize(raw)
+	assert_true(Game.owns_cosmetic(&"hair", 2), "eine bereits getragene Variante muss nach dem Laden auch besessen sein")
+	assert_true(Game.owns_cosmetic(&"pants", 1))
+	assert_eq(int(Game.cosmetics["hair"]), 2, "getragen bleibt getragen")
