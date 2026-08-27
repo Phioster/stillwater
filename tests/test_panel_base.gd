@@ -69,3 +69,23 @@ func test_refresh_keeps_the_scroll_position() -> void:
 	assert_eq(scroll.scroll_vertical, before, "nach dem Neuaufbau muss die Ansicht stehen bleiben")
 	tree.root.remove_child(scroll)
 	scroll.free()
+
+## Das Seitenpanel liegt UEBER der Welt. Lag es daneben, schrumpfte das Wasser
+## beim Oeffnen des Menues -- das war als Fehler gemeldet.
+func test_opening_a_tab_does_not_resize_the_world() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	await tree.process_frame
+	await tree.process_frame
+	var world: Control = m.get_node("Row/World")
+	var closed := world.size
+	m.show_tab(0)
+	await tree.process_frame
+	await tree.process_frame
+	assert_eq(world.size, closed, "die Welt darf beim Oeffnen des Menues nicht schrumpfen")
+	var side: Control = m.get_node("SidePanel")
+	assert_true(side.is_visible_in_tree(), "das Panel muss dabei sichtbar sein")
+	assert_true(side.get_global_rect().position.x < world.get_global_rect().end.x,
+		"und es muss ueber der Welt liegen, nicht daneben")
+	m.queue_free()

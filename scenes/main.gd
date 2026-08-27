@@ -3,8 +3,11 @@
 ## kann mitten im Laden gedrillt werden.
 extends Control
 
-@onready var _side: PanelContainer = $Row/SidePanel
-@onready var _panels: Control = $Row/SidePanel/Panels
+const PANEL_WIDTH := 420.0
+const RAIL_WIDTH := 96.0
+
+@onready var _side: PanelContainer = $SidePanel
+@onready var _panels: Control = $SidePanel/Panels
 @onready var _rail = $Row/TabRail
 
 func _ready() -> void:
@@ -16,23 +19,6 @@ func _ready() -> void:
 		get_viewport().size_changed.connect(_apply_safe_area)
 	show_tab(-1)
 
-
-## Auswertung wieder entfernt.
-func _diagnose_rects() -> void:
-	await get_tree().create_timer(2.0).timeout
-	var paths := ["Row", "Row/World", "Row/World/CatchView", "Row/World/CatchView/Panel", "Row/World/CatchView/Orbs", "Row/SidePanel", "Row/TabRail", "Hud"]
-	print("DIAG viewport=", get_viewport_rect().size, " main=", size,
-		" safe=", DisplayServer.get_display_safe_area(), " win=", DisplayServer.window_get_size())
-	for p in paths:
-		var n := get_node_or_null(p)
-		if n is Control:
-			var c: Control = n
-			print("DIAG ", p, " -> ", c.get_global_rect(),
-				" A=", Vector4(c.anchor_left, c.anchor_top, c.anchor_right, c.anchor_bottom),
-				" O=", Vector4(c.offset_left, c.offset_top, c.offset_right, c.offset_bottom),
-				" min=", c.custom_minimum_size, " sichtbar=", c.is_visible_in_tree())
-		else:
-			print("DIAG ", p, " -> FEHLT")
 
 ## Seitwaerts scrollen ergibt in einem 420 breiten Panel keinen Sinn und
 ## kaempft nur mit dem senkrechten. Die Wischschwelle sagt Godot, ab wann eine
@@ -72,3 +58,10 @@ func _apply_safe_area() -> void:
 	$Row.offset_bottom = -bottom
 	$Hud.offset_left = left + 16.0
 	$Hud.offset_top = top + 16.0
+	# Das Panel liegt UEBER der Welt statt neben ihr -- sonst schrumpfte das
+	# Wasser, sobald man das Menue oeffnet. Es haengt rechts, links neben der
+	# Tab-Leiste, und wandert mit dem sicheren Bereich mit.
+	$SidePanel.offset_left = -(PANEL_WIDTH + RAIL_WIDTH) - right
+	$SidePanel.offset_right = -RAIL_WIDTH - right
+	$SidePanel.offset_top = top
+	$SidePanel.offset_bottom = -bottom

@@ -28,67 +28,72 @@ theme_override_constants/separation = 0
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.5
 
-[node name="SidePanel" type="PanelContainer" parent="Row"]
-custom_minimum_size = Vector2(420, 0)
+[node name="TabRail" parent="Row" instance=ExtResource("4")]
+
+[node name="SidePanel" type="PanelContainer" parent="."]
 visible = false
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -516.0
+offset_right = -96.0
 
-[node name="Panels" type="Control" parent="Row/SidePanel"]
+[node name="Panels" type="Control" parent="SidePanel"]
 
-[node name="FishScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+[node name="FishScroll" type="ScrollContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="FishPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/FishScroll"]
+[node name="FishPanel" type="VBoxContainer" parent="SidePanel/Panels/FishScroll"]
 size_flags_horizontal = 3
 script = ExtResource("5")
 
-[node name="JournalScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+[node name="JournalScroll" type="ScrollContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="JournalPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/JournalScroll"]
+[node name="JournalPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalScroll"]
 size_flags_horizontal = 3
 script = ExtResource("6")
 
-[node name="ShopScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+[node name="ShopScroll" type="ScrollContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="ShopPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/ShopScroll"]
+[node name="ShopPanel" type="VBoxContainer" parent="SidePanel/Panels/ShopScroll"]
 size_flags_horizontal = 3
 script = ExtResource("7")
 
-[node name="UpgradeScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+[node name="UpgradeScroll" type="ScrollContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="UpgradePanel" type="VBoxContainer" parent="Row/SidePanel/Panels/UpgradeScroll"]
+[node name="UpgradePanel" type="VBoxContainer" parent="SidePanel/Panels/UpgradeScroll"]
 size_flags_horizontal = 3
 script = ExtResource("8")
 
-[node name="WorldScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+[node name="WorldScroll" type="ScrollContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="WorldPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/WorldScroll"]
+[node name="WorldPanel" type="VBoxContainer" parent="SidePanel/Panels/WorldScroll"]
 size_flags_horizontal = 3
 script = ExtResource("9")
 
-[node name="CharacterScroll" type="ScrollContainer" parent="Row/SidePanel/Panels"]
+[node name="CharacterScroll" type="ScrollContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="CharacterPanel" type="VBoxContainer" parent="Row/SidePanel/Panels/CharacterScroll"]
+[node name="CharacterPanel" type="VBoxContainer" parent="SidePanel/Panels/CharacterScroll"]
 size_flags_horizontal = 3
 script = ExtResource("10")
-
-[node name="TabRail" parent="Row" instance=ExtResource("4")]
 
 [node name="Hud" parent="." instance=ExtResource("3")]
 offset_left = 16.0
