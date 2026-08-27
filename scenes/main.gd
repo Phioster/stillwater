@@ -14,6 +14,21 @@ func _ready() -> void:
 	if not get_viewport().size_changed.is_connected(_apply_safe_area):
 		get_viewport().size_changed.connect(_apply_safe_area)
 	show_tab(-1)
+	_diagnose_rects()
+
+## VORUEBERGEHEND: misst die echten Rechtecke auf dem Geraet. Wird nach der
+## Auswertung wieder entfernt.
+func _diagnose_rects() -> void:
+	await get_tree().create_timer(2.0).timeout
+	var paths := ["Row", "Row/World", "Row/World/CatchView", "Row/World/CatchView/Panel", "Row/World/CatchView/Orbs", "Row/SidePanel", "Row/TabRail", "Hud"]
+	print("DIAG viewport=", get_viewport_rect().size, " main=", size,
+		" safe=", DisplayServer.get_display_safe_area(), " win=", DisplayServer.window_get_size())
+	for p in paths:
+		var n := get_node_or_null(p)
+		if n is Control:
+			print("DIAG ", p, " -> ", (n as Control).get_global_rect(), " sichtbar=", (n as Control).is_visible_in_tree())
+		else:
+			print("DIAG ", p, " -> FEHLT")
 
 ## Blendet genau ein Panel ein. -1 schließt alle. Ein Index außerhalb der
 ## vorhandenen Panels wirkt wie -1: alles bleibt zu, statt abzustürzen.
