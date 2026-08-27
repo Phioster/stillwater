@@ -26,7 +26,11 @@ func _diagnose_rects() -> void:
 	for p in paths:
 		var n := get_node_or_null(p)
 		if n is Control:
-			print("DIAG ", p, " -> ", (n as Control).get_global_rect(), " sichtbar=", (n as Control).is_visible_in_tree())
+			var c: Control = n
+			print("DIAG ", p, " -> ", c.get_global_rect(),
+				" A=", Vector4(c.anchor_left, c.anchor_top, c.anchor_right, c.anchor_bottom),
+				" O=", Vector4(c.offset_left, c.offset_top, c.offset_right, c.offset_bottom),
+				" min=", c.custom_minimum_size, " sichtbar=", c.is_visible_in_tree())
 		else:
 			print("DIAG ", p, " -> FEHLT")
 
