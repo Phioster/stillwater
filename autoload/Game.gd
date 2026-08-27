@@ -3,8 +3,9 @@
 extends Node
 
 signal state_changed
-## Feuert genau nach Verkauf, Upgrade-Kauf und Zonenwechsel -- SaveManager
-## hängt den Autosave hier ein, statt dass jede Aktion save() selbst ruft.
+## Feuert genau nach Verkauf, Upgrade-Kauf, Köderkauf und Zonenwechsel --
+## SaveManager hängt den Autosave hier ein, statt dass jede Aktion save()
+## selbst ruft.
 signal progress_changed
 signal bite(fish: FishData)
 signal caught(fish_caught: CaughtFish, fish: FishData)
@@ -185,6 +186,7 @@ func buy_bait(id: StringName, amount: int) -> bool:
 	ctx.bait_counts[id] = int(ctx.bait_counts.get(id, 0)) + amount
 	coins -= cost
 	state_changed.emit()
+	progress_changed.emit()
 	return true
 
 func set_active_bait(id: StringName) -> void:

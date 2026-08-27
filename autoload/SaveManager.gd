@@ -20,8 +20,8 @@ func _ready() -> void:
 	if has_save():
 		load_game()
 
-## Verkauf, Upgrade-Kauf und Zonenwechsel lösen sofort einen Save aus, statt
-## auf den 60-s-Takt zu warten -- siehe Spec §11.1.
+## Verkauf, Upgrade-Kauf, Köderkauf und Zonenwechsel lösen sofort einen Save
+## aus, statt auf den 60-s-Takt zu warten -- siehe Spec §11.1.
 func _on_progress_changed() -> void:
 	save()
 

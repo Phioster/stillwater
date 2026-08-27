@@ -86,6 +86,15 @@ func test_buying_an_upgrade_triggers_an_autosave() -> void:
 	assert_true(SaveManager.has_save(), "Upgrade-Kauf muss sofort speichern")
 	_restore_path(original)
 
+func test_buying_bait_triggers_an_autosave() -> void:
+	var original := _use_test_path()
+	SaveManager.delete_save()
+	Game.new_game()
+	Game.coins = 10000
+	Game.buy_bait(&"mayfly_nymph", 10)
+	assert_true(SaveManager.has_save(), "Köderkauf muss sofort speichern")
+	_restore_path(original)
+
 func test_traveling_triggers_an_autosave() -> void:
 	var original := _use_test_path()
 	Game.new_game()
