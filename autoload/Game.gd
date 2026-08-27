@@ -44,6 +44,14 @@ func new_game() -> void:
 	unlocked_zones = [&"willow_lake"]
 	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0}
 
+	# Fehlen die Daten, bricht der Aufbau sonst mitten drin ab und hinterlaesst
+	# ein ctx ohne Inventar -- worauf die Simulation in JEDEM Frame scheitert.
+	# Lieber gar kein ctx als ein halbes.
+	if not Database.zones.has(&"willow_lake") or Database.basic_bait() == null:
+		push_error("Spieldaten fehlen, kein neues Spiel moeglich")
+		ctx = null
+		return
+
 	ctx = SimContext.new()
 	ctx.zone = Database.zones[&"willow_lake"]
 	ctx.fallback_bait = Database.basic_bait()

@@ -37,14 +37,24 @@ func _load_folder(path: String) -> Dictionary:
 		push_error("Datenordner fehlt: %s" % path)
 		return out
 	for file in dir.get_files():
-		if not file.ends_with(".tres"):
+		var name := resource_name_of(file)
+		if name == "":
 			continue
-		var res: Resource = load(path.path_join(file))
+		var res: Resource = load(path.path_join(name))
 		if res == null or not ("id" in res):
 			push_error("unbrauchbare Datendatei: %s" % file)
 			continue
 		out[res.id] = res
 	return out
+
+## Im Quellbaum heissen die Daten "x.tres", in der exportierten APK legt Godot
+## Umleitungsdateien "x.tres.remap" an. Beide muessen zum selben Ergebnis
+## fuehren, sonst laedt im Export keine einzige Datei.
+static func resource_name_of(file: String) -> String:
+	var name := file
+	if name.ends_with(".remap"):
+		name = name.trim_suffix(".remap")
+	return name if name.ends_with(".tres") else ""
 
 func all_fish() -> Array[FishData]:
 	var out: Array[FishData] = []
