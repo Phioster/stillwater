@@ -52,6 +52,9 @@ func _variant_button(category: StringName, variant: int, current: int) -> Button
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(0, 96)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Ohne das waechst die Mindestbreite mit dem Text: drei Knoepfe nebeneinander
+	# brauchten 550 statt der 420, die das Seitenpanel breit ist.
+	b.clip_text = true
 	var display_name := c.display_name if c != null else str(variant + 1)
 	var cost := Game.cosmetic_cost(category, variant)
 
@@ -59,14 +62,14 @@ func _variant_button(category: StringName, variant: int, current: int) -> Button
 		Game.CosmeticState.OWNED:
 			b.toggle_mode = true
 			b.button_pressed = (variant == current)
-			b.text = "%s\n(gekauft)" % display_name
+			b.text = "%s\n✓" % display_name
 			b.pressed.connect(_wear.bind(category, variant))
 		Game.CosmeticState.LOCKED_LEVEL:
-			b.text = "%s\n%d Münzen – Stufe %d nötig" % [display_name, cost, c.unlock_level]
+			b.text = "%s\n%d ⨀ · Stufe %d" % [display_name, cost, c.unlock_level]
 			b.disabled = true
 			b.pressed.connect(_buy.bind(category, variant))
 		Game.CosmeticState.LOCKED_COINS:
-			b.text = "%s\n%d Münzen – zu wenig Münzen" % [display_name, cost]
+			b.text = "%s\n%d ⨀" % [display_name, cost]
 			b.disabled = true
 			b.pressed.connect(_buy.bind(category, variant))
 		Game.CosmeticState.BUYABLE:

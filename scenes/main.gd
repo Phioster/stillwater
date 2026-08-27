@@ -10,6 +10,7 @@ extends Control
 func _ready() -> void:
 	if not _rail.tab_selected.is_connected(show_tab):
 		_rail.tab_selected.connect(show_tab)
+	_setup_scrolling()
 	_apply_safe_area()
 	if not get_viewport().size_changed.is_connected(_apply_safe_area):
 		get_viewport().size_changed.connect(_apply_safe_area)
@@ -32,6 +33,17 @@ func _diagnose_rects() -> void:
 				" min=", c.custom_minimum_size, " sichtbar=", c.is_visible_in_tree())
 		else:
 			print("DIAG ", p, " -> FEHLT")
+
+## Seitwaerts scrollen ergibt in einem 420 breiten Panel keinen Sinn und
+## kaempft nur mit dem senkrechten. Die Wischschwelle sagt Godot, ab wann eine
+## Bewegung ein Scrollen ist und kein Tippen.
+func _setup_scrolling() -> void:
+	for child in _panels.get_children():
+		if child is ScrollContainer:
+			var sc: ScrollContainer = child
+			sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+			sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+			sc.scroll_deadzone = 8
 
 ## Blendet genau ein Panel ein. -1 schließt alle. Ein Index außerhalb der
 ## vorhandenen Panels wirkt wie -1: alles bleibt zu, statt abzustürzen.
