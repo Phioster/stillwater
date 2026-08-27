@@ -23,6 +23,9 @@ var coins: int = 0:
 var upgrade_levels: Dictionary = {}
 var unlocked_zones: Array[StringName] = []
 var cosmetics: Dictionary = {}
+## Kategorie (String) -> Array der besessenen Varianten. Variante 0 jeder
+## Kategorie ist immer dabei, siehe new_game().
+var owned_cosmetics: Dictionary = {}
 
 var sim: FishingSim
 var ctx: SimContext
@@ -43,6 +46,9 @@ func new_game() -> void:
 	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"bait_capacity": 0}
 	unlocked_zones = [&"willow_lake"]
 	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0}
+	owned_cosmetics = {}
+	for category in cosmetics:
+		owned_cosmetics[category] = [0]
 
 	# Fehlen die Daten, bricht der Aufbau sonst mitten drin ab und hinterlaesst
 	# ein ctx ohne Inventar -- worauf die Simulation in JEDEM Frame scheitert.
@@ -229,4 +235,40 @@ func travel_to(id: StringName) -> bool:
 	sim = FishingSim.new()
 	state_changed.emit()
 	progress_changed.emit()
+	return true
+
+# --- Kosmetik -----------------------------------------------------------------
+
+func owns_cosmetic(category: StringName, variant: int) -> bool:
+	var owned: Array = owned_cosmetics.get(String(category), [])
+	return variant in owned
+
+## Einzige Stelle, die den Kosmetik-Preis kennt -- buy_cosmetic() und das
+## Charakter-Panel fragen beide hier ab statt selbst zu rechnen.
+func cosmetic_cost(category: StringName, variant: int) -> int:
+	var c: CosmeticData = Database.cosmetic_of(category, variant)
+	return c.cost if c != null else 0
+
+func buy_cosmetic(category: StringName, variant: int) -> bool:
+	var c: CosmeticData = Database.cosmetic_of(category, variant)
+	if c == null or owns_cosmetic(category, variant):
+		return false
+	if ctx.player_level < c.unlock_level or coins < c.cost:
+		return false
+	var key := String(category)
+	var owned: Array = owned_cosmetics.get(key, [])
+	owned.append(variant)
+	owned_cosmetics[key] = owned
+	coins -= c.cost
+	state_changed.emit()
+	progress_changed.emit()
+	return true
+
+## Zieht nur an, was owns_cosmetic() bereits bestätigt -- kein Wechsel ohne Besitz.
+func set_cosmetic(category: StringName, variant: int) -> bool:
+	if not owns_cosmetic(category, variant):
+		return false
+	cosmetics[String(category)] = variant
+	ctx.cosmetics = cosmetics
+	state_changed.emit()
 	return true

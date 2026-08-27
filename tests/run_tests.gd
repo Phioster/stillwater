@@ -16,6 +16,8 @@ const SUITES := [
 	"res://tests/test_game_actions.gd",
 	"res://tests/test_panel_base.gd",
 	"res://tests/test_upgrade_panel.gd",
+	"res://tests/test_cosmetics.gd",
+	"res://tests/test_character_panel.gd",
 	"res://tests/test_save_manager.gd",
 	"res://tests/test_palette.gd",
 	"res://tests/test_project_settings.gd",

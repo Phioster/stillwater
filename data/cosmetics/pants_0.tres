@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_jrbvx"]
+
+[resource]
+script = ExtResource("1_jrbvx")
+id = &"pants_0"
+category = &"pants"
+variant = 0
+display_name = "Cargohose"
+cost = 0
+unlock_level = 1

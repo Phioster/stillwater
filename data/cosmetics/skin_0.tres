@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_ucqaj"]
+
+[resource]
+script = ExtResource("1_ucqaj")
+id = &"skin_0"
+category = &"skin"
+variant = 0
+display_name = "Hell"
+cost = 0
+unlock_level = 1

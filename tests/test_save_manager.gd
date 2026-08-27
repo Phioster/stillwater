@@ -263,3 +263,60 @@ func test_cosmetics_do_not_alias_between_saved_blob_and_live_state() -> void:
 	Game.cosmetics["hat"] = 99
 	assert_eq(int(blob["cosmetics"]["hat"]), 3,
 		"der gespeicherte Blob darf sich nicht mitändern, wenn der Live-Zustand danach mutiert")
+
+# --- Task 20: owned_cosmetics -------------------------------------------------
+
+func test_owned_cosmetics_roundtrip() -> void:
+	Game.new_game()
+	Game.coins = 100000
+	Game.ctx.player_level = 10
+	Game.buy_cosmetic(&"hat", 1)
+	Game.buy_cosmetic(&"shirt", 2)
+	var blob := SaveManager.serialize()
+	Game.new_game()
+	SaveManager.deserialize(blob)
+	assert_true(Game.owns_cosmetic(&"hat", 1))
+	assert_true(Game.owns_cosmetic(&"shirt", 2))
+	assert_true(Game.owns_cosmetic(&"skin", 0), "Variante 0 muss auch nach dem Laden gehoeren")
+	assert_false(Game.owns_cosmetic(&"pants", 1), "nicht gekaufte Varianten duerfen nicht auftauchen")
+
+func test_owned_cosmetics_do_not_alias_between_saved_blob_and_live_state() -> void:
+	Game.new_game()
+	Game.coins = 100000
+	Game.ctx.player_level = 10
+	Game.buy_cosmetic(&"hat", 1)
+	var blob := SaveManager.serialize()
+	(blob["owned_cosmetics"]["hat"] as Array).append(2)
+	assert_false(Game.owns_cosmetic(&"hat", 2),
+		"der gespeicherte Blob darf den Live-Besitz nicht rueckwirkend veraendern")
+
+func test_old_save_without_owned_cosmetics_field_grants_only_variant_zero() -> void:
+	var raw := {
+		"save_version": 1,
+		"coins": 10,
+		"cosmetics": {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0},
+	}
+	Game.new_game()
+	SaveManager.deserialize(raw)
+	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants", &"hat"]:
+		assert_true(Game.owns_cosmetic(category, 0))
+		assert_false(Game.owns_cosmetic(category, 1))
+
+func test_migrate_sanitizes_a_wrongly_typed_owned_cosmetics_entry() -> void:
+	var broken := {
+		"save_version": 1,
+		"owned_cosmetics": {"hat": "nicht ein Array", "shirt": [1, "2", 3.0, {"x": 1}]},
+	}
+	var migrated := SaveManager.migrate(broken)
+	var hat_owned: Array = migrated["owned_cosmetics"]["hat"]
+	assert_true(hat_owned.has(0), "ein kaputter Eintrag darf trotzdem Variante 0 behalten")
+	var shirt_owned: Array = migrated["owned_cosmetics"]["shirt"]
+	assert_true(shirt_owned.has(1))
+	assert_true(shirt_owned.has(2))
+	assert_true(shirt_owned.has(3))
+	assert_true(shirt_owned.has(0))
+
+	# Ohne den Fix bricht deserialize() hier ab wie beim fish_inventory-Fall oben.
+	Game.new_game()
+	SaveManager.deserialize(broken)
+	assert_true(Game.owns_cosmetic(&"shirt", 1))

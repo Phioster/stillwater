@@ -68,6 +68,9 @@ func serialize() -> Dictionary:
 		# der gespeicherte Blob teilen (derselbe Aliasing-Fehler wie beim
 		# Journal in Task 6).
 		"cosmetics": Game.cosmetics.duplicate(),
+		# duplicate(true): die Werte sind Arrays (Referenztyp) -- eine flache
+		# Kopie würde nur das Dictionary duplizieren, nicht die Arrays darin.
+		"owned_cosmetics": Game.owned_cosmetics.duplicate(true),
 		"active_consumables": [],
 		"settings": {},
 		"statistics": {},
@@ -108,6 +111,7 @@ func deserialize(raw: Dictionary) -> void:
 	Game.ctx.journal.load_dict(d["journal"])
 	Game.cosmetics = (d["cosmetics"] as Dictionary).duplicate()
 	Game.ctx.cosmetics = Game.cosmetics
+	Game.owned_cosmetics = (d["owned_cosmetics"] as Dictionary).duplicate(true)
 	Game.rng.set_state(int(d["rng_state"]))
 	Game.apply_upgrades()
 
@@ -142,6 +146,7 @@ func migrate(raw: Dictionary) -> Dictionary:
 	d["last_seen_unix"] = _safe_int(raw.get("last_seen_unix"), defaults["last_seen_unix"])
 	d["rng_state"] = _safe_int(raw.get("rng_state"), defaults["rng_state"])
 	d["cosmetics"] = _safe_dict(raw.get("cosmetics"), defaults["cosmetics"])
+	d["owned_cosmetics"] = _safe_owned_cosmetics(raw.get("owned_cosmetics"), defaults["owned_cosmetics"])
 	d["active_consumables"] = _safe_array(raw.get("active_consumables"), [])
 	d["settings"] = _safe_dict(raw.get("settings"), {})
 	d["statistics"] = _safe_dict(raw.get("statistics"), {})
@@ -211,6 +216,7 @@ func _defaults() -> Dictionary:
 		"active_bait": String(Database.basic_bait().id) if Database.basic_bait() != null else "",
 		"journal": {"secret_found": false, "entries": {}},
 		"cosmetics": {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0},
+		"owned_cosmetics": {"skin": [0], "hair": [0], "hair_color": [0], "shirt": [0], "pants": [0], "hat": [0]},
 		"last_seen_unix": int(Time.get_unix_time_from_system()),
 		"rng_state": 0,
 	}
@@ -249,6 +255,27 @@ func _safe_int_map(v, fallback: Dictionary) -> Dictionary:
 	var out := {}
 	for key in v:
 		out[key] = _safe_int(v[key], 0)
+	return out
+
+## Bringt owned_cosmetics auf Kategorie -> Array[int]. Ein alter Stand ohne
+## das Feld, oder eine Kategorie darin, bekommt "nur Variante 0" -- die darf
+## nie fehlen, sonst würde ein Anziehversuch der Grundvariante scheitern.
+func _safe_owned_cosmetics(v, fallback: Dictionary) -> Dictionary:
+	var out := {}
+	if typeof(v) == TYPE_DICTIONARY:
+		for key in v:
+			var variants: Array = []
+			for entry in _safe_array(v[key], []):
+				if typeof(entry) in [TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_BOOL]:
+					var i := _safe_int(entry, -1)
+					if i >= 0 and not variants.has(i):
+						variants.append(i)
+			if not variants.has(0):
+				variants.append(0)
+			out[String(key)] = variants
+	for key in fallback:
+		if not out.has(key):
+			out[key] = (fallback[key] as Array).duplicate()
 	return out
 
 # --- Datei --------------------------------------------------------------------
