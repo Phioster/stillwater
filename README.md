@@ -37,7 +37,7 @@ PROJECT=$HOME/stillwater bash ./tools/godot.sh --script res://tests/run_tests.gd
 ```
 
 Ein `SceneTree`-Skript ohne externes Test-Framework, siehe
-`tests/run_tests.gd`. Stand: 125 Tests, 0 fehlgeschlagen.
+`tests/run_tests.gd`. Stand: 126 Tests, 0 fehlgeschlagen.
 
 ## Inhalte neu erzeugen
 
