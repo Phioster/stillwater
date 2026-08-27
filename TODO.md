@@ -69,3 +69,19 @@ nicht gebaut:
   committet sind und zur Laufzeit nie neu erzeugt werden; ein
   `gen_sprites.gd`-Lauf unter einer anderen Godot-Version könnte aber
   andere Fischfarben liefern als die bereits committeten Bilder.
+
+## Balance-Entscheidung: Rare-Fische zu Beginn nicht landbar
+
+Rare-Fische (Stärke 236–394) und der Secret-Fisch sind mit der Startausrüstung
+rechnerisch nicht zu landen: im 20-Sekunden-Kampffenster sind mit Rod Power 4/s
+und Orb Power 6/Tap maximal rund 218 Schaden möglich.
+
+Das ist **bewusst so** und kein Fehler. Ein Biss auf einen Rare-Fisch endet zu
+Beginn garantiert mit Entkommen — der Spieler sieht, dass es dort etwas gibt,
+das er noch nicht schafft, und die ersten Upgrades machen es erreichbar.
+
+Der Code folgt der Spec exakt. Die Spec selbst ist an dieser Stelle nicht
+widerspruchsfrei (§6.7 gegen §6.3/§6.8/§10); maßgeblich ist diese Entscheidung.
+Falls sich das im Spiel schlecht anfühlt, ist der kleinste Eingriff eine
+Senkung der `strength`-Werte in `data/fish/*.tres` — eine Datenänderung ohne
+Code.
