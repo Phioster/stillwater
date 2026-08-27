@@ -16,6 +16,7 @@ const SUITES := [
 	"res://tests/test_game_actions.gd",
 	"res://tests/test_save_manager.gd",
 	"res://tests/test_palette.gd",
+	"res://tests/test_sprite_assets.gd",
 ]
 
 func _init() -> void:

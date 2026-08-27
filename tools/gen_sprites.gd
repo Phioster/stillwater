@@ -160,7 +160,11 @@ func _fishes() -> void:
 	# get_node statt "Database" direkt: das Einstiegsskript kompiliert
 	# komplett, bevor Autoloads im Baum stehen, sonst Compile-Fehler.
 	var database := root.get_node("Database")
-	for id in database.fish:
+	# Sortiert: Dictionary-Reihenfolge folgt der Ordner-Auflistung des
+	# Dateisystems, die ist nicht garantiert stabil zwischen Geraeten/CI.
+	var ids: Array = database.fish.keys()
+	ids.sort()
+	for id in ids:
 		var f: FishData = database.fish[id]
 		var h := int(String(f.id).hash())
 		var hue := float(absi(h) % 1000) / 1000.0
