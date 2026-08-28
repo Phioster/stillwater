@@ -8,6 +8,7 @@ extends Control
 @onready var _dock: Sprite2D = $Dock
 @onready var _angler: Node2D = $Angler
 @onready var _line: Line2D = $Line
+@onready var _water_line: Line2D = $WaterLine
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
@@ -23,8 +24,25 @@ const CHAR_FEET := 30.0
 ## Rutenspitze im 32x32-Frame bei (31, 6).
 const ROD_TIP := Vector2(31.0, 6.0) * PIXEL_SCALE
 
+## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die
+## gemessenen Kosten pro Frame.
+const WATER_POINTS := 28
+## Wellen-Einheiten (core/water_surface.gd) -> Bildschirmpixel. Bewusst klein:
+## die Grundbewegung soll man suchen muessen, nicht ertragen (GAME_DESIGN.md,
+## "Auffaellig nur, was selten ist").
+const WAVE_SCALE := 3.5
+## Kleiner, laufender Antrieb durchs Wippen des Schwimmers -- daraus entsteht
+## die Stoerung, die von seiner Position nach aussen laeuft.
+const BOBBER_DRIVE := 0.05
+const BITE_KICK := 12.0
+const CATCH_KICK := 20.0
+
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
+var _water := WaterSurface.new(WATER_POINTS)
+## Laeuft immer weiter, anders als _bob_time (das bei jedem Biss auf 0
+## zurueckspringt) -- die Grundbewegung des Wassers darf davon nicht mitreissen.
+var _water_time: float = 0.0
 
 func _ready() -> void:
 	_background.texture = TextureLoader.load_texture("res://assets/art/bg_lake.png")
@@ -33,6 +51,10 @@ func _ready() -> void:
 	_dock.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_water_line.width = 2.0
+	var water_color := Palette.get_color(&"foam")
+	water_color.a = 0.5
+	_water_line.default_color = water_color
 	_layout()
 	if not resized.is_connected(_layout):
 		resized.connect(_layout)
@@ -51,6 +73,8 @@ func _ready() -> void:
 	toast.offset_bottom = 180.0
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)
+	if not Game.caught.is_connected(_on_caught):
+		Game.caught.connect(_on_caught)
 
 
 ## Steg ans Ufer, Figur darauf, Schwimmer aufs Wasser -- aus der Weltgroesse
@@ -86,6 +110,37 @@ func _process(delta: float) -> void:
 		_line.points = PackedVector2Array([_angler.position + ROD_TIP, _bobber.position])
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
 	$CatchView.focus_point = _bobber.position
+	_water_time += delta
+	_water.step(delta)
+	if _bobber.visible:
+		# Ableitung der Bob-Sinuskurve: das Wippen selbst stoesst das Wasser an,
+		# nicht ein fester Takt -- schneller im Kampf, ruhiger beim Warten.
+		var bob_velocity := amplitude * 3.0 * cos(_bob_time * 3.0)
+		_water.disturb_at(_bobber_fraction(), bob_velocity * BOBBER_DRIVE * delta)
+	_update_water_line()
+
+func _update_water_line() -> void:
+	if size.x <= 0.0 or size.y <= 0.0:
+		return
+	var water_y := size.y * WATERLINE
+	var pts := PackedVector2Array()
+	pts.resize(WATER_POINTS)
+	for i in WATER_POINTS:
+		var fraction := float(i) / float(WATER_POINTS - 1)
+		var wave := WaterSurface.ambient_offset(fraction, _water_time) + _water.heights[i]
+		pts[i] = Vector2(size.x * fraction, water_y + wave * WAVE_SCALE)
+	_water_line.points = pts
+
+func _bobber_fraction() -> float:
+	if size.x <= 0.0:
+		return 0.5
+	return clampf(_bobber.position.x / size.x, 0.0, 1.0)
 
 func _on_bite(_fish: FishData) -> void:
 	_bob_time = 0.0
+	_water.disturb_at(_bobber_fraction(), BITE_KICK)
+
+## Keine Spiellogik hier -- nur die Stoerung, die das Aufspritzen zeigt. Die
+## eigentliche Reaktion (Text, Partikel) macht effects.gd auf dasselbe Signal.
+func _on_caught(_c: CaughtFish, _fish: FishData, _discovered: bool, _record: bool) -> void:
+	_water.disturb_at(_bobber_fraction(), CATCH_KICK)

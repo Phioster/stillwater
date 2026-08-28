@@ -19,6 +19,8 @@ anchor_bottom = 1.0
 expand_mode = 1
 stretch_mode = 6
 
+[node name="WaterLine" type="Line2D" parent="."]
+
 [node name="Dock" type="Sprite2D" parent="."]
 centered = false
 
