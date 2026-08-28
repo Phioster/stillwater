@@ -21,8 +21,6 @@ stretch_mode = 6
 
 [node name="WaterBody" type="Polygon2D" parent="."]
 
-[node name="WaterLine" type="Line2D" parent="."]
-
 [node name="Dock" type="Sprite2D" parent="."]
 centered = false
 
