@@ -9,10 +9,14 @@ const RAIL_WIDTH := 96.0
 @onready var _side: PanelContainer = $SidePanel
 @onready var _panels: Control = $SidePanel/Panels
 @onready var _rail = $Row/TabRail
+@onready var _journal_panel = $SidePanel/Panels/JournalScroll/JournalPanel
+@onready var _fish_window = $FishWindow
 
 func _ready() -> void:
 	if not _rail.tab_selected.is_connected(show_tab):
 		_rail.tab_selected.connect(show_tab)
+	if not _journal_panel.fish_tapped.is_connected(_fish_window.open):
+		_journal_panel.fish_tapped.connect(_fish_window.open)
 	_setup_scrolling()
 	_apply_safe_area()
 	if not get_viewport().size_changed.is_connected(_apply_safe_area):

@@ -7,17 +7,11 @@ func _panel() -> PanelBase:
 	panel.refresh()
 	return panel
 
-## Zeilen und Detailbloecke tragen ihre Fisch-ID als Metadatum -- robuster
+## Zeilen (auch die gesperrten) tragen ihre Fisch-ID als Metadatum -- robuster
 ## als eine Kindindex-Rechnung ueber die echte Datenbank.
 func _row_for(panel: PanelBase, id: StringName) -> Control:
 	for child in panel.get_children():
 		if child.has_meta(&"fish_id") and child.get_meta(&"fish_id") == id:
-			return child
-	return null
-
-func _detail_for(panel: PanelBase, id: StringName) -> Control:
-	for child in panel.get_children():
-		if child.has_meta(&"detail_for") and child.get_meta(&"detail_for") == id:
 			return child
 	return null
 
@@ -28,79 +22,58 @@ func _tap(panel: PanelBase, id: StringName) -> void:
 	event.pressed = true
 	row.gui_input.emit(event)
 
-func test_expanding_a_discovered_species_shows_all_details() -> void:
+func _secret_id() -> StringName:
+	for id in Database.fish:
+		if (Database.fish[id] as FishData).is_secret:
+			return id
+	return &""
+
+## Das Aufklappen ist raus: eine Zeile meldet sich beim Fenster ueber ein
+## Signal statt selbst Einzelheiten anzuzeigen.
+func test_tapping_a_discovered_row_emits_fish_tapped_with_its_id() -> void:
 	Game.new_game()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 2.0, 4, true))
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 0.5, 1, false))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 0, false))
 
 	var panel := _panel()
+	var seen: Array = []
+	panel.fish_tapped.connect(func(id: StringName) -> void: seen.append(id))
 	_tap(panel, &"bluegill")
-	var detail := _detail_for(panel, &"bluegill")
-	assert_true(detail != null, "aufgeklappte Zeile muss einen Detailblock zeigen")
-
-	var fish: FishData = Database.fish[&"bluegill"]
-	var e := Game.ctx.journal.entry(&"bluegill")
-	var rarity := Game.ctx.rarity_of(fish)
-	var record := CaughtFish.make(&"bluegill", float(e["best_weight"]), int(e["best_quality"]), bool(e["shiny_found"]))
-	var expected_value := Economy.sell_price(record, fish, rarity)
-
-	assert_true(rarity.display_name in detail.text, "Rarität fehlt")
-	assert_true("2" in detail.text, "Fangzahl fehlt")
-	assert_true("0,50" in detail.text, "kleinstes Gewicht fehlt")
-	assert_true("2,00" in detail.text, "Rekordgewicht fehlt")
-	assert_true(FishRoll.QUALITY_NAMES[int(e["best_quality"])] in detail.text, "Qualitätsname fehlt")
-	assert_true("ja" in detail.text, "Schimmer-Angabe fehlt")
-	assert_true("0" in detail.text, "Fischlevel fehlt")
-	assert_true(("%d" % expected_value) in detail.text, "Wert muss aus Economy.sell_price() kommen")
+	assert_eq(seen.size(), 1, "ein Tipp muss genau ein Signal ausloesen")
+	assert_true(seen[0] == &"bluegill", "die gemeldete ID muss zur getippten Zeile passen")
 	panel.free()
 
-func test_expanding_an_undiscovered_species_reveals_nothing() -> void:
+func test_tapping_an_undiscovered_row_emits_too_so_the_window_can_show_the_silhouette() -> void:
 	Game.new_game()
 	var id: StringName = &"roach"
 	assert_false(Game.ctx.journal.is_discovered(id))
 
 	var panel := _panel()
+	var seen: Array = []
+	panel.fish_tapped.connect(func(i: StringName) -> void: seen.append(i))
 	_tap(panel, id)
-	var detail := _detail_for(panel, id)
-	assert_true(detail != null, "auch eine unentdeckte Zeile muss sich aufklappen lassen")
-
-	var fish: FishData = Database.fish[id]
-	assert_false(fish.display_name in detail.text, "Name darf nicht verraten werden")
-	assert_false("kg" in detail.text, "Gewicht darf nicht verraten werden")
+	assert_eq(seen.size(), 1)
+	assert_true(seen[0] == id)
 	panel.free()
 
-func test_expanded_row_survives_a_refresh() -> void:
+func test_tapping_a_locked_secret_row_emits_too_so_the_window_can_show_the_hint() -> void:
+	Game.new_game()
+	var id := _secret_id()
+	assert_false(id == &"", "es muss einen geheimen Fisch in den Testdaten geben")
+
+	var panel := _panel()
+	var seen: Array = []
+	panel.fish_tapped.connect(func(i: StringName) -> void: seen.append(i))
+	_tap(panel, id)
+	assert_eq(seen.size(), 1, "auch der gesperrte Platz muss antippbar sein")
+	assert_true(seen[0] == id)
+	panel.free()
+
+func test_refresh_does_not_lose_any_rows() -> void:
 	Game.new_game()
 	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 0, false))
 
 	var panel := _panel()
-	_tap(panel, &"bluegill")
-	assert_true(_detail_for(panel, &"bluegill") != null)
-
+	var before := panel.get_child_count()
 	panel.refresh()
-	assert_true(_detail_for(panel, &"bluegill") != null,
-		"ein Fang loest state_changed -> refresh() aus; die offene Zeile darf dabei nicht zuklappen")
-	panel.free()
-
-func test_tapping_the_open_row_again_closes_it() -> void:
-	Game.new_game()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 0, false))
-
-	var panel := _panel()
-	_tap(panel, &"bluegill")
-	assert_true(_detail_for(panel, &"bluegill") != null)
-	_tap(panel, &"bluegill")
-	assert_true(_detail_for(panel, &"bluegill") == null)
-	panel.free()
-
-func test_only_one_row_is_expanded_at_once() -> void:
-	Game.new_game()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 0, false))
-	Game.ctx.journal.record(CaughtFish.make(&"perch", 1.0, 0, false))
-
-	var panel := _panel()
-	_tap(panel, &"bluegill")
-	_tap(panel, &"perch")
-	assert_true(_detail_for(panel, &"bluegill") == null, "die zuerst geoeffnete Zeile muss zuklappen")
-	assert_true(_detail_for(panel, &"perch") != null)
+	assert_eq(panel.get_child_count(), before, "ein Fang loest state_changed -> refresh() aus, die Zeilenliste muss gleich bleiben")
 	panel.free()

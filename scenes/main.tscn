@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://scenes/ui/panels/world_panel.gd" id="9"]
 [ext_resource type="Script" path="res://scenes/ui/panels/character_panel.gd" id="10"]
 [ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://scenes/ui/fish_window.tscn" id="12"]
 
 [node name="Main" type="Control"]
 anchors_preset = 15
@@ -100,3 +101,5 @@ offset_left = 16.0
 offset_top = 16.0
 
 [node name="WelcomeBack" parent="." instance=ExtResource("11")]
+
+[node name="FishWindow" parent="." instance=ExtResource("12")]

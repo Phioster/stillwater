@@ -1,11 +1,10 @@
 ## Das Fisch-Journal. Unentdeckte Arten erscheinen als Silhouette,
 ## Secret-Fische als verschlossener Platz mit Hinweis. Ein Tipp auf eine
-## Zeile klappt darunter die Einzelheiten auf, ein zweiter klappt sie zu.
+## Zeile meldet die Fisch-ID nach aussen -- main.gd oeffnet darauf das
+## grosse Fisch-Fenster (fish_window.gd), das Journal zeigt selbst nichts mehr auf.
 extends PanelBase
 
-## Bleibt über refresh() hinweg erhalten -- sonst klappt die offene Zeile bei
-## jedem Fang (der refresh() ueber state_changed ausloest) unter den Fingern weg.
-var _expanded_id: StringName = &""
+signal fish_tapped(id: StringName)
 
 func refresh() -> void:
 	clear(self)
@@ -31,8 +30,6 @@ func refresh() -> void:
 				add_child(_locked(f))
 				continue
 			add_child(_entry(f))
-			if _expanded_id == f.id:
-				add_child(_detail(f))
 
 func _entry(f: FishData) -> Control:
 	var row := HBoxContainer.new()
@@ -69,45 +66,23 @@ func _entry(f: FishData) -> Control:
 	return row
 
 ## Tipp per Maus (Desktop) oder Finger (Android, per Standardeinstellung als
-## Mausereignis emuliert) klappt die Zeile auf bzw. zu.
+## Mausereignis emuliert) meldet die Fisch-ID -- das Fenster entscheidet
+## selbst, was es dazu zeigt.
 func _on_row_input(event: InputEvent, id: StringName) -> void:
 	var mouse_tap: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var touch_tap: bool = event is InputEventScreenTouch and event.pressed
 	if not (mouse_tap or touch_tap):
 		return
-	_expanded_id = &"" if _expanded_id == id else id
-	refresh()
+	fish_tapped.emit(id)
 
-## Der aufgeklappte Block. Bei einer entdeckten Art alle Werte aus dem
-## Journaleintrag, sonst nur ein neutraler Platzhalter -- nichts verraten.
-func _detail(f: FishData) -> Control:
-	var label := Label.new()
-	label.set_meta(&"detail_for", f.id)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-
-	if not Game.ctx.journal.is_discovered(f.id):
-		label.text = "Noch nicht gefangen."
-		label.modulate = Palette.get_color(&"shadow")
-		return label
-
-	var e := Game.ctx.journal.entry(f.id)
-	var rarity := Game.ctx.rarity_of(f)
-	var record := CaughtFish.make(f.id, float(e["best_weight"]), int(e["best_quality"]), bool(e["shiny_found"]))
-	var value := Economy.sell_price(record, f, rarity)
-	var worst := ("%.2f" % float(e["worst_weight"])).replace(".", ",")
-	var best := ("%.2f" % float(e["best_weight"])).replace(".", ",")
-	label.text = "Rarität: %s\nFänge: %d\nGewicht: %s–%s kg\nBeste Qualität: %s\nSchimmernd: %s\nFischlevel: %d\nWert des Rekordfangs: %d Münzen" % [
-		rarity.display_name, int(e["caught_count"]), worst, best,
-		FishRoll.QUALITY_NAMES[int(e["best_quality"])],
-		"ja" if bool(e["shiny_found"]) else "nein",
-		int(e["fish_level"]), value
-	]
-	label.modulate = rarity.color
-	return label
-
+## Der gesperrte Platz eines noch nicht entdeckten Secret-Fischs ist ebenso
+## antippbar wie eine normale Zeile -- das Fenster zeigt dann nur den Hinweis.
 func _locked(f: FishData) -> Control:
 	var label := Label.new()
 	label.custom_minimum_size = Vector2(0, 64)
+	label.mouse_filter = Control.MOUSE_FILTER_STOP
+	label.set_meta(&"fish_id", f.id)
+	label.gui_input.connect(_on_row_input.bind(f.id))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = "🔒 %s" % f.secret_hint
 	label.modulate = Palette.get_color(&"accent")
