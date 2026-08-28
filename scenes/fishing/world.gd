@@ -34,6 +34,10 @@ const WAVE_SCALE := 7.0
 ## Die Welle schwingt komplett UNTERHALB der Uferlinie. Sonst lief sie ins Gras
 ## und die kerzengerade Kante des Hintergrundbilds blieb daneben sichtbar.
 const WAVE_BIAS := 9.5
+## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
+## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
+## ein zwei Pixel duenner Streifen Wasser durch (am Screenshot ausgemessen).
+const SHORE_OVERLAP := 10.0
 ## Kleiner, laufender Antrieb durchs Wippen des Schwimmers -- daraus entsteht
 ## die Stoerung, die von seiner Position nach aussen laeuft.
 const BOBBER_DRIVE := 0.05
@@ -140,7 +144,7 @@ func _update_water_line() -> void:
 	poly.resize(WATER_POINTS * 2)
 	for i in WATER_POINTS:
 		poly[i] = pts[i]
-		poly[WATER_POINTS * 2 - 1 - i] = Vector2(pts[i].x, water_y - 1.0)
+		poly[WATER_POINTS * 2 - 1 - i] = Vector2(pts[i].x, water_y - SHORE_OVERLAP)
 	_water_body.polygon = poly
 
 func _bobber_fraction() -> float:
