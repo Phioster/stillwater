@@ -8,6 +8,7 @@ extends Control
 @onready var _dock: Sprite2D = $Dock
 @onready var _angler: Node2D = $Angler
 @onready var _line: Line2D = $Line
+@onready var _water_line: Line2D = $WaterLine
 @onready var _water_body: Polygon2D = $WaterBody
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
@@ -58,6 +59,10 @@ func _ready() -> void:
 	_dock.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_water_line.width = 4.0
+	var crest := Palette.get_color(&"foam")
+	crest.a = 0.85
+	_water_line.default_color = crest
 	# Die Flaeche zwischen gerader Uferlinie und Welle wird in der FARBE DES
 	# UFERS gefuellt. Dadurch verschiebt sich die sichtbare Grenze auf die
 	# Welle, und es gibt keine zweite, gerade Kante mehr.
@@ -126,8 +131,6 @@ func _process(delta: float) -> void:
 		_water.disturb_at(_bobber_fraction(), bob_velocity * BOBBER_DRIVE * delta)
 	_update_water_line()
 
-## Kein Schaumkamm mehr: eine helle Linie an dieser Kante wirkte wie eine
-## Umrandung. Die Grenze selbst ist die Welle, mehr braucht es nicht.
 func _update_water_line() -> void:
 	if size.x <= 0.0 or size.y <= 0.0:
 		return
@@ -138,6 +141,7 @@ func _update_water_line() -> void:
 		var fraction := float(i) / float(WATER_POINTS - 1)
 		var wave := WaterSurface.ambient_offset(fraction, _water_time) + _water.heights[i]
 		pts[i] = Vector2(size.x * fraction, water_y + WAVE_BIAS + wave * WAVE_SCALE)
+	_water_line.points = pts
 	# Ufer bis zur Welle herunterziehen: hin entlang der Welle, zurueck entlang
 	# der geraden Uferlinie.
 	var poly := PackedVector2Array()
