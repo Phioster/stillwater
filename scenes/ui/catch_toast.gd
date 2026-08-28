@@ -9,6 +9,13 @@ const SHOW_SECONDS: float = 3.0
 @onready var _timer: Timer = $Timer
 
 func _ready() -> void:
+	# Siehe catch_view.gd: Anker der Szenenwurzel ueberleben den Export nicht.
+	anchor_left = 0.5
+	anchor_right = 0.5
+	offset_left = -220.0
+	offset_right = 220.0
+	offset_top = 110.0
+	offset_bottom = 180.0
 	visible = false
 	_timer.wait_time = SHOW_SECONDS
 	_timer.one_shot = true

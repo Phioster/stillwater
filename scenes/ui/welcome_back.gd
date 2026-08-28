@@ -3,6 +3,16 @@
 extends PanelContainer
 
 func _ready() -> void:
+	# Die Wurzel einer instanzierten Szene kommt im Android-Export mit
+	# Standardankern an -- mittig setzen muss deshalb der Code tun.
+	anchor_left = 0.5
+	anchor_top = 0.5
+	anchor_right = 0.5
+	anchor_bottom = 0.5
+	offset_left = -240.0
+	offset_top = -140.0
+	offset_right = 240.0
+	offset_bottom = 140.0
 	$Box/Close.pressed.connect(func() -> void: visible = false)
 	if not SaveManager.offline_ready.is_connected(show_summary):
 		SaveManager.offline_ready.connect(show_summary)

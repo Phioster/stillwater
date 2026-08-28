@@ -30,6 +30,10 @@ var focus_point: Vector2 = Vector2.ZERO
 var _spawn_timer: float = 0.0
 
 func _ready() -> void:
+	# Im Android-Export kommt die Szenenwurzel mit Standardankern an. Selbst
+	# setzen, damit die Ansicht ueberall traegt und nicht davon abhaengt, wer
+	# sie einhaengt.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_panel.visible = false
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)

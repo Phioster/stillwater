@@ -26,6 +26,7 @@ const SUITES := [
 	"res://tests/test_resource_names.gd",
 	"res://tests/test_rarity_levels.gd",
 	"res://tests/test_scenes_compile.gd",
+	"res://tests/test_export_anchors.gd",
 	"res://tests/test_sprite_assets.gd",
 	"res://tests/test_effects.gd",
 	"res://tests/test_water_surface.gd",
