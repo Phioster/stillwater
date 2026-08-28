@@ -135,3 +135,27 @@ später „aufräumt", sollte sie stehen lassen:
    Shiny — auch das ein häufiger Kritikpunkt am Referenzspiel. 1 zu
    800 bleibt selten, ist aber innerhalb einer Spielerlaufbahn
    erreichbar. Spec §6.4.
+
+## Leitlinie: ruhig, aber nie ratlos
+
+Stillwater soll ruhig wirken **und** jederzeit verständlich sein. Diese beiden
+Ziele ziehen gegeneinander: jede zusätzliche Anzeige nimmt Ruhe, jede
+weggelassene nimmt Klarheit. Fünf Regeln lösen den Konflikt:
+
+1. **Information erscheint dort, wo sie entsteht.** Der Fang wird über dem
+   Wasser gemeldet, nicht in einer Ecke. Der Preis steht am Knopf, nicht in
+   einer Legende.
+2. **Vergänglich schlägt dauerhaft.** Was man drei Sekunden braucht, darf
+   nicht dauerhaft Platz belegen. Die Fangkarte ist das Vorbild: erscheinen,
+   sagen, verschwinden.
+3. **Im Spielbild das Gefühl, im Panel die Zahl.** Draußen reicht ein
+   Platschen und eine aufsteigende Münzzahl; wer es genau wissen will, öffnet
+   das Journal.
+4. **Auffällig nur, was selten ist.** Das kurze Wackeln gehört einem Rekord
+   oder einer neuen Art. Wäre es bei jedem Fang, wäre es Lärm.
+5. **Ein gesperrter Knopf sagt, warum.** „Stufe 5" oder „900 Münzen" statt
+   eines grauen Knopfes ohne Begründung. Ratlosigkeit ist das Gegenteil von
+   gemütlich.
+
+Im Zweifel: erst die Ruhe, dann die Information — aber nie eine Entscheidung,
+die der Spieler ohne Erklärung treffen muss.
