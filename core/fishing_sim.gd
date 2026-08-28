@@ -198,6 +198,11 @@ static func _roll_rarity(ctx: SimContext, rng: StillRNG) -> StringName:
 	var weights := PackedFloat64Array()
 	for id in ids:
 		var w := float(ctx.zone.rarity_weights[id]) if available.has(id) else 0.0
+		# Seltene Stufen laufen mit der Spielerstufe an: am Anfang beisst fast
+		# nur Gewoehnliches, spaeter wird es bunter.
+		var rarity: RarityData = ctx.rarities.get(id)
+		if rarity != null:
+			w *= rarity.availability(ctx.player_level)
 		if ctx.bait != null:
 			w *= float(ctx.bait.rarity_weight_bonus.get(id, 1.0))
 		weights.append(w)

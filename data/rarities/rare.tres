@@ -11,3 +11,5 @@ value_mult = 7.0
 xp_mult = 4.5
 strength_mult = 4.5
 quality_bias = 0.2
+unlock_level = 4
+ramp_levels = 10

@@ -159,3 +159,23 @@ weggelassene nimmt Klarheit. Fünf Regeln lösen den Konflikt:
 
 Im Zweifel: erst die Ruhe, dann die Information — aber nie eine Entscheidung,
 die der Spieler ohne Erklärung treffen muss.
+
+## Seltenheit wächst mit der Spielerstufe
+
+Die Gewichte einer Zone (`rarity_weights`) sind der **Endzustand**. Wie viel
+davon wirklich zählt, hängt an der Spielerstufe: jede `RarityData` hat eine
+Freischaltstufe und eine Anlaufkurve, und `availability(level)` liefert den
+Anteil zwischen 0 und 1.
+
+Ergebnis in Willow Lake (70 / 25 / 5 als Endzustand):
+
+| Stufe | gewöhnlich | ungewöhnlich | selten |
+|---|---|---|---|
+| 1 | 95,7 % | 4,3 % | 0 % |
+| 4 | 84,3 % | 15,1 % | 0,6 % |
+| 8 | 71,8 % | 25,6 % | 2,6 % |
+| 20 | 70,0 % | 25,0 % | 5,0 % |
+
+Der Anfang ist damit gewöhnlich, ohne dass später etwas fehlt. Grund: ein
+ungewöhnlicher Fisch als allererster Fang nimmt der Seltenheit ihre Bedeutung,
+noch bevor der Spieler weiß, dass es Stufen gibt.

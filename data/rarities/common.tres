@@ -7,3 +7,5 @@ script = ExtResource("1_pu5f5")
 id = &"common"
 display_name = "Gewöhnlich"
 color = Color(0.6039216, 0.654902, 0.62352943, 1)
+unlock_level = 1
+ramp_levels = 1
