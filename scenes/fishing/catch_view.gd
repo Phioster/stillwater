@@ -3,10 +3,12 @@
 extends Control
 
 const ORB_SCENE := preload("res://scenes/fishing/orb.tscn")
-const ORB_INTERVAL: float = 0.9
-## Wer schnell tippt, soll nicht auf die volle Pause warten muessen: nach
-## einem Treffer kommt der naechste Punkt deutlich frueher.
-const ORB_AFTER_TAP: float = 0.22
+## So viele Punkte sind gleichzeitig da. Faellt einer weg -- getroffen oder
+## abgelaufen -- rueckt sofort der naechste nach. Eine feste Uhr fuehlte sich
+## traege an, weil sie nicht auf den Spieler reagierte.
+const ORB_TARGET: int = 2
+## Nur eine Atempause, damit zwei Punkte nicht im selben Frame aufpoppen.
+const ORB_RESPAWN: float = 0.12
 const ORB_LIFETIME: float = 2.2
 const ORB_MARGIN: float = 80.0
 ## Die Orbs erscheinen rund um den Schwimmer statt ueber dem ganzen Bild.
@@ -47,8 +49,8 @@ func _process(delta: float) -> void:
 	_line.max_value = Game.ctx.zone.fight_window
 	_line.value = maxf(Game.sim.timer, 0.0)
 	_spawn_timer -= delta
-	if _spawn_timer <= 0.0:
-		_spawn_timer = ORB_INTERVAL
+	if _spawn_timer <= 0.0 and _living_orbs() < ORB_TARGET:
+		_spawn_timer = ORB_RESPAWN
 		_spawn_orb()
 
 func _on_bite(fish: FishData) -> void:
@@ -70,10 +72,15 @@ func _spawn_orb() -> void:
 	spawn_area.add_child(orb)
 	orb.setup(_orb_position(), ORB_LIFETIME)
 	orb.tapped.connect(Game.tap)
-	orb.tapped.connect(_on_orb_tapped)
 
-func _on_orb_tapped() -> void:
-	_spawn_timer = minf(_spawn_timer, ORB_AFTER_TAP)
+## queue_free() wirkt erst am Frameende -- ein sterbender Punkt zaehlt sonst
+## noch mit und blockiert den Nachruecker.
+func _living_orbs() -> int:
+	var n := 0
+	for child in spawn_area.get_children():
+		if not child.is_queued_for_deletion():
+			n += 1
+	return n
 
 ## Ein Punkt im Kreis um den Schwimmer, aber immer so weit vom Rand entfernt,
 ## dass der Orb vollstaendig im Bild bleibt -- sonst waere er am Ufer halb ab.

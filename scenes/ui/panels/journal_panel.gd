@@ -17,7 +17,16 @@ func refresh() -> void:
 		title.text = "%s   %d %%" % [zone.display_name, int(round(Game.ctx.journal.completion(fish) * 100.0))]
 		add_child(title)
 
+		# Geheime Fische kommen ans Ende der Zone: die Spec sieht dafuer einen
+		# eigenen verschlossenen Platz vor, keine Zeile mitten in der Liste.
+		var normal: Array[FishData] = []
+		var secret: Array[FishData] = []
 		for f in fish:
+			if f.is_secret:
+				secret.append(f)
+			else:
+				normal.append(f)
+		for f in normal + secret:
 			if f.is_secret and not Game.ctx.journal.is_discovered(f.id):
 				add_child(_locked(f))
 				continue
@@ -46,10 +55,11 @@ func _entry(f: FishData) -> Control:
 	if known:
 		var e := Game.ctx.journal.entry(f.id)
 		var shiny := "  ✦" if bool(e["shiny_found"]) else ""
-		label.text = "%s%s\n%dx · beste %s · Level %d · %.2f–%.2f kg" % [
+		var lo := ("%.2f" % float(e["worst_weight"])).replace(".", ",")
+		var hi := ("%.2f" % float(e["best_weight"])).replace(".", ",")
+		label.text = "%s%s\n%dx · beste %s · Level %d · %s–%s kg" % [
 			f.display_name, shiny, int(e["caught_count"]),
-			FishRoll.QUALITY_NAMES[int(e["best_quality"])], int(e["fish_level"]),
-			float(e["worst_weight"]), float(e["best_weight"])
+			FishRoll.QUALITY_NAMES[int(e["best_quality"])], int(e["fish_level"]), lo, hi
 		]
 		label.modulate = Game.ctx.rarity_of(f).color
 	else:

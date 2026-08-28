@@ -215,12 +215,42 @@ func _land_with(sim: FishingSim, ctx: SimContext, fish: FishData, weight: float)
 			return e
 	return {}
 
-## Wer schnell tippt, soll nicht auf die volle Pause warten: die Wartezeit bis
-## zum naechsten Fangpunkt wird nach einem Treffer verkuerzt, nie verlaengert.
-func test_tapping_shortens_the_wait_for_the_next_orb() -> void:
-	var CatchViewScript := load("res://scenes/fishing/catch_view.gd")
-	assert_true(CatchViewScript != null and CatchViewScript.can_instantiate(), "catch_view.gd kompiliert")
-	var after_tap: float = CatchViewScript.get_script_constant_map()["ORB_AFTER_TAP"]
-	var normal: float = CatchViewScript.get_script_constant_map()["ORB_INTERVAL"]
-	assert_true(after_tap < normal, "nach einem Treffer muss es schneller gehen als sonst: %f vs %f" % [after_tap, normal])
-	assert_true(after_tap > 0.0, "aber nicht sofort, sonst ueberrennt es den Spieler")
+## Fangpunkte haengen am Geschehen, nicht an einer Uhr: faellt einer weg,
+## rueckt der naechste nach. Vorher wartete er stur die volle Pause ab.
+func test_orbs_follow_up_when_one_disappears() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	# Die Fangansicht arbeitet nur waehrend eines Kampfes.
+	Game.new_game()
+	Game.paused = true
+	Game.sim.state = FishingSim.State.FIGHT
+	Game.sim.hooked = Database.fish[&"bluegill"]
+	Game.sim.hooked_max_strength = 100.0
+	Game.sim.hooked_strength = 50.0
+	var cv: Control = load("res://scenes/fishing/catch_view.tscn").instantiate()
+	tree.root.add_child(cv)
+	cv.size = Vector2(800, 600)
+	await tree.process_frame
+	var area: Control = cv.spawn_area
+	var target: int = cv.get_script().get_script_constant_map()["ORB_TARGET"]
+	assert_true(target >= 1, "es muss mindestens ein Punkt gleichzeitig da sein")
+
+	# Bis zum Sollbestand auffuellen
+	for i in 40:
+		cv._process(0.05)
+		await tree.process_frame
+	assert_eq(cv._living_orbs(), target, "der Sollbestand muss erreicht werden")
+
+	# Einen entfernen -- der Ersatz muss von selbst nachruecken, ohne dass
+	# jemand eine feste Pause abwartet.
+	var removed := area.get_child(0)
+	var removed_id := removed.get_instance_id()
+	removed.queue_free()
+	var respawn: float = cv.get_script().get_script_constant_map()["ORB_RESPAWN"]
+	assert_true(respawn <= 0.3, "das Nachruecken darf sich nicht traege anfuehlen: %f s" % respawn)
+	for i in 6:
+		cv._process(respawn)
+		await tree.process_frame
+	assert_eq(cv._living_orbs(), target, "der Bestand muss sich von selbst wieder auffuellen")
+	for child in area.get_children():
+		assert_true(child.get_instance_id() != removed_id, "der entfernte Punkt darf nicht zurueckkommen")
+	cv.queue_free()
