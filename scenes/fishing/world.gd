@@ -9,6 +9,7 @@ extends Control
 @onready var _angler: Node2D = $Angler
 @onready var _line: Line2D = $Line
 @onready var _water_line: Line2D = $WaterLine
+@onready var _water_body: Polygon2D = $WaterBody
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
@@ -30,7 +31,10 @@ const WATER_POINTS := 28
 ## Wellen-Einheiten (core/water_surface.gd) -> Bildschirmpixel. Bewusst klein:
 ## die Grundbewegung soll man suchen muessen, nicht ertragen (GAME_DESIGN.md,
 ## "Auffaellig nur, was selten ist").
-const WAVE_SCALE := 3.5
+const WAVE_SCALE := 7.0
+## Hoehe des sichtbaren Oberflaechenbands. Eine reine Linie ging auf dem Geraet
+## unter -- die Bewegung braucht Koerper, um ueberhaupt aufzufallen.
+const BAND_HEIGHT := 26.0
 ## Kleiner, laufender Antrieb durchs Wippen des Schwimmers -- daraus entsteht
 ## die Stoerung, die von seiner Position nach aussen laeuft.
 const BOBBER_DRIVE := 0.05
@@ -51,10 +55,13 @@ func _ready() -> void:
 	_dock.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
-	_water_line.width = 2.0
-	var water_color := Palette.get_color(&"foam")
-	water_color.a = 0.5
-	_water_line.default_color = water_color
+	_water_line.width = 4.0
+	var crest := Palette.get_color(&"foam")
+	crest.a = 0.85
+	_water_line.default_color = crest
+	var band := Palette.get_color(&"water_light")
+	band.a = 0.55
+	_water_body.color = band
 	_layout()
 	if not resized.is_connected(_layout):
 		resized.connect(_layout)
@@ -130,6 +137,14 @@ func _update_water_line() -> void:
 		var wave := WaterSurface.ambient_offset(fraction, _water_time) + _water.heights[i]
 		pts[i] = Vector2(size.x * fraction, water_y + wave * WAVE_SCALE)
 	_water_line.points = pts
+	# Dasselbe Profil als Flaeche darunter: erst die Welle hin, dann am unteren
+	# Rand des Bands zurueck.
+	var poly := PackedVector2Array()
+	poly.resize(WATER_POINTS * 2)
+	for i in WATER_POINTS:
+		poly[i] = pts[i]
+		poly[WATER_POINTS * 2 - 1 - i] = pts[i] + Vector2(0.0, BAND_HEIGHT)
+	_water_body.polygon = poly
 
 func _bobber_fraction() -> float:
 	if size.x <= 0.0:
