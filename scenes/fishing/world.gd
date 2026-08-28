@@ -32,9 +32,9 @@ const WATER_POINTS := 28
 ## die Grundbewegung soll man suchen muessen, nicht ertragen (GAME_DESIGN.md,
 ## "Auffaellig nur, was selten ist").
 const WAVE_SCALE := 7.0
-## Hoehe des sichtbaren Oberflaechenbands. Eine reine Linie ging auf dem Geraet
-## unter -- die Bewegung braucht Koerper, um ueberhaupt aufzufallen.
-const BAND_HEIGHT := 26.0
+## Die Welle schwingt komplett UNTERHALB der Uferlinie. Sonst lief sie ins Gras
+## und die kerzengerade Kante des Hintergrundbilds blieb daneben sichtbar.
+const WAVE_BIAS := 9.5
 ## Kleiner, laufender Antrieb durchs Wippen des Schwimmers -- daraus entsteht
 ## die Stoerung, die von seiner Position nach aussen laeuft.
 const BOBBER_DRIVE := 0.05
@@ -59,9 +59,10 @@ func _ready() -> void:
 	var crest := Palette.get_color(&"foam")
 	crest.a = 0.85
 	_water_line.default_color = crest
-	var band := Palette.get_color(&"water_light")
-	band.a = 0.55
-	_water_body.color = band
+	# Die Flaeche zwischen gerader Uferlinie und Welle wird in der FARBE DES
+	# UFERS gefuellt. Dadurch verschiebt sich die sichtbare Grenze auf die
+	# Welle, und es gibt keine zweite, gerade Kante mehr.
+	_water_body.color = Palette.get_color(&"reed_dark")
 	_layout()
 	if not resized.is_connected(_layout):
 		resized.connect(_layout)
@@ -135,15 +136,15 @@ func _update_water_line() -> void:
 	for i in WATER_POINTS:
 		var fraction := float(i) / float(WATER_POINTS - 1)
 		var wave := WaterSurface.ambient_offset(fraction, _water_time) + _water.heights[i]
-		pts[i] = Vector2(size.x * fraction, water_y + wave * WAVE_SCALE)
+		pts[i] = Vector2(size.x * fraction, water_y + WAVE_BIAS + wave * WAVE_SCALE)
 	_water_line.points = pts
-	# Dasselbe Profil als Flaeche darunter: erst die Welle hin, dann am unteren
-	# Rand des Bands zurueck.
+	# Ufer bis zur Welle herunterziehen: hin entlang der Welle, zurueck entlang
+	# der geraden Uferlinie.
 	var poly := PackedVector2Array()
 	poly.resize(WATER_POINTS * 2)
 	for i in WATER_POINTS:
 		poly[i] = pts[i]
-		poly[WATER_POINTS * 2 - 1 - i] = pts[i] + Vector2(0.0, BAND_HEIGHT)
+		poly[WATER_POINTS * 2 - 1 - i] = Vector2(pts[i].x, water_y - 1.0)
 	_water_body.polygon = poly
 
 func _bobber_fraction() -> float:
