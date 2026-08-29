@@ -51,25 +51,22 @@ var _water := WaterSurface.new(WATER_POINTS)
 ## Laeuft immer weiter, anders als _bob_time (das bei jedem Biss auf 0
 ## zurueckspringt) -- die Grundbewegung des Wassers darf davon nicht mitreissen.
 var _water_time: float = 0.0
+## Verhindert, dass jedes state_changed Textur und Farben neu setzt.
+var _applied_zone: StringName = &""
 
 func _ready() -> void:
-	_background.texture = TextureLoader.load_texture("res://assets/art/bg_lake.png")
 	_bobber.texture = TextureLoader.load_texture("res://assets/art/bobber.png")
 	_dock.texture = TextureLoader.load_texture("res://assets/art/dock.png")
 	_dock.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_water_line.width = 4.0
-	var crest := Palette.get_color(&"foam")
-	crest.a = 0.85
-	_water_line.default_color = crest
-	# Die Flaeche zwischen gerader Uferlinie und Welle wird in der FARBE DES
-	# UFERS gefuellt. Dadurch verschiebt sich die sichtbare Grenze auf die
-	# Welle, und es gibt keine zweite, gerade Kante mehr.
-	_water_body.color = Palette.get_color(&"reed_dark")
+	_apply_zone()
 	_layout()
 	if not resized.is_connected(_layout):
 		resized.connect(_layout)
+	if not Game.state_changed.is_connected(_apply_zone):
+		Game.state_changed.connect(_apply_zone)
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)
 	if not Game.caught.is_connected(_on_caught):
@@ -151,3 +148,19 @@ func _on_bite(_fish: FishData) -> void:
 ## eigentliche Reaktion (Text, Partikel) macht effects.gd auf dasselbe Signal.
 func _on_caught(_c: CaughtFish, _fish: FishData, _discovered: bool, _record: bool) -> void:
 	_water.disturb_at(_bobber_fraction(), CATCH_KICK)
+
+## Hintergrund und Wasserfarben kommen aus der Zone. Die Flaeche zwischen
+## gerader Uferlinie und Welle wird in der FARBE DES UFERS gefuellt: dadurch
+## liegt die sichtbare Grenze auf der Welle und nicht auf einer zweiten,
+## geraden Kante.
+func _apply_zone() -> void:
+	var zone: ZoneData = Game.ctx.zone
+	if zone == null or zone.id == _applied_zone:
+		return
+	_applied_zone = zone.id
+	_background.texture = TextureLoader.load_texture(
+		"res://assets/art/bg_%s.png" % zone.background_id)
+	var crest := Palette.get_color(zone.foam_key)
+	crest.a = 0.85
+	_water_line.default_color = crest
+	_water_body.color = Palette.get_color(zone.shore_key)

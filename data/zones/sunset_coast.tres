@@ -14,6 +14,9 @@
 script = ExtResource("7_evpby")
 id = &"sunset_coast"
 display_name = "Sunset Coast"
+background_id = &"coast"
+shore_key = &"sand_dark"
+foam_key = &"sea_foam"
 fish = Array[ExtResource("1_t4kh8")]([ExtResource("2_u15gd"), ExtResource("3_we1y1"), ExtResource("4_w12qj"), ExtResource("5_736ml"), ExtResource("6_grt6l"), ExtResource("90_bluefi"), ExtResource("91_duskfi")])
 bite_time_min = 35.0
 bite_time_max = 60.0

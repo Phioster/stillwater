@@ -53,6 +53,31 @@ func _background() -> void:
 		_rect(img, x, 78 - h, 1, h, _c(&"reed") if i % 2 == 0 else _c(&"reed_light"))
 	_save(img, "bg_lake")
 
+## Sunset Coast. Gleiche Geometrie wie der See -- Horizont bei 78, Wasser ab
+## 84 -- damit Steg, Uferkante und Wellenlinie ohne Sonderfall passen.
+func _background_coast() -> void:
+	var img := _new_image(320, 180)
+	for y in 78:
+		var t := float(y) / 78.0
+		_rect(img, 0, y, 320, 1, _c(&"dusk_high").lerp(_c(&"dusk_low"), t * t))
+	# tiefstehende Sonne ueber dem Horizont
+	_ellipse(img, 232.0, 70.0, 13.0, 13.0, _c(&"sea_foam"))
+	_rect(img, 0, 78, 320, 6, _c(&"sand_dark"))
+	for y in range(84, 180):
+		var t := float(y - 84) / 96.0
+		_rect(img, 0, y, 320, 1, _c(&"sea_light").lerp(_c(&"sea_deep"), t))
+	# Sonnenstrasse: zum Betrachter hin breiter und seltener
+	for i in 30:
+		var y := 88 + i * 3
+		var w := 4 + i
+		_rect(img, 232 - w / 2, y, w, 1, _c(&"sea_foam").lerp(_c(&"sea_light"), float(i) / 30.0))
+	# Duenengras statt Schilf
+	for i in 34:
+		var x := (i * 9 + (i % 4) * 2) % 318
+		var h := 4 + (i % 4) * 2
+		_rect(img, x, 78 - h, 1, h, _c(&"sand") if i % 2 == 0 else _c(&"sand_light"))
+	_save(img, "bg_coast")
+
 func _dock() -> void:
 	var img := _new_image(64, 24)
 	_rect(img, 0, 0, 64, 6, _c(&"wood_light"))
@@ -195,6 +220,7 @@ func _init() -> void:
 	await process_frame
 	print("Hintergrund")
 	_background()
+	_background_coast()
 	_dock()
 	print("Charakter")
 	for i in 3:

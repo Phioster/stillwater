@@ -7,7 +7,7 @@ const ART_DIR := "res://assets/art"
 const EXPECTED_EMPTY := [&"char_hat_0.png"]
 
 func _expected_size(filename: String) -> Vector2i:
-	if filename == "bg_lake.png":
+	if filename.begins_with("bg_"):
 		return Vector2i(320, 180)
 	if filename == "dock.png":
 		return Vector2i(64, 24)
