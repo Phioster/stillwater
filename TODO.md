@@ -94,9 +94,18 @@ jedem Lauf frisch. Dadurch hat jede APK eine andere Signatur, und ein Update
 
     INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match
 
-In der Praxis heißt das: vor jeder Installation muss deinstalliert werden —
-und damit ist jedes Mal der Spielstand weg. Für ein Spiel, dessen Kern der
-Offline-Fortschritt ist, ist das auf Dauer untragbar.
+In der Praxis heißt das: vor jeder Installation muss deinstalliert werden.
+Der Spielstand lässt sich dabei aber mitnehmen — die App ist debuggable, also
+greift `run-as` ohne Root:
+
+    adb shell "run-as org.phioster.stillwater cat files/save.json" > save.json
+    adb uninstall org.phioster.stillwater && adb install stillwater-debug.apk
+    adb push save.json /data/local/tmp/sw_save.json
+    adb shell "run-as org.phioster.stillwater sh -c \
+      'mkdir -p files && cp /data/local/tmp/sw_save.json files/save.json'"
+
+`cp` unter `run-as` legt die Datei gleich der neuen App-UID an; `adb push`
+direkt nach `files/` ginge nicht.
 
 Lösung, wenn es stört: einen festen Debug-Keystore einmal lokal erzeugen, ihn
 als GitHub-Secret hinterlegen (base64) und im Workflow daraus wiederherstellen.
