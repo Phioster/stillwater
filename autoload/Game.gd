@@ -75,6 +75,10 @@ func new_game() -> void:
 func _process(delta: float) -> void:
 	if paused or ctx == null:
 		return
+	# Einmal pro Frame die echte Stunde nachfuehren. Der Offline-Nachlauf
+	# rechnet mit der Stunde der Rueckkehr -- ein Tagesfenster ueber Stunden
+	# hinweg nachzubilden waere Aufwand ohne spuerbaren Gewinn.
+	ctx.hour_of_day = Time.get_datetime_dict_from_system()["hour"]
 	_dispatch(sim.tick(delta * time_scale, ctx, rng))
 
 func tap() -> void:

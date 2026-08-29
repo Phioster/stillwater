@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://resources/zone_data.gd" id="7_evpby"]
 [ext_resource type="Resource" path="res://data/fish/bluefin_tuna.tres" id="90_bluefi"]
 [ext_resource type="Resource" path="res://data/fish/duskfin.tres" id="91_duskfi"]
+[ext_resource type="Resource" path="res://data/fish/dusk_lantern.tres" id="70_dusk_l"]
 
 [resource]
 script = ExtResource("7_evpby")
@@ -17,7 +18,7 @@ display_name = "Sunset Coast"
 background_id = &"coast"
 shore_key = &"sand_dark"
 foam_key = &"sea_foam"
-fish = Array[ExtResource("1_t4kh8")]([ExtResource("2_u15gd"), ExtResource("3_we1y1"), ExtResource("4_w12qj"), ExtResource("5_736ml"), ExtResource("6_grt6l"), ExtResource("90_bluefi"), ExtResource("91_duskfi")])
+fish = Array[ExtResource("1_t4kh8")]([ExtResource("2_u15gd"), ExtResource("3_we1y1"), ExtResource("4_w12qj"), ExtResource("5_736ml"), ExtResource("6_grt6l"), ExtResource("90_bluefi"), ExtResource("91_duskfi"), ExtResource("70_dusk_l")])
 bite_time_min = 35.0
 bite_time_max = 60.0
 rarity_weights = {

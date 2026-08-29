@@ -29,12 +29,18 @@ func rarity_of(fish: FishData) -> RarityData:
 	return r
 
 ## Der Zustand, gegen den Fangbedingungen prüfen.
+## Stunde der echten Uhr. Als Feld statt als direkter Uhrenzugriff, damit die
+## Simulation deterministisch bleibt und Tests jede Stunde stellen koennen.
+var hour_of_day: int = 12
+
 func condition_state() -> Dictionary:
 	return {
 		"bait_id": bait.id if bait != null else &"",
 		"player_level": player_level,
 		"cosmetics": cosmetics,
 		"zone_id": zone.id if zone != null else &"",
+		"hour_of_day": hour_of_day,
+		"journal_species": journal.entries.size() if journal != null else 0,
 	}
 
 ## Verbraucht einen Köder; läuft ein gekaufter Köder leer, schaltet

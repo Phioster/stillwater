@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_lvl"]
+[ext_resource type="Script" path="res://resources/cosmetic_condition.gd" id="4_extra"]
+
+[sub_resource type="Resource" id="Resource_lvl"]
+script = ExtResource("3_lvl")
+min_level = 5
+
+[sub_resource type="Resource" id="Resource_extra"]
+script = ExtResource("4_extra")
+category = &"hat"
+variant = 2
+
+[resource]
+script = ExtResource("2_fish")
+id = &"sunhat_bream"
+display_name = "Strohhutbrasse"
+zone_id = &"willow_lake"
+rarity_id = &"rare"
+base_value = 300
+strength = 88.0
+xp = 150
+weight_min = 0.4
+weight_max = 2.2
+is_secret = true
+secret_chance = 0.025
+secret_hint = "Scheu. Sie zeigt sich nur Anglern, die den Strohhut tragen."
+conditions = Array[ExtResource("1_cond")]([SubResource("Resource_lvl"), SubResource("Resource_extra")])
