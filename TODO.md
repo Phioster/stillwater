@@ -8,12 +8,13 @@ noch nicht gebaut.
 
 - **Audio** — Wasser, Wurf, Biss, Fang, Verkauf, Upgrade, Level-Up, UI.
   Dafür entsteht dann auch der vierte Autoload `AudioManager` (siehe
-  `ARCHITECTURE.md`), der in Slice 1 bewusst fehlt.
-- **Echte Hintergrundgrafik für Sunset Coast.** Die Zone nutzt aktuell
-  denselben Hintergrund wie Willow Lake (siehe `GAME_DESIGN.md`).
-- **Fisch-Level über Mini-Quests.** `fish_level` wird bereits
-  gespeichert, angezeigt und fließt in die Shiny-Formel ein, wird in
-  Slice 1 aber nie erhöht.
+  `ARCHITECTURE.md`), der in Slice 1 bewusst fehlt. **Bewusst zuletzt**
+  (2026-08-29): Ton ist überwiegend Materialbeschaffung mit Lizenzpflege,
+  und er folgt dem Bild — vor der endgültigen Pixelart gemacht hieße ihn
+  zweimal machen.
+- **Hochauflösende Pixelart** (siehe unten, "Kunstrichtung"). Die
+  Zonenhintergründe sind seit 2026-08-29 pro Zone austauschbar, die
+  Platzhalter kommen weiter aus `tools/gen_sprites.gd`.
 
 ## Danach
 
@@ -29,21 +30,31 @@ noch nicht gebaut.
 
 ## Bedingungstypen für Secret-Fische
 
-Slice 1 kennt `BaitCondition` und `LevelCondition`. Vorgesehen und noch
-nicht gebaut:
+Gebaut: `LevelCondition`, `BaitCondition`, `CosmeticCondition`,
+`TimeOfDayCondition`, `JournalCondition` — jeder Typ wird von mindestens
+einem Geheimfisch verlangt, sonst wäre er selbst ein totes Ende
+(`test_every_condition_type_is_used_by_a_secret_fish`).
 
-- Aussehen (Cosmetics)
-- Tageszeit
-- Fänge in dieser Zone
-- Journal-Fortschritt
-- aktiver Trank
+Noch offen, jeweils mit Grund:
+
+- **Fänge in dieser Zone** — braucht einen neuen, gespeicherten Zähler pro
+  Zone. Machbar, aber es vergrößert die Speicherfläche; erst bauen, wenn
+  ein Fisch ihn wirklich verlangt.
+- **Aktiver Trank** — blockiert, solange es keine Consumables gibt (siehe
+  "Danach").
+
+Nicht maschinell prüfbar: ob ein `secret_hint` das richtige Kleidungsstück
+oder Zeitfenster benennt. Bei neuen Hinweisen von Hand gegenlesen.
 
 ## Inhalte
 
-- Willow Lake auf 12 bis 18 Arten ausbauen (aktuell 5 regulär + 1
-  Secret), davon späte Epic- und Legendary-Fische, die erst mit
-  späten Ködern anbeißen — sonst wird die Startzone zu totem Inhalt,
-  sobald Sunset Coast freigeschaltet ist.
+- ~~Willow Lake auf 12 bis 18 Arten ausbauen~~ — erledigt 2026-08-29:
+  16 Arten (13 regulär + 3 Secret), darunter Wels (Epic) und
+  Mondkarpfen (Legendary). Sie kommen nicht über späte Köder, sondern
+  über die Stufenrampe der Rarität (`unlock_level`/`ramp_levels`): Epic
+  ab Stufe 10, Legendary ab 18, volles Gewicht bei 32. Späte Köder
+  wären ein zweiter Hebel für dieselbe Wirkung.
+- Sunset Coast hat 8 Arten (7 regulär + 1 Secret) und darf mitwachsen.
 
 ## Technik
 
