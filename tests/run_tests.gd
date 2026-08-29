@@ -55,18 +55,18 @@ func _init() -> void:
 	for path in SUITES:
 		var script: GDScript = load(path)
 		if script == null:
-			push_error("Testdatei nicht ladbar: %s" % path)
+			_suite_broken("Testdatei nicht ladbar", path)
 			failed += 1
 			continue
 		if not script.can_instantiate():
 			# load() liefert bei einem Parse-Fehler kein null. script.new() wuerde
 			# die Coroutine vor quit() abbrechen und den Prozess haengen lassen.
-			push_error("Parse-Fehler in Testdatei: %s" % path)
+			_suite_broken("Parse-Fehler in Testdatei", path)
 			failed += 1
 			continue
 		var suite = script.new()
 		if not (suite is TestCase):
-			push_error("Keine TestCase: %s" % path)
+			_suite_broken("Keine TestCase", path)
 			failed += 1
 			continue
 		for method in suite.get_method_list():
@@ -90,3 +90,10 @@ func _init() -> void:
 	print("")
 	print("%d Tests, %d fehlgeschlagen" % [total, failed])
 	quit(1 if failed > 0 else 0)
+
+## push_error landet auf stderr und geht in Godots Fehlerrauschen unter --
+## eine kaputte Suite sah dadurch aus wie ein einzelner fehlgeschlagener Test,
+## obwohl alle ihre Tests gar nicht liefen. Deshalb zusaetzlich nach stdout.
+func _suite_broken(reason: String, path: String) -> void:
+	push_error("%s: %s" % [reason, path])
+	print("  SUITE KAPUTT  %s -- %s (kein Test daraus lief)" % [path.get_file(), reason])

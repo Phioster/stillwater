@@ -32,9 +32,25 @@ func test_rare_cannot_be_caught_at_level_one() -> void:
 	assert_true(rare.unlock_level > 1, "Selten darf auf Stufe 1 nicht beissen")
 	assert_almost_eq(rare.availability(1), 0.0, 0.0001)
 
-func test_full_spread_is_reached_at_high_level() -> void:
-	var zone: ZoneData = Database.zones[&"willow_lake"]
-	for id in zone.rarity_weights:
-		var r: RarityData = Database.rarities[id]
-		assert_almost_eq(r.availability(30), 1.0, 0.0001,
-			"bei hoher Stufe muss die ursprueng+liche Balance stehen: %s" % id)
+## Entwurfsdecke: ab Stufe 32 ist in JEDER Zone jede Raritaet voll im Spiel.
+## Die Zahl steht als Literal da, damit ein verschobener Anstieg den Test
+## umwirft, statt sich stillschweigend mitzuverschieben.
+const FULL_SPREAD_LEVEL: int = 32
+
+func test_full_spread_is_reached_at_the_design_ceiling() -> void:
+	for zone_id in Database.zones:
+		var zone: ZoneData = Database.zones[zone_id]
+		for id in zone.rarity_weights:
+			var r: RarityData = Database.rarities[id]
+			assert_almost_eq(r.availability(FULL_SPREAD_LEVEL), 1.0, 0.0001,
+				"bei Stufe %d muss die volle Balance stehen: %s in %s"
+				% [FULL_SPREAD_LEVEL, id, zone_id])
+
+## Gegenprobe: der lange Schwanz ist echt. Ohne sie waere der Test oben auch
+## dann gruen, wenn jede Raritaet sofort voll anliefe.
+func test_legendary_is_still_ramping_below_the_ceiling() -> void:
+	var legendary: RarityData = Database.rarities[&"legendary"]
+	assert_true(legendary.availability(30) < 1.0,
+		"Legendary soll erst spaet sein volles Gewicht erreichen")
+	assert_almost_eq(legendary.availability(17), 0.0, 0.0001,
+		"unter Stufe 18 beisst nichts Legendaeres")

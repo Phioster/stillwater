@@ -7,18 +7,22 @@
 [ext_resource type="Resource" path="res://data/fish/sea_bass.tres" id="5_736ml"]
 [ext_resource type="Resource" path="res://data/fish/ember_ray.tres" id="6_grt6l"]
 [ext_resource type="Script" path="res://resources/zone_data.gd" id="7_evpby"]
+[ext_resource type="Resource" path="res://data/fish/bluefin_tuna.tres" id="90_bluefi"]
+[ext_resource type="Resource" path="res://data/fish/duskfin.tres" id="91_duskfi"]
 
 [resource]
 script = ExtResource("7_evpby")
 id = &"sunset_coast"
 display_name = "Sunset Coast"
-fish = Array[ExtResource("1_t4kh8")]([ExtResource("2_u15gd"), ExtResource("3_we1y1"), ExtResource("4_w12qj"), ExtResource("5_736ml"), ExtResource("6_grt6l")])
+fish = Array[ExtResource("1_t4kh8")]([ExtResource("2_u15gd"), ExtResource("3_we1y1"), ExtResource("4_w12qj"), ExtResource("5_736ml"), ExtResource("6_grt6l"), ExtResource("90_bluefi"), ExtResource("91_duskfi")])
 bite_time_min = 35.0
 bite_time_max = 60.0
 rarity_weights = {
 &"common": 50.0,
 &"rare": 18.0,
-&"uncommon": 32.0
+&"uncommon": 32.0,
+&"epic": 5.0,
+&"legendary": 1.2
 }
 unlock_cost = 1500
 unlock_level = 6

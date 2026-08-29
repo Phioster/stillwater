@@ -3,7 +3,7 @@ extends TestCase
 func test_all_content_loads() -> void:
 	assert_eq(Database.rarities.size(), 5)
 	assert_eq(Database.baits.size(), 2)
-	assert_eq(Database.fish.size(), 11)
+	assert_eq(Database.fish.size(), 21)
 	assert_eq(Database.zones.size(), 2)
 	assert_eq(Database.upgrades.size(), 4)
 
@@ -11,9 +11,9 @@ func test_validate_reports_no_problems() -> void:
 	var problems := Database.validate()
 	assert_eq(problems.size(), 0, "Probleme: %s" % str(problems))
 
-func test_willow_lake_has_six_fish_including_the_secret() -> void:
+func test_willow_lake_has_its_full_roster_including_the_secret() -> void:
 	var f := Database.fish_of_zone(&"willow_lake")
-	assert_eq(f.size(), 6)
+	assert_eq(f.size(), 14)
 	var secrets := 0
 	for x in f:
 		if x.is_secret:
@@ -52,3 +52,18 @@ func test_zone_fish_are_the_same_instances_as_database_fish() -> void:
 			var db_f: FishData = Database.fish[zf.id]
 			assert_true(db_f == zf, "Fisch %s: Zone-Kopie ist nicht dieselbe Instanz wie Database.fish" % zf.id)
 			assert_eq(db_f.resource_path, zf.resource_path, "Fisch %s: unterschiedlicher resource_path" % zf.id)
+
+## Epic und Legendary standen lange nur in den Raritaetsdaten: kein Fisch
+## trug sie, keine Zone gewichtete sie. Beide Haelften muessen stimmen,
+## sonst ist die Stufe wieder unerreichbar.
+func test_every_rarity_has_fish_and_zone_weight() -> void:
+	var used: Dictionary = {}
+	for id in Database.fish:
+		used[Database.fish[id].rarity_id] = true
+	for rid in Database.rarities:
+		assert_true(used.has(rid), "keine Art hat die Raritaet %s" % rid)
+		var weighted := false
+		for zid in Database.zones:
+			if Database.zones[zid].rarity_weights.has(rid):
+				weighted = true
+		assert_true(weighted, "keine Zone gewichtet die Raritaet %s" % rid)

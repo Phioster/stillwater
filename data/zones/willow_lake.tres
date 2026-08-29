@@ -8,14 +8,24 @@
 [ext_resource type="Resource" path="res://data/fish/lantern_tench.tres" id="6_704qv"]
 [ext_resource type="Resource" path="res://data/fish/hollowfin.tres" id="7_ldo3o"]
 [ext_resource type="Script" path="res://resources/zone_data.gd" id="8_pkrp3"]
+[ext_resource type="Resource" path="res://data/fish/rudd.tres" id="90_rudd"]
+[ext_resource type="Resource" path="res://data/fish/gudgeon.tres" id="91_gudgeo"]
+[ext_resource type="Resource" path="res://data/fish/bleak.tres" id="92_bleak"]
+[ext_resource type="Resource" path="res://data/fish/tench.tres" id="93_tench"]
+[ext_resource type="Resource" path="res://data/fish/eel.tres" id="94_eel"]
+[ext_resource type="Resource" path="res://data/fish/pike.tres" id="95_pike"]
+[ext_resource type="Resource" path="res://data/fish/wels_catfish.tres" id="96_wels_c"]
+[ext_resource type="Resource" path="res://data/fish/moon_carp.tres" id="97_moon_c"]
 
 [resource]
 script = ExtResource("8_pkrp3")
 id = &"willow_lake"
 display_name = "Willow Lake"
-fish = Array[ExtResource("1_tpa7w")]([ExtResource("2_jlfdw"), ExtResource("3_xirk1"), ExtResource("4_gp3an"), ExtResource("5_fhgja"), ExtResource("6_704qv"), ExtResource("7_ldo3o")])
+fish = Array[ExtResource("1_tpa7w")]([ExtResource("2_jlfdw"), ExtResource("3_xirk1"), ExtResource("4_gp3an"), ExtResource("5_fhgja"), ExtResource("6_704qv"), ExtResource("7_ldo3o"), ExtResource("90_rudd"), ExtResource("91_gudgeo"), ExtResource("92_bleak"), ExtResource("93_tench"), ExtResource("94_eel"), ExtResource("95_pike"), ExtResource("96_wels_c"), ExtResource("97_moon_c")])
 rarity_weights = {
 &"common": 70.0,
 &"rare": 5.0,
-&"uncommon": 25.0
+&"uncommon": 25.0,
+&"epic": 1.5,
+&"legendary": 0.4
 }
