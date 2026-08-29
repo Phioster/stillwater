@@ -88,11 +88,23 @@ func open(id: StringName) -> void:
 	var best := ("%.2f" % float(e["best_weight"])).replace(".", ",")
 	var span_lo := ("%.2f" % f.weight_min).replace(".", ",")
 	var span_hi := ("%.2f" % f.weight_max).replace(".", ",")
-	_stats_label.text = "Rarität: %s\nFänge: %d\nRekordgewicht: %s kg\nKleinstes Gewicht: %s kg\nGewichtsspanne: %s–%s kg\nBeste Qualität: %s\nSchimmernd: %s\nFischlevel: %d\nWert des Rekordfangs: %d Münzen\nGrundwert: %d\nXP: %d" % [
+	_stats_label.text = "Rarität: %s\nFänge: %d\nRekordgewicht: %s kg\nKleinstes Gewicht: %s kg\nGewichtsspanne: %s–%s kg\nBeste Qualität: %s\nSchimmernd: %s\n%s\nWert des Rekordfangs: %d Münzen\nGrundwert: %d\nXP: %d" % [
 		rarity.display_name, int(e["caught_count"]), best, worst, span_lo, span_hi,
 		FishRoll.QUALITY_NAMES[int(e["best_quality"])],
 		"ja" if bool(e["shiny_found"]) else "nein",
-		int(e["fish_level"]), value, f.base_value, f.xp,
+		_level_text(id), value, f.base_value, f.xp,
 	]
 	_stats_label.modulate = rarity.color
 	visible = true
+
+## Das Fischlevel als nackte Zahl sagte nichts. Es zeigt jetzt, wie weit die
+## naechste Stufe ist und was sie bringt: mehr Schimmer-Chance.
+func _level_text(id: StringName) -> String:
+	var level := Game.ctx.journal.fish_level(id)
+	var bonus := "  (+%d %% Schimmer)" % int(round(5.0 * float(level)))
+	if level <= 0:
+		bonus = ""
+	var p := Game.ctx.journal.level_progress(id)
+	if p[1] <= 0:
+		return "Fischlevel: %d — Höchststufe%s" % [level, bonus]
+	return "Fischlevel: %d%s\nNächste Stufe: %d/%d Fänge" % [level, bonus, p[0], p[1]]

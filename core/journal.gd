@@ -3,8 +3,27 @@
 class_name Journal
 extends RefCounted
 
+## Fischlevel steigt mit den Faengen dieser Art. Dreieckszahlen: Stufe n
+## verlangt 5*(1+2+...+n) Faenge, also 5, 15, 30, 50, 75 ... -- die ersten
+## Stufen kommen schnell, die letzten sind ein Fernziel.
+const LEVEL_STEP: int = 5
+const MAX_FISH_LEVEL: int = 10
+
 var entries: Dictionary = {}
 var _secret_found: bool = false
+
+## Faenge, die Stufe `level` verlangt.
+static func catches_for_level(level: int) -> int:
+	var n := clampi(level, 0, MAX_FISH_LEVEL)
+	return LEVEL_STEP * n * (n + 1) / 2
+
+## Umkehrung, ganzzahlig statt per Wurzel -- bei zehn Stufen ist die Schleife
+## billiger als das Risiko, an einer Schwelle um eins danebenzuliegen.
+static func level_for_count(count: int) -> int:
+	var level := 0
+	while level < MAX_FISH_LEVEL and count >= catches_for_level(level + 1):
+		level += 1
+	return level
 
 func _blank() -> Dictionary:
 	return {
@@ -13,7 +32,6 @@ func _blank() -> Dictionary:
 		"worst_weight": 0.0,
 		"best_quality": 0,
 		"shiny_found": false,
-		"fish_level": 0,
 	}
 
 ## Trägt einen Fang ein. Gibt true zurück, wenn die Art neu entdeckt wurde.
@@ -41,9 +59,18 @@ func is_discovered(id: StringName) -> bool:
 func entry(id: StringName) -> Dictionary:
 	return entries.get(id, _blank())
 
-## In Slice 1 immer 0 — Erhöhung kommt erst nach dem Slice (siehe Spec).
 func fish_level(id: StringName) -> int:
-	return int(entry(id)["fish_level"])
+	return level_for_count(int(entry(id)["caught_count"]))
+
+## Fortschritt in der laufenden Stufe: [in dieser Stufe, fuer die naechste].
+## Auf der Hoechststufe [0, 0] -- die Anzeige zeigt dann keinen Balken.
+func level_progress(id: StringName) -> Array[int]:
+	var count := int(entry(id)["caught_count"])
+	var level := level_for_count(count)
+	if level >= MAX_FISH_LEVEL:
+		return [0, 0]
+	var base := catches_for_level(level)
+	return [count - base, catches_for_level(level + 1) - base]
 
 ## Anteil entdeckter Arten. Secret-Fische zählen bewusst nicht mit,
 ## damit 100 % erreichbar bleibt.

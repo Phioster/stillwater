@@ -213,7 +213,6 @@ func _sanitize_journal_entry(e: Dictionary) -> Dictionary:
 		"worst_weight": _safe_float(e.get("worst_weight"), 0.0),
 		"best_quality": _safe_int(e.get("best_quality"), 0),
 		"shiny_found": _safe_bool(e.get("shiny_found"), false),
-		"fish_level": _safe_int(e.get("fish_level"), 0),
 	}
 
 func _defaults() -> Dictionary:
