@@ -3,10 +3,10 @@
 extends Control
 
 const ORB_SCENE := preload("res://scenes/fishing/orb.tscn")
-## So viele Punkte sind gleichzeitig da. Faellt einer weg -- getroffen oder
-## abgelaufen -- rueckt sofort der naechste nach. Eine feste Uhr fuehlte sich
-## traege an, weil sie nicht auf den Spieler reagierte.
-const ORB_TARGET: int = 2
+## Immer genau ein Punkt. Faellt er weg -- getroffen oder abgelaufen -- rueckt
+## sofort der naechste nach. Bei zwei poppten zu Beginn beide auf einmal auf,
+## danach kam ohnehin nur einer nach: der Anfang passte nicht zum Rest.
+const ORB_TARGET: int = 1
 ## Nur eine Atempause, damit zwei Punkte nicht im selben Frame aufpoppen.
 const ORB_RESPAWN: float = 0.12
 const ORB_LIFETIME: float = 2.2

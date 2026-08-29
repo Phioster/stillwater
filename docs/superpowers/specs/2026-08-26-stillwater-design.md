@@ -22,10 +22,35 @@ tragen.
 
 ### 1.1 Eigenständigkeit
 
-Cornerpond diente ausschließlich als Referenz für die *Art* des
-Gameplay-Loops und für Pacing-Größenordnungen. Übernommen wird nichts
-davon: keine Grafiken, Sprites, Namen, Texte, UI-Entwürfe, Sounds,
-Musik, Fischillustrationen oder sonstigen Inhalte.
+Cornerpond ist die erklärte Referenz. Die ursprüngliche Fassung dieser
+Regel verbot pauschal jede Anlehnung; das ging weiter, als es musste,
+und hat dem Spiel geschadet. Es gilt jetzt eine Grenze, die dort
+verläuft, wo sie tatsächlich verläuft:
+
+**Frei — darf studiert, verglichen und nachempfunden werden:**
+
+- Spielmechaniken und Formeln: wie Seltenheit an die Stufe koppelt, wie
+  Fangpunkte getaktet sind, wie Offline-Fortschritt abgerechnet wird.
+- Systemzuschnitt und Fortschrittskurve: welche Systeme es gibt
+  (Kosmetik, Ausrüstung, Verbrauchsgüter, Orte) und wann sie aufgehen.
+- Bedienung und Aufbau: dass Fanginfos in einem eigenen Fenster stehen,
+  wie ein Journal gegliedert ist, wo Knöpfe erwartet werden.
+- Anmutung und Tempo: Ruhe, Lesbarkeit, wie lang eine Rückmeldung steht.
+
+Mechaniken, Systeme und Bedienabläufe sind Ideen. Ideen sind frei, und
+ein Genre lebt davon, dass sie weitergereicht werden.
+
+**Nie — kommt unter keinen Umständen ins Repository:**
+
+- Dateien: Sprites, Illustrationen, Sounds, Musik, Schriften, Paletten
+  als Datei. Nichts wird aus dem PCK entpackt und eingebaut.
+- Quelltext wörtlich oder abgeschrieben. Ein System verstehen und selbst
+  bauen ist erlaubt; Zeilen übertragen ist es nicht.
+- Wörtliche Texte, Beschreibungen, Tooltips.
+- Erfundene Eigennamen: Fischarten, Orte, Gegenstände, Figuren.
+
+Der Grund ist nicht Ängstlichkeit, sondern Nutzen: Stillwater soll
+veröffentlichbar bleiben. Ideen kosten das nichts, fremde Dateien schon.
 
 Verbindliche Namensregel:
 

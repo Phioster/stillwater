@@ -21,7 +21,7 @@
 - Dateien bleiben unter **400 Zeilen**.
 - Fische, Köder, Zonen, Upgrades und Raritäten stehen ausschließlich in `.tres`-Dateien. Keine hartcodierten Fischdaten, Preise oder Drop-Chancen.
 - Preise werden **ausschließlich** in `Economy.sell_price()` berechnet.
-- **Namensregel:** Reale Fischarten (Bluegill, Rotauge, Flussbarsch, Spiegelkarpfen, Makrele, Hornhecht, Meerbarbe, Wolfsbarsch) sind frei. Erfundene Namen (Laternenschleie, Glutrochen, Hohlflosse, Teichmade, Eintagsfliegen-Nymphe) sind eigene Erfindungen. Nichts aus Cornerpond übernehmen: keine Grafiken, Sprites, Namen, Texte, UI-Entwürfe, Sounds, Musik.
+- **Namensregel:** Reale Fischarten (Bluegill, Rotauge, Flussbarsch, Spiegelkarpfen, Makrele, Hornhecht, Meerbarbe, Wolfsbarsch) sind frei. Erfundene Namen (Laternenschleie, Glutrochen, Hohlflosse, Teichmade, Eintagsfliegen-Nymphe) sind eigene Erfindungen. Aus Cornerpond: Mechaniken, Systemzuschnitt und Bedienabläufe sind frei (studieren und selbst bauen). Nie übernommen werden Dateien (Sprites, Sounds, Musik, Schriften), Quelltext, wörtliche Texte und erfundene Eigennamen. Siehe Spec 1.1.
 - Anzeigenamen deutsch, IDs englisch und `snake_case` als `StringName`.
 - **Keine Secrets oder Tokens im Repo.** Keine `Co-Authored-By`-Trailer in Commits. Commit-Identität: `Phioster <165709682+Phioster@users.noreply.github.com>` (bereits in `~/stillwater/.git/config` gesetzt).
 - Feste Konstanten aus der Spec: Kampffenster 20 s · Bisszeit Willow Lake 25–45 s · Sunset Coast 35–60 s · Shiny-Basis 1/800 · Offline-Deckel 12 h · Qualitätsschwellen 0.12 / 0.30 / 0.55 / 0.75 / 0.89 / 0.97 · Qualitätsmultiplikatoren 0.6 / 0.8 / 1.0 / 1.3 / 1.7 / 2.4 / 3.5 · Gewichtsexponent 1.6 · Shiny-Verkaufsmultiplikator 4.0 · `xp_needed(n) = round(80 · n^1.55)`.
