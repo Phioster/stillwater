@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RarityData" format=3]
+
+[ext_resource type="Script" path="res://resources/rarity_data.gd" id="1_3a5dd"]
+
+[resource]
+script = ExtResource("1_3a5dd")
+id = &"epic"
+display_name = "Episch"
+color = Color(0.6039216, 0.43529412, 0.8156863, 1)
+value_mult = 20.0
+xp_mult = 10.0
+strength_mult = 8.0
+quality_bias = 0.3
+unlock_level = 10
+ramp_levels = 12

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RarityData" format=3]
+
+[ext_resource type="Script" path="res://resources/rarity_data.gd" id="1_pu5f5"]
+
+[resource]
+script = ExtResource("1_pu5f5")
+id = &"common"
+display_name = "Gewöhnlich"
+color = Color(0.6039216, 0.654902, 0.62352943, 1)
+unlock_level = 1
+ramp_levels = 1

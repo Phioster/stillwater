@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_us3d3"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_tcugb"]
+
+[resource]
+script = ExtResource("2_tcugb")
+id = &"mirror_carp"
+display_name = "Spiegelkarpfen"
+zone_id = &"willow_lake"
+rarity_id = &"uncommon"
+base_value = 30
+strength = 40.0
+xp = 16
+weight_min = 1.0
+weight_max = 6.5

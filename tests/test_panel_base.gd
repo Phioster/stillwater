@@ -1,0 +1,57 @@
+extends TestCase
+
+## Testdouble: zaehlt refresh()-Aufrufe, sonst reines PanelBase-Verhalten.
+class CountingPanel:
+	extends PanelBase
+	var refresh_count: int = 0
+	func refresh() -> void:
+		refresh_count += 1
+
+## Reproduziert main.tscn: das Panel steckt in einem ScrollContainer, dessen
+## eigenes visible umgeschaltet wird -- das Panel-`visible` selbst bleibt
+## immer true. Genau die Konstellation aus I1.
+func test_refresh_only_runs_while_visible_in_a_wrapped_scroll_container() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var scroll := ScrollContainer.new()
+	var panel := CountingPanel.new()
+	scroll.add_child(panel)
+	scroll.visible = false
+	tree.root.add_child(scroll)
+
+	assert_eq(panel.refresh_count, 0, "verstecktes Panel darf beim Eintritt nicht zeichnen")
+
+	Game.state_changed.emit()
+	assert_eq(panel.refresh_count, 0,
+		"state_changed darf ein verstecktes, in ScrollContainer gewickeltes Panel nicht neu zeichnen")
+
+	scroll.visible = true
+	assert_eq(panel.refresh_count, 1, "Sichtbarwerden muss genau einmal zeichnen")
+
+	Game.state_changed.emit()
+	assert_eq(panel.refresh_count, 2, "sichtbares Panel zeichnet bei state_changed neu")
+
+	scroll.visible = false
+	assert_eq(panel.refresh_count, 2, "Verstecken darf nicht erneut zeichnen")
+
+	tree.root.remove_child(scroll)
+	scroll.free()
+
+## Das Seitenpanel liegt UEBER der Welt. Lag es daneben, schrumpfte das Wasser
+## beim Oeffnen des Menues -- das war als Fehler gemeldet.
+func test_opening_a_tab_does_not_resize_the_world() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	await tree.process_frame
+	await tree.process_frame
+	var world: Control = m.get_node("Row/World")
+	var closed := world.size
+	m.show_tab(0)
+	await tree.process_frame
+	await tree.process_frame
+	assert_eq(world.size, closed, "die Welt darf beim Oeffnen des Menues nicht schrumpfen")
+	var side: Control = m.get_node("SidePanel")
+	assert_true(side.is_visible_in_tree(), "das Panel muss dabei sichtbar sein")
+	assert_true(side.get_global_rect().position.x < world.get_global_rect().end.x,
+		"und es muss ueber der Welt liegen, nicht daneben")
+	m.queue_free()

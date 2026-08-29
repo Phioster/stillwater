@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_qeho0"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="2_62pem"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_66jow"]
+[ext_resource type="Script" path="res://resources/bait_condition.gd" id="3_42bmg"]
+
+[sub_resource type="Resource" id="Resource_a00b7"]
+script = ExtResource("2_62pem")
+min_level = 5
+
+[sub_resource type="Resource" id="Resource_comfb"]
+script = ExtResource("3_42bmg")
+bait_id = &"mayfly_nymph"
+
+[resource]
+script = ExtResource("2_66jow")
+id = &"hollowfin"
+display_name = "Hohlflosse"
+zone_id = &"willow_lake"
+rarity_id = &"rare"
+base_value = 400
+strength = 95.0
+xp = 200
+weight_min = 0.5
+weight_max = 2.0
+is_secret = true
+secret_chance = 0.02
+secret_hint = "Etwas meidet hier den gewöhnlichen Köder."
+conditions = Array[ExtResource("1_qeho0")]([SubResource("Resource_a00b7"), SubResource("Resource_comfb")])

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RarityData" format=3]
+
+[ext_resource type="Script" path="res://resources/rarity_data.gd" id="1_yq31p"]
+
+[resource]
+script = ExtResource("1_yq31p")
+id = &"legendary"
+display_name = "Legendär"
+color = Color(0.84705883, 0.63529414, 0.2901961, 1)
+value_mult = 60.0
+xp_mult = 25.0
+strength_mult = 14.0
+quality_bias = 0.4
+unlock_level = 18
+ramp_levels = 15

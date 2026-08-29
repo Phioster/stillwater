@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ZoneData" format=3]
+
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_tpa7w"]
+[ext_resource type="Resource" path="res://data/fish/bluegill.tres" id="2_jlfdw"]
+[ext_resource type="Resource" path="res://data/fish/roach.tres" id="3_xirk1"]
+[ext_resource type="Resource" path="res://data/fish/perch.tres" id="4_gp3an"]
+[ext_resource type="Resource" path="res://data/fish/mirror_carp.tres" id="5_fhgja"]
+[ext_resource type="Resource" path="res://data/fish/lantern_tench.tres" id="6_704qv"]
+[ext_resource type="Resource" path="res://data/fish/hollowfin.tres" id="7_ldo3o"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="8_pkrp3"]
+
+[resource]
+script = ExtResource("8_pkrp3")
+id = &"willow_lake"
+display_name = "Willow Lake"
+fish = Array[ExtResource("1_tpa7w")]([ExtResource("2_jlfdw"), ExtResource("3_xirk1"), ExtResource("4_gp3an"), ExtResource("5_fhgja"), ExtResource("6_704qv"), ExtResource("7_ldo3o")])
+rarity_weights = {
+&"common": 70.0,
+&"rare": 5.0,
+&"uncommon": 25.0
+}

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_kmrw7"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_vds5q"]
+
+[resource]
+script = ExtResource("2_vds5q")
+id = &"lantern_tench"
+display_name = "Laternenschleie"
+zone_id = &"willow_lake"
+rarity_id = &"rare"
+base_value = 85
+strength = 70.0
+xp = 40
+weight_min = 0.8
+weight_max = 3.5

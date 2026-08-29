@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_d9vdy"]
+
+[resource]
+script = ExtResource("1_d9vdy")
+id = &"hair_1"
+category = &"hair"
+variant = 1
+display_name = "Zopf"
+cost = 260
+unlock_level = 2

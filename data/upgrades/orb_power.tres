@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://resources/upgrade_data.gd" id="1_7g8js"]
+
+[resource]
+script = ExtResource("1_7g8js")
+id = &"orb_power"
+display_name = "Orb-Kraft"
+description = "Mehr Schaden pro Tipp auf einen Orb."
+base_cost = 40
+value_base = 6.0
+value_per_level = 3.0
