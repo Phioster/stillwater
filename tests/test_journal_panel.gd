@@ -15,12 +15,13 @@ func _row_for(panel: PanelBase, id: StringName) -> Control:
 			return child
 	return null
 
+## Die Zeile ist ein Knopf: druecken statt ein Eingabeereignis nachbauen. Das
+## ist naeher an dem, was der Spieler tut -- rohe gui_input-Ereignisse kamen auf
+## dem Geraet gar nicht erst an.
 func _tap(panel: PanelBase, id: StringName) -> void:
 	var row := _row_for(panel, id)
-	var event := InputEventMouseButton.new()
-	event.button_index = MOUSE_BUTTON_LEFT
-	event.pressed = true
-	row.gui_input.emit(event)
+	assert_true(row is Button, "eine Journalzeile muss ein Knopf sein: %s" % row.get_class())
+	(row as Button).pressed.emit()
 
 func _secret_id() -> StringName:
 	for id in Database.fish:

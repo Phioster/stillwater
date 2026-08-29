@@ -31,23 +31,32 @@ func refresh() -> void:
 				continue
 			add_child(_entry(f))
 
+## Die Zeile ist ein Knopf, kein Container mit gui_input: Knoepfe nehmen
+## Beruehrungen zuverlaessig an, auch innerhalb eines Scroll-Bereichs. Die
+## Tab-Leiste macht es genauso und funktioniert auf dem Geraet.
 func _entry(f: FishData) -> Control:
+	var button := Button.new()
+	button.flat = true
+	button.custom_minimum_size = Vector2(0, 84)
+	button.set_meta(&"fish_id", f.id)
+	button.pressed.connect(func(): fish_tapped.emit(f.id))
 	var row := HBoxContainer.new()
-	row.custom_minimum_size = Vector2(0, 84)
-	row.mouse_filter = Control.MOUSE_FILTER_STOP
-	row.set_meta(&"fish_id", f.id)
-	row.gui_input.connect(_on_row_input.bind(f.id))
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(row)
 
 	var known := Game.ctx.journal.is_discovered(f.id)
 	var icon := TextureRect.new()
 	icon.custom_minimum_size = Vector2(64, 32)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var suffix := "" if known else "_silhouette"
 	icon.texture = TextureLoader.load_texture("res://assets/art/fish_%s%s.png" % [f.id, suffix])
 	row.add_child(icon)
 
 	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if known:
 		var e := Game.ctx.journal.entry(f.id)
@@ -63,27 +72,22 @@ func _entry(f: FishData) -> Control:
 		label.text = "???"
 		label.modulate = Palette.get_color(&"shadow")
 	row.add_child(label)
-	return row
+	return button
 
 ## Tipp per Maus (Desktop) oder Finger (Android, per Standardeinstellung als
 ## Mausereignis emuliert) meldet die Fisch-ID -- das Fenster entscheidet
 ## selbst, was es dazu zeigt.
-func _on_row_input(event: InputEvent, id: StringName) -> void:
-	var mouse_tap: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
-	var touch_tap: bool = event is InputEventScreenTouch and event.pressed
-	if not (mouse_tap or touch_tap):
-		return
-	fish_tapped.emit(id)
-
-## Der gesperrte Platz eines noch nicht entdeckten Secret-Fischs ist ebenso
-## antippbar wie eine normale Zeile -- das Fenster zeigt dann nur den Hinweis.
 func _locked(f: FishData) -> Control:
+	var button := Button.new()
+	button.flat = true
+	button.custom_minimum_size = Vector2(0, 64)
+	button.set_meta(&"fish_id", f.id)
+	button.pressed.connect(func(): fish_tapped.emit(f.id))
 	var label := Label.new()
-	label.custom_minimum_size = Vector2(0, 64)
-	label.mouse_filter = Control.MOUSE_FILTER_STOP
-	label.set_meta(&"fish_id", f.id)
-	label.gui_input.connect(_on_row_input.bind(f.id))
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = "🔒 %s" % f.secret_hint
 	label.modulate = Palette.get_color(&"accent")
-	return label
+	button.add_child(label)
+	return button
