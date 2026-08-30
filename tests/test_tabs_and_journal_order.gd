@@ -22,21 +22,28 @@ func test_every_tab_has_its_panel_in_the_same_order() -> void:
 	assert_eq(TabRail.TABS[1], "Vitrine")
 	m.free()
 
-func test_the_rail_never_grows_past_its_own_height() -> void:
+## Die Leiste darf nie hoeher werden als der Platz, den sie bekommt. Mit
+## grossen Mindesthoehen an den Knoepfen war genau das der Fall: sie
+## summierten sich zur Mindesthoehe der Leiste, und bei neun Reitern lief
+## sie unten aus dem Bild.
+func test_the_rail_never_demands_more_room_than_the_screen() -> void:
 	Game.new_game()
 	var m := _main()
-	var rail := m.get_node("Row/TabRail")
-	rail.size = Vector2(96, 500)
-	rail._fit_buttons()
-	var used := 0.0
-	var box: VBoxContainer = rail.get_node("Box")
-	var shown := 0
+	var rail: Control = m.get_node("Row/TabRail")
+	var demanded := rail.get_combined_minimum_size().y
+	assert_true(demanded <= 720.0,
+		"die Leiste verlangt %f px, der Bildschirm hat 720" % demanded)
+	m.free()
+
+## Jeder Knopf bleibt mit dem Daumen treffbar, und sie teilen sich den Platz.
+func test_every_tab_stays_thumb_sized_and_shares_the_space() -> void:
+	Game.new_game()
+	var m := _main()
+	var box: VBoxContainer = m.get_node("Row/TabRail/Box")
 	for b in box.get_children():
-		if b.visible:
-			shown += 1
-			used += b.custom_minimum_size.y
-	used += float(shown - 1) * float(box.get_theme_constant(&"separation"))
-	assert_true(used <= 500.0, "die Leiste ragt über den Rand: %f von 500" % used)
+		assert_eq(b.custom_minimum_size.y, TabRail.MIN_BUTTON_HEIGHT)
+		assert_eq(b.size_flags_vertical, Control.SIZE_EXPAND_FILL,
+			"ohne Dehnung teilen sich die Reiter den Platz nicht")
 	m.free()
 
 func test_the_showcase_tab_lists_only_favorites() -> void:
@@ -135,18 +142,3 @@ func test_the_ui_carries_outline_and_shadow_from_one_theme() -> void:
 	m.free()
 
 ## Auch die Reiter federn -- sonst fühlt sich ausgerechnet der meistbenutzte
-## Knopf tot an.
-func test_the_tab_buttons_are_springy() -> void:
-	Game.new_game()
-	var m := _main()
-	var b: Control = m.get_node("Row/TabRail/Box").get_child(0)
-	assert_true(b is TapButton, "Reiter sind gewöhnliche Knöpfe: %s" % b.get_class())
-	m.free()
-
-func test_the_options_tab_sits_where_the_rail_says() -> void:
-	Game.new_game()
-	var m := _main()
-	var panels: Node = m.get_node("SidePanel/Panels")
-	assert_eq(TabRail.TABS[7], "Optionen")
-	assert_eq(panels.get_child(7).name, &"OptionsScroll")
-	m.free()

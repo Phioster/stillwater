@@ -41,14 +41,23 @@ func test_move_to_pulls_the_spring_to_a_new_target() -> void:
 
 ## Der Ausschlag muss abklingen und enden -- eine Erschütterung, die bleibt,
 ## ist ein Fehler.
+## Verglichen wird die HUELLKURVE, nicht eine einzelne Stichprobe: das
+## Rauschen kann zufaellig gerade nahe null liegen, und dann waere ein
+## spaeterer Wert groesser, obwohl die Erschuetterung abklingt.
 func test_a_shake_decays_and_ends() -> void:
 	var sh := Shake.new(10.0, 0.4, 20.0)
 	assert_true(sh.alive())
-	var first := absf(sh.amplitude())
-	sh.update(0.35)
-	assert_true(absf(sh.amplitude()) < maxf(first, 0.001) + 0.001,
-		"der Ausschlag muss kleiner werden")
-	sh.update(0.1)
+	var early := 0.0
+	for i in 10:
+		early = maxf(early, absf(sh.amplitude()))
+		sh.update(0.01)
+	var late := 0.0
+	sh.update(0.25)
+	for i in 4:
+		late = maxf(late, absf(sh.amplitude()))
+		sh.update(0.01)
+	assert_true(late < early, "der Ausschlag muss abklingen: %f gegen %f" % [late, early])
+	sh.update(0.2)
 	assert_false(sh.alive())
 	assert_almost_eq(sh.amplitude(), 0.0, 0.0001, "danach muss Ruhe sein")
 
