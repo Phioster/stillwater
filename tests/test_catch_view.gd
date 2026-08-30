@@ -66,9 +66,36 @@ func test_tapping_an_orb_leaves_a_damage_number() -> void:
 	var orb: Node = area.get_child(0)
 	v._on_orb_tapped(orb)
 	var found := ""
-	for child in area.get_children():
+	for child in v.get_node("Pops").get_children():
 		if child is Label:
 			found = (child as Label).text
 	assert_eq(found, "-%d" % int(round(Game.ctx.orb_power)),
 		"es muss eine Schadenszahl stehen")
+	v.free()
+
+## Die Schadenszahl darf den naechsten Punkt nicht aufhalten. Sie lag frueher
+## im selben Container wie die Orbs und galt dort als lebender Punkt -- beim
+## schnellen Tippen kam der Nachruecker dadurch ueber eine Sekunde zu spaet.
+func test_a_damage_number_does_not_block_the_next_orb() -> void:
+	_into_a_fight()
+	var v := _view()
+	var area: Control = v.get_node("Orbs")
+	v._spawn_orb()
+	v._on_orb_tapped(area.get_child(0))
+	area.get_child(0).queue_free()
+	assert_true(v.get_node("Pops").get_child_count() > 0, "die Schadenszahl fehlt")
+	assert_eq(v._living_orbs(), 0, "eine Schadenszahl ist kein lebender Punkt")
+	v.free()
+
+## Schnelles Tippen darf nicht ausgebremst werden: nach einem Treffer muss der
+## naechste Punkt binnen ORB_RESPAWN stehen.
+func test_the_next_orb_follows_within_the_respawn_window() -> void:
+	_into_a_fight()
+	var v := _view()
+	var area: Control = v.get_node("Orbs")
+	v._spawn_orb()
+	v._on_orb_tapped(area.get_child(0))
+	area.get_child(0).free()
+	v._process(v.ORB_RESPAWN + 0.001)
+	assert_eq(v._living_orbs(), 1, "der naechste Punkt muss sofort nachruecken")
 	v.free()

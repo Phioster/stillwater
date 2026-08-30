@@ -8,8 +8,9 @@ const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 ## sofort der naechste nach. Bei zwei poppten zu Beginn beide auf einmal auf,
 ## danach kam ohnehin nur einer nach: der Anfang passte nicht zum Rest.
 const ORB_TARGET: int = 1
-## Nur eine Atempause, damit zwei Punkte nicht im selben Frame aufpoppen.
-const ORB_RESPAWN: float = 0.12
+## Nur eine Atempause, damit zwei Punkte nicht im selben Frame aufpoppen --
+## kurz genug, dass sie beim schnellen Tippen nicht zu spueren ist.
+const ORB_RESPAWN: float = 0.05
 const ORB_LIFETIME: float = 2.2
 const ORB_MARGIN: float = 80.0
 ## Die Orbs erscheinen rund um den Schwimmer statt ueber dem ganzen Bild.
@@ -27,6 +28,10 @@ var focus_point: Vector2 = Vector2.ZERO
 ## Fläche für die Orbs; deckungsgleich mit World.orb_area, aber lokal in
 ## dieser Szene, damit CatchView ohne Weltreferenz eigenständig lädt.
 @onready var spawn_area: Control = $Orbs
+## Schadenszahlen liegen bewusst NICHT bei den Orbs: _living_orbs() zaehlt die
+## Kinder von spawn_area, eine Zahl darin galt als lebender Punkt und
+## blockierte den Nachruecker fuer ihre ganze Lebenszeit.
+@onready var _pops: Control = $Pops
 
 var _spawn_timer: float = 0.0
 
@@ -75,6 +80,8 @@ func _on_escaped(_f: FishData) -> void:
 func _clear_orbs() -> void:
 	for child in spawn_area.get_children():
 		child.queue_free()
+	for child in _pops.get_children():
+		child.queue_free()
 
 func _spawn_orb() -> void:
 	var orb := ORB_SCENE.instantiate()
@@ -88,7 +95,7 @@ func _on_orb_tapped(orb: Node) -> void:
 	var damage := int(round(Game.ctx.orb_power))
 	var at: Vector2 = (orb as Control).position if orb is Control else Vector2.ZERO
 	var pop := POP_TEXT_SCENE.instantiate()
-	spawn_area.add_child(pop)
+	_pops.add_child(pop)
 	pop.setup("-%d" % damage, at, Palette.get_color(&"accent"))
 	Game.tap()
 
