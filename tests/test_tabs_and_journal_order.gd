@@ -162,9 +162,12 @@ func test_the_zone_switcher_holds_every_zone_in_one_tap() -> void:
 		assert_true(b is TapButton, "der Zonenknopf ist kein TapButton: %s" % b.get_class())
 	m.free()
 
-## Der letzte Eintrag einer Zone muss der seltenste UND schwerste sein --
-## genau der Eindruck, den die Liste vermitteln soll.
-func test_the_last_entry_of_a_zone_is_the_rarest_and_heaviest() -> void:
+## Der letzte Eintrag einer Zone ist der seltenste, und innerhalb seiner
+## Rarität der schwerste. NICHT unbedingt der schwerste der ganzen Zone: ein
+## epischer Fisch darf schwerer sein als ein legendärer. Die Rarität führt,
+## das Gewicht ordnet innerhalb davon -- so wie in der Referenz, nur dass
+## dort der zweite Schlüssel gar keiner ist.
+func test_the_last_entry_is_the_rarest_and_heaviest_of_its_rarity() -> void:
 	Game.new_game()
 	var m := _main()
 	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
