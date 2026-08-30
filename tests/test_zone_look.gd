@@ -40,3 +40,25 @@ func test_every_zone_has_its_background_file() -> void:
 		var path := "res://assets/art/bg_%s.png" % Database.zones[id].background_id
 		assert_true(TextureLoader.load_texture(path) != null,
 			"fehlt: %s (Zone %s)" % [path, id])
+
+## Die dritte Zone ist dunkel und kühl -- der Gegensatz zu See und Küste.
+## Geprüft wird, dass sie überhaupt eigene Farben hat, nicht wie schön sie sind.
+func test_the_moor_has_its_own_look() -> void:
+	var moor: ZoneData = Database.zones[&"night_moor"]
+	var lake: ZoneData = Database.zones[&"willow_lake"]
+	assert_true(moor.background_id != lake.background_id, "gleicher Hintergrund wie der See")
+	assert_true(moor.shore_key != lake.shore_key, "gleiches Ufer wie der See")
+	assert_true(TextureLoader.load_texture("res://assets/art/bg_%s.png" % moor.background_id) != null)
+
+## Jede Zone muss teurer und später sein als die davor -- sonst ist die
+## Reihenfolge im Journal willkürlich und das Freischalten kein Fortschritt.
+func test_zones_get_steadily_harder_to_reach() -> void:
+	var zones: Array[ZoneData] = []
+	for id in Database.zones:
+		zones.append(Database.zones[id])
+	zones.sort_custom(func(a: ZoneData, b: ZoneData) -> bool: return a.unlock_level < b.unlock_level)
+	for i in range(1, zones.size()):
+		assert_true(zones[i].unlock_cost > zones[i - 1].unlock_cost,
+			"%s kostet nicht mehr als %s" % [zones[i].id, zones[i - 1].id])
+		assert_true(zones[i].unlock_level > zones[i - 1].unlock_level,
+			"%s kommt nicht später als %s" % [zones[i].id, zones[i - 1].id])

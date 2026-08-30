@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="ZoneData" format=3]
+
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/fish/moderlieschen.tres" id="10_moderl"]
+[ext_resource type="Resource" path="res://data/fish/bitterling.tres" id="11_bitter"]
+[ext_resource type="Resource" path="res://data/fish/crucian_carp.tres" id="12_crucia"]
+[ext_resource type="Resource" path="res://data/fish/stone_loach.tres" id="13_stone_"]
+[ext_resource type="Resource" path="res://data/fish/weatherfish.tres" id="14_weathe"]
+[ext_resource type="Resource" path="res://data/fish/ruffe.tres" id="15_ruffe"]
+[ext_resource type="Resource" path="res://data/fish/burbot.tres" id="16_burbot"]
+[ext_resource type="Resource" path="res://data/fish/zander.tres" id="17_zander"]
+[ext_resource type="Resource" path="res://data/fish/bog_pike.tres" id="18_bog_pi"]
+[ext_resource type="Resource" path="res://data/fish/mirefin.tres" id="19_mirefi"]
+[ext_resource type="Resource" path="res://data/fish/wisp_carp.tres" id="20_wisp_c"]
+[ext_resource type="Resource" path="res://data/fish/hour_wisp.tres" id="21_hour_w"]
+[ext_resource type="Resource" path="res://data/fish/peat_warden.tres" id="22_peat_w"]
+[ext_resource type="Resource" path="res://data/fish/minnow.tres" id="80_minnow"]
+[ext_resource type="Resource" path="res://data/fish/spirlin.tres" id="81_spirli"]
+[ext_resource type="Resource" path="res://data/fish/silver_bream.tres" id="82_silver"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
+
+[resource]
+script = ExtResource("99_zone")
+id = &"night_moor"
+display_name = "Nebelmoor"
+background_id = &"moor"
+shore_key = &"peat_dark"
+foam_key = &"mist"
+fish = Array[ExtResource("1_fish")]([ExtResource("10_moderl"), ExtResource("11_bitter"), ExtResource("12_crucia"), ExtResource("13_stone_"), ExtResource("14_weathe"), ExtResource("15_ruffe"), ExtResource("16_burbot"), ExtResource("17_zander"), ExtResource("18_bog_pi"), ExtResource("19_mirefi"), ExtResource("20_wisp_c"), ExtResource("21_hour_w"), ExtResource("22_peat_w"), ExtResource("80_minnow"), ExtResource("81_spirli"), ExtResource("82_silver")])
+bite_time_min = 45.0
+bite_time_max = 75.0
+fight_window = 22.0
+rarity_weights = {
+&"common": 44.0,
+&"uncommon": 33.0,
+&"rare": 20.0,
+&"epic": 7.0,
+&"legendary": 2.0
+}
+unlock_cost = 6000
+unlock_level = 12

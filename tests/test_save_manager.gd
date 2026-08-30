@@ -118,6 +118,11 @@ func test_rng_state_survives_the_save() -> void:
 	for i in 10:
 		Game.rng.randf()
 	var blob := SaveManager.serialize()
+	# Zeitstempel in die Zukunft: sonst laesst deserialize() den
+	# Offline-Nachlauf mitlaufen, und der verbraucht zwischen den beiden
+	# Ladevorgaengen unterschiedlich viel Zufall -- der Test haenge dann an
+	# der Wanduhr statt am Spielstand.
+	blob["last_seen_unix"] = int(Time.get_unix_time_from_system()) + 3600
 
 	# Zweimal denselben Spielstand laden muss zweimal denselben Zufall geben.
 	Game.new_game()

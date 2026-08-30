@@ -98,7 +98,7 @@ entkommt. Spec §5.4.
 
 ## Zonen
 
-Willow Lake (Startzone, 5 reguläre Fische + 1 Secret) und Sunset Coast
+Willow Lake (Startzone, 13 reguläre Fische + 3 Secret), Sunset Coast
 (5 Fische, ab Level 6 für 1500 Coins freischaltbar). Sunset Coast
 nutzt in Slice 1 denselben Hintergrund wie Willow Lake — ein
 vollständiger Datensatz beweist, dass das Zonensystem datengetrieben

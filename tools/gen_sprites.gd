@@ -78,6 +78,38 @@ func _background_coast() -> void:
 		_rect(img, x, 78 - h, 1, h, _c(&"sand") if i % 2 == 0 else _c(&"sand_light"))
 	_save(img, "bg_coast")
 
+## Nebelmoor bei Nacht. Gleiche Geometrie wie die anderen Zonen -- Horizont
+## bei 78, Wasser ab 84 -- damit Steg, Uferkante und Wellenlinie passen.
+func _background_moor() -> void:
+	var img := _new_image(320, 180)
+	for y in 78:
+		var t := float(y) / 78.0
+		_rect(img, 0, y, 320, 1, _c(&"night_high").lerp(_c(&"night_low"), t))
+	# Nebelbaender: waagerecht, nach unten dichter.
+	for i in 9:
+		var y := 40 + i * 4
+		var w := 90 + (i * 53) % 180
+		var x := (i * 71) % 260
+		_rect(img, x, y, w, 2, _c(&"mist").lerp(_c(&"night_low"), 0.62))
+	# Irrlicht: der einzige warme Fleck im Bild.
+	# Hof zuerst, Kern darueber -- andersherum uebermalt der Hof das Licht.
+	_ellipse(img, 214.0, 58.0, 6.0, 6.0, _c(&"wisp").lerp(_c(&"night_low"), 0.72))
+	_ellipse(img, 214.0, 58.0, 3.0, 3.0, _c(&"wisp"))
+	_rect(img, 0, 78, 320, 6, _c(&"peat_dark"))
+	for y in range(84, 180):
+		var t := float(y - 84) / 96.0
+		_rect(img, 0, y, 320, 1, _c(&"bog_light").lerp(_c(&"bog_deep"), t))
+	# Spiegelung des Irrlichts auf dem Wasser, aufgebrochen.
+	for i in 7:
+		var y := 90 + i * 6
+		_rect(img, 210 - i, y, 8 + i * 2, 1, _c(&"wisp").lerp(_c(&"bog_light"), 0.55 + 0.06 * float(i)))
+	# Abgestorbene Weiden und Schilfstoppeln am Ufer.
+	for i in 46:
+		var x := (i * 7 + (i % 5) * 2) % 318
+		var h := 3 + (i % 7) * 4
+		_rect(img, x, 78 - h, 1, h, _c(&"willow") if i % 3 == 0 else _c(&"peat"))
+	_save(img, "bg_moor")
+
 func _dock() -> void:
 	var img := _new_image(64, 24)
 	_rect(img, 0, 0, 64, 6, _c(&"wood_light"))
@@ -221,6 +253,7 @@ func _init() -> void:
 	print("Hintergrund")
 	_background()
 	_background_coast()
+	_background_moor()
 	_dock()
 	print("Charakter")
 	for i in 3:

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"crucian_carp"
+display_name = "Karausche"
+zone_id = &"night_moor"
+base_value = 14
+strength = 20.0
+difficulty = 1.1
+xp = 8
+weight_mean = 0.5
+weight_dev = 0.15
