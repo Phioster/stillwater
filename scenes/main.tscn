@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scenes/ui/panels/character_panel.gd" id="10"]
 [ext_resource type="Script" path="res://scenes/ui/panels/secret_panel.gd" id="13"]
 [ext_resource type="Script" path="res://scenes/ui/panels/vitrine_panel.gd" id="14"]
+[ext_resource type="Script" path="res://scenes/ui/panels/options_panel.gd" id="15"]
 [ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/fish_window.tscn" id="12"]
 
@@ -106,6 +107,15 @@ anchor_bottom = 1.0
 [node name="CharacterPanel" type="VBoxContainer" parent="SidePanel/Panels/CharacterScroll"]
 size_flags_horizontal = 3
 script = ExtResource("10")
+
+[node name="OptionsScroll" type="ScrollContainer" parent="SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="OptionsPanel" type="VBoxContainer" parent="SidePanel/Panels/OptionsScroll"]
+size_flags_horizontal = 3
+script = ExtResource("15")
 
 [node name="SecretScroll" type="ScrollContainer" parent="SidePanel/Panels"]
 anchors_preset = 15

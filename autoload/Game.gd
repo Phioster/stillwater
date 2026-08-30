@@ -21,6 +21,7 @@ var coins: int = 0:
 		if changed:
 			coins_changed.emit(coins)
 var upgrade_levels: Dictionary = {}
+var settings := Settings.new()
 var unlocked_zones: Array[StringName] = []
 var cosmetics: Dictionary = {}
 ## Kategorie (String) -> Array der besessenen Varianten. Variante 0 jeder
@@ -331,3 +332,14 @@ func set_cosmetic(category: StringName, variant: int) -> bool:
 	ctx.cosmetics = cosmetics
 	state_changed.emit()
 	return true
+
+## Einstellungen wirken sofort und werden gemerkt. Eine Stelle, damit ein
+## Regler nicht vergessen kann, sein Ziel zu benachrichtigen.
+func apply_settings() -> void:
+	Audio.enabled = settings.sound_enabled
+	Audio.volume = settings.volume
+	Audio.ui_volume = settings.ui_volume
+	if ctx != null:
+		ctx.auto_fallback_bait = settings.auto_fallback_bait
+	state_changed.emit()
+	progress_changed.emit()

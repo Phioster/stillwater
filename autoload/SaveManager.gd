@@ -72,7 +72,7 @@ func serialize() -> Dictionary:
 		# Kopie würde nur das Dictionary duplizieren, nicht die Arrays darin.
 		"owned_cosmetics": Game.owned_cosmetics.duplicate(true),
 		"active_consumables": [],
-		"settings": {},
+		"settings": Game.settings.to_dict(),
 		"statistics": {},
 		"last_seen_unix": int(Time.get_unix_time_from_system()),
 		"rng_state": Game.rng.get_state(),
@@ -85,6 +85,7 @@ func deserialize(raw: Dictionary) -> void:
 		push_error("Spielstand stammt aus einer neueren Version, wird nicht geladen")
 		return
 	var d := migrate(raw)
+	Game.settings.load_dict(d["settings"])
 	Game.coins = int(d["coins"])
 	Game.ctx.player_level = int(d["player_level"])
 	Game.ctx.player_xp = int(d["xp"])
@@ -115,6 +116,7 @@ func deserialize(raw: Dictionary) -> void:
 	_own_the_worn_cosmetics()
 	Game.rng.set_state(int(d["rng_state"]))
 	Game.apply_upgrades()
+	Game.apply_settings()
 
 	_run_offline(int(d["last_seen_unix"]))
 	Game.state_changed.emit()

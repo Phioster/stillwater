@@ -5,10 +5,10 @@ extends PanelContainer
 
 signal tab_selected(index: int)
 
-const TABS: Array[String] = ["Fische", "Vitrine", "Journal", "Laden", "Ausbau", "Welt", "Figur", "Geheim"]
+const TABS: Array[String] = ["Fische", "Vitrine", "Journal", "Laden", "Ausbau", "Welt", "Figur", "Optionen", "Geheim"]
 ## Dieser Reiter bleibt unsichtbar, bis der erste Geheimfisch an Land ist.
 ## Versteckt statt entfernt, damit Reiter- und Panel-Index gleich bleiben.
-const SECRET_TAB: int = 7
+const SECRET_TAB: int = 8
 ## Wunschhoehe eines Knopfes. Passen nicht alle sichtbaren Reiter nebeneinander
 ## in die Leiste, wird gleichmaessig gekuerzt statt unten abgeschnitten.
 const BUTTON_HEIGHT: float = 96.0

@@ -142,3 +142,11 @@ func test_the_tab_buttons_are_springy() -> void:
 	var b: Control = m.get_node("Row/TabRail/Box").get_child(0)
 	assert_true(b is TapButton, "Reiter sind gewöhnliche Knöpfe: %s" % b.get_class())
 	m.free()
+
+func test_the_options_tab_sits_where_the_rail_says() -> void:
+	Game.new_game()
+	var m := _main()
+	var panels: Node = m.get_node("SidePanel/Panels")
+	assert_eq(TabRail.TABS[7], "Optionen")
+	assert_eq(panels.get_child(7).name, &"OptionsScroll")
+	m.free()

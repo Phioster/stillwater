@@ -58,6 +58,19 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 - Rotierende Spielstand-Sicherungen.
 - Nachschwingendes Scrollen.
 
+## E — Was ohne Absprache fertig wird
+
+- [x] **E1 Einstellungen.** Ton an/aus und zwei Lautstärken. Der Ton hat
+      seit D Regler nötig, es gab nur kein Menü dafür. Wird im Spielstand
+      gemerkt (`settings` liegt dort schon leer bereit).
+- [ ] **E2 Spielstand-Sicherungen.** Rotierende Kopien in einem eigenen
+      Ordner. Bisher gibt es nur temp+umbenennen — das schützt vor einem
+      Absturz beim Schreiben, nicht vor einem kaputten Stand.
+- [ ] **E3 Nachschwingendes Scrollen.** Die Referenz brauchte dafür ein
+      Fremd-Addon; unsere Listen bleiben beim Loslassen abrupt stehen.
+- [ ] **E4 Sunset Coast auffüllen.** 8 Arten gegen 16 in Willow Lake —
+      die zweite Zone ist dünner als die erste.
+
 ---
 
 **Stand 2026-08-30: A, B, C und D sind abgearbeitet.** 306 Tests grün,

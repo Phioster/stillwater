@@ -11,6 +11,8 @@ var bait_counts: Dictionary = {}
 var rod_power: float = 4.0
 var orb_power: float = 6.0
 var consumable_bonus: float = 1.0
+## Siehe Settings.auto_fallback_bait.
+var auto_fallback_bait: bool = true
 var shiny_bonus: float = 1.0
 
 var player_level: int = 1
@@ -64,5 +66,8 @@ func consume_bait() -> void:
 		return
 	var left := int(bait_counts.get(bait.id, 0)) - 1
 	bait_counts[bait.id] = maxi(left, 0)
-	if left <= 0 and fallback_bait != null:
+	# Ohne Rueckfall haelt das Angeln an, sobald der Koeder leer ist. Das ist
+	# fuer ein Idle-Spiel meist falsch, aber abschaltbar: wer den teuren
+	# Koeder gezielt einsetzt, will nicht stumm auf Maden zurueckfallen.
+	if left <= 0 and auto_fallback_bait and fallback_bait != null:
 		bait = fallback_bait
