@@ -75,6 +75,7 @@ func _process(delta: float) -> void:
 		if hits - _seen_rod_hits <= 3:
 			for i in hits - _seen_rod_hits:
 				_pop_damage(int(round(Game.ctx.rod_power)), Palette.get_color(&"foam"))
+			Audio.play(&"rod", 0.15)
 		_seen_rod_hits = hits
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0 and _living_orbs() < ORB_TARGET:
@@ -97,6 +98,7 @@ func _on_bite(fish: FishData) -> void:
 	var rank := FishRoll.RANK_NAMES[clampi(Game.sim.hooked_rank, 0, FishRoll.RANK_NAMES.size() - 1)]
 	# Ansagen, ob die Rute allein reicht. Die Referenz spielt dafuer einen
 	# eigenen Klang; bis wir Ton haben, steht es in der Zeile.
+	Audio.play(&"bite")
 	var call := "  ·  ✋ antippen!" if Game.sim.needs_hands else ""
 	_name.text = "%s  ·  Rang %s%s" % [fish.display_name, rank, call]
 	_name.modulate = Palette.get_color(&"accent") if Game.sim.needs_hands else Color.WHITE
@@ -112,6 +114,7 @@ func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
 	_clear_orbs()
 
 func _on_escaped(_f: FishData) -> void:
+	Audio.play(&"escape")
 	_clear_orbs()
 
 func _clear_orbs() -> void:
@@ -129,6 +132,7 @@ func _spawn_orb() -> void:
 ## Ein Tipp muss eine Zahl hinterlassen. Ohne sie ist nicht zu sehen, dass
 ## Tippen ueberhaupt etwas bewirkt -- und damit auch nicht, wozu Orb-Kraft gut ist.
 func _on_orb_tapped(_orb: Node) -> void:
+	Audio.play(&"orb", 0.0)
 	_pop_damage(int(round(Game.ctx.orb_power)), Palette.get_color(&"accent"))
 	Game.tap()
 

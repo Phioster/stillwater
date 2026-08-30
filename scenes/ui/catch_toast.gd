@@ -34,6 +34,9 @@ func show_catch(c: CaughtFish, fish: FishData, discovered: bool, record: bool) -
 		return
 	var quality: String = FishRoll.RANK_NAMES[clampi(c.rank, 0, FishRoll.RANK_NAMES.size() - 1)]
 	var value := Economy.sell_price(c, fish, Game.ctx.rarity_of(fish), Game.ctx.consumable_bonus)
+	Audio.play(&"catch")
+	if c.is_shiny:
+		Audio.play(&"shiny")
 	var kg := fish.weight_str(c.weight_dev)
 	_line1.text = "%s · %s · %s" % [fish.full_name(c.weight_dev), kg, quality]
 	var second := "%d Münzen" % value

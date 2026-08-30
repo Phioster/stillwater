@@ -23,12 +23,15 @@ var _shake: Shake = null
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	pressed.connect(_on_pressed)
-	button_down.connect(func() -> void: _scale.nudge(-3.5))
+	button_down.connect(func() -> void:
+		_scale.nudge(-3.5)
+		Audio.click())
 
 ## Eine abgelehnte Aktion muss man sehen. Wackeln statt stillschweigend
 ## nichts zu tun -- ein Knopf, der nicht reagiert, wirkt kaputt.
 func refuse() -> void:
 	_shake = Shake.new(7.0, 0.28, 26.0)
+	Audio.play(&"error", 0.2, true)
 
 func _process(delta: float) -> void:
 	pivot_offset = size * 0.5

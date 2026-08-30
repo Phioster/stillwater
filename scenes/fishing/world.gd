@@ -93,7 +93,17 @@ func _layout() -> void:
 	_bobber_home = Vector2(size.x * 0.42, water_y + size.y * 0.14)
 	_bobber.position = _bobber_home
 
+## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
+## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
+## sie es auch gar nicht.
+var _last_state: int = -1
+
 func _process(delta: float) -> void:
+	if Game.sim.state != _last_state:
+		if Game.sim.state == FishingSim.State.CASTING and _last_state != -1:
+			Audio.play(&"cast", 0.3)
+		_last_state = Game.sim.state
+
 	_bob_time += delta
 	var visible_states := [FishingSim.State.WAITING, FishingSim.State.FIGHT]
 	_bobber.visible = Game.sim.state in visible_states

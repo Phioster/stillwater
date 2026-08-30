@@ -96,6 +96,7 @@ func _dispatch(events: Array) -> void:
 			"escaped":
 				escaped.emit(e["fish"])
 			"level_up":
+				Audio.play(&"level_up")
 				level_up.emit(int(e["level"]))
 			"inventory_full":
 				inventory_full.emit()
@@ -159,6 +160,8 @@ func sell_all() -> int:
 	var earned := 0
 	for c in ctx.inventory.take_sellable():
 		earned += _price(c)
+	if earned > 0:
+		Audio.play(&"coin")
 	coins += earned
 	state_changed.emit()
 	progress_changed.emit()
@@ -172,6 +175,7 @@ func sell_one(index: int) -> int:
 		return 0
 	ctx.inventory.remove_at(index)
 	var earned := _price(c)
+	Audio.play(&"coin")
 	coins += earned
 	state_changed.emit()
 	progress_changed.emit()

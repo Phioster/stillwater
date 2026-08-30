@@ -6,7 +6,11 @@ noch nicht gebaut.
 
 ## Als Nächstes
 
-- **Audio** — Wasser, Wurf, Biss, Fang, Verkauf, Upgrade, Level-Up, UI.
+- ~~**Audio**~~ — erledigt 2026-08-30: `autoload/Audio.gd` mit Abspieler-Pool,
+  Tonhöhenstreuung ±5 %, Abklingzeit je Ereignis und eigener Lautstärke für
+  die Oberfläche. Elf Klänge, selbst erzeugt via `tools/gen_sounds.py`.
+  Offen: Lautstärkeregler in einem Einstellungen-Menü (es gibt noch keins).
+- ~~Alt:~~ **Audio** — Wasser, Wurf, Biss, Fang, Verkauf, Upgrade, Level-Up, UI.
   Dafür entsteht dann auch der vierte Autoload `AudioManager` (siehe
   `ARCHITECTURE.md`), der in Slice 1 bewusst fehlt. **Bewusst zuletzt**
   (2026-08-29): Ton ist überwiegend Materialbeschaffung mit Lizenzpflege,

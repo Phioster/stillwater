@@ -42,11 +42,13 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 
 ## D — Ton (zuletzt, wie besprochen)
 
-- [ ] **D1 Tonverwaltung**: Abspieler-Pool, zufällige Tonhöhe ±5 %,
+- [x] **D1 Tonverwaltung**: Abspieler-Pool, zufällige Tonhöhe ±5 %,
       Abklingzeit je Ton, mehrere Varianten je Ereignis, getrennte Busse.
-- [ ] **D2 Die Klänge selbst.** **Offene Entscheidung:** woher? Freie
-      Quellen mit Lizenzpflege, oder selbst erzeugt. Cornerponds Töne
-      fallen aus.
+- [x] **D2 Die Klänge selbst** — **selbst erzeugt**, wie die Sprites:
+      `tools/gen_sounds.py` schreibt elf WAVs aus kurzen Hüllkurven auf
+      wenigen Sinustönen. Das hält uns von Lizenzfragen frei und passt zum
+      Rest der Platzhalter. Wenn die endgültige Grafik kommt, kommen auch
+      echte Klänge — bis dahin trägt das.
 
 ## Später, mit eigenem Anlass
 
@@ -55,3 +57,8 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
   Quests oder einen Händler gibt.
 - Rotierende Spielstand-Sicherungen.
 - Nachschwingendes Scrollen.
+
+---
+
+**Stand 2026-08-30: A, B, C und D sind abgearbeitet.** 306 Tests grün,
+alles auf dem Gerät. Offen ist nur noch, was oben unter „Später" steht.
