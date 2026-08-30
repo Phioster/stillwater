@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ZoneData" format=3]
+
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/fish/spark_fish.tres" id="10_spark_"]
+[ext_resource type="Resource" path="res://data/fish/dust_goby.tres" id="11_dust_g"]
+[ext_resource type="Resource" path="res://data/fish/comet_larva.tres" id="12_comet_"]
+[ext_resource type="Resource" path="res://data/fish/night_shimmer.tres" id="13_night_"]
+[ext_resource type="Resource" path="res://data/fish/satellite_perch.tres" id="14_satell"]
+[ext_resource type="Resource" path="res://data/fish/ring_tench.tres" id="15_ring_t"]
+[ext_resource type="Resource" path="res://data/fish/void_minnow.tres" id="16_void_m"]
+[ext_resource type="Resource" path="res://data/fish/mist_pike.tres" id="17_mist_p"]
+[ext_resource type="Resource" path="res://data/fish/star_ray.tres" id="18_star_r"]
+[ext_resource type="Resource" path="res://data/fish/blackfin.tres" id="19_blackf"]
+[ext_resource type="Resource" path="res://data/fish/horizon_whale.tres" id="20_horizo"]
+[ext_resource type="Resource" path="res://data/fish/orbit_bleak.tres" id="21_orbit_"]
+[ext_resource type="Resource" path="res://data/fish/clockwork_fish.tres" id="60_clockw"]
+[ext_resource type="Resource" path="res://data/fish/last_light.tres" id="61_last_l"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
+
+[resource]
+script = ExtResource("99_zone")
+id = &"star_lake"
+display_name = "Sternensee"
+background_id = &"void"
+shore_key = &"void_low"
+foam_key = &"void_foam"
+fish = Array[ExtResource("1_fish")]([ExtResource("10_spark_"), ExtResource("11_dust_g"), ExtResource("12_comet_"), ExtResource("13_night_"), ExtResource("14_satell"), ExtResource("15_ring_t"), ExtResource("16_void_m"), ExtResource("17_mist_p"), ExtResource("18_star_r"), ExtResource("19_blackf"), ExtResource("20_horizo"), ExtResource("21_orbit_"), ExtResource("60_clockw"), ExtResource("61_last_l")])
+bite_time_min = 70.0
+bite_time_max = 120.0
+fight_window = 30.0
+rarity_weights = {
+&"common": 24.0,
+&"uncommon": 28.0,
+&"rare": 30.0,
+&"epic": 12.0,
+&"legendary": 6.0
+}
+unlock_cost = 500000
+unlock_level = 42

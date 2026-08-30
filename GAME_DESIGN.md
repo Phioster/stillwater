@@ -197,3 +197,27 @@ Mit einer verschobenen Normalverteilung ließe sich das nicht formulieren.
 
 Aus dem Rang folgen Lebenspunkte, Grundwert und Grund-XP; aus der
 Abweichung Gewicht, Größenwort und je ein Zuschlag darauf.
+
+## Die sieben Gewässer
+
+| Zone | ab Stufe | Kosten | Arten | Charakter |
+|---|---|---|---|---|
+| Willow Lake | 1 | — | 16 | ruhiger See, alles beginnt hier |
+| Sunset Coast | 6 | 1.500 | 16 | offenes Meer, warmes Abendlicht |
+| Nebelmoor | 12 | 6.000 | 16 | Nacht, kalt, ein Irrlicht |
+| Frostbucht | 18 | 20.000 | 14 | Packeis unter Polarlicht |
+| Tiefe Zisterne | 25 | 60.000 | 14 | kein Himmel, nur Fackelschein |
+| Wolkensee | 33 | 180.000 | 14 | über den Wolken |
+| Sternensee | 42 | 500.000 | 14 | Wasser ohne Ufer, Licht von unten |
+
+Die Reihenfolge geht vom Vertrauten ins Unmögliche — aber jede Zone hat
+denselben Aufbau: ein Hintergrund, drei Palettenschlüssel für das Wasser,
+eine Artenliste, Raritätsgewichte. Nichts daran ist Sonderfall.
+
+**Der Engpass ist die Stufe, nicht das Geld.** Von Zone zu Zone liegen
+grob ein halber bis ein ganzer Tag Angelzeit; die Freischaltkosten sind
+danach in wenigen Dutzend Fängen verdient. Geld ist für Ausbau und
+Kosmetik da, die Stufe für den Fortschritt.
+
+Die Raritätsgewichte verschieben sich mit der Tiefe: in Willow Lake sind
+70 % der Bisse gewöhnlich, im Sternensee nur noch 24 %.

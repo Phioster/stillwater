@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"horizon_whale"
+display_name = "Horizontwal"
+zone_id = &"star_lake"
+rarity_id = &"legendary"
+base_value = 11000
+strength = 980.0
+difficulty = 4.2
+xp = 5500
+weight_mean = 400.0
+weight_dev = 120.0

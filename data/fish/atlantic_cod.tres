@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"atlantic_cod"
+display_name = "Kabeljau"
+zone_id = &"frost_bay"
+rarity_id = &"rare"
+base_value = 210
+strength = 110.0
+difficulty = 2.0
+xp = 105
+weight_mean = 9.0
+weight_dev = 2.8

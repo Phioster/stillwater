@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"aurora_salmon"
+display_name = "Nordlichtlachs"
+zone_id = &"frost_bay"
+rarity_id = &"legendary"
+base_value = 1400
+strength = 400.0
+difficulty = 3.1
+xp = 700
+weight_mean = 11.0
+weight_dev = 3.4

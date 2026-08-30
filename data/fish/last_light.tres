@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_lvl"]
+[ext_resource type="Script" path="res://resources/journal_condition.gd" id="4_extra"]
+
+[sub_resource type="Resource" id="Resource_lvl"]
+script = ExtResource("3_lvl")
+min_level = 50
+
+[sub_resource type="Resource" id="Resource_extra"]
+script = ExtResource("4_extra")
+min_species = 80
+
+[resource]
+script = ExtResource("2_fish")
+id = &"last_light"
+display_name = "Letztes Licht"
+zone_id = &"star_lake"
+rarity_id = &"legendary"
+base_value = 16000
+strength = 1200.0
+difficulty = 4.5
+xp = 8000
+weight_mean = 200.0
+weight_dev = 60.0
+is_secret = true
+secret_chance = 0.02
+secret_hint = "Es gibt nichts mehr zu entdecken. Nur das hier."
+conditions = Array[ExtResource("1_cond")]([SubResource("Resource_lvl"), SubResource("Resource_extra")])

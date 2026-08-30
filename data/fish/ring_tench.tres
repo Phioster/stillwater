@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"ring_tench"
+display_name = "Ringschleie"
+zone_id = &"star_lake"
+rarity_id = &"uncommon"
+base_value = 700
+strength = 230.0
+difficulty = 2.85
+xp = 355
+weight_mean = 3.8
+weight_dev = 1.2

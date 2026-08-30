@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_lvl"]
+[ext_resource type="Script" path="res://resources/journal_condition.gd" id="4_extra"]
+
+[sub_resource type="Resource" id="Resource_lvl"]
+script = ExtResource("3_lvl")
+min_level = 24
+
+[sub_resource type="Resource" id="Resource_extra"]
+script = ExtResource("4_extra")
+min_species = 40
+
+[resource]
+script = ExtResource("2_fish")
+id = &"glacier_king"
+display_name = "Gletscherkönig"
+zone_id = &"frost_bay"
+rarity_id = &"legendary"
+base_value = 1900
+strength = 460.0
+difficulty = 3.4
+xp = 940
+weight_mean = 40.0
+weight_dev = 12.0
+is_secret = true
+secret_chance = 0.02
+secret_hint = "Er wartet auf jemanden, der schon überall gewesen ist."
+conditions = Array[ExtResource("1_cond")]([SubResource("Resource_lvl"), SubResource("Resource_extra")])

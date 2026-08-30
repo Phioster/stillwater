@@ -83,9 +83,9 @@ dem Gerät.
   Platzhalter stehen, bleiben auch meine Sinustöne stehen.
 - **Tränke.** Die Wirkungen sind klar (reine Multiplikatoren auf
   vorhandene Zahlen), die Preise und Dauern sind Balance-Fragen.
-- ~~Weitere Zonen~~ — **Nebelmoor** gebaut 2026-08-30 (Stufe 12, 6.000
-  Münzen, 16 Arten, zwei Geheimfische). Weitere gehen genauso; die
-  Entscheidung ist jeweils nur, was für ein Ort.
+- ~~Weitere Zonen~~ — **sieben Zonen stehen** (2026-08-30): Willow Lake,
+  Sunset Coast, Nebelmoor, Frostbucht, Tiefe Zisterne, Wolkensee,
+  Sternensee. 104 Arten. Damit sind wir beim Umfang der Referenz.
 - **Quests.** Erst danach lohnt sich der Uhr-Rhythmus aus dem Dossier.
 - **Veröffentlichen.** Release-Keystore als GitHub-Secret, Paketname,
   Store-Eintrag.

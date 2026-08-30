@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"blackfin"
+display_name = "Schwarzflosse"
+zone_id = &"star_lake"
+rarity_id = &"epic"
+base_value = 4200
+strength = 620.0
+difficulty = 3.6
+xp = 2100
+weight_mean = 60.0
+weight_dev = 18.0

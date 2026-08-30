@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"orbit_bleak"
+display_name = "Orbitlaube"
+zone_id = &"star_lake"
+base_value = 250
+strength = 112.0
+difficulty = 2.42
+xp = 125
+weight_mean = 0.1
+weight_dev = 0.03

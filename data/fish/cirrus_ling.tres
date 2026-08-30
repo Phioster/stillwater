@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"cirrus_ling"
+display_name = "Zirrusling"
+zone_id = &"cloud_lake"
+base_value = 115
+strength = 68.0
+difficulty = 1.9
+xp = 58
+weight_mean = 0.3
+weight_dev = 0.09

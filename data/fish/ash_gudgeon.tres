@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"ash_gudgeon"
+display_name = "Aschengründling"
+zone_id = &"deep_cistern"
+rarity_id = &"uncommon"
+base_value = 120
+strength = 82.0
+difficulty = 1.8
+xp = 62
+weight_mean = 0.5
+weight_dev = 0.15

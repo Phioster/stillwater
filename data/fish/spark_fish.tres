@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"spark_fish"
+display_name = "Funkenfisch"
+zone_id = &"star_lake"
+base_value = 240
+strength = 110.0
+difficulty = 2.4
+xp = 120
+weight_mean = 0.2
+weight_dev = 0.06

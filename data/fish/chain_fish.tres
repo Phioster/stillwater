@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"chain_fish"
+display_name = "Kettenfisch"
+zone_id = &"deep_cistern"
+base_value = 56
+strength = 44.0
+difficulty = 1.6
+xp = 28
+weight_mean = 0.7
+weight_dev = 0.2

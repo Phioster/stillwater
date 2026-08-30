@@ -110,6 +110,118 @@ func _background_moor() -> void:
 		_rect(img, x, 78 - h, 1, h, _c(&"willow") if i % 3 == 0 else _c(&"peat"))
 	_save(img, "bg_moor")
 
+## Frostbucht. Polarlicht ueber Packeis, kaltes offenes Wasser.
+func _background_frost() -> void:
+	var img := _new_image(320, 180)
+	for y in 78:
+		var t := float(y) / 78.0
+		_rect(img, 0, y, 320, 1, _c(&"polar_high").lerp(_c(&"polar_low"), t * t))
+	# Polarlicht: senkrechte Vorhaenge, nach unten ausblendend.
+	for i in 26:
+		var x := (i * 13 + (i % 3) * 5) % 316
+		var top := 8 + (i * 7) % 22
+		var h := 26 + (i % 5) * 9
+		for y in range(top, mini(top + h, 74)):
+			var f := 1.0 - float(y - top) / float(h)
+			_rect(img, x, y, 2, 1, _c(&"aurora").lerp(_c(&"polar_high"), 1.0 - f * 0.75))
+	_rect(img, 0, 78, 320, 6, _c(&"snow"))
+	for y in range(84, 180):
+		var t := float(y - 84) / 96.0
+		_rect(img, 0, y, 320, 1, _c(&"ice_light").lerp(_c(&"ice_deep"), t))
+	# Treibende Eisschollen: hell, mit dunklerer Unterkante.
+	for i in 11:
+		var x := (i * 37) % 290
+		var y := 92 + (i * 17) % 70
+		var w := 14 + (i % 4) * 11
+		_rect(img, x, y, w, 3, _c(&"ice_foam"))
+		_rect(img, x, y + 3, w, 1, _c(&"snow_dark"))
+	for i in 30:
+		var x := (i * 11 + (i % 4) * 3) % 318
+		_rect(img, x, 78 - (2 + (i % 3) * 2), 1, 2 + (i % 3) * 2, _c(&"snow_dark"))
+	_save(img, "bg_frost")
+
+## Tiefe Zisterne. Kein Himmel, nur Gewoelbe und Fackelschein.
+func _background_cistern() -> void:
+	var img := _new_image(320, 180)
+	for y in 78:
+		var t := float(y) / 78.0
+		_rect(img, 0, y, 320, 1, _c(&"vault_high").lerp(_c(&"vault_low"), t))
+	# Saeulen und Boegen, nach hinten dunkler.
+	for i in 5:
+		var x := 18 + i * 66
+		_rect(img, x, 22, 10, 56, _c(&"stone") if i % 2 == 0 else _c(&"stone_light"))
+		_rect(img, x - 3, 18, 16, 5, _c(&"stone_light"))
+	# Fackeln zwischen den Saeulen.
+	for i in 4:
+		var x := 51 + i * 66
+		_ellipse(img, float(x), 40.0, 5.0, 5.0, _c(&"torch").lerp(_c(&"vault_low"), 0.7))
+		_ellipse(img, float(x), 40.0, 2.0, 2.0, _c(&"torch"))
+	_rect(img, 0, 78, 320, 6, _c(&"stone"))
+	for y in range(84, 180):
+		var t := float(y - 84) / 96.0
+		_rect(img, 0, y, 320, 1, _c(&"cistern_light").lerp(_c(&"cistern_deep"), t))
+	# Spiegelungen der Fackeln, senkrecht aufgebrochen.
+	for i in 4:
+		var x := 51 + i * 66
+		for j in 6:
+			_rect(img, x - 1, 88 + j * 7, 3, 1, _c(&"torch").lerp(_c(&"cistern_light"), 0.45 + 0.09 * float(j)))
+	_save(img, "bg_cistern")
+
+## Wolkensee. Ueber den Wolken; das Wasser haengt in der Luft.
+func _background_sky() -> void:
+	var img := _new_image(320, 180)
+	for y in 78:
+		var t := float(y) / 78.0
+		_rect(img, 0, y, 320, 1, _c(&"sky_pale").lerp(_c(&"sky_mid"), t))
+	# Wolkenbaenke: unten dichter, oben vereinzelt.
+	for i in 16:
+		var x := (i * 43) % 300
+		var y := 12 + (i * 9) % 58
+		var w := 26 + (i % 5) * 16
+		_rect(img, x, y, w, 4, _c(&"cloud"))
+		_rect(img, x + 3, y + 4, w - 6, 2, _c(&"cloud_dark"))
+	_rect(img, 0, 78, 320, 6, _c(&"cloud_dark"))
+	for y in range(84, 180):
+		var t := float(y - 84) / 96.0
+		_rect(img, 0, y, 320, 1, _c(&"high_light").lerp(_c(&"high_deep"), t))
+	for i in 22:
+		var y := 90 + (i * 4) % 84
+		var x := (i * 29) % 296
+		_rect(img, x, y, 8 + (i % 5) * 5, 1, _c(&"cloud"))
+	for i in 34:
+		var x := (i * 9 + (i % 3) * 4) % 318
+		_rect(img, x, 78 - (2 + (i % 4) * 2), 1, 2 + (i % 4) * 2, _c(&"cloud"))
+	_save(img, "bg_sky")
+
+## Sternensee. Kein Ufer, kein Himmel -- das Licht kommt von unten.
+func _background_void() -> void:
+	var img := _new_image(320, 180)
+	for y in 78:
+		var t := float(y) / 78.0
+		_rect(img, 0, y, 320, 1, _c(&"void_high").lerp(_c(&"void_low"), t))
+	# Sterne: gestreut, unterschiedlich hell.
+	for i in 90:
+		var x := (i * 53 + (i % 7) * 11) % 318
+		var y := (i * 29 + (i % 5) * 7) % 76
+		var c := _c(&"star") if i % 4 == 0 else _c(&"star").lerp(_c(&"void_low"), 0.55)
+		img.set_pixel(x, y, c)
+	# Nebelschwade quer durchs Bild.
+	for i in 40:
+		var x := (i * 8) % 316
+		var y := 26 + int(sin(float(i) * 0.4) * 9.0)
+		_rect(img, x, y, 6, 3, _c(&"nebula").lerp(_c(&"void_high"), 0.6))
+	_rect(img, 0, 78, 320, 6, _c(&"void_low"))
+	for y in range(84, 180):
+		var t := float(y - 84) / 96.0
+		_rect(img, 0, y, 320, 1, _c(&"void_light").lerp(_c(&"void_deep"), t))
+	# Licht von unten: helle Punkte, die nach oben schwaecher werden.
+	for i in 46:
+		var x := (i * 41 + (i % 6) * 9) % 318
+		var y := 88 + (i * 17) % 88
+		var f := 1.0 - float(y - 88) / 88.0
+		img.set_pixel(x, y, _c(&"void_foam").lerp(_c(&"void_deep"), 1.0 - f))
+	_save(img, "bg_void")
+
 func _dock() -> void:
 	var img := _new_image(64, 24)
 	_rect(img, 0, 0, 64, 6, _c(&"wood_light"))
@@ -254,6 +366,10 @@ func _init() -> void:
 	_background()
 	_background_coast()
 	_background_moor()
+	_background_frost()
+	_background_cistern()
+	_background_sky()
+	_background_void()
 	_dock()
 	print("Charakter")
 	for i in 3:

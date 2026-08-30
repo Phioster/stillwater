@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ZoneData" format=3]
+
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/fish/polar_cod.tres" id="10_polar_"]
+[ext_resource type="Resource" path="res://data/fish/capelin.tres" id="11_capeli"]
+[ext_resource type="Resource" path="res://data/fish/sand_lance.tres" id="12_sand_l"]
+[ext_resource type="Resource" path="res://data/fish/sea_scorpion.tres" id="13_sea_sc"]
+[ext_resource type="Resource" path="res://data/fish/arctic_char.tres" id="14_arctic"]
+[ext_resource type="Resource" path="res://data/fish/redfish.tres" id="15_redfis"]
+[ext_resource type="Resource" path="res://data/fish/haddock.tres" id="16_haddoc"]
+[ext_resource type="Resource" path="res://data/fish/atlantic_cod.tres" id="17_atlant"]
+[ext_resource type="Resource" path="res://data/fish/greenland_shark.tres" id="18_greenl"]
+[ext_resource type="Resource" path="res://data/fish/frost_ray.tres" id="19_frost_"]
+[ext_resource type="Resource" path="res://data/fish/aurora_salmon.tres" id="20_aurora"]
+[ext_resource type="Resource" path="res://data/fish/pack_ice_wraith.tres" id="60_pack_i"]
+[ext_resource type="Resource" path="res://data/fish/glacier_king.tres" id="61_glacie"]
+[ext_resource type="Resource" path="res://data/fish/herring.tres" id="90_herri"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
+
+[resource]
+script = ExtResource("99_zone")
+id = &"frost_bay"
+display_name = "Frostbucht"
+background_id = &"frost"
+shore_key = &"snow"
+foam_key = &"ice_foam"
+fish = Array[ExtResource("1_fish")]([ExtResource("10_polar_"), ExtResource("11_capeli"), ExtResource("12_sand_l"), ExtResource("13_sea_sc"), ExtResource("14_arctic"), ExtResource("15_redfis"), ExtResource("16_haddoc"), ExtResource("17_atlant"), ExtResource("18_greenl"), ExtResource("19_frost_"), ExtResource("20_aurora"), ExtResource("60_pack_i"), ExtResource("61_glacie"), ExtResource("90_herri")])
+bite_time_min = 50.0
+bite_time_max = 80.0
+fight_window = 24.0
+rarity_weights = {
+&"common": 38.0,
+&"uncommon": 32.0,
+&"rare": 22.0,
+&"epic": 9.0,
+&"legendary": 3.0
+}
+unlock_cost = 20000
+unlock_level = 18

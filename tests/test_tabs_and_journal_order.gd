@@ -142,3 +142,20 @@ func test_the_ui_carries_outline_and_shadow_from_one_theme() -> void:
 	m.free()
 
 ## Auch die Reiter federn -- sonst fühlt sich ausgerechnet der meistbenutzte
+## Der Zonenwechsler muss jede Zone mit EINEM Tipp erreichbar halten, auch
+## wenn es sieben werden -- deshalb ein Raster statt einer Reihe.
+func test_the_zone_switcher_holds_every_zone_in_one_tap() -> void:
+	Game.new_game()
+	var m := _main()
+	m.show_tab(2)
+	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
+	var grid: GridContainer = null
+	for child in panel.get_children():
+		if child is GridContainer:
+			grid = child
+	assert_true(grid != null, "kein Raster im Journal")
+	assert_eq(grid.get_child_count(), Database.zones.size(),
+		"nicht jede Zone hat einen Knopf")
+	for b in grid.get_children():
+		assert_true(b is TapButton, "der Zonenknopf ist kein TapButton: %s" % b.get_class())
+	m.free()

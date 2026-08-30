@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ZoneData" format=3]
+
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/fish/feather_fish.tres" id="10_feathe"]
+[ext_resource type="Resource" path="res://data/fish/wind_goby.tres" id="11_wind_g"]
+[ext_resource type="Resource" path="res://data/fish/haze_minnow.tres" id="12_haze_m"]
+[ext_resource type="Resource" path="res://data/fish/cirrus_ling.tres" id="13_cirrus"]
+[ext_resource type="Resource" path="res://data/fish/sail_perch.tres" id="14_sail_p"]
+[ext_resource type="Resource" path="res://data/fish/gust_tench.tres" id="15_gust_t"]
+[ext_resource type="Resource" path="res://data/fish/cloud_carp.tres" id="16_cloud_"]
+[ext_resource type="Resource" path="res://data/fish/storm_pike.tres" id="17_storm_"]
+[ext_resource type="Resource" path="res://data/fish/altitude_ray.tres" id="18_altitu"]
+[ext_resource type="Resource" path="res://data/fish/thunder_catfish.tres" id="19_thunde"]
+[ext_resource type="Resource" path="res://data/fish/zenith_wing.tres" id="20_zenith"]
+[ext_resource type="Resource" path="res://data/fish/drizzle_dace.tres" id="21_drizzl"]
+[ext_resource type="Resource" path="res://data/fish/squall_bride.tres" id="60_squall"]
+[ext_resource type="Resource" path="res://data/fish/sky_anchor.tres" id="61_sky_an"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
+
+[resource]
+script = ExtResource("99_zone")
+id = &"cloud_lake"
+display_name = "Wolkensee"
+background_id = &"sky"
+shore_key = &"cloud_dark"
+foam_key = &"cloud"
+fish = Array[ExtResource("1_fish")]([ExtResource("10_feathe"), ExtResource("11_wind_g"), ExtResource("12_haze_m"), ExtResource("13_cirrus"), ExtResource("14_sail_p"), ExtResource("15_gust_t"), ExtResource("16_cloud_"), ExtResource("17_storm_"), ExtResource("18_altitu"), ExtResource("19_thunde"), ExtResource("20_zenith"), ExtResource("21_drizzl"), ExtResource("60_squall"), ExtResource("61_sky_an")])
+bite_time_min = 60.0
+bite_time_max = 100.0
+fight_window = 28.0
+rarity_weights = {
+&"common": 28.0,
+&"uncommon": 30.0,
+&"rare": 28.0,
+&"epic": 10.0,
+&"legendary": 4.0
+}
+unlock_cost = 180000
+unlock_level = 33

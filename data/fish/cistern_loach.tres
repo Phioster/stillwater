@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"cistern_loach"
+display_name = "Zisternenschmerle"
+zone_id = &"deep_cistern"
+base_value = 40
+strength = 34.0
+difficulty = 1.4
+xp = 20
+weight_mean = 0.05
+weight_dev = 0.015

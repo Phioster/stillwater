@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"arctic_char"
+display_name = "Seesaibling"
+zone_id = &"frost_bay"
+rarity_id = &"uncommon"
+base_value = 70
+strength = 58.0
+difficulty = 1.5
+xp = 36
+weight_mean = 1.8
+weight_dev = 0.5

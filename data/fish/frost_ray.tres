@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"frost_ray"
+display_name = "Frostrochen"
+zone_id = &"frost_bay"
+rarity_id = &"epic"
+base_value = 520
+strength = 240.0
+difficulty = 2.6
+xp = 265
+weight_mean = 18.0
+weight_dev = 5.5

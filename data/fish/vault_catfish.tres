@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"vault_catfish"
+display_name = "Gewölbewels"
+zone_id = &"deep_cistern"
+rarity_id = &"rare"
+base_value = 380
+strength = 150.0
+difficulty = 2.3
+xp = 190
+weight_mean = 22.0
+weight_dev = 7.0

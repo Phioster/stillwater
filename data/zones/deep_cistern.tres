@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ZoneData" format=3]
+
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="1_fish"]
+[ext_resource type="Resource" path="res://data/fish/cistern_loach.tres" id="10_cister"]
+[ext_resource type="Resource" path="res://data/fish/stone_bleak.tres" id="11_stone_"]
+[ext_resource type="Resource" path="res://data/fish/blindling.tres" id="12_blindl"]
+[ext_resource type="Resource" path="res://data/fish/wall_perch.tres" id="13_wall_p"]
+[ext_resource type="Resource" path="res://data/fish/jug_pike.tres" id="14_jug_pi"]
+[ext_resource type="Resource" path="res://data/fish/ash_gudgeon.tres" id="15_ash_gu"]
+[ext_resource type="Resource" path="res://data/fish/cistern_eel.tres" id="16_cister"]
+[ext_resource type="Resource" path="res://data/fish/vault_catfish.tres" id="17_vault_"]
+[ext_resource type="Resource" path="res://data/fish/torch_barbel.tres" id="18_torch_"]
+[ext_resource type="Resource" path="res://data/fish/well_king.tres" id="19_well_k"]
+[ext_resource type="Resource" path="res://data/fish/blackwater_sturgeon.tres" id="20_blackw"]
+[ext_resource type="Resource" path="res://data/fish/chain_fish.tres" id="21_chain_"]
+[ext_resource type="Resource" path="res://data/fish/eternal_light.tres" id="60_eterna"]
+[ext_resource type="Resource" path="res://data/fish/cistern_warden.tres" id="61_cister"]
+[ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
+
+[resource]
+script = ExtResource("99_zone")
+id = &"deep_cistern"
+display_name = "Tiefe Zisterne"
+background_id = &"cistern"
+shore_key = &"stone"
+foam_key = &"cistern_foam"
+fish = Array[ExtResource("1_fish")]([ExtResource("10_cister"), ExtResource("11_stone_"), ExtResource("12_blindl"), ExtResource("13_wall_p"), ExtResource("14_jug_pi"), ExtResource("15_ash_gu"), ExtResource("16_cister"), ExtResource("17_vault_"), ExtResource("18_torch_"), ExtResource("19_well_k"), ExtResource("20_blackw"), ExtResource("21_chain_"), ExtResource("60_eterna"), ExtResource("61_cister")])
+bite_time_min = 55.0
+bite_time_max = 90.0
+fight_window = 26.0
+rarity_weights = {
+&"common": 32.0,
+&"uncommon": 32.0,
+&"rare": 25.0,
+&"epic": 8.0,
+&"legendary": 3.0
+}
+unlock_cost = 60000
+unlock_level = 25

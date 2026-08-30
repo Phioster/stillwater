@@ -1,14 +1,20 @@
 ## Das Fisch-Journal. Unentdeckte Arten erscheinen als Silhouette.
 ## Geheimfische kommen hier nicht vor — sie haben einen eigenen Reiter.
 ##
-## Eine Zone auf einmal, umgeschaltet über eine Reihe kleiner Reiter.
-## Cornerpond nimmt dafür ein Aufklappmenü; bei sieben Orten ist das richtig,
-## bei zweien ist ein Tipp besser als zwei. Ab REEITER_MAX schalten wir um.
+## Eine Zone auf einmal, umgeschaltet über ein Raster kleiner Knöpfe.
+##
+## Cornerpond nimmt dafür ein Aufklappmenü. Ich hatte notiert, ab fünf Zonen
+## umzuschalten — ein Raster ist aber besser als beides: es trägt beliebig
+## viele Zonen, jede bleibt mit EINEM Tipp erreichbar (ein Aufklappmenü
+## braucht zwei), und es benutzt denselben Knopf, der auf dem Gerät
+## nachweislich funktioniert, statt eines Popup-Menüs mit eigener
+## Eingabebehandlung.
 extends PanelBase
 
 signal fish_tapped(id: StringName)
 
-const REITER_MAX: int = 5
+## Mehr als drei nebeneinander werden auf einem Handy zu schmal zum Lesen.
+const SWITCH_COLUMNS: int = 3
 
 var _zone: StringName = &""
 
@@ -63,7 +69,8 @@ func refresh() -> void:
 		add_child(_entry(f))
 
 func _zone_switch(zones: Array[ZoneData]) -> Control:
-	var row := HBoxContainer.new()
+	var grid := GridContainer.new()
+	grid.columns = SWITCH_COLUMNS
 	for z in zones:
 		var b := TapButton.new()
 		b.text = z.display_name
@@ -75,8 +82,8 @@ func _zone_switch(zones: Array[ZoneData]) -> Control:
 		b.tapped.connect(func() -> void:
 			_zone = z.id
 			refresh())
-		row.add_child(b)
-	return row
+		grid.add_child(b)
+	return grid
 
 ## Zwei Vollständigkeiten: Arten und Art-mal-Rang. Die zweite ist die lange.
 func _progress(zone: ZoneData, fish: Array[FishData]) -> Control:
