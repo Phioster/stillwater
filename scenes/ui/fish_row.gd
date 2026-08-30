@@ -23,9 +23,12 @@ static func build(index: int, in_showcase: bool) -> Control:
 	var fav := TapButton.new()
 	fav.text = "★" if c.is_favorite else "☆"
 	fav.custom_minimum_size = Vector2(96, 96)
-	# Eine volle Vitrine muss man sehen koennen, bevor man tippt.
-	fav.disabled = not c.is_favorite and Game.ctx.inventory.favorites_full()
-	fav.tapped.connect(func() -> void: Game.toggle_favorite(index))
+	# Nicht ausgrauen, sondern ablehnen und wackeln: ein grauer Knopf sagt
+	# nicht, WARUM er nicht geht, ein Wackeln zeigt wenigstens, dass die
+	# Berührung ankam.
+	fav.tapped.connect(func() -> void:
+		if not Game.toggle_favorite(index):
+			fav.refuse())
 	row.add_child(fav)
 
 	if not in_showcase:

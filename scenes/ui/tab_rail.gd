@@ -14,16 +14,16 @@ const SECRET_TAB: int = 7
 const BUTTON_HEIGHT: float = 96.0
 const MIN_BUTTON_HEIGHT: float = 64.0
 
-var _buttons: Array[Button] = []
+var _buttons: Array[TapButton] = []
 var _active: int = -1
 
 func _ready() -> void:
 	for i in TABS.size():
-		var b := Button.new()
+		var b := TapButton.new()
 		b.text = TABS[i]
 		b.custom_minimum_size = Vector2(0, BUTTON_HEIGHT)
 		b.toggle_mode = true
-		b.pressed.connect(_on_pressed.bind(i))
+		b.tapped.connect(_on_pressed.bind(i))
 		$Box.add_child(b)
 		_buttons.append(b)
 	if not Game.state_changed.is_connected(_update_secret_tab):

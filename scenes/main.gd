@@ -14,6 +14,8 @@ const RAIL_WIDTH := 96.0
 @onready var _fish_window = $FishWindow
 
 func _ready() -> void:
+	# Umriss und Schatten fuer alles auf einmal.
+	theme = UiTheme.build()
 	if not _rail.tab_selected.is_connected(show_tab):
 		_rail.tab_selected.connect(show_tab)
 	if not _journal_panel.fish_tapped.is_connected(_fish_window.open):

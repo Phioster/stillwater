@@ -69,8 +69,9 @@ func _row(b: BaitData) -> Control:
 			buy.text = "Auffüllen  %d" % cost
 		else:
 			buy.text = "Auffüllen  +%d  ·  %d" % [amount, cost]
-		buy.disabled = amount <= 0 or Game.coins < Game.bait_cost(b.id, 1)
-		buy.tapped.connect(func() -> void: Game.refill_bait(b.id))
+		buy.tapped.connect(func() -> void:
+			if Game.refill_bait(b.id) <= 0:
+				buy.refuse())
 		row.add_child(buy)
 
 	box.add_child(row)

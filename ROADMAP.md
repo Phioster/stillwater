@@ -35,9 +35,9 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 - [x] **C1 Federn und Wackler** als eigene kleine Bausteine
       (gedämpfter Schwinger, Verwalter, Erschütterung mit vorab
       gezogenem Rauschen). Lehrbuchphysik, ~100 Zeilen.
-- [ ] **C2 Anwenden**: Knöpfe federn beim Drücken, abgelehnte Aktionen
+- [x] **C2 Anwenden**: Knöpfe federn beim Drücken, abgelehnte Aktionen
       wackeln, Reiterwechsel gibt Rückmeldung.
-- [ ] **C3 Umriss und Schatten** für Text und Flächen über ein Theme
+- [x] **C3 Umriss und Schatten** für Text und Flächen über ein Theme
       statt pro Element.
 
 ## D — Ton (zuletzt, wie besprochen)

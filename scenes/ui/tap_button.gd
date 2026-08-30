@@ -16,10 +16,34 @@ signal tapped
 const DRAG_SLOP: float = 16.0
 
 var _down_at: Vector2 = Vector2.INF
+## Ein Knopf, der beim Drücken kurz einfedert, fühlt sich an wie ein Knopf.
+var _scale := Spring.new(1.0, 320.0, 22.0)
+var _shake: Shake = null
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	pressed.connect(_on_pressed)
+	button_down.connect(func() -> void: _scale.nudge(-3.5))
+
+## Eine abgelehnte Aktion muss man sehen. Wackeln statt stillschweigend
+## nichts zu tun -- ein Knopf, der nicht reagiert, wirkt kaputt.
+func refuse() -> void:
+	_shake = Shake.new(7.0, 0.28, 26.0)
+
+func _process(delta: float) -> void:
+	pivot_offset = size * 0.5
+	_scale.update(delta)
+	scale = Vector2(_scale.value, _scale.value)
+	if _shake != null:
+		_shake.update(delta)
+		position.x = _rest_x + _shake.amplitude()
+		if not _shake.alive():
+			position.x = _rest_x
+			_shake = null
+	else:
+		_rest_x = position.x
+
+var _rest_x: float = 0.0
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:

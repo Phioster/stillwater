@@ -117,3 +117,28 @@ func _all_text(node: Node) -> Array[String]:
 	for child in node.get_children():
 		out.append_array(_all_text(child))
 	return out
+
+## Ein Theme an EINER Stelle statt Umriss pro Element -- Vergessen ist bei so
+## etwas die wahrscheinlichste Fehlerquelle, also wird es hier festgehalten.
+func test_the_ui_carries_outline_and_shadow_from_one_theme() -> void:
+	Game.new_game()
+	var m := _main()
+	assert_true(m.theme != null, "die Oberfläche hat kein Theme")
+	assert_eq(m.theme.get_constant("outline_size", "Label"), UiTheme.OUTLINE)
+	assert_eq(m.theme.get_color("font_outline_color", "Label"), Palette.get_color(&"outline"))
+	assert_true(m.theme.get_stylebox("panel", "PanelContainer") != null, "Panels haben keinen Stil")
+	# Jede Beschriftung erbt ihn, ohne selbst etwas zu setzen.
+	var label := Label.new()
+	m.add_child(label)
+	assert_eq(label.get_theme_constant("outline_size"), UiTheme.OUTLINE,
+		"eine frische Beschriftung erbt den Umriss nicht")
+	m.free()
+
+## Auch die Reiter federn -- sonst fühlt sich ausgerechnet der meistbenutzte
+## Knopf tot an.
+func test_the_tab_buttons_are_springy() -> void:
+	Game.new_game()
+	var m := _main()
+	var b: Control = m.get_node("Row/TabRail/Box").get_child(0)
+	assert_true(b is TapButton, "Reiter sind gewöhnliche Knöpfe: %s" % b.get_class())
+	m.free()

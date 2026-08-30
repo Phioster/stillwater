@@ -75,3 +75,43 @@ func _buttons_in(node: Node) -> Array[Button]:
 	for child in node.get_children():
 		found.append_array(_buttons_in(child))
 	return found
+
+## Ein Knopf muss auf die Berührung sichtbar reagieren, sonst wirkt er tot.
+func test_pressing_a_button_makes_it_spring() -> void:
+	var b := _button()
+	b.size = Vector2(100, 100)
+	b._process(0.016)
+	assert_almost_eq(b.scale.x, 1.0, 0.001, "in Ruhe steht er still")
+	b.button_down.emit()
+	b._process(0.016)
+	assert_true(b.scale.x < 1.0, "beim Drücken muss er einfedern")
+	for i in 400:
+		b._process(0.016)
+	assert_almost_eq(b.scale.x, 1.0, 0.001, "danach muss er zurückkommen")
+	b.free()
+
+## Eine abgelehnte Aktion muss man sehen. Ohne das wirkt der Knopf kaputt.
+func test_a_refused_action_shakes_and_settles() -> void:
+	var b := _button()
+	b.position = Vector2(50, 20)
+	b._process(0.016)
+	b.refuse()
+	b._process(0.016)
+	assert_true(absf(b.position.x - 50.0) > 0.01, "der Knopf muss wackeln")
+	for i in 60:
+		b._process(0.016)
+	assert_almost_eq(b.position.x, 50.0, 0.001, "danach muss er wieder still stehen")
+	b.free()
+
+## Der Ausgangspunkt darf beim Wackeln nicht mitwandern -- sonst kriecht der
+## Knopf mit jedem Fehlversuch weiter nach rechts.
+func test_repeated_refusals_do_not_drift() -> void:
+	var b := _button()
+	b.position = Vector2(50, 20)
+	b._process(0.016)
+	for round in 5:
+		b.refuse()
+		for i in 60:
+			b._process(0.016)
+	assert_almost_eq(b.position.x, 50.0, 0.001, "der Knopf ist weggewandert")
+	b.free()
