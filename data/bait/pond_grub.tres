@@ -6,6 +6,7 @@
 script = ExtResource("1_vr7aj")
 id = &"pond_grub"
 display_name = "Teichmade"
+bite_time_mult = 1.0
 rank_probabilities = {
 0: 0.9,
 1: 0.1

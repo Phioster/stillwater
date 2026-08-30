@@ -209,6 +209,11 @@ func buy_bait(id: StringName, amount: int) -> bool:
 	var b: BaitData = Database.baits.get(id)
 	if b == null or b.unlimited or amount <= 0:
 		return false
+	# Auch im Modell pruefen, nicht nur in der Anzeige: der Laden ist nicht
+	# der einzige moegliche Aufrufer, und eine Regel, die nur die Oberflaeche
+	# kennt, ist keine Regel.
+	if ctx.player_level < b.unlock_level:
+		return false
 	if bait_used() + amount > bait_capacity():
 		return false
 	var cost := bait_cost(id, amount)

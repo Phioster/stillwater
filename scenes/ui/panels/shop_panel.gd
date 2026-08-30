@@ -9,8 +9,7 @@ func refresh() -> void:
 	header.text = "Ködertasche  %d / %d" % [Game.bait_used(), Game.bait_capacity()]
 	add_child(header)
 
-	for id in Database.baits:
-		var b: BaitData = Database.baits[id]
+	for b in Database.baits_in_order():
 		if Game.ctx.player_level < b.unlock_level:
 			continue
 		add_child(_row(b))
@@ -32,8 +31,11 @@ func _row(b: BaitData) -> Control:
 		var names: Array[String] = []
 		for r in ranks:
 			names.append(FishRoll.RANK_NAMES[r])
+		var speed := ""
+		if b.bite_time_mult < 0.99:
+			speed = "  ·  %d %% schneller" % int(round((1.0 - b.bite_time_mult) * 100.0))
 		var promise := Label.new()
-		promise.text = "  am besten für Rang %s" % "/".join(names)
+		promise.text = "  am besten für Rang %s%s" % ["/".join(names), speed]
 		promise.modulate = Palette.get_color(&"accent")
 		box.add_child(promise)
 

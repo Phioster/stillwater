@@ -18,18 +18,6 @@ const SWITCH_COLUMNS: int = 3
 
 var _zone: StringName = &""
 
-## Zonen in Freischaltreihenfolge, nicht in Ordner-Reihenfolge: die
-## Dateisystem-Reihenfolge ist zwischen Geräten nicht einmal stabil.
-func _zones_in_order() -> Array[ZoneData]:
-	var out: Array[ZoneData] = []
-	for id in Database.zones:
-		out.append(Database.zones[id])
-	out.sort_custom(func(a: ZoneData, b: ZoneData) -> bool:
-		if a.unlock_level != b.unlock_level:
-			return a.unlock_level < b.unlock_level
-		return a.unlock_cost < b.unlock_cost)
-	return out
-
 ## Innerhalb einer Zone: erst die gewöhnlichen, dann die seltenen, und
 ## gleichrangige nach Gewicht. Vorher stand hier die Reihenfolge, in der die
 ## Arten ins Datenverzeichnis gewandert sind — also gar keine.
@@ -63,7 +51,7 @@ func _rarity_order(id: StringName) -> float:
 
 func refresh() -> void:
 	clear(self)
-	var zones := _zones_in_order()
+	var zones := Database.zones_in_order()
 	if zones.is_empty():
 		return
 	if _zone == &"" or not Database.zones.has(_zone):

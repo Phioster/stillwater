@@ -3,8 +3,8 @@ extends PanelBase
 
 func refresh() -> void:
 	clear(self)
-	for id in Database.zones:
-		add_child(_row(Database.zones[id]))
+	for zone in Database.zones_in_order():
+		add_child(_row(zone))
 
 func _row(z: ZoneData) -> Control:
 	var box := VBoxContainer.new()

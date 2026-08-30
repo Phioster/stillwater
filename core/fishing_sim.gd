@@ -10,6 +10,12 @@ const ESCAPE_COOLDOWN: float = 2.0
 ## Die Rute schlaegt in Schueben statt kontinuierlich: ein stiller Abzug ist
 ## nicht zu sehen, ein Treffer alle ROD_INTERVAL Sekunden schon.
 const ROD_INTERVAL: float = 1.0
+## Klammern um die Bisszeit. Zone und Koeder multiplizieren sich, und ohne
+## Grenzen zoege ein spaeter Ort mit einem schlechten Koeder die Wartezeit ins
+## Absurde -- oder ein guter Koeder machte sie so kurz, dass der Wurf nicht
+## mehr zu sehen waere.
+const MIN_BITE_TIME: float = 6.0
+const MAX_BITE_TIME: float = 90.0
 ## Schutz gegen Endlosschleifen bei einem sehr großen Delta.
 const MAX_SEGMENTS: int = 500000
 
@@ -109,9 +115,13 @@ func _start_cast(ctx: SimContext, events: Array) -> void:
 	state = State.CASTING
 	timer = CAST_TIME
 
+## Die Zone gibt den Grundwert, der Koeder verkuerzt ihn. Beides zusammen,
+## damit ein Ort seinen Charakter behaelt und ein besserer Koeder trotzdem
+## ueberall spuerbar hilft.
 func _begin_wait(ctx: SimContext, rng: StillRNG) -> void:
 	state = State.WAITING
-	timer = rng.randf_range(ctx.zone.bite_time_min, ctx.zone.bite_time_max)
+	var base := rng.randf_range(ctx.zone.bite_time_min, ctx.zone.bite_time_max)
+	timer = clampf(base * ctx.bait_bite_mult(), MIN_BITE_TIME, MAX_BITE_TIME)
 
 func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	var fish := select_fish(ctx, rng)

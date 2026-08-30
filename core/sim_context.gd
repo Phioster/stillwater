@@ -23,6 +23,10 @@ var rarities: Dictionary = {}
 var inventory: Inventory
 var journal: Journal
 
+## Faktor des aktiven Koeders auf die Bisszeit.
+func bait_bite_mult() -> float:
+	return maxf(bait.bite_time_mult, 0.05) if bait != null else 1.0
+
 ## Zieht den Rang aus der Tabelle des aktiven Koeders. Ohne Tabelle bleibt es
 ## bei E -- ein Koeder ohne Angabe verspricht nichts und liefert das Kleinste.
 func pull_rank(rng: StillRNG) -> int:

@@ -27,8 +27,8 @@ background_id = &"moor"
 shore_key = &"peat_dark"
 foam_key = &"mist"
 fish = Array[ExtResource("1_fish")]([ExtResource("10_moderl"), ExtResource("11_bitter"), ExtResource("12_crucia"), ExtResource("13_stone_"), ExtResource("14_weathe"), ExtResource("15_ruffe"), ExtResource("16_burbot"), ExtResource("17_zander"), ExtResource("18_bog_pi"), ExtResource("19_mirefi"), ExtResource("20_wisp_c"), ExtResource("21_hour_w"), ExtResource("22_peat_w"), ExtResource("80_minnow"), ExtResource("81_spirli"), ExtResource("82_silver")])
-bite_time_min = 45.0
-bite_time_max = 75.0
+bite_time_min = 34.0
+bite_time_max = 58.0
 fight_window = 22.0
 rarity_weights = {
 &"common": 44.0,

@@ -90,6 +90,9 @@ func test_buying_bait_triggers_an_autosave() -> void:
 	var original := _use_test_path()
 	SaveManager.delete_save()
 	Game.new_game()
+	# Der Koeder ist ab Stufe 3 zu haben -- seit buy_bait() das auch
+	# im Modell prueft, reicht Stufe 1 nicht mehr.
+	Game.ctx.player_level = 10
 	Game.coins = 10000
 	Game.buy_bait(&"mayfly_nymph", 10)
 	assert_true(SaveManager.has_save(), "Köderkauf muss sofort speichern")

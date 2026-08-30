@@ -25,8 +25,8 @@ background_id = &"cistern"
 shore_key = &"stone"
 foam_key = &"cistern_foam"
 fish = Array[ExtResource("1_fish")]([ExtResource("10_cister"), ExtResource("11_stone_"), ExtResource("12_blindl"), ExtResource("13_wall_p"), ExtResource("14_jug_pi"), ExtResource("15_ash_gu"), ExtResource("16_cister"), ExtResource("17_vault_"), ExtResource("18_torch_"), ExtResource("19_well_k"), ExtResource("20_blackw"), ExtResource("21_chain_"), ExtResource("60_eterna"), ExtResource("61_cister")])
-bite_time_min = 55.0
-bite_time_max = 90.0
+bite_time_min = 36.0
+bite_time_max = 60.0
 fight_window = 26.0
 rarity_weights = {
 &"common": 32.0,

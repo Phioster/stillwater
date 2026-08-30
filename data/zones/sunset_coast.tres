@@ -27,8 +27,8 @@ background_id = &"coast"
 shore_key = &"sand_dark"
 foam_key = &"sea_foam"
 fish = Array[ExtResource("1_t4kh8")]([ExtResource("2_u15gd"), ExtResource("3_we1y1"), ExtResource("4_w12qj"), ExtResource("5_736ml"), ExtResource("6_grt6l"), ExtResource("90_bluefi"), ExtResource("91_duskfi"), ExtResource("70_dusk_l"), ExtResource("40_sand_s"), ExtResource("41_sardin"), ExtResource("42_gray_m"), ExtResource("43_plaice"), ExtResource("44_john_d"), ExtResource("45_conger"), ExtResource("46_halibu"), ExtResource("47_swordf")])
-bite_time_min = 35.0
-bite_time_max = 60.0
+bite_time_min = 30.0
+bite_time_max = 52.0
 rarity_weights = {
 &"common": 50.0,
 &"rare": 18.0,

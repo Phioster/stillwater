@@ -4,17 +4,17 @@
 
 [resource]
 script = ExtResource("1_bait")
-id = &"mayfly_nymph"
-display_name = "Eintagsfliegen-Nymphe"
-cost = 15
-unlock_level = 3
-bite_time_mult = 0.92
+id = &"star_roe"
+display_name = "Sternenrogen"
+cost = 8000
+unlock_level = 44
+bite_time_mult = 0.55
 rank_probabilities = {
-1: 0.35,
-2: 0.45,
-3: 0.2
+4: 0.25,
+5: 0.4,
+6: 0.35
 }
 rarity_weight_bonus = {
-&"uncommon": 1.4,
-&"rare": 2.2
+&"epic": 3.2,
+&"legendary": 3.0
 }

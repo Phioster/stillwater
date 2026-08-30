@@ -41,6 +41,7 @@ const SUITES := [
 	"res://tests/test_settings.gd",
 	"res://tests/test_save_backups.gd",
 	"res://tests/test_glide_scroll.gd",
+	"res://tests/test_order_and_bait.gd",
 	"res://tests/test_favorites_and_refill.gd",
 	"res://tests/test_tabs_and_journal_order.gd",
 ]

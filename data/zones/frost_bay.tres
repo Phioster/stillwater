@@ -25,8 +25,8 @@ background_id = &"frost"
 shore_key = &"snow"
 foam_key = &"ice_foam"
 fish = Array[ExtResource("1_fish")]([ExtResource("10_polar_"), ExtResource("11_capeli"), ExtResource("12_sand_l"), ExtResource("13_sea_sc"), ExtResource("14_arctic"), ExtResource("15_redfis"), ExtResource("16_haddoc"), ExtResource("17_atlant"), ExtResource("18_greenl"), ExtResource("19_frost_"), ExtResource("20_aurora"), ExtResource("60_pack_i"), ExtResource("61_glacie"), ExtResource("90_herri")])
-bite_time_min = 50.0
-bite_time_max = 80.0
+bite_time_min = 32.0
+bite_time_max = 54.0
 fight_window = 24.0
 rarity_weights = {
 &"common": 38.0,

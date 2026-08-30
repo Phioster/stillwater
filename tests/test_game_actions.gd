@@ -70,6 +70,9 @@ func test_journal_survives_selling() -> void:
 
 func test_buying_bait_respects_capacity() -> void:
 	_fresh()
+	# Die Eintagsfliegen-Nymphe gibt es ab Stufe 3, und buy_bait() prueft das
+	# seit 2026-08-31 auch im Modell, nicht nur in der Anzeige.
+	Game.ctx.player_level = 10
 	Game.coins = 10000
 	assert_true(Game.buy_bait(&"mayfly_nymph", 10))
 	assert_eq(int(Game.ctx.bait_counts[&"mayfly_nymph"]), 10)
@@ -80,6 +83,7 @@ func test_buying_bait_respects_capacity() -> void:
 ## exakt so viel abziehen, wie bait_cost() für dieselbe Menge nennt.
 func test_bait_cost_matches_what_buy_bait_actually_charges() -> void:
 	_fresh()
+	Game.ctx.player_level = 10
 	assert_eq(Game.bait_cost(&"mayfly_nymph", 10), 150)
 	Game.coins = 10000
 	Game.buy_bait(&"mayfly_nymph", 10)

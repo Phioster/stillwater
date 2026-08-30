@@ -25,8 +25,8 @@ background_id = &"sky"
 shore_key = &"cloud_dark"
 foam_key = &"cloud"
 fish = Array[ExtResource("1_fish")]([ExtResource("10_feathe"), ExtResource("11_wind_g"), ExtResource("12_haze_m"), ExtResource("13_cirrus"), ExtResource("14_sail_p"), ExtResource("15_gust_t"), ExtResource("16_cloud_"), ExtResource("17_storm_"), ExtResource("18_altitu"), ExtResource("19_thunde"), ExtResource("20_zenith"), ExtResource("21_drizzl"), ExtResource("60_squall"), ExtResource("61_sky_an")])
-bite_time_min = 60.0
-bite_time_max = 100.0
+bite_time_min = 30.0
+bite_time_max = 52.0
 fight_window = 28.0
 rarity_weights = {
 &"common": 28.0,

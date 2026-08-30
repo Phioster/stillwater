@@ -9,6 +9,11 @@ extends Resource
 @export var unlock_level: int = 1
 ## rarity_id -> Faktor auf das Raritätsgewicht der Zone. Fehlende Einträge = 1.0
 @export var rarity_weight_bonus: Dictionary = {}
+## Faktor auf die Bisszeit der Zone. Kleiner = es beißt schneller. Damit hat
+## der Köder zwei Achsen: er sagt, WAS anbeißt (rank_probabilities) und WIE
+## SCHNELL. Ohne die zweite wäre ein teurer Köder nur größer, nicht besser.
+@export var bite_time_mult: float = 1.0
+
 ## Rang (0 = E bis 6 = S+) -> Gewicht. Der Köder bestimmt damit direkt, welche
 ## Größenklasse anbeißt — anders als eine verschobene Verteilung lässt sich das
 ## auf dem Köder auch versprechen: "am besten für B/A".

@@ -75,7 +75,7 @@ func test_journal_zones_are_in_unlock_order() -> void:
 	Game.new_game()
 	var m := _main()
 	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
-	var zones: Array = panel._zones_in_order()
+	var zones: Array = Database.zones_in_order()
 	assert_eq(zones[0].id, &"willow_lake", "die Startzone muss zuerst kommen")
 	for i in range(1, zones.size()):
 		assert_true(zones[i - 1].unlock_level <= zones[i].unlock_level,

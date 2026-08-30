@@ -97,6 +97,31 @@ func cosmetic_of(category: StringName, variant: int) -> CosmeticData:
 			return c
 	return null
 
+## Zonen in Freischaltreihenfolge. Die Dictionary-Reihenfolge folgt der
+## Ordner-Auflistung des Dateisystems -- die ist nicht einmal zwischen Geräten
+## stabil, und sie hat im Journal, in der Weltliste und im Geheimreiter
+## dreimal dieselbe falsche Reihenfolge erzeugt. Deshalb hier, nicht dort.
+func zones_in_order() -> Array[ZoneData]:
+	var out: Array[ZoneData] = []
+	for id in zones:
+		out.append(zones[id])
+	out.sort_custom(func(a: ZoneData, b: ZoneData) -> bool:
+		if a.unlock_level != b.unlock_level:
+			return a.unlock_level < b.unlock_level
+		return a.unlock_cost < b.unlock_cost)
+	return out
+
+## Köder in Freischaltreihenfolge -- aus demselben Grund wie bei den Zonen.
+func baits_in_order() -> Array[BaitData]:
+	var out: Array[BaitData] = []
+	for id in baits:
+		out.append(baits[id])
+	out.sort_custom(func(a: BaitData, b: BaitData) -> bool:
+		if a.unlock_level != b.unlock_level:
+			return a.unlock_level < b.unlock_level
+		return a.cost < b.cost)
+	return out
+
 ## Prüft die Inhalte auf Verweise ins Leere. Gibt eine leere Liste zurück,
 ## wenn alles stimmt.
 func validate() -> Array[String]:

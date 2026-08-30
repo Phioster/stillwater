@@ -10,7 +10,8 @@ func refresh() -> void:
 	clear(self)
 	if not Game.ctx.journal.has_any_secret():
 		return
-	for zone_id in Database.zones:
+	for zone in Database.zones_in_order():
+		var zone_id := zone.id
 		var found: Array[FishData] = []
 		for f in Database.fish_of_zone(zone_id):
 			if f.is_secret and Game.ctx.journal.is_discovered(f.id):
@@ -18,7 +19,7 @@ func refresh() -> void:
 		if found.is_empty():
 			continue
 		var title := Label.new()
-		title.text = Database.zones[zone_id].display_name
+		title.text = zone.display_name
 		add_child(title)
 		for f in found:
 			add_child(_entry(f))

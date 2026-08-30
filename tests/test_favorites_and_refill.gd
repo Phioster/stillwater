@@ -41,6 +41,9 @@ func test_unfavoriting_always_works_even_when_full() -> void:
 
 func test_refill_fills_the_bag_and_charges_for_it() -> void:
 	Game.new_game()
+	# Der Koeder ist ab Stufe 3 zu haben -- seit buy_bait() das auch
+	# im Modell prueft, reicht Stufe 1 nicht mehr.
+	Game.ctx.player_level = 10
 	Game.coins = 100000
 	var id := &"mayfly_nymph"
 	var b: BaitData = Database.baits[id]
@@ -58,6 +61,9 @@ func test_refill_fills_the_bag_and_charges_for_it() -> void:
 ## statt eines Knopfes, der einfach nichts tut.
 func test_refill_buys_only_what_the_purse_allows() -> void:
 	Game.new_game()
+	# Der Koeder ist ab Stufe 3 zu haben -- seit buy_bait() das auch
+	# im Modell prueft, reicht Stufe 1 nicht mehr.
+	Game.ctx.player_level = 10
 	var id := &"mayfly_nymph"
 	var b: BaitData = Database.baits[id]
 	Game.coins = b.cost * 3 + b.cost - 1
