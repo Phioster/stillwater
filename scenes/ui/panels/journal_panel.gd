@@ -1,5 +1,5 @@
-## Das Fisch-Journal. Unentdeckte Arten erscheinen als Silhouette,
-## Secret-Fische als verschlossener Platz mit Hinweis. Ein Tipp auf eine
+## Das Fisch-Journal. Unentdeckte Arten erscheinen als Silhouette.
+## Geheimfische kommen hier nicht vor -- sie haben einen eigenen Reiter. Ein Tipp auf eine
 ## Zeile meldet die Fisch-ID nach aussen -- main.gd oeffnet darauf das
 ## grosse Fisch-Fenster (fish_window.gd), das Journal zeigt selbst nichts mehr auf.
 extends PanelBase
@@ -16,18 +16,11 @@ func refresh() -> void:
 		title.text = "%s   %d %%" % [zone.display_name, int(round(Game.ctx.journal.completion(fish) * 100.0))]
 		add_child(title)
 
-		# Geheime Fische kommen ans Ende der Zone: die Spec sieht dafuer einen
-		# eigenen verschlossenen Platz vor, keine Zeile mitten in der Liste.
-		var normal: Array[FishData] = []
-		var secret: Array[FishData] = []
+		# Geheime Fische stehen hier gar nicht -- weder als Zeile noch als
+		# verschlossener Platz. Sie haben einen eigenen Reiter, und der
+		# entsteht erst mit dem ersten Fang.
 		for f in fish:
 			if f.is_secret:
-				secret.append(f)
-			else:
-				normal.append(f)
-		for f in normal + secret:
-			if f.is_secret and not Game.ctx.journal.is_discovered(f.id):
-				add_child(_locked(f))
 				continue
 			add_child(_entry(f))
 
@@ -73,22 +66,4 @@ func _entry(f: FishData) -> Control:
 		label.text = "???"
 		label.modulate = Palette.get_color(&"shadow")
 	row.add_child(label)
-	return button
-
-## Tipp per Maus (Desktop) oder Finger (Android, per Standardeinstellung als
-## Mausereignis emuliert) meldet die Fisch-ID -- das Fenster entscheidet
-## selbst, was es dazu zeigt.
-func _locked(f: FishData) -> Control:
-	var button := TapButton.new()
-	button.flat = true
-	button.custom_minimum_size = Vector2(0, 64)
-	button.set_meta(&"fish_id", f.id)
-	button.tapped.connect(func(): fish_tapped.emit(f.id))
-	var label := Label.new()
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.text = "🔒 %s" % f.secret_hint
-	label.modulate = Palette.get_color(&"accent")
-	button.add_child(label)
 	return button

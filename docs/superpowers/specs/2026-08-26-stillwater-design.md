@@ -404,12 +404,17 @@ Regeln:
 - Von keinem Trank und keinem Köder-Raritätsbonus beeinflussbar
 - Zählen **nicht** zur Journal-Prozentvollendung — sie sind Kür, nicht
   Pflicht, damit 100 % erreichbar bleibt
-- Die Journal-Kategorie „Secret" erscheint erst nach dem ersten Fang
-- Vorher zeigt das Journal einen verschlossenen Platz mit einem
-  Hinweistext statt einer Silhouette
+- Der Reiter „Geheim" entsteht erst mit dem ersten Fang. **Vorher deutet
+  nichts auf sie hin** — kein Reiter, kein verschlossener Platz, kein
+  Hinweistext, keine Silhouette. (Korrigiert 2026-08-30: die frühere
+  Fassung forderte beides zugleich, und gebaut war der verschlossene
+  Platz mit Hinweis. Er verriet damit genau das, was verborgen bleiben
+  sollte.)
+- Gefangene Geheimfische stehen **nur** im eigenen Reiter, nicht
+  zusätzlich im Journal
 
-Bedingungstypen in Slice 1: **Köder** und **Mindestlevel**.
-Später: Aussehen, Tageszeit, Fänge in dieser Zone, Journal-Fortschritt,
+Bedingungstypen: **Köder**, **Mindestlevel**, **Aussehen**,
+**Tageszeit**, **Journal-Fortschritt**. Später: Fänge in dieser Zone,
 aktiver Trank.
 
 Bewusst *nicht* übernommen wird das Muster „Buff alle 15 Minuten

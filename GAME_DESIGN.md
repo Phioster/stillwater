@@ -44,11 +44,16 @@ Sammelachsen. Implementiert in `core/fish_roll.gd`. Spec §6.2, §6.8.
 Ein Secret-Fisch ist normale `FishData` mit `is_secret = true` und
 einer Liste von `CatchCondition`-Resources. Er erscheint nie in der
 normalen Raritätstabelle, wird von keinem Köder-Raritätsbonus
-beeinflusst und zählt nicht zur Journal-Prozentvollendung. Slice 1
-kennt zwei Bedingungstypen: `BaitCondition` und `LevelCondition`
-(`resources/bait_condition.gd`, `resources/level_condition.gd`). Genau
-ein Secret-Fisch (Hohlflosse, Willow Lake) beweist, dass das System
-trägt. Spec §7.
+beeinflusst und zählt nicht zur Journal-Prozentvollendung. Fünf
+Bedingungstypen: `BaitCondition`, `LevelCondition`, `CosmeticCondition`,
+`TimeOfDayCondition`, `JournalCondition` — jeder wird von mindestens
+einem der vier Geheimfische wirklich verlangt (Hohlflosse,
+Strohhutbrasse, Chronistenaland in Willow Lake, Dämmerlaterne an der
+Sunset Coast).
+
+Der Reiter „Geheim" entsteht erst mit dem ersten Fang. Vorher deutet
+nichts auf sie hin: kein Reiter, kein verschlossener Platz, kein
+Hinweistext. Spec §7.
 
 ## Journal und Fisch-Level
 

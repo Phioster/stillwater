@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scenes/ui/panels/upgrade_panel.gd" id="8"]
 [ext_resource type="Script" path="res://scenes/ui/panels/world_panel.gd" id="9"]
 [ext_resource type="Script" path="res://scenes/ui/panels/character_panel.gd" id="10"]
+[ext_resource type="Script" path="res://scenes/ui/panels/secret_panel.gd" id="13"]
 [ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/fish_window.tscn" id="12"]
 
@@ -95,6 +96,15 @@ anchor_bottom = 1.0
 [node name="CharacterPanel" type="VBoxContainer" parent="SidePanel/Panels/CharacterScroll"]
 size_flags_horizontal = 3
 script = ExtResource("10")
+
+[node name="SecretScroll" type="ScrollContainer" parent="SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="SecretPanel" type="VBoxContainer" parent="SidePanel/Panels/SecretScroll"]
+size_flags_horizontal = 3
+script = ExtResource("13")
 
 [node name="Hud" parent="." instance=ExtResource("3")]
 offset_left = 16.0

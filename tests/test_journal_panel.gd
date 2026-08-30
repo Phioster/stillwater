@@ -56,18 +56,46 @@ func test_tapping_an_undiscovered_row_emits_too_so_the_window_can_show_the_silho
 	assert_true(seen[0] == id)
 	panel.free()
 
-func test_tapping_a_locked_secret_row_emits_too_so_the_window_can_show_the_hint() -> void:
+## Umgedreht am 2026-08-30: frueher stand hier ein verschlossener Platz mit
+## Hinweistext. Das Spiel soll die Existenz der Geheimfische aber gar nicht
+## verraten, bevor einer an Land ist.
+func test_the_journal_never_mentions_secret_fish() -> void:
 	Game.new_game()
 	var id := _secret_id()
 	assert_false(id == &"", "es muss einen geheimen Fisch in den Testdaten geben")
 
 	var panel := _panel()
-	var seen: Array = []
-	panel.fish_tapped.connect(func(i: StringName) -> void: seen.append(i))
-	_tap(panel, id)
-	assert_eq(seen.size(), 1, "auch der gesperrte Platz muss antippbar sein")
-	assert_true(seen[0] == id)
+	assert_true(_row_for(panel, id) == null, "kein Platz fuer unentdeckte Geheimfische")
+
+	# Auch nach dem Fang bleibt das Journal frei davon -- der eigene Reiter
+	# uebernimmt, sonst stuende der Fisch doppelt in der Liste.
+	Game.ctx.journal.record(CaughtFish.make(id, 1.0, 3, false), true)
+	panel.refresh()
+	assert_true(_row_for(panel, id) == null, "gefangene Geheimfische gehoeren in den eigenen Reiter")
 	panel.free()
+
+func test_no_hint_text_leaks_into_the_journal() -> void:
+	Game.new_game()
+	var hints: Array[String] = []
+	for fid in Database.fish:
+		var f: FishData = Database.fish[fid]
+		if f.is_secret and f.secret_hint != "":
+			hints.append(f.secret_hint)
+	assert_true(hints.size() > 0, "die Testdaten brauchen Hinweistexte")
+
+	var panel := _panel()
+	for text in _all_text(panel):
+		for hint in hints:
+			assert_false(text.contains(hint), "Hinweis steht im Journal: %s" % hint)
+	panel.free()
+
+func _all_text(node: Node) -> Array[String]:
+	var out: Array[String] = []
+	if node is Label:
+		out.append((node as Label).text)
+	for child in node.get_children():
+		out.append_array(_all_text(child))
+	return out
 
 func test_refresh_does_not_lose_any_rows() -> void:
 	Game.new_game()
