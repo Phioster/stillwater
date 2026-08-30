@@ -11,5 +11,5 @@ zone_id = &"sunset_coast"
 base_value = 24
 strength = 26.0
 xp = 10
-weight_min = 0.4
-weight_max = 1.6
+weight_mean = 1.0
+weight_dev = 0.2

@@ -12,8 +12,8 @@ func _fish() -> FishData:
 	f.base_value = 10
 	f.strength = 20.0
 	f.xp = 10
-	f.weight_min = 1.0
-	f.weight_max = 4.0
+	f.weight_mean = 2.5000
+	f.weight_dev = 0.5000
 	f.spawn_weight = 1.0
 	return f
 
@@ -104,8 +104,8 @@ func test_offline_equals_online_mid_fight() -> void:
 	fish.base_value = 10
 	fish.strength = 40.0
 	fish.xp = 10
-	fish.weight_min = 1.0
-	fish.weight_max = 1.0   # Perzentil immer 0 -> Kampfstärke exakt vorhersagbar
+	fish.weight_mean = 1.0000
+	fish.weight_dev = 0.0100   # Perzentil immer 0 -> Kampfstärke exakt vorhersagbar
 	fish.spawn_weight = 1.0
 	var zone := ZoneData.new()
 	zone.id = &"willow_lake"

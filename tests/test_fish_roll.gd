@@ -1,61 +1,95 @@
 extends TestCase
 
+## Gewicht ist seit 2026-08-30 normalverteilt, und der Rang folgt allein aus
+## der Abweichung vom Artmittel -- nicht mehr aus der Rarität.
+
 func _fish() -> FishData:
 	var f := FishData.new()
-	f.weight_min = 1.0
-	f.weight_max = 5.0
-	f.strength = 40.0
+	f.weight_mean = 3.0
+	f.weight_dev = 0.5
+	f.difficulty = 1.0
 	return f
 
-func _rarity(bias: float, strength_mult: float = 1.0) -> RarityData:
-	var r := RarityData.new()
-	r.quality_bias = bias
-	r.strength_mult = strength_mult
-	return r
-
-func test_weight_stays_in_bounds() -> void:
-	var rng := StillRNG.new(3)
+func test_weight_follows_the_deviation() -> void:
 	var f := _fish()
-	for i in 500:
-		assert_between(FishRoll.roll_weight(f, rng), 1.0, 5.0)
+	assert_almost_eq(f.weight_at(0.0), 3.0)
+	assert_almost_eq(f.weight_at(2.0), 4.0)
+	assert_almost_eq(f.weight_at(-2.0), 2.0)
 
-func test_weight_is_biased_towards_light() -> void:
+## Auch eine extreme Abweichung darf kein negatives Gewicht ergeben.
+func test_weight_never_drops_to_zero_or_below() -> void:
+	var f := _fish()
+	assert_true(f.weight_at(-99.0) > 0.0)
+	assert_almost_eq(f.weight_at(-99.0), 0.15, 0.0001, "Untergrenze sind 5 % des Mittels")
+
+func test_deviation_is_centred_and_bounded() -> void:
 	var rng := StillRNG.new(11)
+	var sum := 0.0
+	var n := 20000
+	for i in n:
+		var d := FishRoll.roll_deviation(0.0, rng)
+		assert_between(d, -FishRoll.DEV_LIMIT, FishRoll.DEV_LIMIT)
+		sum += d
+	assert_almost_eq(sum / float(n), 0.0, 0.05, "ohne Köderschub muss das Mittel bei 0 liegen")
+
+func test_bait_shifts_the_size_upward() -> void:
+	var rng := StillRNG.new(12)
+	var plain := 0.0
+	var baited := 0.0
+	for i in 20000:
+		plain += FishRoll.roll_deviation(0.0, rng)
+		baited += FishRoll.roll_deviation(1.0, rng)
+	assert_true(baited > plain + 15000.0, "ein Köder mit Schub 1.0 muss deutlich größere Fische bringen")
+
+## Die Schwellen stehen als eigene Zahlen da, nicht als Aufruf der Formel.
+func test_rank_thresholds() -> void:
+	assert_eq(FishRoll.rank_for_deviation(-3.0), 0, "E")
+	assert_eq(FishRoll.rank_for_deviation(-1.6), 0)
+	assert_eq(FishRoll.rank_for_deviation(-1.5), 1, "D ab -1.5")
+	assert_eq(FishRoll.rank_for_deviation(0.0), 2, "ein Durchschnittsfisch ist C")
+	assert_eq(FishRoll.rank_for_deviation(0.5), 3, "B ab +0.5")
+	assert_eq(FishRoll.rank_for_deviation(1.5), 4, "A ab +1.5")
+	assert_eq(FishRoll.rank_for_deviation(2.25), 5, "S ab +2.25")
+	assert_eq(FishRoll.rank_for_deviation(3.0), 6, "S+ ab +3.0")
+
+func test_rank_does_not_depend_on_rarity() -> void:
+	# Es gibt gar keinen Weg mehr, die Rarität hineinzureichen -- das ist der
+	# Punkt. Der Test haelt fest, dass die Signatur so bleibt.
+	assert_eq(FishRoll.rank_for_deviation(2.5), FishRoll.rank_for_deviation(2.5))
+	assert_eq(FishRoll.RANK_NAMES.size(), 7)
+	assert_eq(FishRoll.RANK_HEALTH.size(), 7)
+	assert_eq(FishRoll.RANK_VALUE_MULTS.size(), 7)
+
+func test_health_doubles_per_rank_and_scales_with_difficulty() -> void:
 	var f := _fish()
-	var heavy := 0
-	for i in 2000:
-		if FishRoll.percentile(f, FishRoll.roll_weight(f, rng)) > 0.5:
-			heavy += 1
-	# Exponent 1.6 heißt: rund 33 % liegen über der Mitte.
-	assert_between(float(heavy) / 2000.0, 0.25, 0.42)
+	assert_almost_eq(FishRoll.health_for(f, 0), 7.0)
+	assert_almost_eq(FishRoll.health_for(f, 1), 14.0)
+	assert_almost_eq(FishRoll.health_for(f, 6), 432.0)
+	f.difficulty = 2.5
+	assert_almost_eq(FishRoll.health_for(f, 2), 70.0, 0.0001, "28 * 2,5")
 
-func test_percentile_endpoints() -> void:
+## Die mittlere Größe ist absichtlich stumm: ein Durchschnittsfisch bekommt
+## kein Adjektiv, sonst nutzt sich das Lob ab.
+func test_size_names_have_a_silent_middle() -> void:
+	assert_eq(FishRoll.size_name(-2.0), "winzig")
+	assert_eq(FishRoll.size_name(-1.0), "klein")
+	assert_eq(FishRoll.size_name(0.0), "")
+	assert_eq(FishRoll.size_name(1.0), "groß")
+	assert_eq(FishRoll.size_name(2.0), "riesig")
+
+func test_full_name_omits_the_silent_size() -> void:
 	var f := _fish()
-	assert_almost_eq(FishRoll.percentile(f, 1.0), 0.0)
-	assert_almost_eq(FishRoll.percentile(f, 5.0), 1.0)
-	assert_almost_eq(FishRoll.percentile(f, 3.0), 0.5)
+	f.display_name = "Schleie"
+	assert_eq(f.full_name(0.0), "Schleie")
+	assert_eq(f.full_name(2.0), "Schleie (riesig)")
 
-func test_percentile_handles_zero_span() -> void:
-	var f := FishData.new()
-	f.weight_min = 2.0
-	f.weight_max = 2.0
-	assert_almost_eq(FishRoll.percentile(f, 2.0), 0.0)
-
-func test_quality_index_in_range() -> void:
-	var rng := StillRNG.new(5)
-	var r := _rarity(0.0)
-	for i in 500:
-		var q := FishRoll.roll_quality(rng.randf(), r, rng)
-		assert_between(float(q), 0.0, 6.0)
-
-func test_rarity_bias_lifts_average_quality() -> void:
-	var rng := StillRNG.new(21)
-	var plain := 0
-	var biased := 0
-	for i in 3000:
-		plain += FishRoll.roll_quality(0.5, _rarity(0.0), rng)
-		biased += FishRoll.roll_quality(0.5, _rarity(0.30), rng)
-	assert_true(biased > plain, "Bias muss die Qualität heben")
+func test_weight_string_switches_to_grams_below_one_kilo() -> void:
+	var f := _fish()
+	f.weight_mean = 0.84
+	f.weight_dev = 0.1
+	assert_eq(f.weight_str(0.0), "840 g")
+	f.weight_mean = 1.24
+	assert_eq(f.weight_str(0.0), "1,24 kg")
 
 func test_shiny_base_rate() -> void:
 	var rng := StillRNG.new(77)
@@ -76,11 +110,3 @@ func test_fish_level_raises_shiny_chance() -> void:
 		if FishRoll.roll_shiny(20, 1.0, rng):
 			high += 1
 	assert_true(high > low, "Level 20 muss häufiger shiny sein als Level 0")
-
-func test_strength_scales_with_weight_and_rarity() -> void:
-	var f := _fish()
-	var r := _rarity(0.0, 2.0)
-	# 40 * 2.0 * (0.75 + 0.5 * 0.0) = 60
-	assert_almost_eq(FishRoll.strength_for(f, r, 0.0), 60.0)
-	# 40 * 2.0 * (0.75 + 0.5 * 1.0) = 100
-	assert_almost_eq(FishRoll.strength_for(f, r, 1.0), 100.0)

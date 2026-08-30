@@ -34,8 +34,8 @@ func _fish(id: StringName, name: String, zone: StringName, rarity: StringName,
 	f.base_value = value
 	f.strength = strength
 	f.xp = xp
-	f.weight_min = wmin
-	f.weight_max = wmax
+	f.weight_mean = (wmin + wmax) * 0.5
+	f.weight_dev = (wmax - wmin) / 6.0
 	f.spawn_weight = spawn
 	_save(f, "res://data/fish/%s.tres" % id)
 	return f

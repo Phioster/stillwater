@@ -24,7 +24,7 @@ func _world() -> Control:
 func _fish_and_catch() -> Array:
 	Game.new_game()
 	var fish: FishData = Database.fish[&"bluegill"]
-	var c := CaughtFish.make(&"bluegill", 0.4, 2, false)
+	var c := CaughtFish.make(&"bluegill", 0.4, false)
 	return [fish, c]
 
 func test_pop_text_and_burst_free_themselves_after_their_lifetime() -> void:

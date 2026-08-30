@@ -40,7 +40,9 @@ func _row(index: int) -> Control:
 	var name := fish.display_name if fish != null else String(c.fish_id)
 	if c.is_shiny:
 		name = "✦ " + name
-	label.text = "%s\n%s · %.2f kg" % [name, FishRoll.QUALITY_NAMES[c.quality], c.weight]
+	var fd: FishData = Database.fish.get(c.fish_id)
+	var w := fd.weight_str(c.weight_dev) if fd != null else "?"
+	label.text = "%s\n%s · %s" % [name, FishRoll.RANK_NAMES[c.rank], w]
 	if fish != null:
 		label.modulate = Game.ctx.rarity_of(fish).color
 	row.add_child(label)

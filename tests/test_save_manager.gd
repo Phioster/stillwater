@@ -22,8 +22,8 @@ func test_roundtrip_restores_everything() -> void:
 	Game.upgrade_levels[&"rod_power"] = 3
 	Game.unlocked_zones = [&"willow_lake", &"sunset_coast"]
 	Game.ctx.bait_counts = {&"mayfly_nymph": 12}
-	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.3, 4, true))
-	Game.ctx.journal.record(CaughtFish.make(&"roach", 0.6, 3, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.3, true))
+	Game.ctx.journal.record(CaughtFish.make(&"roach", 0.6, false))
 
 	var blob := SaveManager.serialize()
 	Game.new_game()
@@ -72,7 +72,7 @@ func test_selling_triggers_an_autosave() -> void:
 	var original := _use_test_path()
 	SaveManager.delete_save()
 	Game.new_game()
-	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.3, 4, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.3, false))
 	Game.sell_all()
 	assert_true(SaveManager.has_save(), "Verkauf muss sofort speichern, nicht erst nach 60 s")
 	_restore_path(original)
@@ -227,7 +227,7 @@ func test_inventory_and_journal_entries_with_wrong_field_types_do_not_crash() ->
 		"journal": {
 			"secret_found": false,
 			"entries": {
-				"roach": {"caught_count": "viel", "best_weight": {"x": 1}, "worst_weight": 0.1, "best_quality": 2, "shiny_found": 1, "fish_level": 0},
+				"roach": {"caught_count": "viel", "best_dev": {"x": 1}, "worst_dev": 0.1, "best_quality": 2, "shiny_found": 1, "fish_level": 0},
 			},
 		},
 	}
@@ -237,7 +237,7 @@ func test_inventory_and_journal_entries_with_wrong_field_types_do_not_crash() ->
 	assert_true(fish_entry["quality"] is int, "quality muss nach der Migration ein int sein")
 	var journal_entry: Dictionary = migrated["journal"]["entries"]["roach"]
 	assert_true(journal_entry["caught_count"] is int, "caught_count muss ein int sein")
-	assert_true(journal_entry["best_weight"] is float, "best_weight muss ein float sein")
+	assert_true(journal_entry["best_dev"] is float, "best_weight muss ein float sein")
 
 	# Ohne den Fix bricht deserialize() hier mitten in CaughtFish.from_dict() ab.
 	Game.new_game()
@@ -332,3 +332,62 @@ func test_legacy_save_without_owned_cosmetics_grants_ownership_of_the_worn_varia
 	assert_true(Game.owns_cosmetic(&"hair", 2), "eine bereits getragene Variante muss nach dem Laden auch besessen sein")
 	assert_true(Game.owns_cosmetic(&"pants", 1))
 	assert_eq(int(Game.cosmetics["hair"]), 2, "getragen bleibt getragen")
+
+## Version 1 speicherte absolute Gewichte und eine beste Qualitaet. Version 2
+## speichert die Abweichung vom Artmittel und die Liste gefangener Raenge.
+## Ein alter Spielstand darf dabei nichts verlieren.
+func test_migrates_a_version_1_save() -> void:
+	var f: FishData = Database.fish[&"bluegill"]
+	var heavy := f.weight_mean + 2.0 * f.weight_dev
+	var light := f.weight_mean - 1.0 * f.weight_dev
+	var raw := {
+		"save_version": 1,
+		"coins": 500,
+		"fish_inventory": [
+			{"fish_id": "bluegill", "weight": heavy, "quality": 4, "is_shiny": true, "is_favorite": false},
+		],
+		"journal": {"secret_found": false, "entries": {
+			"bluegill": {"caught_count": 7, "best_weight": heavy, "worst_weight": light,
+				"best_quality": 4, "shiny_found": true},
+		}},
+	}
+	var d := SaveManager.migrate(raw)
+
+	assert_eq(int(d["save_version"]), SaveManager.SAVE_VERSION)
+	var item: Dictionary = d["fish_inventory"][0]
+	assert_almost_eq(float(item["weight_dev"]), 2.0, 0.001, "Gewicht muss zur Abweichung werden")
+	assert_false(item.has("weight"), "das alte Feld muss verschwinden")
+	assert_true(bool(item["is_shiny"]), "der Schimmer darf nicht verlorengehen")
+
+	var e: Dictionary = d["journal"]["entries"]["bluegill"]
+	assert_eq(int(e["caught_count"]), 7, "die Fangzahl bleibt")
+	assert_almost_eq(float(e["best_dev"]), 2.0, 0.001)
+	assert_almost_eq(float(e["worst_dev"]), -1.0, 0.001)
+	assert_eq(e["caught_ranks"], [4], "die frühere beste Qualität gilt als gefangener Rang")
+	assert_false(e.has("best_weight"), "das alte Feld muss verschwinden")
+
+## Eine Art, die es nicht mehr gibt, darf die Migration nicht sprengen.
+func test_migration_survives_an_unknown_species() -> void:
+	var raw := {
+		"save_version": 1,
+		"fish_inventory": [{"fish_id": "gibtsnicht", "weight": 9.0, "quality": 2}],
+		"journal": {"secret_found": false, "entries": {
+			"gibtsnicht": {"caught_count": 1, "best_weight": 9.0, "worst_weight": 9.0, "best_quality": 2},
+		}},
+	}
+	var d := SaveManager.migrate(raw)
+	assert_almost_eq(float(d["fish_inventory"][0]["weight_dev"]), 0.0, 0.001,
+		"ohne Artdaten wird daraus ein Durchschnittsexemplar, kein Datenmüll")
+
+## Ein bereits migrierter Stand darf nicht ein zweites Mal umgerechnet werden.
+func test_a_version_2_save_passes_through_unchanged() -> void:
+	var raw := {
+		"save_version": 2,
+		"fish_inventory": [{"fish_id": "bluegill", "weight_dev": 1.5, "is_shiny": false}],
+		"journal": {"secret_found": false, "entries": {
+			"bluegill": {"caught_count": 3, "best_dev": 1.5, "worst_dev": -0.5, "caught_ranks": [2, 4]},
+		}},
+	}
+	var d := SaveManager.migrate(raw)
+	assert_almost_eq(float(d["fish_inventory"][0]["weight_dev"]), 1.5)
+	assert_eq(d["journal"]["entries"]["bluegill"]["caught_ranks"], [2, 4])

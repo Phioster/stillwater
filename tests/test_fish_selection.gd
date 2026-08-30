@@ -10,8 +10,8 @@ func _fish(id: StringName, rarity: StringName, weight: float = 1.0) -> FishData:
 	f.id = id
 	f.rarity_id = rarity
 	f.spawn_weight = weight
-	f.weight_min = 1.0
-	f.weight_max = 2.0
+	f.weight_mean = 1.5000
+	f.weight_dev = 0.1667
 	return f
 
 func _secret(id: StringName, chance: float, min_level: int, bait: StringName) -> FishData:

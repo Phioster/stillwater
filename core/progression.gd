@@ -9,8 +9,8 @@ const XP_EXPONENT: float = 1.55
 static func xp_needed(level: int) -> int:
 	return int(round(XP_BASE * pow(float(maxi(level, 1)), XP_EXPONENT)))
 
-static func xp_for_catch(fish: FishData, rarity: RarityData, quality: int) -> int:
-	var q := clampi(quality, 0, FishRoll.QUALITY_NAMES.size() - 1)
+static func xp_for_catch(fish: FishData, rarity: RarityData, rank: int) -> int:
+	var q := clampi(rank, 0, FishRoll.RANK_NAMES.size() - 1)
 	return int(floor(float(fish.xp) * rarity.xp_mult * (0.75 + 0.5 * float(q) / 6.0)))
 
 ## Verrechnet gewonnene XP und gibt den neuen Stand zurück.

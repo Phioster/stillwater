@@ -68,7 +68,7 @@ func test_journal_condition_counts_discovered_species() -> void:
 func test_context_passes_the_hour_and_the_species_count() -> void:
 	Game.new_game()
 	Game.ctx.hour_of_day = 19
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 2, false))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, false))
 	var state: Dictionary = Game.ctx.condition_state()
 	assert_eq(state["hour_of_day"], 19)
 	assert_eq(state["journal_species"], 1)

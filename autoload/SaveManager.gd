@@ -5,7 +5,7 @@ extends Node
 
 signal offline_ready(summary: Dictionary)
 
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
 ## Kein const: Tests tauschen den Pfad gegen einen eigenen, damit ein
 ## Testlauf nie den echten Spielstand des Entwicklers überschreibt.
 var SAVE_PATH: String = "user://save.json"
@@ -188,32 +188,48 @@ func migrate(raw: Dictionary) -> Dictionary:
 		"entries": entries,
 	}
 
-	# Künftige Schritte hier anhängen:
-	# if _safe_int(raw.get("save_version"), 0) < 2: d = _migrate_1_to_2(d)
+	if _safe_int(raw.get("save_version"), 0) < 2:
+		d = _migrate_1_to_2(d)
 	d["save_version"] = SAVE_VERSION
 	return d
 
 ## Bringt einen Inventar-Eintrag auf die Form von CaughtFish.from_dict() --
 ## ein falsch typisiertes fish_id/quality darf nicht bis zu dessen Konstruktoren durchlaufen.
 func _sanitize_fish_entry(entry: Dictionary) -> Dictionary:
-	return {
+	var out := {
 		"fish_id": _safe_string(entry.get("fish_id"), ""),
-		"weight": _safe_float(entry.get("weight"), 0.0),
-		"quality": _safe_int(entry.get("quality"), 0),
+		"weight_dev": _safe_float(entry.get("weight_dev"), 0.0),
 		"is_shiny": _safe_bool(entry.get("is_shiny"), false),
 		"is_favorite": _safe_bool(entry.get("is_favorite"), false),
 	}
+	# Version 1 speicherte das absolute Gewicht. Zum Umrechnen wird es hier
+	# durchgereicht; _migrate_1_to_2 braucht es und entfernt es danach.
+	if entry.has("weight") and not entry.has("weight_dev"):
+		out["weight"] = _safe_float(entry.get("weight"), 0.0)
+	return out
 
 ## Bringt einen Journal-Eintrag auf die Form von Journal._blank() -- dieselbe
 ## Absicherung wie bei Inventar-Einträgen, gegen dieselbe Fehlerklasse.
 func _sanitize_journal_entry(e: Dictionary) -> Dictionary:
-	return {
+	var ranks: Array = []
+	var raw_ranks = e.get("caught_ranks")
+	if raw_ranks is Array:
+		for r in raw_ranks:
+			var v := _safe_int(r, -1)
+			if v >= 0 and v < FishRoll.RANK_NAMES.size() and not ranks.has(v):
+				ranks.append(v)
+		ranks.sort()
+	var out := {
 		"caught_count": _safe_int(e.get("caught_count"), 0),
-		"best_weight": _safe_float(e.get("best_weight"), 0.0),
-		"worst_weight": _safe_float(e.get("worst_weight"), 0.0),
-		"best_quality": _safe_int(e.get("best_quality"), 0),
+		"best_dev": _safe_float(e.get("best_dev"), 0.0),
+		"worst_dev": _safe_float(e.get("worst_dev"), 0.0),
+		"caught_ranks": ranks,
 		"shiny_found": _safe_bool(e.get("shiny_found"), false),
 	}
+	for old in ["best_weight", "worst_weight", "best_quality"]:
+		if e.has(old):
+			out[old] = _safe_float(e.get(old), 0.0)
+	return out
 
 func _defaults() -> Dictionary:
 	return {
@@ -332,3 +348,33 @@ func load_game() -> bool:
 		return false
 	deserialize(parsed)
 	return true
+
+## Version 1 -> 2: Gewichte wurden absolut gespeichert, jetzt als Abweichung
+## vom Artmittel. Die Umrechnung braucht die Artdaten; fehlt eine Art, bleibt
+## der Eintrag bei Abweichung 0 -- ein Durchschnittsexemplar statt Datenmuell.
+func _migrate_1_to_2(d: Dictionary) -> Dictionary:
+	for entry in d.get("fish_inventory", []):
+		if entry.has("weight"):
+			entry["weight_dev"] = _dev_of(entry.get("fish_id", ""), float(entry["weight"]))
+			entry.erase("weight")
+			entry.erase("quality")
+	var entries: Dictionary = d["journal"]["entries"]
+	for id in entries:
+		var e: Dictionary = entries[id]
+		if e.has("best_weight"):
+			e["best_dev"] = _dev_of(id, float(e["best_weight"]))
+			e["worst_dev"] = _dev_of(id, float(e.get("worst_weight", e["best_weight"])))
+			# Der frueher beste Qualitaetsrang gilt als gefangen. Die
+			# darunter liegenden Raenge sind nicht belegt und bleiben offen.
+			var best := int(e.get("best_quality", 0))
+			e["caught_ranks"] = [clampi(best, 0, FishRoll.RANK_NAMES.size() - 1)]
+			e.erase("best_weight")
+			e.erase("worst_weight")
+			e.erase("best_quality")
+	return d
+
+func _dev_of(fish_id, weight: float) -> float:
+	var f: FishData = Database.fish.get(StringName(fish_id))
+	if f == null or f.weight_dev <= 0.0:
+		return 0.0
+	return clampf((weight - f.weight_mean) / f.weight_dev, -FishRoll.DEV_LIMIT, FishRoll.DEV_LIMIT)

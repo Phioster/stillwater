@@ -6,5 +6,6 @@
 script = ExtResource("1_vr7aj")
 id = &"pond_grub"
 display_name = "Teichmade"
+rank_shift = 0.0
 max_stack = 0
 unlimited = true

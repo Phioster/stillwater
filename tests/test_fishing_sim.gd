@@ -5,22 +5,24 @@ func _rarity() -> RarityData:
 	r.id = &"common"
 	return r
 
-func _fish(strength: float) -> FishData:
+func _fish(difficulty: float) -> FishData:
 	var f := FishData.new()
 	f.id = &"testfish"
 	f.rarity_id = &"common"
 	f.base_value = 10
-	f.strength = strength
+	f.difficulty = difficulty
 	f.xp = 10
-	f.weight_min = 1.0
-	f.weight_max = 1.0   # Perzentil immer 0 → Stärke exakt vorhersagbar
+	f.weight_mean = 1.0000
+	f.weight_dev = 0.0100
 	f.spawn_weight = 1.0
 	return f
 
-func _ctx(strength: float, capacity: int = 100) -> SimContext:
+## difficulty statt Staerke: der Kampf ist seit 2026-08-30 ein Schadensrennen.
+## Lebenspunkte = Rangtabelle * difficulty, Zeit = Fenster * Rangzeit * difficulty.
+func _ctx(difficulty: float, capacity: int = 100) -> SimContext:
 	var zone := ZoneData.new()
 	zone.id = &"willow_lake"
-	zone.fish = [_fish(strength)]
+	zone.fish = [_fish(difficulty)]
 	zone.rarity_weights = {&"common": 1.0}
 	zone.bite_time_min = 10.0
 	zone.bite_time_max = 10.0   # feste Bisszeit macht den Test exakt
@@ -62,42 +64,48 @@ func test_bite_happens_after_cast_and_wait() -> void:
 	assert_true("bite" in _types(events))
 	assert_eq(sim.state, FishingSim.State.FIGHT)
 
+## Die Seeds sind gemessen (tools-Sonde, 2026-08-30) und stehen als Literal
+## da, weil der Rang jetzt mitwuerfelt und die Kampfdauer bestimmt.
+## Seed 4 -> Rang E: 7 LP, Fenster 20*0,7 = 14 s, Rute 4/s -> 1,75 s.
 func test_weak_fish_is_landed_automatically() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(20.0)   # 20 Stärke bei Rod Power 4 = 5 s
-	var events := sim.tick(11.0 + 5.1, ctx, StillRNG.new(1))
+	var ctx := _ctx(1.0)
+	var events := sim.tick(11.0 + 2.0, ctx, StillRNG.new(4))
 	assert_true("caught" in _types(events))
 	assert_eq(ctx.inventory.fish.size(), 1)
 
 func test_strong_fish_escapes_after_the_window() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(200.0)  # 200 / 4 = 50 s, Fenster ist 20 s
-	var events := sim.tick(11.0 + 20.1, ctx, StillRNG.new(1))
+	# Seed 11 -> Rang S: 216 LP, Fenster 20*1,9 = 38 s, Rute 4/s braucht 54 s.
+	# Ohne Tippen ist das nicht zu schaffen -- genau so soll es sein.
+	var ctx := _ctx(1.0)
+	var events := sim.tick(11.0 + 39.0, ctx, StillRNG.new(11))
 	assert_true("escaped" in _types(events))
 	assert_eq(ctx.inventory.fish.size(), 0)
 	assert_false("caught" in _types(events))
 
 func test_tapping_saves_a_fish_that_would_escape() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(100.0)  # 100 / 4 = 25 s > 20 s Fenster
-	sim.tick(11.1, ctx, StillRNG.new(1))
+	# Derselbe Rang-S-Fisch wie oben, der ohne Zutun entkommt.
+	var ctx := _ctx(1.0)
+	sim.tick(11.1, ctx, StillRNG.new(11))
 	assert_eq(sim.state, FishingSim.State.FIGHT)
 	var caught := false
-	for i in 20:
+	for i in 40:
 		if "caught" in _types(sim.tap(ctx)):
 			caught = true
 			break
-	assert_true(caught, "20 Taps à 6 müssen 100 Stärke brechen")
+	assert_true(caught, "40 Tipps à 6 Schaden müssen 216 Lebenspunkte brechen")
 
 func test_tap_does_nothing_outside_a_fight() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(10.0)
+	var ctx := _ctx(1.0)
 	assert_eq(sim.tap(ctx).size(), 0)
 
 func test_catch_awards_xp_and_can_level_up() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(20.0)
-	var events := sim.tick(11.0 + 5.1, ctx, StillRNG.new(1))
+	var ctx := _ctx(1.0)
+	var events := sim.tick(11.0 + 2.0, ctx, StillRNG.new(4))
 	var xp := 0
 	for e in events:
 		if e["type"] == "caught":
@@ -107,36 +115,37 @@ func test_catch_awards_xp_and_can_level_up() -> void:
 
 func test_catch_records_the_journal() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(20.0)
-	sim.tick(11.0 + 5.1, ctx, StillRNG.new(1))
+	var ctx := _ctx(1.0)
+	sim.tick(11.0 + 2.0, ctx, StillRNG.new(4))
 	assert_true(ctx.journal.is_discovered(&"testfish"))
 
 func test_full_inventory_pauses_fishing() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(20.0, 1)
+	var ctx := _ctx(0.1, 1)
 	sim.tick(3600.0, ctx, StillRNG.new(1))
 	assert_eq(ctx.inventory.fish.size(), 1)
 	assert_eq(sim.state, FishingSim.State.INVENTORY_FULL)
 
 func test_fishing_resumes_after_inventory_is_emptied() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(20.0, 1)
+	var ctx := _ctx(0.1, 1)
 	sim.tick(3600.0, ctx, StillRNG.new(1))
 	assert_eq(sim.state, FishingSim.State.INVENTORY_FULL)
 	ctx.inventory.take_sellable()
-	sim.tick(11.0 + 5.1, ctx, StillRNG.new(2))
+	assert_eq(ctx.inventory.fish.size(), 0, "das Inventar muss vorher leer sein")
+	sim.tick(11.0 + 12.0, ctx, StillRNG.new(4))
 	assert_eq(ctx.inventory.fish.size(), 1)
 
 func test_many_catches_over_an_hour() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(20.0, 10000)
+	var ctx := _ctx(0.01, 10000)
 	sim.tick(3600.0, ctx, StillRNG.new(3))
-	# Zyklus ist bei diesem Setup deterministisch (feste Bisszeit, feste
-	# Gewichtsspanne -> Perzentil immer 0): 1 s Wurf + 10 s Warten +
-	# 20 * 1.0 * (0.75 + 0.5*0) / 4 s Kampf = 1 + 10 + 3.75 = 14.75 s.
-	# floor(3600 / 14.75) = 244, gemessen und bestaetigt. Kein Zufallsband,
-	# nur ein kleiner Rand fuer Gleitkomma-Grenzfaelle.
-	assert_between(float(ctx.inventory.fish.size()), 242.0, 246.0)
+	# Der Zyklus ist nicht mehr exakt: der Rang und damit die Kampfdauer
+	# wuerfeln mit. 1 s Wurf + 10 s Warten + Kampf. Bei difficulty 0,01
+	# liegt der Kampf zwischen 7*0,01/4 = 0,0175 s (Rang E) und
+	# 432*0,01/4 = 1,08 s (Rang S+). Also 11,02 bis 12,08 s je Zyklus:
+	# floor(3600/12,08) = 298 bis floor(3600/11,02) = 326.
+	assert_between(float(ctx.inventory.fish.size()), 298.0, 326.0)
 
 ## Ein tick(16.0) muss dieselben Zustandswechsel liefern wie sechzehn
 ## tick(1.0) hintereinander -- sonst wird derselbe tick() im Offline-

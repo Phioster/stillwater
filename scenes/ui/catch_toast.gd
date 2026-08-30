@@ -32,11 +32,10 @@ func _on_caught(c: CaughtFish, fish: FishData, discovered: bool, record: bool) -
 func show_catch(c: CaughtFish, fish: FishData, discovered: bool, record: bool) -> void:
 	if fish == null or c == null:
 		return
-	var quality: String = FishRoll.QUALITY_NAMES[clampi(c.quality, 0, FishRoll.QUALITY_NAMES.size() - 1)]
+	var quality: String = FishRoll.RANK_NAMES[clampi(c.rank, 0, FishRoll.RANK_NAMES.size() - 1)]
 	var value := Economy.sell_price(c, fish, Game.ctx.rarity_of(fish), Game.ctx.consumable_bonus)
-	# Deutsche Anzeige: Dezimalkomma statt Punkt.
-	var kg := ("%.2f" % c.weight).replace(".", ",")
-	_line1.text = "%s · %s kg · %s" % [fish.display_name, kg, quality]
+	var kg := fish.weight_str(c.weight_dev)
+	_line1.text = "%s · %s · %s" % [fish.full_name(c.weight_dev), kg, quality]
 	var second := "%d Münzen" % value
 	if c.is_shiny:
 		second += "  ✦ schimmernd"

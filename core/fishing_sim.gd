@@ -13,10 +13,13 @@ const MAX_SEGMENTS: int = 500000
 var state: int = State.IDLE
 var timer: float = 0.0
 var hooked: FishData = null
-var hooked_strength: float = 0.0
-var hooked_max_strength: float = 0.0
-var hooked_weight: float = 0.0
-var hooked_quality: int = 0
+## Der Kampf ist ein Schadensrennen: hooked_health muss auf null, bevor
+## timer ablaeuft. rod_power traegt ununterbrochen ab (das ist die
+## Idle-Haelfte), jeder Tipp schlaegt orb_power heraus.
+var hooked_health: float = 0.0
+var hooked_max_health: float = 0.0
+var hooked_dev: float = 0.0
+var hooked_rank: int = 0
 var hooked_shiny: bool = false
 
 ## Bewusst segmentweise geschlossen gerechnet statt in festen Schritten:
@@ -52,10 +55,10 @@ func tick(delta: float, ctx: SimContext, rng: StillRNG) -> Array:
 			State.FIGHT:
 				var time_to_land := INF
 				if ctx.rod_power > 0.0:
-					time_to_land = hooked_strength / ctx.rod_power
+					time_to_land = hooked_health / ctx.rod_power
 				var segment := minf(time_to_land, timer)
 				if remaining < segment:
-					hooked_strength -= ctx.rod_power * remaining
+					hooked_health -= ctx.rod_power * remaining
 					timer -= remaining
 					remaining = 0.0
 				else:
@@ -71,8 +74,8 @@ func tap(ctx: SimContext) -> Array:
 	var events: Array = []
 	if state != State.FIGHT:
 		return events
-	hooked_strength -= ctx.orb_power
-	if hooked_strength <= 0.0:
+	hooked_health -= ctx.orb_power
+	if hooked_health <= 0.0:
 		_land(ctx, events)
 	return events
 
@@ -96,28 +99,31 @@ func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	ctx.consume_bait()
 	var rarity := ctx.rarity_of(fish)
 	hooked = fish
-	hooked_weight = FishRoll.roll_weight(fish, rng)
-	var pct := FishRoll.percentile(fish, hooked_weight)
-	hooked_quality = FishRoll.roll_quality(pct, rarity, rng)
+	# Der Koeder verschiebt die Groessenverteilung, nicht die Artenauswahl.
+	hooked_dev = FishRoll.roll_deviation(ctx.bait_rank_shift(), rng)
+	hooked_rank = FishRoll.rank_for_deviation(hooked_dev)
 	hooked_shiny = FishRoll.roll_shiny(ctx.journal.fish_level(fish.id), ctx.shiny_bonus, rng)
-	hooked_max_strength = FishRoll.strength_for(fish, rarity, pct)
-	hooked_strength = hooked_max_strength
+	hooked_max_health = FishRoll.health_for(fish, hooked_rank)
+	hooked_health = hooked_max_health
 	state = State.FIGHT
-	timer = ctx.zone.fight_window
-	events.append({"type": "bite", "fish": fish, "strength": hooked_strength})
+	timer = FishRoll.time_for(fish, hooked_rank, ctx.zone.fight_window)
+	events.append({"type": "bite", "fish": fish, "health": hooked_health})
 
 func _land(ctx: SimContext, events: Array) -> void:
 	var fish := hooked
-	var caught := CaughtFish.make(fish.id, hooked_weight, hooked_quality, hooked_shiny)
+	var caught := CaughtFish.make(fish.id, hooked_dev, hooked_shiny)
 	var rarity := ctx.rarity_of(fish)
 	var stored := ctx.inventory.add(caught)
-	# Vor dem Eintragen lesen: danach IST das Gewicht der neue Bestwert.
-	var previous_best := 0.0
+	# Vor dem Eintragen lesen: danach IST die Abweichung der neue Bestwert.
+	var previous_best := -INF
+	var had_rank := false
 	if ctx.journal.is_discovered(fish.id):
-		previous_best = float(ctx.journal.entry(fish.id)["best_weight"])
+		previous_best = float(ctx.journal.entry(fish.id)["best_dev"])
+		had_rank = ctx.journal.has_rank(fish.id, hooked_rank)
 	var discovered := ctx.journal.record(caught, fish.is_secret)
-	var is_record := discovered or hooked_weight > previous_best
-	var xp := Progression.xp_for_catch(fish, rarity, hooked_quality)
+	var is_record := discovered or hooked_dev > previous_best
+	var new_rank := not had_rank
+	var xp := Progression.xp_for_catch(fish, rarity, hooked_rank)
 	var after := Progression.apply_xp(ctx.player_level, ctx.player_xp, xp)
 	ctx.player_level = int(after["level"])
 	ctx.player_xp = int(after["xp"])
@@ -128,6 +134,7 @@ func _land(ctx: SimContext, events: Array) -> void:
 		"xp": xp,
 		"discovered": discovered,
 		"record": is_record,
+		"new_rank": new_rank,
 		"stored": stored,
 	})
 	if int(after["levels_gained"]) > 0:
@@ -151,10 +158,10 @@ func _escape(events: Array) -> void:
 ## längst abgeschlossenen Kampf statt keinen Kampf.
 func _clear_hooked() -> void:
 	hooked = null
-	hooked_strength = 0.0
-	hooked_max_strength = 0.0
-	hooked_weight = 0.0
-	hooked_quality = 0
+	hooked_health = 0.0
+	hooked_max_health = 0.0
+	hooked_dev = 0.0
+	hooked_rank = 0
 	hooked_shiny = false
 
 ## Wählt den Fisch für einen Biss.

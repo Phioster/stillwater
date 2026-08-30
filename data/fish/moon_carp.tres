@@ -12,5 +12,5 @@ rarity_id = &"legendary"
 base_value = 750
 strength = 320.0
 xp = 400
-weight_min = 8.0
-weight_max = 30.0
+weight_mean = 19.0
+weight_dev = 3.6667

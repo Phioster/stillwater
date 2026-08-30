@@ -21,6 +21,12 @@ var rarities: Dictionary = {}
 var inventory: Inventory
 var journal: Journal
 
+## Um wie viele Standardabweichungen der aktive Koeder die Groesse anhebt.
+## Der Koeder steuert damit den RANG (wie gross das Exemplar ist), nicht die
+## Raritaet (welche Art anbeisst) -- zwei getrennte Achsen.
+func bait_rank_shift() -> float:
+	return bait.rank_shift if bait != null else 0.0
+
 func rarity_of(fish: FishData) -> RarityData:
 	var r: RarityData = rarities.get(fish.rarity_id)
 	if r == null:

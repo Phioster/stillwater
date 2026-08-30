@@ -25,7 +25,7 @@ func test_the_secret_tab_is_hidden_until_the_first_catch() -> void:
 	assert_eq(tab.text, "Geheim", "falscher Reiter geprueft")
 	assert_false(tab.visible, "vor dem ersten Fang darf es den Reiter nicht geben")
 
-	Game.ctx.journal.record(CaughtFish.make(_secret_id(), 1.0, 3, false), true)
+	Game.ctx.journal.record(CaughtFish.make(_secret_id(), 1.0, false), true)
 	Game.state_changed.emit()
 	assert_true(tab.visible, "nach dem Fang muss der Reiter da sein")
 	main.free()
@@ -38,7 +38,7 @@ func test_the_secret_panel_stays_empty_until_the_first_catch() -> void:
 	assert_eq(panel.get_child_count(), 0, "leer, solange nichts gefangen ist")
 
 	var id := _secret_id()
-	Game.ctx.journal.record(CaughtFish.make(id, 2.5, 4, false), true)
+	Game.ctx.journal.record(CaughtFish.make(id, 2.5, false), true)
 	panel.refresh()
 	assert_true(panel.get_child_count() > 0, "der gefangene Geheimfisch fehlt")
 	var found := false
@@ -60,7 +60,7 @@ func test_only_caught_secrets_are_listed() -> void:
 
 	var main := _main()
 	var panel: PanelBase = main.get_node("SidePanel/Panels/SecretScroll/SecretPanel")
-	Game.ctx.journal.record(CaughtFish.make(ids[0], 1.0, 3, false), true)
+	Game.ctx.journal.record(CaughtFish.make(ids[0], 1.0, false), true)
 	panel.refresh()
 	for child in panel.get_children():
 		if child.has_meta(&"fish_id"):

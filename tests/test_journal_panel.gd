@@ -33,7 +33,7 @@ func _secret_id() -> StringName:
 ## Signal statt selbst Einzelheiten anzuzeigen.
 func test_tapping_a_discovered_row_emits_fish_tapped_with_its_id() -> void:
 	Game.new_game()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 0, false))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, false))
 
 	var panel := _panel()
 	var seen: Array = []
@@ -69,7 +69,7 @@ func test_the_journal_never_mentions_secret_fish() -> void:
 
 	# Auch nach dem Fang bleibt das Journal frei davon -- der eigene Reiter
 	# uebernimmt, sonst stuende der Fisch doppelt in der Liste.
-	Game.ctx.journal.record(CaughtFish.make(id, 1.0, 3, false), true)
+	Game.ctx.journal.record(CaughtFish.make(id, 1.0, false), true)
 	panel.refresh()
 	assert_true(_row_for(panel, id) == null, "gefangene Geheimfische gehoeren in den eigenen Reiter")
 	panel.free()
@@ -99,7 +99,7 @@ func _all_text(node: Node) -> Array[String]:
 
 func test_refresh_does_not_lose_any_rows() -> void:
 	Game.new_game()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 0, false))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, false))
 
 	var panel := _panel()
 	var before := panel.get_child_count()

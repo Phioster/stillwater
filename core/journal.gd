@@ -28,9 +28,9 @@ static func level_for_count(count: int) -> int:
 func _blank() -> Dictionary:
 	return {
 		"caught_count": 0,
-		"best_weight": 0.0,
-		"worst_weight": 0.0,
-		"best_quality": 0,
+		"best_dev": 0.0,
+		"worst_dev": 0.0,
+		"caught_ranks": [],
 		"shiny_found": false,
 	}
 
@@ -39,13 +39,18 @@ func record(c: CaughtFish, is_secret: bool = false) -> bool:
 	var is_new := not entries.has(c.fish_id)
 	var e: Dictionary = entries.get(c.fish_id, _blank())
 	if is_new:
-		e["best_weight"] = c.weight
-		e["worst_weight"] = c.weight
+		e["best_dev"] = c.weight_dev
+		e["worst_dev"] = c.weight_dev
 	else:
-		e["best_weight"] = maxf(float(e["best_weight"]), c.weight)
-		e["worst_weight"] = minf(float(e["worst_weight"]), c.weight)
+		e["best_dev"] = maxf(float(e["best_dev"]), c.weight_dev)
+		e["worst_dev"] = minf(float(e["worst_dev"]), c.weight_dev)
 	e["caught_count"] = int(e["caught_count"]) + 1
-	e["best_quality"] = maxi(int(e["best_quality"]), c.quality)
+	# Welche Raenge dieser Art schon an Land waren. Das ist die zweite
+	# Sammelachse neben "welche Arten" -- Arten mal Raenge.
+	var ranks: Array = e["caught_ranks"]
+	if not ranks.has(c.rank):
+		ranks.append(c.rank)
+		ranks.sort()
 	if c.is_shiny:
 		e["shiny_found"] = true
 	entries[c.fish_id] = e
@@ -93,7 +98,9 @@ func has_any_secret() -> bool:
 func to_dict() -> Dictionary:
 	var out := {"secret_found": _secret_found, "entries": {}}
 	for id in entries:
-		out["entries"][String(id)] = (entries[id] as Dictionary).duplicate()
+		# TIEF kopieren: caught_ranks ist ein Array im Eintrag, eine flache
+		# Kopie wuerde es zwischen Journal und Spielstand teilen.
+		out["entries"][String(id)] = (entries[id] as Dictionary).duplicate(true)
 	return out
 
 func load_dict(d: Dictionary) -> void:
@@ -101,4 +108,22 @@ func load_dict(d: Dictionary) -> void:
 	_secret_found = bool(d.get("secret_found", false))
 	var raw: Dictionary = d.get("entries", {})
 	for key in raw:
-		entries[StringName(key)] = (raw[key] as Dictionary).duplicate()
+		entries[StringName(key)] = (raw[key] as Dictionary).duplicate(true)
+
+func caught_ranks(id: StringName) -> Array:
+	return entry(id)["caught_ranks"]
+
+func has_rank(id: StringName, rank: int) -> bool:
+	return caught_ranks(id).has(rank)
+
+## Anteil aller Art-Rang-Felder, die schon gefuellt sind. Die zweite
+## Vollstaendigkeit neben completion(), und die deutlich laengere.
+func rank_completion(all_fish: Array[FishData]) -> float:
+	var total := 0
+	var found := 0
+	for f in all_fish:
+		if f.is_secret:
+			continue
+		total += FishRoll.RANK_NAMES.size()
+		found += caught_ranks(f.id).size()
+	return 0.0 if total == 0 else float(found) / float(total)

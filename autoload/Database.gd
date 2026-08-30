@@ -107,8 +107,12 @@ func validate() -> Array[String]:
 			problems.append("Fisch %s zeigt auf unbekannte Rarität %s" % [f.id, f.rarity_id])
 		if not zones.has(f.zone_id):
 			problems.append("Fisch %s zeigt auf unbekannte Zone %s" % [f.id, f.zone_id])
-		if f.weight_max < f.weight_min:
-			problems.append("Fisch %s hat weight_max < weight_min" % f.id)
+		if f.weight_dev <= 0.0:
+			problems.append("Fisch %s hat weight_dev <= 0" % f.id)
+		if f.weight_mean <= 0.0:
+			problems.append("Fisch %s hat weight_mean <= 0" % f.id)
+		if f.difficulty <= 0.0:
+			problems.append("Fisch %s hat difficulty <= 0" % f.id)
 		if f.is_secret and f.secret_chance <= 0.0:
 			problems.append("Secret-Fisch %s hat Chance 0" % f.id)
 		if not f.is_secret and not f.conditions.is_empty():

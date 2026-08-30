@@ -12,5 +12,5 @@ rarity_id = &"rare"
 base_value = 95
 strength = 78.0
 xp = 45
-weight_min = 1.5
-weight_max = 12.0
+weight_mean = 6.75
+weight_dev = 1.75

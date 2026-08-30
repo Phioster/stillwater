@@ -48,7 +48,7 @@ func _on_caught(c: CaughtFish, _fish: FishData, discovered: bool, record: bool) 
 	_spawn_burst(_bobber.position, false)
 	if c.is_shiny:
 		_spawn_burst(_bobber.position, true)
-	var quality := FishRoll.QUALITY_NAMES[clampi(c.quality, 0, FishRoll.QUALITY_NAMES.size() - 1)]
+	var quality := FishRoll.RANK_NAMES[clampi(c.rank, 0, FishRoll.RANK_NAMES.size() - 1)]
 	_spawn_text(quality, _bobber.position, Palette.get_color(&"accent"))
 	if discovered or record:
 		_wiggle(_catch_toast)

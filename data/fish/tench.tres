@@ -12,5 +12,5 @@ rarity_id = &"uncommon"
 base_value = 34
 strength = 42.0
 xp = 18
-weight_min = 0.5
-weight_max = 4.0
+weight_mean = 2.25
+weight_dev = 0.5833

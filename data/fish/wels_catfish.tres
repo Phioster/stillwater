@@ -12,5 +12,5 @@ rarity_id = &"epic"
 base_value = 260
 strength = 190.0
 xp = 130
-weight_min = 5.0
-weight_max = 45.0
+weight_mean = 25.0
+weight_dev = 6.6667

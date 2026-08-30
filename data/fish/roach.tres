@@ -11,4 +11,5 @@ zone_id = &"willow_lake"
 base_value = 10
 strength = 15.0
 xp = 5
-weight_max = 0.8
+weight_mean = 0.45
+weight_dev = 0.1167

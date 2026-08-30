@@ -54,12 +54,13 @@ func _entry(f: FishData) -> Control:
 	if known:
 		var e := Game.ctx.journal.entry(f.id)
 		var shiny := "  ✦" if bool(e["shiny_found"]) else ""
-		var lo := ("%.2f" % float(e["worst_weight"])).replace(".", ",")
-		var hi := ("%.2f" % float(e["best_weight"])).replace(".", ",")
-		label.text = "%s%s\n%dx · beste %s · Level %d · %s–%s kg" % [
+		var lo := f.weight_str(float(e["worst_dev"]))
+		var hi := f.weight_str(float(e["best_dev"]))
+		var ranks: Array = e["caught_ranks"]
+		label.text = "%s%s\n%dx · Level %d · %s–%s\nRänge %d/%d" % [
 			f.display_name, shiny, int(e["caught_count"]),
-			FishRoll.QUALITY_NAMES[int(e["best_quality"])],
-			Game.ctx.journal.fish_level(f.id), lo, hi
+			Game.ctx.journal.fish_level(f.id), lo, hi,
+			ranks.size(), FishRoll.RANK_NAMES.size()
 		]
 		label.modulate = Game.ctx.rarity_of(f).color
 	else:

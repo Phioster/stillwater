@@ -48,8 +48,8 @@ func _entry(f: FishData) -> Control:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var best := ("%.2f" % float(e["best_weight"])).replace(".", ",")
-	label.text = "✦ %s\n%dx · Rekord %s kg\n%s" % [
+	var best := f.weight_str(float(e["best_dev"]))
+	label.text = "✦ %s\n%dx · Rekord %s\n%s" % [
 		f.display_name, int(e["caught_count"]), best, f.secret_hint
 	]
 	label.modulate = Palette.get_color(&"accent")

@@ -77,21 +77,18 @@ func open(id: StringName) -> void:
 	var rarity := Game.ctx.rarity_of(f)
 	var zone: ZoneData = Database.zones.get(f.zone_id)
 	var e := Game.ctx.journal.entry(id)
-	var record := CaughtFish.make(id, float(e["best_weight"]), int(e["best_quality"]), bool(e["shiny_found"]))
+	var record := CaughtFish.make(id, float(e["best_dev"]), bool(e["shiny_found"]))
 	var value := Economy.sell_price(record, f, rarity)
 
 	_name_label.text = f.display_name
 	_name_label.modulate = rarity.color
 	_zone_label.text = zone.display_name if zone != null else ""
 
-	var worst := ("%.2f" % float(e["worst_weight"])).replace(".", ",")
-	var best := ("%.2f" % float(e["best_weight"])).replace(".", ",")
-	var span_lo := ("%.2f" % f.weight_min).replace(".", ",")
-	var span_hi := ("%.2f" % f.weight_max).replace(".", ",")
-	_stats_label.text = "Rarität: %s\nFänge: %d\nRekordgewicht: %s kg\nKleinstes Gewicht: %s kg\nGewichtsspanne: %s–%s kg\nBeste Qualität: %s\nSchimmernd: %s\n%s\nWert des Rekordfangs: %d Münzen\nGrundwert: %d\nXP: %d" % [
-		rarity.display_name, int(e["caught_count"]), best, worst, span_lo, span_hi,
-		FishRoll.QUALITY_NAMES[int(e["best_quality"])],
-		"ja" if bool(e["shiny_found"]) else "nein",
+	_stats_label.text = "Rarität: %s\nFänge: %d\nRekord: %s (%s)\nKleinstes: %s\nDurchschnitt: %s\n%s\nSchimmernd: %s\n%s\nWert des Rekordfangs: %d Münzen\nGrundwert: %d\nXP: %d" % [
+		rarity.display_name, int(e["caught_count"]),
+		f.weight_str(float(e["best_dev"])), f.full_name(float(e["best_dev"])),
+		f.weight_str(float(e["worst_dev"])), f.weight_str(0.0),
+		_rank_text(e), "ja" if bool(e["shiny_found"]) else "nein",
 		_level_text(id), value, f.base_value, f.xp,
 	]
 	_stats_label.modulate = rarity.color
@@ -108,3 +105,12 @@ func _level_text(id: StringName) -> String:
 	if p[1] <= 0:
 		return "Fischlevel: %d — Höchststufe%s" % [level, bonus]
 	return "Fischlevel: %d%s\nNächste Stufe: %d/%d Fänge" % [level, bonus, p[0], p[1]]
+
+## Die Raenge sind die zweite Sammelachse: welche Groessenklassen dieser Art
+## schon an Land waren. Gefangene stehen da, offene als Strich.
+func _rank_text(e: Dictionary) -> String:
+	var ranks: Array = e["caught_ranks"]
+	var parts: Array[String] = []
+	for i in FishRoll.RANK_NAMES.size():
+		parts.append(FishRoll.RANK_NAMES[i] if ranks.has(i) else "–")
+	return "Ränge: %s  (%d/%d)" % [" ".join(parts), ranks.size(), FishRoll.RANK_NAMES.size()]

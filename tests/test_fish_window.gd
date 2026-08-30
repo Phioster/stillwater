@@ -17,8 +17,8 @@ func _tap(node: Control) -> void:
 
 func test_a_discovered_species_shows_all_the_promised_details() -> void:
 	Game.new_game()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 2.0, 4, true))
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 0.5, 1, false))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 2.0, true))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 0.5, false))
 
 	var w := _window()
 	w.open(&"bluegill")
@@ -28,7 +28,7 @@ func test_a_discovered_species_shows_all_the_promised_details() -> void:
 	var zone: ZoneData = Database.zones[fish.zone_id]
 	var e := Game.ctx.journal.entry(&"bluegill")
 	var rarity := Game.ctx.rarity_of(fish)
-	var record := CaughtFish.make(&"bluegill", float(e["best_weight"]), int(e["best_quality"]), bool(e["shiny_found"]))
+	var record := CaughtFish.make(&"bluegill", float(e["best_dev"]), bool(e["shiny_found"]))
 	var expected_value := Economy.sell_price(record, fish, rarity)
 
 	var text: String = w.get_node("Panel/Box/NameLabel").text + "\n" + w.get_node("Panel/Box/ZoneLabel").text + "\n" + w.get_node("Panel/Box/StatsLabel").text
@@ -36,11 +36,12 @@ func test_a_discovered_species_shows_all_the_promised_details() -> void:
 	assert_true(rarity.display_name in text, "Rarität fehlt")
 	assert_true(zone.display_name in text, "Heimatzone fehlt")
 	assert_true("2" in text, "Fangzahl fehlt")
-	assert_true("0,50" in text, "kleinstes Gewicht fehlt")
-	assert_true("2,00" in text, "Rekordgewicht fehlt")
-	assert_true(("%.2f" % fish.weight_min).replace(".", ",") in text, "Gewichtsspanne (min) fehlt")
-	assert_true(("%.2f" % fish.weight_max).replace(".", ",") in text, "Gewichtsspanne (max) fehlt")
-	assert_true(FishRoll.QUALITY_NAMES[int(e["best_quality"])] in text, "Qualitätsname fehlt")
+	assert_true(fish.weight_str(0.5) in text, "kleinstes Gewicht fehlt")
+	assert_true(fish.weight_str(2.0) in text, "Rekordgewicht fehlt")
+	assert_true(fish.weight_str(0.0) in text, "Durchschnittsgewicht fehlt")
+	assert_true("Ränge:" in text, "die Rangübersicht fehlt")
+	for r in e["caught_ranks"]:
+		assert_true(FishRoll.RANK_NAMES[int(r)] in text, "gefangener Rang fehlt")
 	assert_true("ja" in text, "Schimmer-Angabe fehlt")
 	assert_true(("%d" % expected_value) in text, "Wert muss aus Economy.sell_price() kommen")
 	assert_true(("%d" % fish.base_value) in text, "Grundwert fehlt")
@@ -109,7 +110,7 @@ func test_tapping_inside_the_panel_does_not_close_it() -> void:
 ## aufbauen noch die Position verschieben -- siehe Task-Brief.
 func test_window_stays_open_and_in_place_across_a_catch() -> void:
 	Game.new_game()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, 0, false))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 1.0, false))
 
 	var w := _window()
 	w.open(&"bluegill")
@@ -117,7 +118,7 @@ func test_window_stays_open_and_in_place_across_a_catch() -> void:
 	var offsets_before := Vector4(panel.offset_left, panel.offset_top, panel.offset_right, panel.offset_bottom)
 	var text_before: String = w.get_node("Panel/Box/StatsLabel").text
 
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 3.0, 5, true))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 3.0, true))
 	Game.state_changed.emit()
 
 	assert_true(w.visible, "das Fenster darf sich waehrend eines Fangs nicht schliessen")

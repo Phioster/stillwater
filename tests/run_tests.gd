@@ -33,6 +33,7 @@ const SUITES := [
 	"res://tests/test_zone_look.gd",
 	"res://tests/test_tap_button.gd",
 	"res://tests/test_secret_tab.gd",
+	"res://tests/test_real_save_migration.gd",
 ]
 
 func _init() -> void:

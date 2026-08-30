@@ -45,7 +45,7 @@ func test_inventory_upgrade_raises_capacity() -> void:
 
 func test_sell_all_pays_and_empties_the_inventory() -> void:
 	_fresh()
-	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.35, 2, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.35, false))
 	var earned := Game.sell_all()
 	assert_true(earned > 0)
 	assert_eq(Game.coins, earned)
@@ -53,18 +53,18 @@ func test_sell_all_pays_and_empties_the_inventory() -> void:
 
 func test_sell_all_keeps_favorites() -> void:
 	_fresh()
-	var keeper := CaughtFish.make(&"bluegill", 0.35, 2, false)
+	var keeper := CaughtFish.make(&"bluegill", 0.35, false)
 	keeper.is_favorite = true
 	Game.ctx.inventory.add(keeper)
-	Game.ctx.inventory.add(CaughtFish.make(&"roach", 0.5, 2, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"roach", 0.5, false))
 	Game.sell_all()
 	assert_eq(Game.ctx.inventory.fish.size(), 1)
 	assert_true(Game.ctx.inventory.fish[0].is_favorite)
 
 func test_journal_survives_selling() -> void:
 	_fresh()
-	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 0.35, 2, false))
-	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.35, 2, false))
+	Game.ctx.journal.record(CaughtFish.make(&"bluegill", 0.35, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.35, false))
 	Game.sell_all()
 	assert_true(Game.ctx.journal.is_discovered(&"bluegill"), "verkaufen darf die Sammlung nicht löschen")
 
@@ -161,7 +161,7 @@ func test_sell_one_and_toggle_favorite_reject_out_of_range_indices() -> void:
 	Game.toggle_favorite(0)
 	assert_eq(Game.ctx.inventory.fish.size(), 0)
 
-	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.35, 2, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.35, false))
 	assert_eq(Game.sell_one(-1), 0)
 	assert_eq(Game.sell_one(99), 0)
 	Game.toggle_favorite(-1)
