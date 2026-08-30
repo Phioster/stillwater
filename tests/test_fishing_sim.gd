@@ -308,3 +308,39 @@ func test_each_pulse_takes_exactly_rod_power() -> void:
 	sim.tick(3.0, ctx, StillRNG.new(11))
 	assert_almost_eq(sim.hooked_health, full - 3.0 * ctx.rod_power, 0.001,
 		"drei Schuebe muessen dreimal rod_power abziehen")
+
+## Die Idle-Grenze wird beim Anbiss bestimmt, damit die Anzeige sie ansagen
+## kann. Ein Fisch, den die Rute nicht schafft, muss als solcher markiert sein.
+func test_a_fish_the_rod_cannot_land_is_flagged() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx(1.0)
+	# Seed 11 = Rang S: 216 LP, Fenster 38 s, Rute 4 je Sekunde -> 152.
+	sim.tick(11.1, ctx, StillRNG.new(11))
+	assert_eq(sim.hooked_rank, 5, "der Testfisch muss Rang S sein")
+	assert_true(sim.needs_hands, "216 LP gegen 152 Rutenschaden: das braucht Hände")
+
+func test_a_fish_the_rod_can_land_is_not_flagged() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx(1.0)
+	# Seed 4 = Rang E: 7 LP, Fenster 14 s -> die Rute schafft 56.
+	sim.tick(11.1, ctx, StillRNG.new(4))
+	assert_eq(sim.hooked_rank, 0, "der Testfisch muss Rang E sein")
+	assert_false(sim.needs_hands, "7 LP schafft die Rute allein")
+
+## Die Ansage muss zur Wirklichkeit passen: was als schaffbar gilt, muss
+## ohne einen einzigen Tipp auch wirklich gelandet werden.
+func test_the_promise_holds_without_tapping() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx(1.0)
+	sim.tick(11.1, ctx, StillRNG.new(4))
+	assert_false(sim.needs_hands)
+	var events := sim.tick(sim.hooked_max_time, ctx, StillRNG.new(4))
+	assert_true("caught" in _types(events), "als schaffbar angesagt, aber entkommen")
+
+func test_a_stronger_rod_moves_the_line() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx(1.0)
+	ctx.rod_power = 40.0
+	sim.tick(11.1, ctx, StillRNG.new(11))
+	assert_eq(sim.hooked_rank, 5)
+	assert_false(sim.needs_hands, "mit starker Rute schafft sie auch Rang S")

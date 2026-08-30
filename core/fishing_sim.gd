@@ -30,6 +30,9 @@ var rod_timer: float = 0.0
 ## statt dass die Simulation Ereignisse schickt -- ein Offline-Nachlauf ueber
 ## Stunden wuerde sonst zehntausende Ereignisse erzeugen.
 var rod_hits: int = 0
+## Ob dieser Fisch ohne Tippen entkommt. Wird beim Anbiss einmal bestimmt,
+## damit die Anzeige es SAGEN kann, statt den Spieler raten zu lassen.
+var needs_hands: bool = false
 var hooked_dev: float = 0.0
 var hooked_rank: int = 0
 var hooked_shiny: bool = false
@@ -129,6 +132,7 @@ func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	hooked_max_time = timer
 	rod_timer = ROD_INTERVAL
 	rod_hits = 0
+	needs_hands = not rod_alone_suffices(ctx)
 	events.append({"type": "bite", "fish": fish, "health": hooked_health, "rank": hooked_rank})
 
 func _land(ctx: SimContext, events: Array) -> void:
@@ -185,6 +189,7 @@ func _clear_hooked() -> void:
 	hooked_max_time = 0.0
 	rod_timer = 0.0
 	rod_hits = 0
+	needs_hands = false
 	hooked_dev = 0.0
 	hooked_rank = 0
 	hooked_shiny = false
@@ -270,3 +275,11 @@ func _advance_rod(dt: float, per_pulse: float) -> void:
 	rod_timer = ROD_INTERVAL - fmod(after, ROD_INTERVAL)
 	hooked_health -= float(pulses) * per_pulse
 	rod_hits += pulses
+
+## Schafft die Rute den angebissenen Fisch allein, bevor die Zeit ablaeuft?
+## Dieselbe Taktung wie im Kampf: der erste Schlag faellt nach ROD_INTERVAL.
+func rod_alone_suffices(ctx: SimContext) -> bool:
+	if ctx.rod_power <= 0.0:
+		return false
+	var pulses := int(floor(timer / ROD_INTERVAL))
+	return float(pulses) * ctx.rod_power >= hooked_health

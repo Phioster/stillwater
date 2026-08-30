@@ -95,7 +95,11 @@ func _fill(slot: Control, front: Color, ghost: Color) -> GhostBar:
 func _on_bite(fish: FishData) -> void:
 	_seen_rod_hits = 0
 	var rank := FishRoll.RANK_NAMES[clampi(Game.sim.hooked_rank, 0, FishRoll.RANK_NAMES.size() - 1)]
-	_name.text = "%s  ·  Rang %s" % [fish.display_name, rank]
+	# Ansagen, ob die Rute allein reicht. Die Referenz spielt dafuer einen
+	# eigenen Klang; bis wir Ton haben, steht es in der Zeile.
+	var call := "  ·  ✋ antippen!" if Game.sim.needs_hands else ""
+	_name.text = "%s  ·  Rang %s%s" % [fish.display_name, rank, call]
+	_name.modulate = Palette.get_color(&"accent") if Game.sim.needs_hands else Color.WHITE
 	# Beim Anbiss darf nichts hinterherlaufen -- sonst zeigt die Leiste kurz
 	# den Rest des vorigen Kampfes.
 	_health.set_max(Game.sim.hooked_max_health)

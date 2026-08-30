@@ -15,7 +15,7 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
       `pull_cooldown` Sekunden ein sichtbarer Treffer mit eigener Zahl.
       **Muss die Delta-Unabhängigkeit erhalten** — der Offline-Fortschritt
       hängt daran.
-- [ ] **A3 Die Idle-Grenze ansagen.** Vor dem Kampf ausrechnen, ob die
+- [x] **A3 Die Idle-Grenze ansagen.** Vor dem Kampf ausrechnen, ob die
       Rute allein reicht. Wenn nicht: sichtbar sagen. Braucht A2, weil
       die Rechnung dieselbe Taktung benutzt.
 - [x] **A4 Schadenszahlen an eine feste Stelle**, nicht an den Orb; die

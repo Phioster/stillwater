@@ -157,3 +157,22 @@ func test_damage_numbers_appear_next_to_the_bar_not_at_the_orb() -> void:
 	var pop: Control = v.get_node("Pops").get_child(0)
 	assert_true(absf(pop.position.x - orb.position.x) > 100.0,
 		"die Zahl klebt am Orb statt an der Leiste")
+
+## Die Ansage muss auch wirklich in der Zeile stehen.
+func test_the_name_line_calls_for_hands_when_the_rod_is_not_enough() -> void:
+	Game.new_game()
+	Game.paused = true
+	Game.sim = FishingSim.new()
+	Game.sim.tick(200.0, Game.ctx, StillRNG.new(11))
+	while Game.sim.state != FishingSim.State.FIGHT:
+		Game.sim.tick(1.0, Game.ctx, StillRNG.new(11))
+	Game.sim.needs_hands = true
+	var v := _view()
+	v._on_bite(Game.sim.hooked)
+	assert_true("antippen" in v.get_node("Panel/Box/FishName").text,
+		"die Aufforderung fehlt")
+	Game.sim.needs_hands = false
+	v._on_bite(Game.sim.hooked)
+	assert_false("antippen" in v.get_node("Panel/Box/FishName").text,
+		"die Aufforderung steht da, obwohl die Rute reicht")
+	v.free()
