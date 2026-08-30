@@ -32,7 +32,7 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 
 ## C — Rückmeldung überall (Menü)
 
-- [ ] **C1 Federn und Wackler** als eigene kleine Bausteine
+- [x] **C1 Federn und Wackler** als eigene kleine Bausteine
       (gedämpfter Schwinger, Verwalter, Erschütterung mit vorab
       gezogenem Rauschen). Lehrbuchphysik, ~100 Zeilen.
 - [ ] **C2 Anwenden**: Knöpfe federn beim Drücken, abgelehnte Aktionen
