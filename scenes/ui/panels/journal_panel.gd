@@ -1,32 +1,105 @@
 ## Das Fisch-Journal. Unentdeckte Arten erscheinen als Silhouette.
-## Geheimfische kommen hier nicht vor -- sie haben einen eigenen Reiter. Ein Tipp auf eine
-## Zeile meldet die Fisch-ID nach aussen -- main.gd oeffnet darauf das
-## grosse Fisch-Fenster (fish_window.gd), das Journal zeigt selbst nichts mehr auf.
+## Geheimfische kommen hier nicht vor — sie haben einen eigenen Reiter.
+##
+## Eine Zone auf einmal, umgeschaltet über eine Reihe kleiner Reiter.
+## Cornerpond nimmt dafür ein Aufklappmenü; bei sieben Orten ist das richtig,
+## bei zweien ist ein Tipp besser als zwei. Ab REEITER_MAX schalten wir um.
 extends PanelBase
 
 signal fish_tapped(id: StringName)
 
+const REITER_MAX: int = 5
+
+var _zone: StringName = &""
+
+## Zonen in Freischaltreihenfolge, nicht in Ordner-Reihenfolge: die
+## Dateisystem-Reihenfolge ist zwischen Geräten nicht einmal stabil.
+func _zones_in_order() -> Array[ZoneData]:
+	var out: Array[ZoneData] = []
+	for id in Database.zones:
+		out.append(Database.zones[id])
+	out.sort_custom(func(a: ZoneData, b: ZoneData) -> bool:
+		if a.unlock_level != b.unlock_level:
+			return a.unlock_level < b.unlock_level
+		return a.unlock_cost < b.unlock_cost)
+	return out
+
+## Innerhalb einer Zone: erst die gewöhnlichen, dann die seltenen, und
+## gleichrangige alphabetisch. Vorher stand hier die Reihenfolge, in der die
+## Arten ins Datenverzeichnis gewandert sind — also gar keine.
+func _fish_in_order(zone_id: StringName) -> Array[FishData]:
+	var out: Array[FishData] = []
+	for f in Database.fish_of_zone(zone_id):
+		if not f.is_secret:
+			out.append(f)
+	out.sort_custom(func(a: FishData, b: FishData) -> bool:
+		# Nach Wertfaktor, nicht nach unlock_level: gewoehnlich und
+		# ungewoehnlich schalten beide ab Stufe 1 frei und wuerden sich sonst
+		# alphabetisch ineinandermischen.
+		var va := _rarity_order(a.rarity_id)
+		var vb := _rarity_order(b.rarity_id)
+		if not is_equal_approx(va, vb):
+			return va < vb
+		return a.display_name < b.display_name)
+	return out
+
+func _rarity_order(id: StringName) -> float:
+	var r: RarityData = Database.rarities.get(id)
+	return r.value_mult if r != null else 1.0
+
 func refresh() -> void:
 	clear(self)
-	for zone_id in Database.zones:
-		var zone: ZoneData = Database.zones[zone_id]
-		var fish := Database.fish_of_zone(zone_id)
+	var zones := _zones_in_order()
+	if zones.is_empty():
+		return
+	if _zone == &"" or not Database.zones.has(_zone):
+		_zone = zones[0].id
 
-		var title := Label.new()
-		title.text = "%s   %d %%" % [zone.display_name, int(round(Game.ctx.journal.completion(fish) * 100.0))]
-		add_child(title)
+	add_child(_zone_switch(zones))
+	var zone: ZoneData = Database.zones[_zone]
+	var fish := _fish_in_order(_zone)
+	add_child(_progress(zone, fish))
+	for f in fish:
+		add_child(_entry(f))
 
-		# Geheime Fische stehen hier gar nicht -- weder als Zeile noch als
-		# verschlossener Platz. Sie haben einen eigenen Reiter, und der
-		# entsteht erst mit dem ersten Fang.
-		for f in fish:
-			if f.is_secret:
-				continue
-			add_child(_entry(f))
+func _zone_switch(zones: Array[ZoneData]) -> Control:
+	var row := HBoxContainer.new()
+	for z in zones:
+		var b := TapButton.new()
+		b.text = z.display_name
+		b.custom_minimum_size = Vector2(0, 72)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.toggle_mode = true
+		b.button_pressed = z.id == _zone
+		b.disabled = z.id == _zone
+		b.tapped.connect(func() -> void:
+			_zone = z.id
+			refresh())
+		row.add_child(b)
+	return row
+
+## Zwei Vollständigkeiten: Arten und Art-mal-Rang. Die zweite ist die lange.
+func _progress(zone: ZoneData, fish: Array[FishData]) -> Control:
+	var box := VBoxContainer.new()
+	var j := Game.ctx.journal
+	var species := j.completion(fish)
+	var ranks := j.rank_completion(fish)
+
+	var label := Label.new()
+	label.text = "Arten %d %%   ·   Ränge %d %%" % [
+		int(round(species * 100.0)), int(round(ranks * 100.0))]
+	box.add_child(label)
+
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(0, 14)
+	bar.show_percentage = false
+	bar.max_value = 1.0
+	bar.value = species
+	box.add_child(bar)
+	return box
 
 ## Die Zeile ist ein Knopf, kein Container mit gui_input: Knoepfe nehmen
-## Beruehrungen zuverlaessig an, auch innerhalb eines Scroll-Bereichs. Die
-## Tab-Leiste macht es genauso und funktioniert auf dem Geraet.
+## Beruehrungen zuverlaessig an, auch innerhalb eines Scroll-Bereichs.
 func _entry(f: FishData) -> Control:
 	var button := TapButton.new()
 	button.flat = true
