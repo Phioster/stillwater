@@ -31,6 +31,7 @@ const SUITES := [
 	"res://tests/test_effects.gd",
 	"res://tests/test_water_surface.gd",
 	"res://tests/test_zone_look.gd",
+	"res://tests/test_tap_button.gd",
 ]
 
 func _init() -> void:

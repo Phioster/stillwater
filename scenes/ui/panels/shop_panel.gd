@@ -36,23 +36,23 @@ func _row(b: BaitData) -> Control:
 
 	var row := HBoxContainer.new()
 
-	var use := Button.new()
+	var use := TapButton.new()
 	use.text = "Anlegen"
 	use.custom_minimum_size = Vector2(0, 96)
 	use.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	use.disabled = not b.unlimited and int(Game.ctx.bait_counts.get(b.id, 0)) <= 0
-	use.pressed.connect(func() -> void: Game.set_active_bait(b.id))
+	use.tapped.connect(func() -> void: Game.set_active_bait(b.id))
 	row.add_child(use)
 
 	if not b.unlimited:
 		for amount in [1, 10]:
 			var cost := Game.bait_cost(b.id, amount)
-			var buy := Button.new()
+			var buy := TapButton.new()
 			buy.text = "%d ×  %d" % [amount, cost]
 			buy.custom_minimum_size = Vector2(0, 96)
 			buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			buy.disabled = Game.coins < cost or Game.bait_used() + amount > Game.bait_capacity()
-			buy.pressed.connect(func() -> void: Game.buy_bait(b.id, amount))
+			buy.tapped.connect(func() -> void: Game.buy_bait(b.id, amount))
 			row.add_child(buy)
 
 	box.add_child(row)

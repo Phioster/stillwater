@@ -49,7 +49,7 @@ func _variant_count(category: StringName) -> int:
 ## das Panel rechnet die Freischaltregel nicht selbst nach.
 func _variant_button(category: StringName, variant: int, current: int) -> Button:
 	var c: CosmeticData = Database.cosmetic_of(category, variant)
-	var b := Button.new()
+	var b := TapButton.new()
 	b.custom_minimum_size = Vector2(0, 96)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# Ohne das waechst die Mindestbreite mit dem Text: drei Knoepfe nebeneinander
@@ -63,18 +63,18 @@ func _variant_button(category: StringName, variant: int, current: int) -> Button
 			b.toggle_mode = true
 			b.button_pressed = (variant == current)
 			b.text = "%s\n✓" % display_name
-			b.pressed.connect(_wear.bind(category, variant))
+			b.tapped.connect(_wear.bind(category, variant))
 		Game.CosmeticState.LOCKED_LEVEL:
 			b.text = "%s\n%d ⨀ · Stufe %d" % [display_name, cost, c.unlock_level]
 			b.disabled = true
-			b.pressed.connect(_buy.bind(category, variant))
+			b.tapped.connect(_buy.bind(category, variant))
 		Game.CosmeticState.LOCKED_COINS:
 			b.text = "%s\n%d ⨀" % [display_name, cost]
 			b.disabled = true
-			b.pressed.connect(_buy.bind(category, variant))
+			b.tapped.connect(_buy.bind(category, variant))
 		Game.CosmeticState.BUYABLE:
 			b.text = "%s\n%d Münzen – kaufen" % [display_name, cost]
-			b.pressed.connect(_buy.bind(category, variant))
+			b.tapped.connect(_buy.bind(category, variant))
 		_:
 			b.text = "%s\nnicht verfügbar" % display_name
 			b.disabled = true

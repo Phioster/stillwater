@@ -20,7 +20,7 @@ func _row(u: UpgradeData) -> Control:
 	detail.text = "%s\nJetzt %.0f → danach %.0f" % [u.description, Game.upgrade_value(u.id), u.value_at(level + 1)]
 	box.add_child(detail)
 
-	var buy := Button.new()
+	var buy := TapButton.new()
 	buy.custom_minimum_size = Vector2(0, 96)
 	if level >= u.max_level:
 		buy.text = "Maximum erreicht"
@@ -29,7 +29,7 @@ func _row(u: UpgradeData) -> Control:
 		var cost := Game.upgrade_cost(u.id)
 		buy.text = "Ausbauen  %d Münzen" % cost
 		buy.disabled = Game.coins < cost
-		buy.pressed.connect(func() -> void: Game.buy_upgrade(u.id))
+		buy.tapped.connect(func() -> void: Game.buy_upgrade(u.id))
 	box.add_child(buy)
 
 	return box

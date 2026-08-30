@@ -20,18 +20,18 @@ func _row(z: ZoneData) -> Control:
 	detail.text = "%d Arten · Biss %.0f–%.0f s" % [fish.size(), z.bite_time_min, z.bite_time_max]
 	box.add_child(detail)
 
-	var button := Button.new()
+	var button := TapButton.new()
 	button.custom_minimum_size = Vector2(0, 96)
 	if here:
 		button.text = "Du bist hier"
 		button.disabled = true
 	elif unlocked:
 		button.text = "Hinreisen"
-		button.pressed.connect(func() -> void: Game.travel_to(z.id))
+		button.tapped.connect(func() -> void: Game.travel_to(z.id))
 	else:
 		button.text = "Freischalten  Lvl %d · %d Münzen" % [z.unlock_level, z.unlock_cost]
 		button.disabled = Game.ctx.player_level < z.unlock_level or Game.coins < z.unlock_cost
-		button.pressed.connect(func() -> void: Game.unlock_zone(z.id))
+		button.tapped.connect(func() -> void: Game.unlock_zone(z.id))
 	box.add_child(button)
 
 	return box

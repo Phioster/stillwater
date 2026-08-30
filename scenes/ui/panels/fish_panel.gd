@@ -15,10 +15,10 @@ func refresh() -> void:
 		warn.modulate = Palette.get_color(&"cloth_red")
 		add_child(warn)
 
-	var sell_all := Button.new()
+	var sell_all := TapButton.new()
 	sell_all.text = "Alles verkaufen"
 	sell_all.custom_minimum_size = Vector2(0, 96)
-	sell_all.pressed.connect(func() -> void: Game.sell_all())
+	sell_all.tapped.connect(func() -> void: Game.sell_all())
 	add_child(sell_all)
 
 	if Game.ctx.inventory.fish.is_empty():
@@ -45,17 +45,17 @@ func _row(index: int) -> Control:
 		label.modulate = Game.ctx.rarity_of(fish).color
 	row.add_child(label)
 
-	var fav := Button.new()
+	var fav := TapButton.new()
 	fav.text = "★" if c.is_favorite else "☆"
 	fav.custom_minimum_size = Vector2(96, 96)
-	fav.pressed.connect(func() -> void: Game.toggle_favorite(index))
+	fav.tapped.connect(func() -> void: Game.toggle_favorite(index))
 	row.add_child(fav)
 
-	var sell := Button.new()
+	var sell := TapButton.new()
 	sell.custom_minimum_size = Vector2(120, 96)
 	sell.disabled = c.is_favorite
 	sell.text = "%d" % (0 if fish == null else Economy.sell_price(c, fish, Game.ctx.rarity_of(fish), Game.ctx.consumable_bonus))
-	sell.pressed.connect(func() -> void: Game.sell_one(index))
+	sell.tapped.connect(func() -> void: Game.sell_one(index))
 	row.add_child(sell)
 
 	return row

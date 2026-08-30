@@ -35,11 +35,11 @@ func refresh() -> void:
 ## Beruehrungen zuverlaessig an, auch innerhalb eines Scroll-Bereichs. Die
 ## Tab-Leiste macht es genauso und funktioniert auf dem Geraet.
 func _entry(f: FishData) -> Control:
-	var button := Button.new()
+	var button := TapButton.new()
 	button.flat = true
 	button.custom_minimum_size = Vector2(0, 84)
 	button.set_meta(&"fish_id", f.id)
-	button.pressed.connect(func(): fish_tapped.emit(f.id))
+	button.tapped.connect(func(): fish_tapped.emit(f.id))
 	var row := HBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -79,11 +79,11 @@ func _entry(f: FishData) -> Control:
 ## Mausereignis emuliert) meldet die Fisch-ID -- das Fenster entscheidet
 ## selbst, was es dazu zeigt.
 func _locked(f: FishData) -> Control:
-	var button := Button.new()
+	var button := TapButton.new()
 	button.flat = true
 	button.custom_minimum_size = Vector2(0, 64)
 	button.set_meta(&"fish_id", f.id)
-	button.pressed.connect(func(): fish_tapped.emit(f.id))
+	button.tapped.connect(func(): fish_tapped.emit(f.id))
 	var label := Label.new()
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
