@@ -94,10 +94,12 @@ func test_fish_inside_a_zone_are_sorted_by_rarity_then_name() -> void:
 	for i in range(1, fish.size()):
 		var a: RarityData = Database.rarities[fish[i - 1].rarity_id]
 		var b: RarityData = Database.rarities[fish[i].rarity_id]
+		var same_rarity: bool = a.value_mult == b.value_mult
 		assert_true(a.value_mult < b.value_mult
-			or (a.value_mult == b.value_mult and fish[i - 1].display_name <= fish[i].display_name),
-			"falsche Reihenfolge: %s (%s) vor %s (%s)" % [
-				fish[i - 1].display_name, a.display_name, fish[i].display_name, b.display_name])
+			or (same_rarity and fish[i - 1].weight_mean <= fish[i].weight_mean),
+			"falsche Reihenfolge: %s (%s, %.2f kg) vor %s (%s, %.2f kg)" % [
+				fish[i - 1].display_name, a.display_name, fish[i - 1].weight_mean,
+				fish[i].display_name, b.display_name, fish[i].weight_mean])
 	assert_eq(Database.rarities[fish[0].rarity_id].id, &"common",
 		"die erste Zeile muss ein gewöhnlicher Fisch sein")
 	m.free()
@@ -158,4 +160,23 @@ func test_the_zone_switcher_holds_every_zone_in_one_tap() -> void:
 		"nicht jede Zone hat einen Knopf")
 	for b in grid.get_children():
 		assert_true(b is TapButton, "der Zonenknopf ist kein TapButton: %s" % b.get_class())
+	m.free()
+
+## Der letzte Eintrag einer Zone muss der seltenste UND schwerste sein --
+## genau der Eindruck, den die Liste vermitteln soll.
+func test_the_last_entry_of_a_zone_is_the_rarest_and_heaviest() -> void:
+	Game.new_game()
+	var m := _main()
+	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
+	for zid in Database.zones:
+		var fish: Array = panel._fish_in_order(zid)
+		var last: FishData = fish[fish.size() - 1]
+		for f in fish:
+			var rf: RarityData = Database.rarities[f.rarity_id]
+			var rl: RarityData = Database.rarities[last.rarity_id]
+			assert_true(rf.value_mult <= rl.value_mult,
+				"%s ist seltener als der letzte Eintrag in %s" % [f.display_name, zid])
+			if is_equal_approx(rf.value_mult, rl.value_mult):
+				assert_true(f.weight_mean <= last.weight_mean,
+					"%s ist schwerer als der letzte Eintrag in %s" % [f.display_name, zid])
 	m.free()

@@ -31,8 +31,14 @@ func _zones_in_order() -> Array[ZoneData]:
 	return out
 
 ## Innerhalb einer Zone: erst die gewöhnlichen, dann die seltenen, und
-## gleichrangige alphabetisch. Vorher stand hier die Reihenfolge, in der die
+## gleichrangige nach Gewicht. Vorher stand hier die Reihenfolge, in der die
 ## Arten ins Datenverzeichnis gewandert sind — also gar keine.
+##
+## Die Referenz sortiert nur nach Rarität; innerhalb davon steht es dort
+## kreuz und quer, und der Eindruck „unten die größten" entsteht bloß daraus,
+## dass seltener meist auch größer ist. Mit dem Gewicht als zweitem Schlüssel
+## stimmt der Eindruck wirklich, und er sagt mehr als eine alphabetische
+## Reihenfolge, die dem Spieler nichts bedeutet.
 func _fish_in_order(zone_id: StringName) -> Array[FishData]:
 	var out: Array[FishData] = []
 	for f in Database.fish_of_zone(zone_id):
@@ -46,6 +52,8 @@ func _fish_in_order(zone_id: StringName) -> Array[FishData]:
 		var vb := _rarity_order(b.rarity_id)
 		if not is_equal_approx(va, vb):
 			return va < vb
+		if not is_equal_approx(a.weight_mean, b.weight_mean):
+			return a.weight_mean < b.weight_mean
 		return a.display_name < b.display_name)
 	return out
 
