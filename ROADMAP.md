@@ -63,7 +63,7 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 - [x] **E1 Einstellungen.** Ton an/aus und zwei Lautstärken. Der Ton hat
       seit D Regler nötig, es gab nur kein Menü dafür. Wird im Spielstand
       gemerkt (`settings` liegt dort schon leer bereit).
-- [ ] **E2 Spielstand-Sicherungen.** Rotierende Kopien in einem eigenen
+- [x] **E2 Spielstand-Sicherungen.** Rotierende Kopien in einem eigenen
       Ordner. Bisher gibt es nur temp+umbenennen — das schützt vor einem
       Absturz beim Schreiben, nicht vor einem kaputten Stand.
 - [ ] **E3 Nachschwingendes Scrollen.** Die Referenz brauchte dafür ein

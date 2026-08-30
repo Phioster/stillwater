@@ -139,8 +139,18 @@ func test_offline_summary_is_produced_on_load() -> void:
 
 # --- Beschädigte Speicherdatei: jeder Fall einzeln --------------------------
 
+## Seit es Sicherungen gibt, springt bei einem kaputten Stand die neueste
+## brauchbare ein. Diese Tests pruefen den Fall OHNE Sicherung -- dass die
+## Rettung selbst greift, steht in test_save_backups.gd.
+func _drop_backups() -> void:
+	for i in range(1, SaveManager.BACKUP_COUNT + 1):
+		var b := SaveManager.backup_path(i)
+		if FileAccess.file_exists(b):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(b))
+
 func test_empty_file_does_not_crash() -> void:
 	var original := _use_test_path()
+	_drop_backups()
 	var f := FileAccess.open(SaveManager.SAVE_PATH, FileAccess.WRITE)
 	f.close()
 	assert_true(SaveManager.has_save(), "eine leere Datei zählt als vorhanden")
@@ -149,6 +159,7 @@ func test_empty_file_does_not_crash() -> void:
 
 func test_corrupt_json_does_not_crash() -> void:
 	var original := _use_test_path()
+	_drop_backups()
 	var f := FileAccess.open(SaveManager.SAVE_PATH, FileAccess.WRITE)
 	f.store_string("{ das ist kein JSON")
 	f.close()
@@ -196,6 +207,7 @@ func test_future_version_save_is_refused() -> void:
 
 func test_future_version_file_is_refused_without_crashing() -> void:
 	var original := _use_test_path()
+	_drop_backups()
 	Game.new_game()
 	Game.coins = 555
 	SaveManager.save()

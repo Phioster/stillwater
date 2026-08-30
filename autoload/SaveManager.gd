@@ -10,9 +10,15 @@ const SAVE_VERSION: int = 2
 ## Testlauf nie den echten Spielstand des Entwicklers überschreibt.
 var SAVE_PATH: String = "user://save.json"
 const AUTOSAVE_INTERVAL: float = 60.0
+## Rotierende Sicherungen. temp+umbenennen schuetzt nur vor einem Absturz
+## MITTEN im Schreiben -- nicht davor, dass ein fehlerhafter Stand sauber
+## gespeichert wird und den guten ueberschreibt. Dafuer braucht es Kopien.
+const BACKUP_COUNT: int = 3
+const BACKUP_EVERY: int = 10
 
 var pending_offline: Dictionary = {}
 var _autosave_timer: float = 0.0
+var _saves_since_backup: int = BACKUP_EVERY
 
 func _ready() -> void:
 	if not Game.progress_changed.is_connected(_on_progress_changed):
@@ -328,7 +334,52 @@ func save() -> bool:
 	var dir := DirAccess.open(SAVE_PATH.get_base_dir())
 	if dir == null:
 		return false
+	# Vor dem Ueberschreiben eine Kopie des bisherigen Stands wegsichern --
+	# aber nicht bei jedem Autospeichern, sonst waeren die Sicherungen nach
+	# drei Minuten alle gleich alt wie das Original.
+	_saves_since_backup += 1
+	if _saves_since_backup >= BACKUP_EVERY and FileAccess.file_exists(SAVE_PATH):
+		_saves_since_backup = 0
+		_rotate_backups()
 	return dir.rename(_temp_path().get_file(), SAVE_PATH.get_file()) == OK
+
+func backup_path(index: int) -> String:
+	return "%s.bak%d" % [SAVE_PATH, index]
+
+## Schiebt die Sicherungen eine Stelle weiter und legt den aktuellen Stand
+## auf Platz 1. Die aelteste faellt hinten heraus.
+func _rotate_backups() -> void:
+	for i in range(BACKUP_COUNT, 1, -1):
+		var older := backup_path(i)
+		var newer := backup_path(i - 1)
+		if FileAccess.file_exists(newer):
+			var text := FileAccess.get_file_as_string(newer)
+			var f := FileAccess.open(older, FileAccess.WRITE)
+			if f != null:
+				f.store_string(text)
+				f.close()
+	var current := FileAccess.get_file_as_string(SAVE_PATH)
+	if current.is_empty():
+		return
+	var first := FileAccess.open(backup_path(1), FileAccess.WRITE)
+	if first != null:
+		first.store_string(current)
+		first.close()
+
+## Der neueste Stand, der sich noch als Spielstand lesen laesst. Gibt einen
+## leeren String zurueck, wenn auch die Sicherungen unbrauchbar sind.
+func newest_usable_backup() -> String:
+	for i in range(1, BACKUP_COUNT + 1):
+		var path := backup_path(i)
+		if not FileAccess.file_exists(path):
+			continue
+		var text := FileAccess.get_file_as_string(path)
+		if text.is_empty():
+			continue
+		var parsed = JSON.parse_string(text)
+		if typeof(parsed) == TYPE_DICTIONARY and not _is_future_version(parsed):
+			return path
+	return ""
 
 func load_game() -> bool:
 	if not has_save():
@@ -338,16 +389,16 @@ func load_game() -> bool:
 		return false
 	var text := f.get_as_text()
 	f.close()
-	if text.is_empty():
-		push_error("Spielstand leer, wird ignoriert")
-		return false
-	var parsed = JSON.parse_string(text)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		push_error("Spielstand unlesbar, wird ignoriert")
-		return false
-	if _is_future_version(parsed):
-		push_error("Spielstand stammt aus einer neueren Version, wird nicht geladen")
-		return false
+	var parsed = JSON.parse_string(text) if not text.is_empty() else null
+	if typeof(parsed) != TYPE_DICTIONARY or _is_future_version(parsed):
+		# Statt aufzugeben: die neueste brauchbare Sicherung nehmen. Einen
+		# Fortschritt zu verlieren tut weh, alles zu verlieren waere das Ende.
+		var fallback := newest_usable_backup()
+		if fallback.is_empty():
+			push_error("Spielstand unlesbar und keine brauchbare Sicherung vorhanden")
+			return false
+		push_error("Spielstand unlesbar -- lade Sicherung %s" % fallback)
+		parsed = JSON.parse_string(FileAccess.get_file_as_string(fallback))
 	deserialize(parsed)
 	return true
 
