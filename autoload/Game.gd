@@ -43,7 +43,7 @@ func new_game() -> void:
 	rng = StillRNG.new(randi())
 	sim = FishingSim.new()
 	coins = 0
-	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"bait_capacity": 0}
+	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0}
 	unlocked_zones = [&"willow_lake"]
 	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0}
 	owned_cosmetics = {}
@@ -136,6 +136,7 @@ func apply_upgrades() -> void:
 	ctx.rod_power = upgrade_value(&"rod_power")
 	ctx.orb_power = upgrade_value(&"orb_power")
 	ctx.inventory.capacity = int(upgrade_value(&"fish_inventory"))
+	ctx.inventory.favorite_capacity = int(upgrade_value(&"favorite_inventory"))
 
 func bait_capacity() -> int:
 	return int(upgrade_value(&"bait_capacity"))
@@ -176,11 +177,18 @@ func sell_one(index: int) -> int:
 	progress_changed.emit()
 	return earned
 
-func toggle_favorite(index: int) -> void:
+## Gibt false zurueck, wenn die Favoritenkiste voll ist -- das Panel sagt es
+## dann, statt den Tipp stumm verschwinden zu lassen.
+func toggle_favorite(index: int) -> bool:
 	if index < 0 or index >= ctx.inventory.fish.size():
-		return
-	ctx.inventory.fish[index].is_favorite = not ctx.inventory.fish[index].is_favorite
+		return false
+	var c: CaughtFish = ctx.inventory.fish[index]
+	if not c.is_favorite and ctx.inventory.favorites_full():
+		return false
+	c.is_favorite = not c.is_favorite
 	state_changed.emit()
+	progress_changed.emit()
+	return true
 
 # --- Köder --------------------------------------------------------------------
 
@@ -206,6 +214,35 @@ func buy_bait(id: StringName, amount: int) -> bool:
 	state_changed.emit()
 	progress_changed.emit()
 	return true
+
+## Wie viele Koeder noch in die Tasche passen. Der Vorrat ist gemeinsam, also
+## zaehlt der Gesamtbestand -- nicht der dieser einen Sorte.
+func bait_refill_amount() -> int:
+	return maxi(bait_capacity() - bait_used(), 0)
+
+func bait_refill_cost(id: StringName) -> int:
+	return bait_cost(id, bait_refill_amount())
+
+## Ein Griff statt einer Mengenwahl: die Tasche wird voll, soweit das Geld
+## reicht. Wer nur ein Stueck will, waehlt keine Menge -- er will einfach
+## weiterangeln.
+func refill_bait(id: StringName) -> int:
+	var b: BaitData = Database.baits.get(id)
+	if b == null or b.unlimited:
+		return 0
+	var amount := bait_refill_amount()
+	# Erst grob ueber den Stueckpreis schaetzen, dann nachtrimmen: die
+	# Schleife allein waere bei grosser Tasche unnoetig lang, die Schaetzung
+	# allein wuerde eine spaeter nichtlineare Preisformel verfehlen.
+	var unit := bait_cost(id, 1)
+	if unit > 0:
+		amount = mini(amount, coins / unit)
+	while amount > 0 and bait_cost(id, amount) > coins:
+		amount -= 1
+	if amount <= 0:
+		return 0
+	buy_bait(id, amount)
+	return amount
 
 func set_active_bait(id: StringName) -> void:
 	var b: BaitData = Database.baits.get(id)

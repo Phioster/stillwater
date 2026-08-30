@@ -238,7 +238,7 @@ func _defaults() -> Dictionary:
 		"xp": 0,
 		"current_zone": "willow_lake",
 		"unlocked_zones": ["willow_lake"],
-		"upgrade_levels": {"rod_power": 0, "orb_power": 0, "fish_inventory": 0, "bait_capacity": 0},
+		"upgrade_levels": {"rod_power": 0, "orb_power": 0, "fish_inventory": 0, "favorite_inventory": 0, "bait_capacity": 0},
 		"active_bait": String(Database.basic_bait().id) if Database.basic_bait() != null else "",
 		"journal": {"secret_found": false, "entries": {}},
 		"cosmetics": {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0},

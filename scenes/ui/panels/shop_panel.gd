@@ -45,15 +45,20 @@ func _row(b: BaitData) -> Control:
 	row.add_child(use)
 
 	if not b.unlimited:
-		for amount in [1, 10]:
-			var cost := Game.bait_cost(b.id, amount)
-			var buy := TapButton.new()
-			buy.text = "%d ×  %d" % [amount, cost]
-			buy.custom_minimum_size = Vector2(0, 96)
-			buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			buy.disabled = Game.coins < cost or Game.bait_used() + amount > Game.bait_capacity()
-			buy.tapped.connect(func() -> void: Game.buy_bait(b.id, amount))
-			row.add_child(buy)
+		var amount := Game.bait_refill_amount()
+		var cost := Game.bait_refill_cost(b.id)
+		var buy := TapButton.new()
+		buy.custom_minimum_size = Vector2(0, 96)
+		buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if amount <= 0:
+			buy.text = "Tasche voll"
+		elif Game.coins < Game.bait_cost(b.id, 1):
+			buy.text = "Auffüllen  %d" % cost
+		else:
+			buy.text = "Auffüllen  +%d  ·  %d" % [amount, cost]
+		buy.disabled = amount <= 0 or Game.coins < Game.bait_cost(b.id, 1)
+		buy.tapped.connect(func() -> void: Game.refill_bait(b.id))
+		row.add_child(buy)
 
 	box.add_child(row)
 	return box

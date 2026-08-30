@@ -4,10 +4,27 @@ class_name Inventory
 extends RefCounted
 
 var capacity: int = 20
+## Favoriten haben ihren EIGENEN Platz. Sonst verstopft ein Prachtstueck, das
+## man behalten will, die Fischkiste und das Angeln pausiert -- man wuerde
+## bestraft dafuer, etwas Schoenes gefangen zu haben.
+var favorite_capacity: int = 5
 var fish: Array[CaughtFish] = []
 
+func count_favorites() -> int:
+	var n := 0
+	for c in fish:
+		if c.is_favorite:
+			n += 1
+	return n
+
+func count_stored() -> int:
+	return fish.size() - count_favorites()
+
 func is_full() -> bool:
-	return fish.size() >= capacity
+	return count_stored() >= capacity
+
+func favorites_full() -> bool:
+	return count_favorites() >= favorite_capacity
 
 func add(c: CaughtFish) -> bool:
 	if is_full():

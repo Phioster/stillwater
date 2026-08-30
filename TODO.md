@@ -16,6 +16,24 @@ noch nicht gebaut.
   Zonenhintergründe sind seit 2026-08-29 pro Zone austauschbar, die
   Platzhalter kommen weiter aus `tools/gen_sprites.gd`.
 
+## Menü und Oberfläche (aus dem Cornerpond-Dossier, Abschnitt 10)
+
+Noch nicht angefasst, aber der Grund, warum das Referenzspiel „fertig"
+wirkt und unseres noch nicht. Die Mechanik steht — das hier ist die
+Schicht darüber:
+
+- **Rückmeldung auf jeden Griff.** Knöpfe federn, Panels wackeln bei
+  Fehlschlägen, Zahlen hüpfen. Wir haben `pop_text` und `burst`, aber
+  nur im Kampf.
+- **Schatten unter Text und Flächen.** Das Referenzspiel hat dafür
+  eigene Varianten aller Standardelemente; ein Theme mit
+  Umriss/Schatten täte dasselbe an einer Stelle.
+- **Panels mit Titelzeile und Schließen-Knopf** statt nur Ein/Aus über
+  die Reiterleiste.
+- **Sortierung des Inventars** (Datum, Rang, Rarität, Wert, Name,
+  Gewicht) — sechs Modi, gemerkt.
+- **Tooltips** an Zahlen, die sonst unerklärt bleiben.
+
 ## Danach
 
 - Quest-System mit erneuerbaren Aufgaben.
