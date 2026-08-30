@@ -121,9 +121,10 @@ func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	ctx.consume_bait()
 	var rarity := ctx.rarity_of(fish)
 	hooked = fish
-	# Der Koeder verschiebt die Groessenverteilung, nicht die Artenauswahl.
-	hooked_dev = FishRoll.roll_deviation(ctx.bait_rank_shift(), rng)
-	hooked_rank = FishRoll.rank_for_deviation(hooked_dev)
+	# Zwei getrennte Wuerfe: der Koeder bestimmt den RANG, der Zufall die
+	# Groesse innerhalb dieses Rangs.
+	hooked_rank = ctx.pull_rank(rng)
+	hooked_dev = FishRoll.roll_deviation(rng)
 	hooked_shiny = FishRoll.roll_shiny(ctx.journal.fish_level(fish.id), ctx.shiny_bonus, rng)
 	hooked_max_health = FishRoll.health_for(fish, hooked_rank)
 	hooked_health = hooked_max_health

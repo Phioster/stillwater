@@ -129,6 +129,16 @@ func validate() -> Array[String]:
 		for r in z.rarity_weights:
 			if not rarities.has(r):
 				problems.append("Zone %s gewichtet unbekannte Rarität %s" % [z.id, r])
+	for id in baits:
+		var bait: BaitData = baits[id]
+		var rank_total := 0.0
+		for r in bait.rank_probabilities:
+			var i := int(r)
+			if i < 0 or i >= FishRoll.RANK_NAMES.size():
+				problems.append("Köder %s nennt Rang %d, den es nicht gibt" % [bait.id, i])
+			rank_total += maxf(float(bait.rank_probabilities[r]), 0.0)
+		if rank_total <= 0.0:
+			problems.append("Köder %s hat keine brauchbare Rangtabelle" % bait.id)
 	if basic_bait() == null:
 		problems.append("kein unbegrenzter Grundköder vorhanden")
 

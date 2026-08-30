@@ -6,7 +6,11 @@
 script = ExtResource("1_2gocp")
 id = &"mayfly_nymph"
 display_name = "Eintagsfliegen-Nymphe"
-rank_shift = 0.7
+rank_probabilities = {
+1: 0.35,
+2: 0.45,
+3: 0.2
+}
 cost = 15
 rarity_weight_bonus = {
 &"rare": 2.2,

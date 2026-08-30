@@ -24,6 +24,19 @@ func _row(b: BaitData) -> Control:
 	title.text = "%s  (%s)%s" % [b.display_name, owned, active]
 	box.add_child(title)
 
+	# Was der Köder verspricht, steht auf dem Köder. Das ist der eigentliche
+	# Gewinn der Rangtabelle: eine verschobene Verteilung ließe sich gar
+	# nicht in einem Satz zusagen.
+	var ranks := b.main_ranks()
+	if not ranks.is_empty():
+		var names: Array[String] = []
+		for r in ranks:
+			names.append(FishRoll.RANK_NAMES[r])
+		var promise := Label.new()
+		promise.text = "  am besten für Rang %s" % "/".join(names)
+		promise.modulate = Palette.get_color(&"accent")
+		box.add_child(promise)
+
 	if not b.rarity_weight_bonus.is_empty():
 		var effect := Label.new()
 		var parts: Array[String] = []

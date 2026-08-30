@@ -22,9 +22,13 @@ const SHINY_BASE: float = 1.0 / 800.0
 
 ## Wie viele Standardabweichungen dieses Exemplar vom Mittel liegt. Nur
 ## dieser Wert wird gespeichert -- das Gewicht folgt daraus jederzeit.
-static func roll_deviation(bait_shift: float, rng: StillRNG) -> float:
-	return clampf(rng.randfn(bait_shift, 1.0), -DEV_LIMIT, DEV_LIMIT)
+## Seit dem 2026-08-30 reine GROESSENSTREUUNG: den Rang bestimmt der Koeder,
+## nicht diese Zahl. Zwei Wuerfel, nicht einer.
+static func roll_deviation(rng: StillRNG) -> float:
+	return clampf(rng.randfn(0.0, 1.0), -DEV_LIMIT, DEV_LIMIT)
 
+## Nur noch fuer die Spielstand-Migration und alte Tests: der Rang eines
+## Exemplars kommt im Spiel vom Koeder.
 static func rank_for_deviation(dev: float) -> int:
 	for i in RANK_THRESHOLDS.size():
 		if dev < RANK_THRESHOLDS[i]:

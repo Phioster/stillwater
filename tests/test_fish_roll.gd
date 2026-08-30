@@ -27,19 +27,47 @@ func test_deviation_is_centred_and_bounded() -> void:
 	var sum := 0.0
 	var n := 20000
 	for i in n:
-		var d := FishRoll.roll_deviation(0.0, rng)
+		var d := FishRoll.roll_deviation(rng)
 		assert_between(d, -FishRoll.DEV_LIMIT, FishRoll.DEV_LIMIT)
 		sum += d
 	assert_almost_eq(sum / float(n), 0.0, 0.05, "ohne Köderschub muss das Mittel bei 0 liegen")
 
-func test_bait_shifts_the_size_upward() -> void:
-	var rng := StillRNG.new(12)
-	var plain := 0.0
-	var baited := 0.0
-	for i in 20000:
-		plain += FishRoll.roll_deviation(0.0, rng)
-		baited += FishRoll.roll_deviation(1.0, rng)
-	assert_true(baited > plain + 15000.0, "ein Köder mit Schub 1.0 muss deutlich größere Fische bringen")
+## Der Köder verschiebt die Größe NICHT mehr — er zieht den Rang aus einer
+## eigenen Tabelle. Die Abweichung ist reine Streuung innerhalb des Rangs.
+func test_bait_pulls_the_rank_from_its_own_table() -> void:
+	var bait := BaitData.new()
+	bait.rank_probabilities = {3: 1.0}
+	var ctx := SimContext.new()
+	ctx.bait = bait
+	var rng := StillRNG.new(5)
+	for i in 50:
+		assert_eq(ctx.pull_rank(rng), 3, "eine Tabelle mit nur einem Rang ist eindeutig")
+
+func test_a_bait_without_a_table_gives_the_smallest_rank() -> void:
+	var ctx := SimContext.new()
+	ctx.bait = BaitData.new()
+	assert_eq(ctx.pull_rank(StillRNG.new(1)), 0)
+	ctx.bait = null
+	assert_eq(ctx.pull_rank(StillRNG.new(1)), 0, "ohne Köder darf nichts abstürzen")
+
+func test_the_rank_table_is_respected_in_proportion() -> void:
+	var bait := BaitData.new()
+	bait.rank_probabilities = {0: 1.0, 4: 3.0}
+	var ctx := SimContext.new()
+	ctx.bait = bait
+	var rng := StillRNG.new(6)
+	var counts := {0: 0, 4: 0}
+	for i in 4000:
+		counts[ctx.pull_rank(rng)] += 1
+	var share := float(counts[4]) / 4000.0
+	assert_between(share, 0.71, 0.79, "Rang A muss rund drei Viertel ausmachen, ist %f" % share)
+
+func test_main_ranks_names_what_a_bait_is_good_for() -> void:
+	var bait := BaitData.new()
+	bait.rank_probabilities = {1: 0.35, 2: 0.45, 3: 0.2}
+	assert_eq(bait.main_ranks(), [1, 2, 3] as Array[int])
+	bait.rank_probabilities = {0: 0.9, 1: 0.1}
+	assert_eq(bait.main_ranks(), [0] as Array[int], "10 %% sind keine Zusage")
 
 ## Die Schwellen stehen als eigene Zahlen da, nicht als Aufruf der Formel.
 func test_rank_thresholds() -> void:

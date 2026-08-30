@@ -28,6 +28,9 @@ func _ctx(capacity: int = 10000) -> SimContext:
 	var bait := BaitData.new()
 	bait.id = &"pond_grub"
 	bait.unlimited = true
+	# Eindeutiger Rang: der Koeder bestimmt ihn, nicht der Zufall. Rang A mit
+	# difficulty 4 ergibt 432 LP -- lang genug, um mitten im Kampf zu vergleichen.
+	bait.rank_probabilities = {4: 1.0}
 	var ctx := SimContext.new()
 	ctx.zone = zone
 	ctx.bait = bait
@@ -102,10 +105,10 @@ func test_offline_equals_online_mid_fight() -> void:
 	fish.id = &"testfish"
 	fish.rarity_id = &"common"
 	fish.base_value = 10
-	fish.strength = 40.0
+	fish.difficulty = 4.0
 	fish.xp = 10
 	fish.weight_mean = 1.0000
-	fish.weight_dev = 0.0100   # Perzentil immer 0 -> Kampfstärke exakt vorhersagbar
+	fish.weight_dev = 0.0100
 	fish.spawn_weight = 1.0
 	var zone := ZoneData.new()
 	zone.id = &"willow_lake"
@@ -117,6 +120,9 @@ func test_offline_equals_online_mid_fight() -> void:
 	var bait := BaitData.new()
 	bait.id = &"pond_grub"
 	bait.unlimited = true
+	# Eindeutiger Rang: der Koeder bestimmt ihn, nicht der Zufall. Rang A mit
+	# difficulty 4 ergibt 432 LP -- lang genug, um mitten im Kampf zu vergleichen.
+	bait.rank_probabilities = {4: 1.0}
 
 	var make_ctx := func() -> SimContext:
 		var c := SimContext.new()
@@ -130,12 +136,16 @@ func test_offline_equals_online_mid_fight() -> void:
 		c.rod_power = 4.0
 		return c
 
-	# Ein Zyklus ohne Landung: 1 s Wurf + 10 s Warten + 7.5 s bis zur Landung
-	# (Stärke 40 * 0.75 Perzentilfaktor = 30, / 4 Zugkraft) = 18.5 s.
-	# 90 volle Zyklen + 11 s (Wurf+Warten) + 3.7 s in den Kampf hinein landet
-	# sicher mitten im 91. Kampf, mit Rand zum Landen (7.5 s) und Entkommen
-	# (20 s Kampffenster).
-	var seconds := 90.0 * 18.5 + 11.0 + 3.7
+	# Rang A mit difficulty 4 hat 432 LP; die Rute schafft in ihrem
+	# 30-Sekunden-Fenster nur 120. Der Fisch entkommt also jedes Mal, und
+	# ein Zyklus ist Wurf + Warten + volles Fenster. Die Dauer wird aus den
+	# Konstanten abgeleitet statt hingeschrieben -- sonst veraltet sie beim
+	# naechsten Balance-Schritt still.
+	var window := 20.0 * FishRoll.RANK_TIME_MULTS[4]
+	var cycle := FishingSim.ESCAPE_COOLDOWN + 10.0 + window
+	# Erster Zyklus, dann 20 weitere, dann 15 s in den naechsten Kampf hinein.
+	var seconds := FishingSim.CAST_TIME + 10.0 + window + 20.0 * cycle \
+		+ FishingSim.ESCAPE_COOLDOWN + 10.0 + 15.0
 
 	var offline_sim := FishingSim.new()
 	var offline_ctx: SimContext = make_ctx.call()

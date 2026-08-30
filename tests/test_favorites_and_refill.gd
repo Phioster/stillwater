@@ -70,3 +70,34 @@ func test_refill_ignores_the_free_starter_bait() -> void:
 	var basic := Database.basic_bait()
 	assert_true(basic.unlimited, "der Grundköder muss unbegrenzt sein")
 	assert_eq(Game.refill_bait(basic.id), 0, "unbegrenzte Köder kauft man nicht nach")
+
+## Jeder Köder muss sagen können, wofür er gut ist -- sonst ist die
+## Rangtabelle eine Zahl ohne Zusage.
+func test_every_bait_promises_a_rank() -> void:
+	for id in Database.baits:
+		var b: BaitData = Database.baits[id]
+		assert_false(b.rank_probabilities.is_empty(),
+			"%s hat keine Rangtabelle" % id)
+		assert_false(b.main_ranks().is_empty(),
+			"%s verspricht keinen Rang" % id)
+
+func test_the_shop_prints_the_promise() -> void:
+	Game.new_game()
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	m.show_tab(3)
+	var panel: PanelBase = m.get_node("SidePanel/Panels/ShopScroll/ShopPanel")
+	var text := ""
+	for node in _labels(panel):
+		text += node + "\n"
+	assert_true("am besten für Rang" in text, "die Zusage steht nicht im Laden")
+	m.free()
+
+func _labels(node: Node) -> Array[String]:
+	var out: Array[String] = []
+	if node is Label:
+		out.append((node as Label).text)
+	for c in node.get_children():
+		out.append_array(_labels(c))
+	return out

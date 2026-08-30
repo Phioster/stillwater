@@ -17,9 +17,13 @@ func _fish(difficulty: float) -> FishData:
 	f.spawn_weight = 1.0
 	return f
 
-## difficulty statt Staerke: der Kampf ist seit 2026-08-30 ein Schadensrennen.
-## Lebenspunkte = Rangtabelle * difficulty, Zeit = Fenster * Rangzeit * difficulty.
-func _ctx(difficulty: float, capacity: int = 100) -> SimContext:
+## difficulty statt Staerke: der Kampf ist ein Schadensrennen.
+## Lebenspunkte = Rangtabelle * difficulty, Zeit = Fenster * Rangzeit.
+##
+## Der Rang kommt seit 2026-08-30 vom KOEDER. Ein Koeder mit genau einem
+## Eintrag macht ihn eindeutig -- das ersetzt die frueheren gemessenen Seeds
+## und ist unabhaengig vom Zufallsgenerator.
+func _ctx(difficulty: float, capacity: int = 100, rank: int = 0) -> SimContext:
 	var zone := ZoneData.new()
 	zone.id = &"willow_lake"
 	zone.fish = [_fish(difficulty)]
@@ -30,6 +34,7 @@ func _ctx(difficulty: float, capacity: int = 100) -> SimContext:
 	var bait := BaitData.new()
 	bait.id = &"pond_grub"
 	bait.unlimited = true
+	bait.rank_probabilities = {rank: 1.0}
 	var ctx := SimContext.new()
 	ctx.zone = zone
 	ctx.bait = bait
@@ -64,22 +69,20 @@ func test_bite_happens_after_cast_and_wait() -> void:
 	assert_true("bite" in _types(events))
 	assert_eq(sim.state, FishingSim.State.FIGHT)
 
-## Die Seeds sind gemessen (tools-Sonde, 2026-08-30) und stehen als Literal
-## da, weil der Rang jetzt mitwuerfelt und die Kampfdauer bestimmt.
-## Seed 4 -> Rang E: 7 LP, Fenster 20*0,7 = 14 s, Rute 4/s -> 1,75 s.
+## Rang E: 7 LP, Fenster 20*0,7 = 14 s, zwei Rutenschuebe = 2 s.
 func test_weak_fish_is_landed_automatically() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(1.0)
-	var events := sim.tick(11.0 + 2.0, ctx, StillRNG.new(4))
+	var ctx := _ctx(1.0, 100, 0)
+	var events := sim.tick(11.0 + 2.5, ctx, StillRNG.new(1))
 	assert_true("caught" in _types(events))
 	assert_eq(ctx.inventory.fish.size(), 1)
 
 func test_strong_fish_escapes_after_the_window() -> void:
 	var sim := FishingSim.new()
-	# Seed 11 -> Rang S: 216 LP, Fenster 20*1,9 = 38 s, Rute 4/s braucht 54 s.
+	# Rang S: 216 LP, Fenster 20*1,9 = 38 s, Rute 4 je Sekunde -> 152.
 	# Ohne Tippen ist das nicht zu schaffen -- genau so soll es sein.
-	var ctx := _ctx(1.0)
-	var events := sim.tick(11.0 + 39.0, ctx, StillRNG.new(11))
+	var ctx := _ctx(1.0, 100, 5)
+	var events := sim.tick(11.0 + 39.0, ctx, StillRNG.new(1))
 	assert_true("escaped" in _types(events))
 	assert_eq(ctx.inventory.fish.size(), 0)
 	assert_false("caught" in _types(events))
@@ -87,8 +90,8 @@ func test_strong_fish_escapes_after_the_window() -> void:
 func test_tapping_saves_a_fish_that_would_escape() -> void:
 	var sim := FishingSim.new()
 	# Derselbe Rang-S-Fisch wie oben, der ohne Zutun entkommt.
-	var ctx := _ctx(1.0)
-	sim.tick(11.1, ctx, StillRNG.new(11))
+	var ctx := _ctx(1.0, 100, 5)
+	sim.tick(11.1, ctx, StillRNG.new(1))
 	assert_eq(sim.state, FishingSim.State.FIGHT)
 	var caught := false
 	for i in 40:
@@ -104,8 +107,8 @@ func test_tap_does_nothing_outside_a_fight() -> void:
 
 func test_catch_awards_xp_and_can_level_up() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(1.0)
-	var events := sim.tick(11.0 + 2.0, ctx, StillRNG.new(4))
+	var ctx := _ctx(1.0, 100, 0)
+	var events := sim.tick(11.0 + 2.5, ctx, StillRNG.new(1))
 	var xp := 0
 	for e in events:
 		if e["type"] == "caught":
@@ -115,8 +118,8 @@ func test_catch_awards_xp_and_can_level_up() -> void:
 
 func test_catch_records_the_journal() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(1.0)
-	sim.tick(11.0 + 2.0, ctx, StillRNG.new(4))
+	var ctx := _ctx(1.0, 100, 0)
+	sim.tick(11.0 + 2.5, ctx, StillRNG.new(1))
 	assert_true(ctx.journal.is_discovered(&"testfish"))
 
 func test_full_inventory_pauses_fishing() -> void:
@@ -133,7 +136,7 @@ func test_fishing_resumes_after_inventory_is_emptied() -> void:
 	assert_eq(sim.state, FishingSim.State.INVENTORY_FULL)
 	ctx.inventory.take_sellable()
 	assert_eq(ctx.inventory.fish.size(), 0, "das Inventar muss vorher leer sein")
-	sim.tick(11.0 + 12.0, ctx, StillRNG.new(4))
+	sim.tick(11.0 + 12.0, ctx, StillRNG.new(1))
 	assert_eq(ctx.inventory.fish.size(), 1)
 
 func test_many_catches_over_an_hour() -> void:
@@ -269,16 +272,16 @@ func test_orbs_follow_up_when_one_disappears() -> void:
 ## als viele kleine, waere Offline ein anderes Spiel.
 func test_rod_pulses_are_delta_independent() -> void:
 	var big := FishingSim.new()
-	var ctx_big := _ctx(3.0)
-	big.tick(11.1, ctx_big, StillRNG.new(11))
+	var ctx_big := _ctx(3.0, 100, 4)
+	big.tick(11.1, ctx_big, StillRNG.new(1))
 	assert_eq(big.state, FishingSim.State.FIGHT, "der Testfisch muss noch kaempfen")
-	big.tick(7.0, ctx_big, StillRNG.new(11))
+	big.tick(7.0, ctx_big, StillRNG.new(1))
 
 	var small := FishingSim.new()
-	var ctx_small := _ctx(3.0)
-	small.tick(11.1, ctx_small, StillRNG.new(11))
+	var ctx_small := _ctx(3.0, 100, 4)
+	small.tick(11.1, ctx_small, StillRNG.new(1))
 	for i in 70:
-		small.tick(0.1, ctx_small, StillRNG.new(11))
+		small.tick(0.1, ctx_small, StillRNG.new(1))
 
 	assert_eq(big.rod_hits, small.rod_hits,
 		"gleiche Zeit, gleiche Treffer: %d gegen %d" % [big.rod_hits, small.rod_hits])
@@ -293,19 +296,19 @@ func test_the_rod_hits_once_per_interval() -> void:
 	# schon 0,1 s. Alle folgenden Zeiten rechnen ab dort.
 	sim.tick(11.1, ctx, StillRNG.new(11))
 	assert_eq(sim.rod_hits, 0, "beim Anbiss hat die Rute noch nicht geschlagen")
-	sim.tick(0.85, ctx, StillRNG.new(11))
+	sim.tick(0.85, ctx, StillRNG.new(1))
 	assert_eq(sim.rod_hits, 0, "bei 0,95 s noch nicht")
-	sim.tick(0.1, ctx, StillRNG.new(11))
+	sim.tick(0.1, ctx, StillRNG.new(1))
 	assert_eq(sim.rod_hits, 1, "bei 1,05 s genau einmal")
-	sim.tick(3.0, ctx, StillRNG.new(11))
+	sim.tick(3.0, ctx, StillRNG.new(1))
 	assert_eq(sim.rod_hits, 4, "bei 4,05 s viermal")
 
 func test_each_pulse_takes_exactly_rod_power() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(3.0)
-	sim.tick(11.1, ctx, StillRNG.new(11))
+	var ctx := _ctx(3.0, 100, 4)
+	sim.tick(11.1, ctx, StillRNG.new(1))
 	var full := sim.hooked_max_health
-	sim.tick(3.0, ctx, StillRNG.new(11))
+	sim.tick(3.0, ctx, StillRNG.new(1))
 	assert_almost_eq(sim.hooked_health, full - 3.0 * ctx.rod_power, 0.001,
 		"drei Schuebe muessen dreimal rod_power abziehen")
 
@@ -313,17 +316,15 @@ func test_each_pulse_takes_exactly_rod_power() -> void:
 ## kann. Ein Fisch, den die Rute nicht schafft, muss als solcher markiert sein.
 func test_a_fish_the_rod_cannot_land_is_flagged() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(1.0)
-	# Seed 11 = Rang S: 216 LP, Fenster 38 s, Rute 4 je Sekunde -> 152.
-	sim.tick(11.1, ctx, StillRNG.new(11))
+	var ctx := _ctx(1.0, 100, 5)
+	sim.tick(11.1, ctx, StillRNG.new(1))
 	assert_eq(sim.hooked_rank, 5, "der Testfisch muss Rang S sein")
 	assert_true(sim.needs_hands, "216 LP gegen 152 Rutenschaden: das braucht Hände")
 
 func test_a_fish_the_rod_can_land_is_not_flagged() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(1.0)
-	# Seed 4 = Rang E: 7 LP, Fenster 14 s -> die Rute schafft 56.
-	sim.tick(11.1, ctx, StillRNG.new(4))
+	var ctx := _ctx(1.0, 100, 0)
+	sim.tick(11.1, ctx, StillRNG.new(1))
 	assert_eq(sim.hooked_rank, 0, "der Testfisch muss Rang E sein")
 	assert_false(sim.needs_hands, "7 LP schafft die Rute allein")
 
@@ -331,16 +332,16 @@ func test_a_fish_the_rod_can_land_is_not_flagged() -> void:
 ## ohne einen einzigen Tipp auch wirklich gelandet werden.
 func test_the_promise_holds_without_tapping() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(1.0)
-	sim.tick(11.1, ctx, StillRNG.new(4))
+	var ctx := _ctx(1.0, 100, 0)
+	sim.tick(11.1, ctx, StillRNG.new(1))
 	assert_false(sim.needs_hands)
-	var events := sim.tick(sim.hooked_max_time, ctx, StillRNG.new(4))
+	var events := sim.tick(sim.hooked_max_time, ctx, StillRNG.new(1))
 	assert_true("caught" in _types(events), "als schaffbar angesagt, aber entkommen")
 
 func test_a_stronger_rod_moves_the_line() -> void:
 	var sim := FishingSim.new()
-	var ctx := _ctx(1.0)
+	var ctx := _ctx(1.0, 100, 5)
 	ctx.rod_power = 40.0
-	sim.tick(11.1, ctx, StillRNG.new(11))
+	sim.tick(11.1, ctx, StillRNG.new(1))
 	assert_eq(sim.hooked_rank, 5)
 	assert_false(sim.needs_hands, "mit starker Rute schafft sie auch Rang S")

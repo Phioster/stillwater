@@ -184,3 +184,16 @@ Ergebnis in Willow Lake (70 / 25 / 5 als Endzustand):
 Der Anfang ist damit gewöhnlich, ohne dass später etwas fehlt. Grund: ein
 ungewöhnlicher Fisch als allererster Fang nimmt der Seltenheit ihre Bedeutung,
 noch bevor der Spieler weiß, dass es Stufen gibt.
+
+## Rang und Größe sind zwei Würfe
+
+Seit 2026-08-30 entscheidet der **Köder** über den Rang (E bis S+) — über
+eine eigene Wahrscheinlichkeitstabelle, nicht über eine verschobene
+Verteilung. Die **Gewichtsabweichung** ist ein davon unabhängiger zweiter
+Wurf und sagt nur, wie groß dieses Exemplar *innerhalb* seines Rangs ist.
+
+Der Gewinn ist eine Zusage: auf dem Köder steht „am besten für Rang B/A".
+Mit einer verschobenen Normalverteilung ließe sich das nicht formulieren.
+
+Aus dem Rang folgen Lebenspunkte, Grundwert und Grund-XP; aus der
+Abweichung Gewicht, Größenwort und je ein Zuschlag darauf.

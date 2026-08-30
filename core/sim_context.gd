@@ -21,11 +21,19 @@ var rarities: Dictionary = {}
 var inventory: Inventory
 var journal: Journal
 
-## Um wie viele Standardabweichungen der aktive Koeder die Groesse anhebt.
-## Der Koeder steuert damit den RANG (wie gross das Exemplar ist), nicht die
-## Raritaet (welche Art anbeisst) -- zwei getrennte Achsen.
-func bait_rank_shift() -> float:
-	return bait.rank_shift if bait != null else 0.0
+## Zieht den Rang aus der Tabelle des aktiven Koeders. Ohne Tabelle bleibt es
+## bei E -- ein Koeder ohne Angabe verspricht nichts und liefert das Kleinste.
+func pull_rank(rng: StillRNG) -> int:
+	if bait == null or bait.rank_probabilities.is_empty():
+		return 0
+	var weights := PackedFloat64Array()
+	weights.resize(FishRoll.RANK_NAMES.size())
+	for r in bait.rank_probabilities:
+		var i := int(r)
+		if i >= 0 and i < weights.size():
+			weights[i] = maxf(float(bait.rank_probabilities[r]), 0.0)
+	var picked := rng.weighted_pick(weights)
+	return picked if picked >= 0 else 0
 
 func rarity_of(fish: FishData) -> RarityData:
 	var r: RarityData = rarities.get(fish.rarity_id)

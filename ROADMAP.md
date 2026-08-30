@@ -23,12 +23,12 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 
 ## B — Rang und Größe trennen (Datenmodell)
 
-- [ ] **B1 Köder bestimmt den Rang** über eigene Wahrscheinlichkeiten,
+- [x] **B1 Köder bestimmt den Rang** über eigene Wahrscheinlichkeiten,
       statt die Größenverteilung zu verschieben. Damit kann auf dem Köder
       stehen, was er tut. Die Abweichung bleibt als reine
       Größenstreuung *innerhalb* des Rangs.
       *Nach A, weil A dieselbe Kampfstelle anfasst — sonst zweimal.*
-- [ ] **B2 Köderbeschreibung** aus den Wahrscheinlichkeiten erzeugen.
+- [x] **B2 Köderbeschreibung** aus den Wahrscheinlichkeiten erzeugen.
 
 ## C — Rückmeldung überall (Menü)
 
