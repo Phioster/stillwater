@@ -3,7 +3,7 @@ extends TestCase
 func test_all_content_loads() -> void:
 	assert_eq(Database.rarities.size(), 5)
 	assert_eq(Database.baits.size(), 2)
-	assert_eq(Database.fish.size(), 24)
+	assert_eq(Database.fish.size(), 32)
 	assert_eq(Database.zones.size(), 2)
 	assert_eq(Database.upgrades.size(), 5)
 
@@ -67,3 +67,28 @@ func test_every_rarity_has_fish_and_zone_weight() -> void:
 			if Database.zones[zid].rarity_weights.has(rid):
 				weighted = true
 		assert_true(weighted, "keine Zone gewichtet die Raritaet %s" % rid)
+
+## Die zweite Zone darf nicht dünner sein als die erste -- sonst fühlt sich
+## das Freischalten wie ein Rückschritt an.
+func test_no_zone_is_much_thinner_than_the_starting_zone() -> void:
+	var counts: Dictionary = {}
+	for zid in Database.zones:
+		counts[zid] = Database.fish_of_zone(zid).size()
+	var start := int(counts[&"willow_lake"])
+	for zid in counts:
+		assert_true(int(counts[zid]) >= start - 2,
+			"%s hat nur %d Arten, Willow Lake hat %d" % [zid, counts[zid], start])
+
+## Jede Zone braucht in jeder gewichteten Rarität auch wirklich Fische --
+## sonst greift die Gewichtung ins Leere und die Auswahl fällt zurück.
+func test_every_weighted_rarity_has_fish_in_that_zone() -> void:
+	for zid in Database.zones:
+		var z: ZoneData = Database.zones[zid]
+		var present: Dictionary = {}
+		for f in z.fish:
+			present[f.rarity_id] = true
+		for rid in z.rarity_weights:
+			if float(z.rarity_weights[rid]) <= 0.0:
+				continue
+			assert_true(present.has(rid),
+				"%s gewichtet %s, hat dort aber keine Art" % [zid, rid])

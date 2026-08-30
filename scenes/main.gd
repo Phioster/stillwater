@@ -32,6 +32,8 @@ func _ready() -> void:
 ## Seitwaerts scrollen ergibt in einem 420 breiten Panel keinen Sinn und
 ## kaempft nur mit dem senkrechten. Die Wischschwelle sagt Godot, ab wann eine
 ## Bewegung ein Scrollen ist und kein Tippen.
+var _glides: Array[GlideScroll] = []
+
 func _setup_scrolling() -> void:
 	for child in _panels.get_children():
 		if child is ScrollContainer:
@@ -39,6 +41,9 @@ func _setup_scrolling() -> void:
 			sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 			sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 			sc.scroll_deadzone = 8
+			var glide := GlideScroll.new(sc)
+			_glides.append(glide)
+			sc.gui_input.connect(glide.on_input)
 
 ## Blendet genau ein Panel ein. -1 schließt alle. Ein Index außerhalb der
 ## vorhandenen Panels wirkt wie -1: alles bleibt zu, statt abzustürzen.
@@ -74,3 +79,8 @@ func _apply_safe_area() -> void:
 	$SidePanel.offset_right = -RAIL_WIDTH - right
 	$SidePanel.offset_top = top
 	$SidePanel.offset_bottom = -bottom
+
+## Nachschwung fuer alle Listen. Eine Stelle, damit kein Panel es vergessen kann.
+func _process(delta: float) -> void:
+	for g in _glides:
+		g.update(delta)

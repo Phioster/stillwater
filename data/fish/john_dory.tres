@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"john_dory"
+display_name = "Petersfisch"
+zone_id = &"sunset_coast"
+rarity_id = &"uncommon"
+base_value = 46
+strength = 48.0
+difficulty = 1.3
+xp = 24
+weight_mean = 1.4
+weight_dev = 0.4

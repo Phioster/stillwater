@@ -66,12 +66,24 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 - [x] **E2 Spielstand-Sicherungen.** Rotierende Kopien in einem eigenen
       Ordner. Bisher gibt es nur temp+umbenennen — das schützt vor einem
       Absturz beim Schreiben, nicht vor einem kaputten Stand.
-- [ ] **E3 Nachschwingendes Scrollen.** Die Referenz brauchte dafür ein
+- [x] **E3 Nachschwingendes Scrollen.** Die Referenz brauchte dafür ein
       Fremd-Addon; unsere Listen bleiben beim Loslassen abrupt stehen.
-- [ ] **E4 Sunset Coast auffüllen.** 8 Arten gegen 16 in Willow Lake —
+- [x] **E4 Sunset Coast auffüllen.** 8 Arten gegen 16 in Willow Lake —
       die zweite Zone ist dünner als die erste.
 
 ---
 
-**Stand 2026-08-30: A, B, C und D sind abgearbeitet.** 306 Tests grün,
-alles auf dem Gerät. Offen ist nur noch, was oben unter „Später" steht.
+**Stand 2026-08-30: A bis E sind abgearbeitet.** 324 Tests grün, alles auf
+dem Gerät.
+
+**Was jetzt noch offen ist, braucht eine Entscheidung — also gemeinsam:**
+
+- **Hochauflösende Pixelart.** Die Richtung steht (Dead-Cells-Machart,
+  weibliche Figur), aber jedes Sprite ist Geschmackssache. Solange die
+  Platzhalter stehen, bleiben auch meine Sinustöne stehen.
+- **Tränke.** Die Wirkungen sind klar (reine Multiplikatoren auf
+  vorhandene Zahlen), die Preise und Dauern sind Balance-Fragen.
+- **Weitere Zonen.** Braucht Bilder, Fischnamen und einen Preis.
+- **Quests.** Erst danach lohnt sich der Uhr-Rhythmus aus dem Dossier.
+- **Veröffentlichen.** Release-Keystore als GitHub-Secret, Paketname,
+  Store-Eintrag.

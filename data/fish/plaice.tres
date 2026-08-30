@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+
+[resource]
+script = ExtResource("2_fish")
+id = &"plaice"
+display_name = "Scholle"
+zone_id = &"sunset_coast"
+rarity_id = &"uncommon"
+base_value = 30
+strength = 36.0
+difficulty = 1.15
+xp = 16
+weight_mean = 0.7
+weight_dev = 0.2
