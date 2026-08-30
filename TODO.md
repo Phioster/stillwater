@@ -119,30 +119,21 @@ Falls sich das im Spiel schlecht anfühlt, ist der kleinste Eingriff eine
 Senkung der `strength`-Werte in `data/fish/*.tres` — eine Datenänderung ohne
 Code.
 
-## CI: Debug-Keystore wird bei jedem Lauf neu erzeugt
+## Signaturschlüssel (gelöst 2026-08-30)
 
-`.github/workflows/build.yml` erzeugt den Debug-Keystore per `keytool` bei
-jedem Lauf frisch. Dadurch hat jede APK eine andere Signatur, und ein Update
-über eine bereits installierte Version schlägt fehl:
+Die CI erzeugte den Schlüssel bei jedem Lauf neu, also hatte jede APK eine
+andere Signatur und musste vor der Installation deinstalliert werden.
 
-    INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match
+Jetzt liegt ein fester Schlüssel als GitHub-Secret (`STILLWATER_KEYSTORE_B64`,
+`_ALIAS`, `_PASSWORD`). `adb install -r` genügt, der Spielstand bleibt liegen.
 
-In der Praxis heißt das: vor jeder Installation muss deinstalliert werden.
-Der Spielstand lässt sich dabei aber mitnehmen — die App ist debuggable, also
-greift `run-as` ohne Root:
+**Die Schlüsseldatei liegt in `~/.stillwater-release/` und NICHT im Repo.**
+Geht sie samt Secret verloren, lässt sich keine bestehende Installation mehr
+aktualisieren — dann hilft nur Deinstallieren. Also sichern.
 
-    adb shell "run-as org.phioster.stillwater cat files/save.json" > save.json
-    adb uninstall org.phioster.stillwater && adb install stillwater-debug.apk
-    adb push save.json /data/local/tmp/sw_save.json
-    adb shell "run-as org.phioster.stillwater sh -c \
-      'mkdir -p files && cp /data/local/tmp/sw_save.json files/save.json'"
+Ohne Secret (Fork, fremder Pull Request) erzeugt der Workflow weiterhin einen
+Wegwerf-Schlüssel, damit der Build durchläuft.
 
-`cp` unter `run-as` legt die Datei gleich der neuen App-UID an; `adb push`
-direkt nach `files/` ginge nicht.
-
-Lösung, wenn es stört: einen festen Debug-Keystore einmal lokal erzeugen, ihn
-als GitHub-Secret hinterlegen (base64) und im Workflow daraus wiederherstellen.
-Der Keystore selbst gehört **nicht** ins Repo.
 
 ## Kunstrichtung: hochauflösende Pixelart, weibliche Figur
 
