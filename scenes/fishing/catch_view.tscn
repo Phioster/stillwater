@@ -22,13 +22,11 @@ offset_bottom = 96.0
 [node name="FishName" type="Label" parent="Panel/Box"]
 horizontal_alignment = 1
 
-[node name="Strength" type="ProgressBar" parent="Panel/Box"]
+[node name="Health" type="Control" parent="Panel/Box"]
 custom_minimum_size = Vector2(0, 22)
-show_percentage = false
 
-[node name="Line" type="ProgressBar" parent="Panel/Box"]
+[node name="Line" type="Control" parent="Panel/Box"]
 custom_minimum_size = Vector2(0, 10)
-show_percentage = false
 
 [node name="Orbs" type="Control" parent="."]
 anchors_preset = 15

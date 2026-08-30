@@ -23,8 +23,10 @@ var focus_point: Vector2 = Vector2.ZERO
 
 @onready var _panel: PanelContainer = $Panel
 @onready var _name: Label = $Panel/Box/FishName
-@onready var _strength: ProgressBar = $Panel/Box/Strength
-@onready var _line: ProgressBar = $Panel/Box/Line
+@onready var _health_slot: Control = $Panel/Box/Health
+@onready var _line_slot: Control = $Panel/Box/Line
+var _health: GhostBar
+var _line: GhostBar
 ## Fläche für die Orbs; deckungsgleich mit World.orb_area, aber lokal in
 ## dieser Szene, damit CatchView ohne Weltreferenz eigenständig lädt.
 @onready var spawn_area: Control = $Orbs
@@ -40,6 +42,8 @@ func _ready() -> void:
 	# setzen, damit die Ansicht ueberall traegt und nicht davon abhaengt, wer
 	# sie einhaengt.
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_health = _fill(_health_slot, Palette.get_color(&"cloth_red"), Palette.get_color(&"accent"))
+	_line = _fill(_line_slot, Palette.get_color(&"foam"), Palette.get_color(&"water_mid"))
 	_panel.visible = false
 	if not Game.bite.is_connected(_on_bite):
 		Game.bite.connect(_on_bite)
@@ -54,11 +58,11 @@ func _process(delta: float) -> void:
 	if not fighting:
 		_clear_orbs()
 		return
-	_strength.max_value = Game.sim.hooked_max_health
-	_strength.value = maxf(Game.sim.hooked_health, 0.0)
+	_health.set_max(Game.sim.hooked_max_health)
+	_health.set_value(maxf(Game.sim.hooked_health, 0.0))
 	# Das Zeitfenster haengt am Rang, nicht mehr an der Zone.
-	_line.max_value = maxf(Game.sim.hooked_max_time, 0.001)
-	_line.value = maxf(Game.sim.timer, 0.0)
+	_line.set_max(maxf(Game.sim.hooked_max_time, 0.001))
+	_line.set_value(maxf(Game.sim.timer, 0.0))
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0 and _living_orbs() < ORB_TARGET:
 		_spawn_timer = ORB_RESPAWN
@@ -66,9 +70,24 @@ func _process(delta: float) -> void:
 
 ## Der Rang steht im Namen: er sagt, was auf dem Spiel steht, und erklaert
 ## nebenbei, warum dieser Fisch schwerer ist als der davor.
+## Die Leiste haengt in einem leeren Platzhalter aus der Szene: so bleibt das
+## Aussehen im Code, wo auch das Verhalten steht.
+func _fill(slot: Control, front: Color, ghost: Color) -> GhostBar:
+	var bar := GhostBar.new()
+	slot.add_child(bar)
+	bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bar.set_colors(front, ghost)
+	return bar
+
 func _on_bite(fish: FishData) -> void:
 	var rank := FishRoll.RANK_NAMES[clampi(Game.sim.hooked_rank, 0, FishRoll.RANK_NAMES.size() - 1)]
 	_name.text = "%s  ·  Rang %s" % [fish.display_name, rank]
+	# Beim Anbiss darf nichts hinterherlaufen -- sonst zeigt die Leiste kurz
+	# den Rest des vorigen Kampfes.
+	_health.set_max(Game.sim.hooked_max_health)
+	_health.reset_to(Game.sim.hooked_max_health)
+	_line.set_max(maxf(Game.sim.hooked_max_time, 0.001))
+	_line.reset_to(Game.sim.hooked_max_time)
 	_spawn_timer = 0.25
 
 func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:

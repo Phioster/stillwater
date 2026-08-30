@@ -24,13 +24,13 @@ func test_the_bars_show_health_and_time_of_the_hooked_fish() -> void:
 	_into_a_fight()
 	var v := _view()
 	v._process(0.0)
-	var health: ProgressBar = v.get_node("Panel/Box/Strength")
-	var time: ProgressBar = v.get_node("Panel/Box/Line")
+	var health: GhostBar = v._health
+	var time: GhostBar = v._line
 	assert_true(v.get_node("Panel").visible, "die Anzeige muss im Kampf sichtbar sein")
-	assert_almost_eq(health.max_value, Game.sim.hooked_max_health, 0.001,
+	assert_almost_eq(health.max_value(), Game.sim.hooked_max_health, 0.001,
 		"die Leiste muss die Lebenspunkte des Fisches zeigen")
-	assert_true(health.max_value > 0.0, "ohne Lebenspunkte ist die Leiste sinnlos")
-	assert_almost_eq(time.max_value, Game.sim.hooked_max_time, 0.001,
+	assert_true(health.max_value() > 0.0, "ohne Lebenspunkte ist die Leiste sinnlos")
+	assert_almost_eq(time.max_value(), Game.sim.hooked_max_time, 0.001,
 		"das Zeitfenster haengt am Rang, nicht an der Zone")
 	v.free()
 
@@ -38,12 +38,12 @@ func test_the_health_bar_falls_when_the_fish_takes_damage() -> void:
 	_into_a_fight()
 	var v := _view()
 	v._process(0.0)
-	var health: ProgressBar = v.get_node("Panel/Box/Strength")
-	var before: float = health.value
+	var health: GhostBar = v._health
+	var before: float = health.value()
 	Game.sim.tap(Game.ctx)
 	v._process(0.0)
-	assert_true(health.value < before,
-		"ein Tipp muss die Leiste sichtbar senken (vorher %f, nachher %f)" % [before, health.value])
+	assert_true(health.value() < before,
+		"ein Tipp muss die Leiste sichtbar senken (vorher %f, nachher %f)" % [before, health.value()])
 	v.free()
 
 func test_the_name_line_carries_the_rank() -> void:
@@ -98,4 +98,18 @@ func test_the_next_orb_follows_within_the_respawn_window() -> void:
 	area.get_child(0).free()
 	v._process(v.ORB_RESPAWN + 0.001)
 	assert_eq(v._living_orbs(), 1, "der naechste Punkt muss sofort nachruecken")
+	v.free()
+
+## Der abgezogene Streifen muss sichtbar bleiben: nach einem Treffer liegt
+## die nachziehende Haelfte ueber der vorderen. Ohne diesen Test waere die
+## Doppelleiste durch eine gewoehnliche ersetzbar, ohne dass es auffaellt.
+func test_a_hit_leaves_a_visible_ghost_stripe() -> void:
+	_into_a_fight()
+	var v := _view()
+	v._on_bite(Game.sim.hooked)
+	v._process(0.0)
+	Game.sim.tap(Game.ctx)
+	v._process(0.0)
+	assert_true(v._health._ghost.value > v._health._front.value,
+		"nach einem Treffer muss der abgezogene Streifen noch stehen")
 	v.free()

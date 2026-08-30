@@ -5,7 +5,7 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 
 ## A — Der Kampf soll sich anfühlen (Grundlage für alles Weitere)
 
-- [ ] **A1 Schattenbalken.** Zwei übereinanderliegende Leisten mit
+- [x] **A1 Schattenbalken.** Zwei übereinanderliegende Leisten mit
       richtungsabhängigem Verhalten: fällt der Wert, springt die vordere
       sofort und die hintere zieht nach — man sieht den abgezogenen
       Streifen. Steigt er, umgekehrt. Danach beide per Lerp mit
