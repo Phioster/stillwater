@@ -36,37 +36,20 @@ jobs:
           mv templates "~/.local/share/godot/export_templates/${GODOT_VERSION}.stable" || \
             mv templates "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
 
-      # Ein bei jedem Lauf neu erzeugter Schluessel gibt jeder APK eine andere
-      # Signatur -- dann muss vor jeder Installation deinstalliert werden, und
-      # der Spielstand ist weg. Der feste Schluessel liegt als Secret; ohne
-      # Secret (Fork, fremder Pull Request) wird weiterhin einer erzeugt, damit
-      # der Build trotzdem durchlaeuft.
-      - name: Signaturschluessel bereitstellen
-        id: signing
-        env:
-          KEYSTORE_B64: ${{ secrets.STILLWATER_KEYSTORE_B64 }}
-          KEYSTORE_ALIAS: ${{ secrets.STILLWATER_KEYSTORE_ALIAS }}
-          KEYSTORE_PASSWORD: ${{ secrets.STILLWATER_KEYSTORE_PASSWORD }}
+      # Die CI signiert NUR mit einem Wegwerf-Schluessel. Der echte
+      # Signaturschluessel verlaesst das Geraet des Entwicklers nicht -- die
+      # fertige APK wird lokal mit tools/sign.sh nachsigniert.
+      - name: Wegwerf-Schluessel erzeugen
         run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > signing.keystore
-            echo "alias=$KEYSTORE_ALIAS" >> "$GITHUB_OUTPUT"
-            echo "password=$KEYSTORE_PASSWORD" >> "$GITHUB_OUTPUT"
-            echo "Fester Schluessel aus dem Secret."
-          else
-            keytool -keyalg RSA -genkeypair -alias androiddebugkey \
-              -keypass android -keystore signing.keystore -storepass android \
-              -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
-            echo "alias=androiddebugkey" >> "$GITHUB_OUTPUT"
-            echo "password=android" >> "$GITHUB_OUTPUT"
-            echo "Kein Secret gefunden -- Wegwerf-Schluessel erzeugt."
-          fi
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey \
+            -keypass android -keystore signing.keystore -storepass android \
+            -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 
       - name: Exportieren
         env:
           GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/signing.keystore
-          GODOT_ANDROID_KEYSTORE_DEBUG_USER: ${{ steps.signing.outputs.alias }}
-          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: ${{ steps.signing.outputs.password }}
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           godot --headless --import --quit-after 2000 || true
           mkdir -p build

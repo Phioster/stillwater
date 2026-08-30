@@ -124,15 +124,21 @@ Code.
 Die CI erzeugte den Schlüssel bei jedem Lauf neu, also hatte jede APK eine
 andere Signatur und musste vor der Installation deinstalliert werden.
 
-Jetzt liegt ein fester Schlüssel als GitHub-Secret (`STILLWATER_KEYSTORE_B64`,
-`_ALIAS`, `_PASSWORD`). `adb install -r` genügt, der Spielstand bleibt liegen.
+**Der echte Schlüssel liegt ausschließlich auf dem Gerät**, in
+`~/.stillwater-release/` — nicht im Repo und **nicht bei GitHub**. Die CI
+signiert nur mit einem Wegwerf-Schlüssel; nachsigniert wird lokal:
 
-**Die Schlüsseldatei liegt in `~/.stillwater-release/` und NICHT im Repo.**
-Geht sie samt Secret verloren, lässt sich keine bestehende Installation mehr
-aktualisieren — dann hilft nur Deinstallieren. Also sichern.
+    bash tools/sign.sh build/stillwater-debug.apk --install
 
-Ohne Secret (Fork, fremder Pull Request) erzeugt der Workflow weiterhin einen
-Wegwerf-Schlüssel, damit der Build durchläuft.
+Das ersetzt die Signatur (v1, v2 und v3 — v1 allein reicht Android 11+ nicht)
+und installiert mit `adb install -r`. Kein Deinstallieren, kein
+Spielstandverlust.
+
+Nötig dafür: `pkg install apksigner`.
+
+**Geht `~/.stillwater-release/` verloren, lässt sich keine bestehende
+Installation mehr aktualisieren** — dann hilft nur Deinstallieren. Also
+mitsichern, wenn das Gerät gewechselt wird.
 
 
 ## Kunstrichtung: hochauflösende Pixelart, weibliche Figur
