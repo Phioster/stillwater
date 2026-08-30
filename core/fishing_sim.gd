@@ -18,6 +18,9 @@ var hooked: FishData = null
 ## Idle-Haelfte), jeder Tipp schlaegt orb_power heraus.
 var hooked_health: float = 0.0
 var hooked_max_health: float = 0.0
+## Wie lang das Fenster fuer DIESEN Fisch war. Die Anzeige braucht es als
+## Bezugsgroesse -- das Zonenfenster stimmt seit der Rangzeit nicht mehr.
+var hooked_max_time: float = 0.0
 var hooked_dev: float = 0.0
 var hooked_rank: int = 0
 var hooked_shiny: bool = false
@@ -107,7 +110,8 @@ func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	hooked_health = hooked_max_health
 	state = State.FIGHT
 	timer = FishRoll.time_for(fish, hooked_rank, ctx.zone.fight_window)
-	events.append({"type": "bite", "fish": fish, "health": hooked_health})
+	hooked_max_time = timer
+	events.append({"type": "bite", "fish": fish, "health": hooked_health, "rank": hooked_rank})
 
 func _land(ctx: SimContext, events: Array) -> void:
 	var fish := hooked
@@ -160,6 +164,7 @@ func _clear_hooked() -> void:
 	hooked = null
 	hooked_health = 0.0
 	hooked_max_health = 0.0
+	hooked_max_time = 0.0
 	hooked_dev = 0.0
 	hooked_rank = 0
 	hooked_shiny = false

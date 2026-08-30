@@ -3,6 +3,7 @@
 extends Control
 
 const ORB_SCENE := preload("res://scenes/fishing/orb.tscn")
+const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 ## Immer genau ein Punkt. Faellt er weg -- getroffen oder abgelaufen -- rueckt
 ## sofort der naechste nach. Bei zwei poppten zu Beginn beide auf einmal auf,
 ## danach kam ohnehin nur einer nach: der Anfang passte nicht zum Rest.
@@ -48,17 +49,21 @@ func _process(delta: float) -> void:
 	if not fighting:
 		_clear_orbs()
 		return
-	_strength.max_value = Game.sim.hooked_max_strength
-	_strength.value = maxf(Game.sim.hooked_strength, 0.0)
-	_line.max_value = Game.ctx.zone.fight_window
+	_strength.max_value = Game.sim.hooked_max_health
+	_strength.value = maxf(Game.sim.hooked_health, 0.0)
+	# Das Zeitfenster haengt am Rang, nicht mehr an der Zone.
+	_line.max_value = maxf(Game.sim.hooked_max_time, 0.001)
 	_line.value = maxf(Game.sim.timer, 0.0)
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0 and _living_orbs() < ORB_TARGET:
 		_spawn_timer = ORB_RESPAWN
 		_spawn_orb()
 
+## Der Rang steht im Namen: er sagt, was auf dem Spiel steht, und erklaert
+## nebenbei, warum dieser Fisch schwerer ist als der davor.
 func _on_bite(fish: FishData) -> void:
-	_name.text = fish.display_name
+	var rank := FishRoll.RANK_NAMES[clampi(Game.sim.hooked_rank, 0, FishRoll.RANK_NAMES.size() - 1)]
+	_name.text = "%s  ·  Rang %s" % [fish.display_name, rank]
 	_spawn_timer = 0.25
 
 func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
@@ -75,7 +80,17 @@ func _spawn_orb() -> void:
 	var orb := ORB_SCENE.instantiate()
 	spawn_area.add_child(orb)
 	orb.setup(_orb_position(), ORB_LIFETIME)
-	orb.tapped.connect(Game.tap)
+	orb.tapped.connect(_on_orb_tapped.bind(orb))
+
+## Ein Tipp muss eine Zahl hinterlassen. Ohne sie ist nicht zu sehen, dass
+## Tippen ueberhaupt etwas bewirkt -- und damit auch nicht, wozu Orb-Kraft gut ist.
+func _on_orb_tapped(orb: Node) -> void:
+	var damage := int(round(Game.ctx.orb_power))
+	var at: Vector2 = (orb as Control).position if orb is Control else Vector2.ZERO
+	var pop := POP_TEXT_SCENE.instantiate()
+	spawn_area.add_child(pop)
+	pop.setup("-%d" % damage, at, Palette.get_color(&"accent"))
+	Game.tap()
 
 ## queue_free() wirkt erst am Frameende -- ein sterbender Punkt zaehlt sonst
 ## noch mit und blockiert den Nachruecker.
