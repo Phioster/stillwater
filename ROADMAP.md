@@ -11,14 +11,14 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
       Streifen. Steigt er, umgekehrt. Danach beide per Lerp mit
       Einrast-Schwelle aufs Ziel.
       *Zuerst, weil A2 und A3 diese Leiste benutzen.*
-- [ ] **A2 Rutenschaden in Schüben.** Statt stiller Dauerabzug alle
+- [x] **A2 Rutenschaden in Schüben.** Statt stiller Dauerabzug alle
       `pull_cooldown` Sekunden ein sichtbarer Treffer mit eigener Zahl.
       **Muss die Delta-Unabhängigkeit erhalten** — der Offline-Fortschritt
       hängt daran.
 - [ ] **A3 Die Idle-Grenze ansagen.** Vor dem Kampf ausrechnen, ob die
       Rute allein reicht. Wenn nicht: sichtbar sagen. Braucht A2, weil
       die Rechnung dieselbe Taktung benutzt.
-- [ ] **A4 Schadenszahlen an eine feste Stelle**, nicht an den Orb; die
+- [x] **A4 Schadenszahlen an eine feste Stelle**, nicht an den Orb; die
       letzte Nachrück-Pause raus.
 
 ## B — Rang und Größe trennen (Datenmodell)

@@ -22,7 +22,8 @@ func test_counts_and_extremes() -> void:
 	assert_eq(e["caught_count"], 3)
 	assert_almost_eq(e["best_dev"], 5.0)
 	assert_almost_eq(e["worst_dev"], 0.5)
-	assert_eq(e["caught_ranks"], 4)
+	# Gewicht 5,0 als Abweichung ist Rang S+, 2,0 ist Rang A, 0,5 ist B.
+	assert_eq(e["caught_ranks"], [3, 4, 6] as Array)
 
 func test_shiny_flag_sticks() -> void:
 	var j := Journal.new()

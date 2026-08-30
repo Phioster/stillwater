@@ -113,3 +113,47 @@ func test_a_hit_leaves_a_visible_ghost_stripe() -> void:
 	assert_true(v._health._ghost.value > v._health._front.value,
 		"nach einem Treffer muss der abgezogene Streifen noch stehen")
 	v.free()
+
+## Jeder Rutenschlag muss eine Zahl hinterlassen -- sonst arbeitet die Rute
+## unsichtbar und niemand sieht, wofuer Rutenkraft gut ist.
+func test_a_rod_pulse_leaves_a_damage_number() -> void:
+	_into_a_fight()
+	var v := _view()
+	v._on_bite(Game.sim.hooked)
+	v._process(0.0)
+	var before := v.get_node("Pops").get_child_count()
+	Game.sim.tick(1.05, Game.ctx, StillRNG.new(4))
+	assert_true(Game.sim.rod_hits > 0, "die Rute muss geschlagen haben")
+	v._process(0.0)
+	assert_true(v.get_node("Pops").get_child_count() > before,
+		"der Rutenschlag hat keine Zahl hinterlassen")
+	v.free()
+
+## Nach einem Offline-Nachlauf steht der Zaehler bei hunderten Schlaegen.
+## Dann darf die Anzeige NICHT hunderte Zahlen werfen.
+func test_a_huge_jump_in_rod_hits_does_not_flood_the_screen() -> void:
+	_into_a_fight()
+	var v := _view()
+	v._on_bite(Game.sim.hooked)
+	v._process(0.0)
+	Game.sim.rod_hits = 500
+	v._process(0.0)
+	assert_true(v.get_node("Pops").get_child_count() <= 3,
+		"es haengen %d Zahlen im Baum" % v.get_node("Pops").get_child_count())
+	assert_eq(v._seen_rod_hits, 500, "der Zaehler muss trotzdem nachgezogen werden")
+	v.free()
+
+## Alle Zahlen erscheinen an derselben Stelle neben der Leiste, damit das
+## Auge nicht dem Finger hinterherspringt.
+func test_damage_numbers_appear_next_to_the_bar_not_at_the_orb() -> void:
+	_into_a_fight()
+	var v := _view()
+	v._on_bite(Game.sim.hooked)
+	var area: Control = v.get_node("Orbs")
+	v._spawn_orb()
+	var orb: Control = area.get_child(0)
+	orb.position = Vector2(900.0, 40.0)
+	v._on_orb_tapped(orb)
+	var pop: Control = v.get_node("Pops").get_child(0)
+	assert_true(absf(pop.position.x - orb.position.x) > 100.0,
+		"die Zahl klebt am Orb statt an der Leiste")

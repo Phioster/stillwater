@@ -131,10 +131,10 @@ func test_caught_fires_exactly_once_per_catch() -> void:
 	var fish: FishData = Database.fish[&"bluegill"]
 	Game.sim.state = FishingSim.State.FIGHT
 	Game.sim.hooked = fish
-	Game.sim.hooked_strength = 0.01
-	Game.sim.hooked_max_strength = 0.01
-	Game.sim.hooked_weight = 0.35
-	Game.sim.hooked_quality = 2
+	Game.sim.hooked_health = 0.01
+	Game.sim.hooked_max_health = 0.01
+	Game.sim.hooked_dev = 0.35
+	Game.sim.hooked_rank = 2
 	Game.sim.hooked_shiny = false
 	var fire_count := [0]
 	var handler := func(_c, _f, _d, _r): fire_count[0] += 1

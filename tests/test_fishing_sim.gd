@@ -140,12 +140,12 @@ func test_many_catches_over_an_hour() -> void:
 	var sim := FishingSim.new()
 	var ctx := _ctx(0.01, 10000)
 	sim.tick(3600.0, ctx, StillRNG.new(3))
-	# Der Zyklus ist nicht mehr exakt: der Rang und damit die Kampfdauer
-	# wuerfeln mit. 1 s Wurf + 10 s Warten + Kampf. Bei difficulty 0,01
-	# liegt der Kampf zwischen 7*0,01/4 = 0,0175 s (Rang E) und
-	# 432*0,01/4 = 1,08 s (Rang S+). Also 11,02 bis 12,08 s je Zyklus:
-	# floor(3600/12,08) = 298 bis floor(3600/11,02) = 326.
-	assert_between(float(ctx.inventory.fish.size()), 298.0, 326.0)
+	# Der Zyklus ist nicht exakt: der Rang wuerfelt mit. 1 s Wurf + 10 s
+	# Warten + Kampf. Die Rute schlaegt in Schueben von 1 s, bei difficulty
+	# 0,01 braucht selbst Rang S+ (4,32 LP) nur zwei Schuebe = 2 s, Rang E
+	# einen = 1 s. Also 12 bis 13 s je Zyklus: floor(3600/13) = 276 bis
+	# floor(3600/12) = 300.
+	assert_between(float(ctx.inventory.fish.size()), 276.0, 300.0)
 
 ## Ein tick(16.0) muss dieselben Zustandswechsel liefern wie sechzehn
 ## tick(1.0) hintereinander -- sonst wird derselbe tick() im Offline-
@@ -184,7 +184,7 @@ func test_tick_is_delta_independent_mid_fight() -> void:
 
 	assert_eq(sim_big.state, FishingSim.State.FIGHT, "Vergleich ist nur aussagekräftig, wenn beide noch kämpfen")
 	assert_eq(sim_big.state, sim_small.state)
-	assert_almost_eq(sim_big.hooked_strength, sim_small.hooked_strength)
+	assert_almost_eq(sim_big.hooked_health, sim_small.hooked_health)
 	assert_almost_eq(sim_big.timer, sim_small.timer)
 
 func _ctx_with_journal() -> SimContext:
@@ -213,11 +213,11 @@ func test_caught_event_reports_new_species_and_record() -> void:
 func _land_with(sim: FishingSim, ctx: SimContext, fish: FishData, weight: float) -> Dictionary:
 	sim.state = FishingSim.State.FIGHT
 	sim.hooked = fish
-	sim.hooked_weight = weight
-	sim.hooked_quality = 2
+	sim.hooked_dev = weight
+	sim.hooked_rank = 2
 	sim.hooked_shiny = false
-	sim.hooked_strength = 0.01
-	sim.hooked_max_strength = 0.01
+	sim.hooked_health = 0.01
+	sim.hooked_max_health = 0.01
 	var events := sim.tick(0.05, ctx, StillRNG.new(7))
 	for e in events:
 		if e["type"] == "caught":
@@ -233,8 +233,8 @@ func test_orbs_follow_up_when_one_disappears() -> void:
 	Game.paused = true
 	Game.sim.state = FishingSim.State.FIGHT
 	Game.sim.hooked = Database.fish[&"bluegill"]
-	Game.sim.hooked_max_strength = 100.0
-	Game.sim.hooked_strength = 50.0
+	Game.sim.hooked_max_health = 100.0
+	Game.sim.hooked_health = 50.0
 	var cv: Control = load("res://scenes/fishing/catch_view.tscn").instantiate()
 	tree.root.add_child(cv)
 	cv.size = Vector2(800, 600)
@@ -263,3 +263,48 @@ func test_orbs_follow_up_when_one_disappears() -> void:
 	for child in area.get_children():
 		assert_true(child.get_instance_id() != removed_id, "der entfernte Punkt darf nicht zurueckkommen")
 	cv.queue_free()
+
+## Die Rute schlaegt in Schueben. Der Offline-Fortschritt faehrt denselben
+## tick() mit riesigem Delta -- ergaebe ein grosser Schritt andere Treffer
+## als viele kleine, waere Offline ein anderes Spiel.
+func test_rod_pulses_are_delta_independent() -> void:
+	var big := FishingSim.new()
+	var ctx_big := _ctx(3.0)
+	big.tick(11.1, ctx_big, StillRNG.new(11))
+	assert_eq(big.state, FishingSim.State.FIGHT, "der Testfisch muss noch kaempfen")
+	big.tick(7.0, ctx_big, StillRNG.new(11))
+
+	var small := FishingSim.new()
+	var ctx_small := _ctx(3.0)
+	small.tick(11.1, ctx_small, StillRNG.new(11))
+	for i in 70:
+		small.tick(0.1, ctx_small, StillRNG.new(11))
+
+	assert_eq(big.rod_hits, small.rod_hits,
+		"gleiche Zeit, gleiche Treffer: %d gegen %d" % [big.rod_hits, small.rod_hits])
+	assert_almost_eq(big.hooked_health, small.hooked_health, 0.001)
+	assert_almost_eq(big.rod_timer, small.rod_timer, 0.001)
+
+## Sieben Sekunden Kampf sind sieben Schuebe -- nicht sechs, nicht acht.
+func test_the_rod_hits_once_per_interval() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx(3.0)
+	# Der Biss faellt bei 11,0 s -- nach tick(11.1) laeuft der Kampf also
+	# schon 0,1 s. Alle folgenden Zeiten rechnen ab dort.
+	sim.tick(11.1, ctx, StillRNG.new(11))
+	assert_eq(sim.rod_hits, 0, "beim Anbiss hat die Rute noch nicht geschlagen")
+	sim.tick(0.85, ctx, StillRNG.new(11))
+	assert_eq(sim.rod_hits, 0, "bei 0,95 s noch nicht")
+	sim.tick(0.1, ctx, StillRNG.new(11))
+	assert_eq(sim.rod_hits, 1, "bei 1,05 s genau einmal")
+	sim.tick(3.0, ctx, StillRNG.new(11))
+	assert_eq(sim.rod_hits, 4, "bei 4,05 s viermal")
+
+func test_each_pulse_takes_exactly_rod_power() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx(3.0)
+	sim.tick(11.1, ctx, StillRNG.new(11))
+	var full := sim.hooked_max_health
+	sim.tick(3.0, ctx, StillRNG.new(11))
+	assert_almost_eq(sim.hooked_health, full - 3.0 * ctx.rod_power, 0.001,
+		"drei Schuebe muessen dreimal rod_power abziehen")

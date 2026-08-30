@@ -7,6 +7,9 @@ enum State { IDLE, CASTING, WAITING, FIGHT, INVENTORY_FULL }
 
 const CAST_TIME: float = 1.0
 const ESCAPE_COOLDOWN: float = 2.0
+## Die Rute schlaegt in Schueben statt kontinuierlich: ein stiller Abzug ist
+## nicht zu sehen, ein Treffer alle ROD_INTERVAL Sekunden schon.
+const ROD_INTERVAL: float = 1.0
 ## Schutz gegen Endlosschleifen bei einem sehr großen Delta.
 const MAX_SEGMENTS: int = 500000
 
@@ -21,6 +24,12 @@ var hooked_max_health: float = 0.0
 ## Wie lang das Fenster fuer DIESEN Fisch war. Die Anzeige braucht es als
 ## Bezugsgroesse -- das Zonenfenster stimmt seit der Rangzeit nicht mehr.
 var hooked_max_time: float = 0.0
+## Zeit bis zum naechsten Rutenschlag.
+var rod_timer: float = 0.0
+## Zaehlt die Rutentreffer dieses Kampfes. Die Anzeige liest den Zaehler,
+## statt dass die Simulation Ereignisse schickt -- ein Offline-Nachlauf ueber
+## Stunden wuerde sonst zehntausende Ereignisse erzeugen.
+var rod_hits: int = 0
 var hooked_dev: float = 0.0
 var hooked_rank: int = 0
 var hooked_shiny: bool = false
@@ -56,19 +65,26 @@ func tick(delta: float, ctx: SimContext, rng: StillRNG) -> Array:
 					else:
 						_on_bite(ctx, rng, events)
 			State.FIGHT:
+				# Geschlossen gerechnet, nicht Schub fuer Schub durchlaufen:
+				# ein einziger tick(43200) muss dasselbe ergeben wie 432000
+				# mal tick(0.1), sonst ist der Offline-Fortschritt ein
+				# anderes System als das laufende Spiel.
 				var time_to_land := INF
 				if ctx.rod_power > 0.0:
-					time_to_land = hooked_health / ctx.rod_power
+					var needed := ceili(hooked_health / ctx.rod_power)
+					time_to_land = rod_timer + float(needed - 1) * ROD_INTERVAL
 				var segment := minf(time_to_land, timer)
 				if remaining < segment:
-					hooked_health -= ctx.rod_power * remaining
+					_advance_rod(remaining, ctx.rod_power)
 					timer -= remaining
 					remaining = 0.0
 				else:
 					remaining -= segment
 					if time_to_land <= timer:
+						_advance_rod(time_to_land, ctx.rod_power)
 						_land(ctx, events)
 					else:
+						_advance_rod(timer, ctx.rod_power)
 						_escape(events)
 	return events
 
@@ -111,6 +127,8 @@ func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	state = State.FIGHT
 	timer = FishRoll.time_for(fish, hooked_rank, ctx.zone.fight_window)
 	hooked_max_time = timer
+	rod_timer = ROD_INTERVAL
+	rod_hits = 0
 	events.append({"type": "bite", "fish": fish, "health": hooked_health, "rank": hooked_rank})
 
 func _land(ctx: SimContext, events: Array) -> void:
@@ -165,6 +183,8 @@ func _clear_hooked() -> void:
 	hooked_health = 0.0
 	hooked_max_health = 0.0
 	hooked_max_time = 0.0
+	rod_timer = 0.0
+	rod_hits = 0
 	hooked_dev = 0.0
 	hooked_rank = 0
 	hooked_shiny = false
@@ -236,3 +256,17 @@ static func _roll_fish_of_rarity(ctx: SimContext, rarity_id: StringName, rng: St
 		return null
 	var i := rng.weighted_pick(weights)
 	return pool[i] if i >= 0 else null
+
+## Laesst `dt` Sekunden Rutenarbeit verstreichen und zieht die dabei
+## faelligen Schuebe auf einmal ab.
+func _advance_rod(dt: float, per_pulse: float) -> void:
+	if per_pulse <= 0.0 or dt <= 0.0:
+		return
+	if dt < rod_timer:
+		rod_timer -= dt
+		return
+	var after := dt - rod_timer
+	var pulses := 1 + int(floor(after / ROD_INTERVAL))
+	rod_timer = ROD_INTERVAL - fmod(after, ROD_INTERVAL)
+	hooked_health -= float(pulses) * per_pulse
+	rod_hits += pulses

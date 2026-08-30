@@ -26,4 +26,4 @@ jobs:
         run: godot --headless --import --quit-after 2000 || true
 
       - name: Inhalte prüfen und Tests laufen lassen
-        run: godot --headless --script res://tests/run_tests.gd
+        run: bash tools/test.sh

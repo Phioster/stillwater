@@ -87,15 +87,15 @@ func test_offline_equals_online() -> void:
 	assert_almost_eq(offline_sim.timer, online_sim.timer, 0.0001, "gleicher Timer")
 	# Nach einem abgeschlossenen Kampf setzt fishing_sim.gd diese Felder zurueck
 	# -- der Vergleich ist deshalb unbedingt moeglich, nicht nur waehrend FIGHT.
-	assert_almost_eq(offline_sim.hooked_strength, online_sim.hooked_strength, 0.0001, "gleiche Kampfstärke")
-	assert_almost_eq(offline_sim.hooked_weight, online_sim.hooked_weight, 0.0001, "gleiches Gewicht")
-	assert_eq(offline_sim.hooked_quality, online_sim.hooked_quality, "gleiche Qualität")
+	assert_almost_eq(offline_sim.hooked_health, online_sim.hooked_health, 0.0001, "gleiche Lebenspunkte")
+	assert_almost_eq(offline_sim.hooked_dev, online_sim.hooked_dev, 0.0001, "gleiche Gewichtsabweichung")
+	assert_eq(offline_sim.hooked_rank, online_sim.hooked_rank, "gleicher Rang")
 	assert_eq(offline_sim.hooked_shiny, online_sim.hooked_shiny, "gleicher Shiny-Status")
 	assert_eq(offline_rng.get_state(), online_rng.get_state(), "gleicher RNG-Zustand")
 
 ## Wie oben, aber mit fester Bisszeit und fester Gewichtsspanne extra so
 ## dimensioniert, dass beide Wege garantiert mitten in einem Kampf enden --
-## nur dann prüft der Vergleich oben wirklich hooked_strength, den einzigen
+## nur dann prüft der Vergleich oben wirklich hooked_health, den einzigen
 ## Wert, in dem im Kampf tatsächlich gerechnet wird.
 func test_offline_equals_online_mid_fight() -> void:
 	var fish := FishData.new()
@@ -152,9 +152,9 @@ func test_offline_equals_online_mid_fight() -> void:
 	assert_eq(offline_sim.state, FishingSim.State.FIGHT, "Vergleich ist nur aussagekräftig, wenn beide noch kämpfen")
 	assert_eq(offline_sim.state, online_sim.state, "gleicher Sim-Zustand")
 	assert_almost_eq(offline_sim.timer, online_sim.timer, 0.0001, "gleicher Timer")
-	assert_almost_eq(offline_sim.hooked_strength, online_sim.hooked_strength, 0.0001, "gleiche Kampfstärke")
-	assert_almost_eq(offline_sim.hooked_weight, online_sim.hooked_weight, 0.0001, "gleiches Gewicht")
-	assert_eq(offline_sim.hooked_quality, online_sim.hooked_quality, "gleiche Qualität")
+	assert_almost_eq(offline_sim.hooked_health, online_sim.hooked_health, 0.0001, "gleiche Lebenspunkte")
+	assert_almost_eq(offline_sim.hooked_dev, online_sim.hooked_dev, 0.0001, "gleiche Gewichtsabweichung")
+	assert_eq(offline_sim.hooked_rank, online_sim.hooked_rank, "gleicher Rang")
 	assert_eq(offline_sim.hooked_shiny, online_sim.hooked_shiny, "gleicher Shiny-Status")
 
 func test_offline_is_capped_at_twelve_hours() -> void:

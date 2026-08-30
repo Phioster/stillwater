@@ -8,9 +8,9 @@ const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 ## sofort der naechste nach. Bei zwei poppten zu Beginn beide auf einmal auf,
 ## danach kam ohnehin nur einer nach: der Anfang passte nicht zum Rest.
 const ORB_TARGET: int = 1
-## Nur eine Atempause, damit zwei Punkte nicht im selben Frame aufpoppen --
-## kurz genug, dass sie beim schnellen Tippen nicht zu spueren ist.
-const ORB_RESPAWN: float = 0.05
+## Kein Nachrueck-Halt mehr: die Referenz ruft beim Treffer sofort den
+## naechsten Punkt auf. Der Wert bleibt als Regler stehen, steht aber auf 0.
+const ORB_RESPAWN: float = 0.0
 const ORB_LIFETIME: float = 2.2
 const ORB_MARGIN: float = 80.0
 ## Die Orbs erscheinen rund um den Schwimmer statt ueber dem ganzen Bild.
@@ -36,6 +36,10 @@ var _line: GhostBar
 @onready var _pops: Control = $Pops
 
 var _spawn_timer: float = 0.0
+## Stand des Rutenzaehlers beim letzten Bild. Die Simulation schickt keine
+## Ereignisse pro Schlag -- ein Offline-Nachlauf ueber Stunden haette sonst
+## zehntausende erzeugt -- also wird der Zaehler abgelesen.
+var _seen_rod_hits: int = 0
 
 func _ready() -> void:
 	# Im Android-Export kommt die Szenenwurzel mit Standardankern an. Selbst
@@ -63,6 +67,15 @@ func _process(delta: float) -> void:
 	# Das Zeitfenster haengt am Rang, nicht mehr an der Zone.
 	_line.set_max(maxf(Game.sim.hooked_max_time, 0.001))
 	_line.set_value(maxf(Game.sim.timer, 0.0))
+	# Jeder Rutenschlag hinterlaesst seine Zahl. Ohne sie arbeitet die Rute
+	# unsichtbar, und niemand sieht, wofuer Rutenkraft gut ist.
+	var hits := Game.sim.rod_hits
+	if hits > _seen_rod_hits:
+		# Nach einem Sprung (Offline-Nachlauf) nicht hundert Zahlen werfen.
+		if hits - _seen_rod_hits <= 3:
+			for i in hits - _seen_rod_hits:
+				_pop_damage(int(round(Game.ctx.rod_power)), Palette.get_color(&"foam"))
+		_seen_rod_hits = hits
 	_spawn_timer -= delta
 	if _spawn_timer <= 0.0 and _living_orbs() < ORB_TARGET:
 		_spawn_timer = ORB_RESPAWN
@@ -80,6 +93,7 @@ func _fill(slot: Control, front: Color, ghost: Color) -> GhostBar:
 	return bar
 
 func _on_bite(fish: FishData) -> void:
+	_seen_rod_hits = 0
 	var rank := FishRoll.RANK_NAMES[clampi(Game.sim.hooked_rank, 0, FishRoll.RANK_NAMES.size() - 1)]
 	_name.text = "%s  ·  Rang %s" % [fish.display_name, rank]
 	# Beim Anbiss darf nichts hinterherlaufen -- sonst zeigt die Leiste kurz
@@ -110,13 +124,19 @@ func _spawn_orb() -> void:
 
 ## Ein Tipp muss eine Zahl hinterlassen. Ohne sie ist nicht zu sehen, dass
 ## Tippen ueberhaupt etwas bewirkt -- und damit auch nicht, wozu Orb-Kraft gut ist.
-func _on_orb_tapped(orb: Node) -> void:
-	var damage := int(round(Game.ctx.orb_power))
-	var at: Vector2 = (orb as Control).position if orb is Control else Vector2.ZERO
+func _on_orb_tapped(_orb: Node) -> void:
+	_pop_damage(int(round(Game.ctx.orb_power)), Palette.get_color(&"accent"))
+	Game.tap()
+
+## Alle Schadenszahlen erscheinen an DERSELBEN Stelle neben der Leiste, nicht
+## dort, wo gerade getippt wurde: sonst springt das Auge dem Finger hinterher,
+## statt die Leiste im Blick zu behalten.
+func _pop_damage(amount: int, color: Color) -> void:
 	var pop := POP_TEXT_SCENE.instantiate()
 	_pops.add_child(pop)
-	pop.setup("-%d" % damage, at, Palette.get_color(&"accent"))
-	Game.tap()
+	var anchor := _panel.position + Vector2(_panel.size.x + 24.0, _panel.size.y * 0.5)
+	anchor.y += randf_range(-14.0, 14.0)
+	pop.setup("-%d" % amount, anchor, color)
 
 ## queue_free() wirkt erst am Frameende -- ein sterbender Punkt zaehlt sonst
 ## noch mit und blockiert den Nachruecker.

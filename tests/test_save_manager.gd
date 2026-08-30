@@ -234,10 +234,11 @@ func test_inventory_and_journal_entries_with_wrong_field_types_do_not_crash() ->
 	var migrated := SaveManager.migrate(broken)
 	var fish_entry: Dictionary = migrated["fish_inventory"][0]
 	assert_true(fish_entry["fish_id"] is String, "fish_id muss nach der Migration ein String sein")
-	assert_true(fish_entry["quality"] is int, "quality muss nach der Migration ein int sein")
+	assert_true(fish_entry["weight_dev"] is float, "weight_dev muss nach der Migration ein float sein")
 	var journal_entry: Dictionary = migrated["journal"]["entries"]["roach"]
 	assert_true(journal_entry["caught_count"] is int, "caught_count muss ein int sein")
-	assert_true(journal_entry["best_dev"] is float, "best_weight muss ein float sein")
+	assert_true(journal_entry["best_dev"] is float, "best_dev muss ein float sein")
+	assert_true(journal_entry["caught_ranks"] is Array, "caught_ranks muss ein Array sein")
 
 	# Ohne den Fix bricht deserialize() hier mitten in CaughtFish.from_dict() ab.
 	Game.new_game()
