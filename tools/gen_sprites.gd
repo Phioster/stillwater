@@ -243,7 +243,7 @@ func _arm_offset(frame: int) -> int:
 	return AnglerPose.arm_offset(frame)
 
 func _skin(index: int) -> void:
-	var tone: StringName = [&"skin_1", &"skin_2", &"skin_3"][index]
+	var tone: StringName = [&"skin_1", &"skin_2", &"skin_3", &"skin_0", &"skin_4"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
@@ -253,29 +253,48 @@ func _skin(index: int) -> void:
 		_rect(img, ox + 10, 16, 3, 6, _c(tone))         # Ruhearm
 	_save(img, "char_skin_%d" % index)
 
+## Die Frisuren unterscheiden sich in der Form, nicht in der Farbe -- die
+## kommt aus der eigenen Kategorie und wird als Tönung darübergelegt.
 func _hair(index: int) -> void:
-	var tone: StringName = [&"hair_dark", &"hair_warm", &"hair_pale"][index]
+	var tone := &"hair_dark"
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
 		_rect(img, ox + 11, 4, 10, 4, _c(tone))
-		_rect(img, ox + 11, 8, 2, 4, _c(tone))
-		if index == 2:
-			_rect(img, ox + 19, 8, 2, 6, _c(tone))
+		match index:
+			0:  # Kurzhaar
+				_rect(img, ox + 11, 8, 2, 4, _c(tone))
+			1:  # Zopf
+				_rect(img, ox + 11, 8, 2, 4, _c(tone))
+				_rect(img, ox + 10, 12, 2, 6, _c(tone))
+			2:  # Wuschelkopf
+				_rect(img, ox + 11, 8, 2, 4, _c(tone))
+				_rect(img, ox + 19, 8, 2, 6, _c(tone))
+				_rect(img, ox + 10, 3, 12, 1, _c(tone))
+			3:  # Pferdeschwanz
+				_rect(img, ox + 11, 8, 2, 3, _c(tone))
+				_rect(img, ox + 9, 6, 2, 10, _c(tone))
+			4:  # Kurzgeschoren
+				_rect(img, ox + 12, 4, 8, 3, _c(tone))
 	_save(img, "char_hair_%d" % index)
 
 func _shirt(index: int) -> void:
-	var tone: StringName = [&"cloth_red", &"cloth_blue", &"cloth_green"][index]
+	var tone: StringName = [&"cloth_blue", &"cloth_red", &"cloth_green",
+		&"cloth_ochre", &"cloth_plum"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
 		_rect(img, ox + 12, 14, 8, 7, _c(tone))
 		_rect(img, ox + 19, 15 + _arm_offset(f), 3, 4, _c(tone))
 		_rect(img, ox + 10, 16, 3, 4, _c(tone))
+		# Das karierte Hemd braucht ein Muster, sonst ist es nur ein zweites Gruen.
+		if index == 2:
+			for y in range(15, 21, 2):
+				_rect(img, ox + 12, y, 8, 1, _c(&"cloth_grey"))
 	_save(img, "char_shirt_%d" % index)
 
 func _pants(index: int) -> void:
-	var tone: StringName = [&"cloth_grey", &"wood_dark"][index]
+	var tone: StringName = [&"cloth_grey", &"wood_dark", &"oilskin", &"cloth_plum"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
@@ -284,26 +303,47 @@ func _pants(index: int) -> void:
 		_rect(img, ox + 17, 27, 2, 3, _c(&"outline"))
 	_save(img, "char_pants_%d" % index)
 
+## Variante 0 bleibt leer -- das ist "ohne Hut". Die uebrigen unterscheiden
+## sich in Krempe und Kopf, sonst waeren es fuenfmal derselbe Hut in einer
+## anderen Farbe.
 func _hat(index: int) -> void:
 	var img := _char_sheet()
-	if index > 0:
-		var tone: StringName = [&"cloth_grey", &"reed", &"accent"][index]
-		for f in FRAMES:
-			var ox := f * FRAME
-			_rect(img, ox + 9, 3, 14, 2, _c(tone))
-			_rect(img, ox + 12, 0, 8, 3, _c(tone))
+	var tone: StringName = [&"outline", &"cloth_grey", &"accent",
+		&"cloth_ochre", &"cloth_red", &"wood_dark"][index]
+	for f in FRAMES:
+		var ox := f * FRAME
+		match index:
+			1:  # Kappe: Schirm nur nach vorn
+				_rect(img, ox + 12, 3, 11, 1, _c(tone))
+				_rect(img, ox + 12, 1, 8, 3, _c(tone))
+			2:  # Strohhut: sehr breite Krempe, flacher Kopf
+				_rect(img, ox + 8, 4, 16, 1, _c(tone))
+				_rect(img, ox + 11, 2, 10, 2, _c(tone))
+			3:  # Suedwester: Krempe hinten lang
+				_rect(img, ox + 10, 3, 13, 2, _c(tone))
+				_rect(img, ox + 12, 1, 8, 2, _c(tone))
+				_rect(img, ox + 8, 5, 4, 2, _c(tone))
+			4:  # Wollmuetze: keine Krempe, Bommel
+				_rect(img, ox + 11, 2, 10, 3, _c(tone))
+				_rect(img, ox + 15, 0, 2, 2, _c(&"foam"))
+			5:  # Filzhut: breite Krempe
+				_rect(img, ox + 9, 3, 14, 2, _c(tone))
+				_rect(img, ox + 12, 0, 8, 3, _c(tone))
 	_save(img, "char_hat_%d" % index)
 
 ## Geometrie aus AnglerPose, nicht hier: sie stand doppelt, und beim
 ## Verschieben der Rute wanderte die Schnur nicht mit.
-func _rod() -> void:
+func _rod(index: int) -> void:
+	var tone: StringName = [&"wood_light", &"wood_dark", &"silver"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
 		for i in AnglerPose.ROD_LENGTH:
 			var p := AnglerPose.rod_pixel(f, i)
-			_rect(img, ox + p.x, p.y, 1, 1, _c(&"wood_light"))
-	_save(img, "char_rod_0")
+			# Der Griff bleibt Holz, egal woraus die Rute ist.
+			var c: StringName = &"wood_dark" if i < 3 else tone
+			_rect(img, ox + p.x, p.y, 1, 1, _c(c))
+	_save(img, "char_rod_%d" % index)
 
 # --- Fische ---------------------------------------------------------------
 
@@ -412,15 +452,16 @@ func _init() -> void:
 	_visitors()
 	_dock()
 	print("Charakter")
-	for i in 3:
+	for i in 5:
 		_skin(i)
 		_hair(i)
 		_shirt(i)
-	for i in 2:
+	for i in 6:
+		_hat(i)
+	for i in 4:
 		_pants(i)
 	for i in 3:
-		_hat(i)
-	_rod()
+		_rod(i)
 	print("Fische")
 	_fishes()
 	print("Kleinkram")

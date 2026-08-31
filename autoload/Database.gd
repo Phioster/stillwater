@@ -28,6 +28,7 @@ const _COSMETIC_SPRITE_PREFIX := {
 	"shirt": "char_shirt",
 	"pants": "char_pants",
 	"hat": "char_hat",
+	"rod": "char_rod",
 }
 
 func _ready() -> void:

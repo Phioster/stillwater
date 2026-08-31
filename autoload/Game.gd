@@ -55,7 +55,8 @@ func new_game() -> void:
 	quests = Quests.new()
 	records = Records.new()
 	unlocked_zones = [&"willow_lake"]
-	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0}
+	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0,
+		"hat": 0, "rod": 0}
 	owned_cosmetics = {}
 	for category in cosmetics:
 		owned_cosmetics[category] = [0]

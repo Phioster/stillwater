@@ -9,6 +9,7 @@ const SLOTS := [
 	{"key": &"shirt", "label": "Oberteil"},
 	{"key": &"pants", "label": "Hose"},
 	{"key": &"hat", "label": "Hut"},
+	{"key": &"rod", "label": "Rute"},
 ]
 
 func refresh() -> void:

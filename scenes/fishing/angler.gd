@@ -11,7 +11,7 @@ const TEX_PREFIX := {
 	"Hat": "char_hat",
 	"Rod": "char_rod",
 }
-const HAIR_TINTS := [&"hair_dark", &"hair_warm", &"hair_pale"]
+const HAIR_TINTS := [&"hair_dark", &"hair_warm", &"hair_pale", &"hair_moss", &"hair_snow"]
 
 var _frame: int = 0
 
@@ -31,7 +31,7 @@ func set_cosmetics(c: Dictionary) -> void:
 	_set_layer("Shirt", int(c.get("shirt", 0)))
 	_set_layer("Hair", int(c.get("hair", 0)))
 	_set_layer("Hat", int(c.get("hat", 0)))
-	_set_layer("Rod", 0)
+	_set_layer("Rod", int(c.get("rod", 0)))
 	_tint_hair(int(c.get("hair_color", 0)))
 
 func _set_layer(name: String, index: int) -> void:

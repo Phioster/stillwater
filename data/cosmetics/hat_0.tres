@@ -7,6 +7,6 @@ script = ExtResource("1_8do8n")
 id = &"hat_0"
 category = &"hat"
 variant = 0
-display_name = "Filzhut"
+display_name = "Ohne Hut"
 cost = 0
 unlock_level = 1

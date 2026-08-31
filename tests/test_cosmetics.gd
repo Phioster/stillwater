@@ -5,8 +5,51 @@ func _fresh() -> void:
 
 # --- Database ---------------------------------------------------------------
 
-func test_all_seventeen_cosmetics_load() -> void:
-	assert_eq(Database.cosmetics.size(), 17)
+## Die Zahl steht hier bewusst fest: eine Variante, die beim Umbenennen still
+## verschwindet, faellt sonst niemandem auf.
+func test_every_cosmetic_variant_loads() -> void:
+	assert_eq(Database.cosmetics.size(), 33)
+
+## Die Haarfarbe ist die einzige Kategorie ohne eigenes Sprite: sie faerbt
+## die Frisur ein. Gibt es mehr Farben als Toene, waehlt man stumm dieselbe.
+func test_every_hair_colour_has_a_tint() -> void:
+	var colours := 0
+	for id in Database.cosmetics:
+		if (Database.cosmetics[id] as CosmeticData).category == &"hair_color":
+			colours += 1
+	var angler = load("res://scenes/fishing/angler.tscn").instantiate()
+	assert_eq(colours, angler.HAIR_TINTS.size(), "Farben und Toene laufen auseinander")
+	angler.free()
+
+## Die Rute ist eine echte Kategorie mit eigenem Sprite, keine Farbe.
+func test_the_rod_is_worn_like_any_other_layer() -> void:
+	_fresh()
+	Game.ctx.player_level = 60
+	Game.coins = 100_000
+	assert_true(Game.buy_cosmetic(&"rod", 2), "die Silberrute ist nicht kaufbar")
+	assert_true(Game.set_cosmetic(&"rod", 2))
+	var angler = load("res://scenes/fishing/angler.tscn").instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(angler)
+	angler.set_cosmetics(Game.cosmetics)
+	# Ueber die Bilddaten verglichen, nicht ueber resource_path: auf diesem
+	# Geraet gibt es keinen Import-Cache, dort kommt die Textur aus einer
+	# Bilddatei und hat gar keinen Pfad (siehe core/texture_loader.gd).
+	var worn: Texture2D = angler.get_node("Rod").texture
+	assert_true(worn != null, "es wird gar keine Rute getragen")
+	var expected := TextureLoader.load_texture("res://assets/art/char_rod_2.png")
+	assert_true(worn.get_image().get_data() == expected.get_image().get_data(),
+		"getragen wird eine andere Rute als die gekaufte")
+	angler.free()
+
+## Ein Spielstand von vor der Rute darf nicht mit einer leeren Hand laden.
+func test_an_older_save_without_a_rod_still_works() -> void:
+	_fresh()
+	var blob := SaveManager.serialize()
+	blob["last_seen_unix"] = int(Time.get_unix_time_from_system()) + 3600
+	(blob["cosmetics"] as Dictionary).erase("rod")
+	SaveManager.deserialize(blob)
+	assert_eq(int(Game.cosmetics.get("rod", 0)), 0, "die Rute faellt nicht auf 0 zurueck")
 
 func test_cosmetics_validate_reports_no_problems() -> void:
 	var problems := Database.validate()
@@ -22,7 +65,7 @@ func test_cosmetic_of_returns_null_for_unknown_combo() -> void:
 	assert_true(Database.cosmetic_of(&"nonexistent", 0) == null)
 
 func test_variant_zero_of_every_category_is_free() -> void:
-	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants", &"hat"]:
+	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants", &"hat", &"rod"]:
 		var c := Database.cosmetic_of(category, 0)
 		assert_true(c != null, "Kategorie %s hat keine Variante 0" % category)
 		assert_eq(c.cost, 0, "Variante 0 von %s muss frei sein" % category)
