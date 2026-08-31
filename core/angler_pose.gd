@@ -11,9 +11,13 @@
 class_name AnglerPose
 extends RefCounted
 
-## 64 statt 32 seit 2026-08-31: dieselbe Figur auf doppelt so vielen
-## Bildpunkten, dafür halbe Vergrößerung in der Welt (PIXEL_SCALE 4 → 2).
-const FRAME_SIZE: int = 64
+## 256 seit 2026-09-01. Das ist die obere Grenze, nicht der Anfang einer
+## Reihe: die Vergrößerung in der Welt muss ganzzahlig bleiben, sonst landen
+## Pixelkanten zwischen Bildschirmpunkten und alles flimmert. Bei 256 und
+## Vergrößerung 1 steht die Figur so groß da wie vorher — mit sechzehnmal so
+## vielen Bildpunkten wie beim 64er-Anfang. Bei 512 füllte sie zwei Drittel
+## des Bildschirms, und kleiner anzeigen hieße wieder herunterrechnen.
+const FRAME_SIZE: int = 256
 ## Zehn Bilder: sechs für den Ruhelauf (sie steht nie ganz still), vier für
 ## den Wurf. Beide Reihen sind gezeichnet, nicht gerechnet.
 const FRAMES: int = 10
@@ -23,19 +27,19 @@ const IDLE_FRAMES: int = 6
 ## Der Griff je Pose — an der Hand der gezeichneten Figur gemessen. Im
 ## Ruhelauf wandert er ein paar Pixel, dadurch atmet die Rute mit.
 const ROD_ANCHOR: Array[Vector2i] = [
-	Vector2i(38, 35), Vector2i(38, 33), Vector2i(38, 34),
-	Vector2i(38, 32), Vector2i(37, 35), Vector2i(37, 37),
-	Vector2i(33, 24), Vector2i(30, 24), Vector2i(41, 40), Vector2i(38, 42),
+	Vector2i(152, 140), Vector2i(152, 132), Vector2i(152, 136),
+	Vector2i(152, 128), Vector2i(148, 140), Vector2i(148, 148),
+	Vector2i(132, 96), Vector2i(120, 96), Vector2i(164, 160), Vector2i(152, 168),
 ]
 ## Die Spitze, relativ zum Griff. Die Rute schwingt zurück und wieder vor.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(21, -21), Vector2i(21, -21), Vector2i(21, -21),
-	Vector2i(21, -21), Vector2i(21, -21), Vector2i(21, -21),
-	Vector2i(-5, -19), Vector2i(-19, -13), Vector2i(19, -9), Vector2i(21, 1),
+	Vector2i(84, -84), Vector2i(84, -84), Vector2i(84, -84),
+	Vector2i(84, -84), Vector2i(84, -84), Vector2i(84, -84),
+	Vector2i(-20, -76), Vector2i(-76, -52), Vector2i(76, -36), Vector2i(84, 4),
 ]
 ## Wie weit sich die Rute quer zur Achse biegt. Eine gerade Rute sieht aus
 ## wie ein Stock; die Biegung macht aus dem Wurf eine Bewegung.
-const ROD_BEND: Array[float] = [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 3.0, 4.0, -3.5, -2.0]
+const ROD_BEND: Array[float] = [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 12.0, 16.0, -14.0, -8.0]
 
 static func frame_of(frame: int) -> int:
 	return clampi(frame, 0, FRAMES - 1)

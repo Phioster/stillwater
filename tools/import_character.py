@@ -27,7 +27,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCE = os.path.join(ROOT, "assets", "source", "angler_frames.png")
 OUT = os.path.join(ROOT, "assets", "art")
 
-FRAME = 64
+## Zielgroesse im Spiel. Das Ausgangsbild darf kleiner sein -- dann wird die
+## fertige Ebene ganzzahlig vergroessert. Zerlegt wird IMMER in der Groesse
+## des Ausgangsbildes: die Farbregeln unten sind an dessen Zeilen gemessen.
+FRAME = 256
 FRAMES = 10
 ## Wie weit die Figur nach links rueckt. Ohne das sitzt die Hand so weit
 ## rechts, dass keine Rute mehr in den Rahmen passt (siehe AnglerPose).
@@ -72,8 +75,8 @@ def split(img):
     """Ordnet jedes Pixel einer Ebene zu."""
     px = img.load()
     base, outline = {}, []
-    for y in range(FRAME):
-        for x in range(FRAME):
+    for y in range(img.size[1]):
+        for x in range(img.size[0]):
             p = px[x, y]
             if p[3] == 0:
                 continue
@@ -112,9 +115,10 @@ def sheet(frames, name, target=None, only=None):
     """Ein Blatt aus allen Posen -- jede Pose ist ein eigenes Bild mit eigener
     Zerlegung, sonst haette die Figur beim Wurf denselben Arm wie im Stand."""
     out = Image.new("RGBA", (FRAME * FRAMES, FRAME), (0, 0, 0, 0))
+    src = frames[0][0].size[0]
     for f, (img, layers) in enumerate(frames):
         px = img.load()
-        single = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
+        single = Image.new("RGBA", (src, src), (0, 0, 0, 0))
         q = single.load()
         for (x, y), lay in layers.items():
             if lay != name:
@@ -124,8 +128,10 @@ def sheet(frames, name, target=None, only=None):
             if only == "boots" and y < BOOT_TOP:
                 continue
             nx = x + SHIFT_X
-            if 0 <= nx < FRAME:
+            if 0 <= nx < src:
                 q[nx, y] = tint(px[x, y], target) if target else px[x, y]
+        if src != FRAME:
+            single = single.resize((FRAME, FRAME), Image.NEAREST)
         out.alpha_composite(single, (f * FRAME, 0))
     return out
 
@@ -133,12 +139,13 @@ def main():
     if not os.path.exists(SOURCE):
         sys.exit("Ausgangsbild fehlt: %s" % SOURCE)
     strip = Image.open(SOURCE).convert("RGBA")
-    if strip.size != (FRAME * FRAMES, FRAME):
-        sys.exit("Ausgangsbild muss %dx%d sein, ist %s"
-                 % (FRAME * FRAMES, FRAME, strip.size))
+    src = strip.size[0] // FRAMES
+    if strip.size != (src * FRAMES, src) or FRAME % src:
+        sys.exit("Ausgangsbild muss %d gleich grosse Quadrate sein, deren Kante "
+                 "in %d aufgeht -- ist %s" % (FRAMES, FRAME, strip.size))
     frames = []
     for f in range(FRAMES):
-        img = strip.crop((f * FRAME, 0, (f + 1) * FRAME, FRAME))
+        img = strip.crop((f * src, 0, (f + 1) * src, src))
         frames.append((img, split(img)))
 
     written = 0

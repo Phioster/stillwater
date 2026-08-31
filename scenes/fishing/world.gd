@@ -21,16 +21,18 @@ var _rain: Rain = null
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
 const WATERLINE := 84.0 / 180.0
-## Halbiert, seit die Figurenbilder 64 statt 32 Pixel haben -- am Bildschirm
-## bleibt sie dadurch gleich groß (siehe core/angler_pose.gd).
-const PIXEL_SCALE := 2.0
+## Ganzzahlig halten! Bei 1,5 landen Pixelkanten zwischen Bildschirmpunkten
+## und das ganze Bild flimmert. Bei 256er Rahmen ist 1 die richtige Wahl:
+## die Figur steht so gross da wie vorher, hat aber viermal so viele
+## Bildpunkte (siehe core/angler_pose.gd).
+const PIXEL_SCALE := 1.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
-const CHAR_SIZE := 64.0
-## Die Stiefel enden im 64er-Frame bei Zeile 61. Die letzte Reihe ist leer --
-## wer die Sprite-Unterkante aufs Deck setzt, laesst die Figur schweben.
-const CHAR_FEET := 62.0
-## Rutenspitze im 32x32-Frame bei (31, 6).
+const CHAR_SIZE := 256.0
+## Die Stiefel enden im 256er-Frame bei Zeile 247. Die letzten Reihen sind
+## leer -- wer die Sprite-Unterkante aufs Deck setzt, laesst die Figur
+## schweben.
+const CHAR_FEET := 248.0
 
 ## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die
 ## gemessenen Kosten pro Frame.
@@ -97,17 +99,16 @@ func _layout() -> void:
 	if size.x <= 0.0 or size.y <= 0.0:
 		return
 	var water_y := size.y * WATERLINE
-	var dock_h := 24.0 * PIXEL_SCALE
+	var dock_h := 192.0 * PIXEL_SCALE
 	# Der Steg liegt mit seiner Oberkante knapp ueber der Wasserlinie, die
 	# Pfosten ragen ins Wasser.
 	# Buendig mit dem linken Rand: ein Steg, der frei im Wasser beginnt, sieht
 	# abgeschnitten aus statt am Ufer angebaut.
-	_dock.position = Vector2(0.0, water_y - 6.0 * PIXEL_SCALE)
+	_dock.position = Vector2(0.0, water_y - 48.0 * PIXEL_SCALE)
 	var deck_y := _dock.position.y
-	# Die Figur ist 32x32 und mittig verankert: Fuesse auf das Deck setzen.
 	# Fuesse auf die Deckoberkante: der Sprite haengt an seiner oberen linken
-	# Ecke, also ist die Unterkante position.y + 32 * scale.
-	_angler.position = Vector2(_dock.position.x + 25.0 * PIXEL_SCALE, deck_y - CHAR_FEET * PIXEL_SCALE)
+	# Ecke, also zaehlt CHAR_FEET von dort.
+	_angler.position = Vector2(_dock.position.x + 200.0 * PIXEL_SCALE, deck_y - CHAR_FEET * PIXEL_SCALE)
 	_bobber_home = Vector2(size.x * 0.42, water_y + size.y * 0.14)
 	_bobber.position = _bobber_home
 

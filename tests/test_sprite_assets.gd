@@ -10,7 +10,7 @@ func _expected_size(filename: String) -> Vector2i:
 	if filename.begins_with("bg_"):
 		return Vector2i(320, 180)
 	if filename == "dock.png":
-		return Vector2i(128, 48)
+		return Vector2i(512, 192)
 	if filename.begins_with("char_"):
 		return Vector2i(AnglerPose.FRAME_SIZE * AnglerPose.FRAMES, AnglerPose.FRAME_SIZE)
 	if filename.begins_with("fish_"):
@@ -22,7 +22,7 @@ func _expected_size(filename: String) -> Vector2i:
 	if filename == "orb.png":
 		return Vector2i(16, 16)
 	if filename == "bobber.png":
-		return Vector2i(16, 16)
+		return Vector2i(64, 64)
 	return Vector2i(-1, -1)
 
 func _count_opaque(img: Image) -> int:

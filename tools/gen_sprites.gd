@@ -248,16 +248,16 @@ func _background_void() -> void:
 ## Doppelt so fein wie frueher, damit er zur Figur passt: dieselbe
 ## Vergroesserung gilt fuer alles in der Welt.
 func _dock() -> void:
-	var img := _new_image(128, 48)
-	_rect(img, 0, 0, 128, 12, _c(&"wood_light"))
+	var img := _new_image(512, 192)
+	_rect(img, 0, 0, 512, 48, _c(&"wood_light"))
 	# Bretterfugen -- ohne sie ist das Deck ein Farbstreifen.
 	for i in 8:
-		_rect(img, i * 16, 0, 1, 12, _c(&"wood"))
-	_rect(img, 0, 12, 128, 6, _c(&"wood"))
-	_rect(img, 0, 16, 128, 2, _c(&"wood_dark"))
+		_rect(img, i * 64, 0, 4, 48, _c(&"wood"))
+	_rect(img, 0, 48, 512, 24, _c(&"wood"))
+	_rect(img, 0, 64, 512, 8, _c(&"wood_dark"))
 	for i in 4:
-		_rect(img, 12 + i * 32, 18, 8, 30, _c(&"wood_dark"))
-		_rect(img, 12 + i * 32, 18, 2, 30, _c(&"wood"))
+		_rect(img, 48 + i * 128, 72, 32, 120, _c(&"wood_dark"))
+		_rect(img, 48 + i * 128, 72, 8, 120, _c(&"wood"))
 	_save(img, "dock")
 
 # --- Charakterebenen ------------------------------------------------------
@@ -340,15 +340,20 @@ func _profile_head(img: Image, ox: int, c: Color) -> void:
 ## UND Kopfschmuck: Hoerner, Heiligenschein und Kopfhoerer sitzen an derselben
 ## Stelle, also teilen sie sich einen Platz. Ein zweiter haette bei jeder
 ## Kombination eine neue Ueberdeckungsfrage aufgeworfen.
+## Die Huete sind in 64er-Geometrie gezeichnet und werden am Ende ganzzahlig
+## vergroessert. Alle Koordinaten hier beziehen sich also auf den halben
+## Rahmen -- billiger und sicherer, als 40 Zahlen von Hand zu verdoppeln.
+const HAT_FRAME := 64
+
 func _hat(index: int) -> void:
-	var img := _char_sheet()
+	var img := _new_image(HAT_FRAME * FRAMES, HAT_FRAME)
 	# Der Kopf der gezeichneten Figur sitzt im Rahmen bei x 19..35, Oberkante
 	# y 2. Huete rechnen gegen diese Kante, nicht gegen die Koerpermitte --
 	# der Zopf zieht die Mitte sonst nach links.
 	var cx := HAT_CX
 	var top := 1
 	for f in FRAMES:
-		var ox := f * FRAME
+		var ox := f * HAT_FRAME
 		match index:
 			1:  # Kappe: Schirm nach vorn
 				_limb(img, ox + cx - 8, top + 1, 16, 5, _c(&"cloth_grey"))
@@ -387,6 +392,7 @@ func _hat(index: int) -> void:
 			10:  # Eimerhut: gerade Krempe, hoher Topf
 				_limb(img, ox + cx - 12, top + 6, 24, 3, _c(&"reed"))
 				_limb(img, ox + cx - 7, top + 1, 14, 5, _c(&"reed"))
+	img.resize(FRAME * FRAMES, FRAME, Image.INTERPOLATE_NEAREST)
 	_save(img, "char_hat_%d" % index)
 
 ## Geometrie aus AnglerPose, nicht hier: sie stand doppelt, und beim
@@ -395,10 +401,18 @@ func _hat(index: int) -> void:
 ## Die Rute ist die einzige Figurengrafik, die noch gerechnet wird -- eine
 ## Rute IST eine einfache Form: ein Stock, der sich zur Spitze verjuengt und
 ## dabei biegt. Genau das laesst sich besser rechnen als zeichnen.
+## Die Rute. Form und Farben sind an einer gezeichneten Vorlage abgenommen:
+## Korkgriff, Stahlschaft mit Glanzkante oben und dunkler Unterseite,
+## Messingringe, Rolle unter dem Griffende.
+##
+## Gezeichnet und nicht gedreht: ein fertiges Rutenbild in zehn Winkel zu
+## drehen macht es verwaschen oder ausgefranst -- drei Anlaeufe, alle
+## verworfen. Hier ist jeder Pixel gesetzt, in jeder Pose gleich sauber.
 func _rod(index: int) -> void:
-	# Die Farbe der Rutenvarianten. Der Verlauf zur Spitze bleibt derselbe:
-	# gemessen an einer gezeichneten Vorlage, die im Spiel funktioniert hat.
-	var tone: Color = [_c(&"rod_grip"), _c(&"wood_dark"), _c(&"silver")][index]
+	# Die drei Varianten faerben nur den Schaft um, der Griff bleibt Kork.
+	var steel: Color = [_c(&"rod_steel"), _c(&"wood"), _c(&"silver")][index]
+	var shine: Color = steel.lightened(0.30)
+	var shadow: Color = steel.darkened(0.35)
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
@@ -413,25 +427,47 @@ func _rod(index: int) -> void:
 		for i in steps + 1:
 			var t := float(i) / float(steps)
 			var p := a + (b - a) * t
-			# Durchgehend zwei Pixel stark. Die Verjuengung liegt in der
-			# FARBE, nicht in der Dicke -- eine Rute, die zur Spitze hin
-			# duenner wird, franst bei 30 Pixeln zu einem Faden aus.
-			var c := tone.lerp(_c(&"rod_tip"), t * 0.9)
-			if t < 0.14:
-				c = _c(&"wood_dark")        # Griff, etwas heller
-			for k in 2:
+			# Vier Pixel stark, zur Spitze hin drei: Glanzkante oben,
+			# Koerper, dunkle Unterseite. Die Rundung macht den Unterschied
+			# zwischen Rute und Strich.
+			var thick := 8 if t < 0.6 else 6
+			for k in thick:
+				var c: Color
+				if t < 0.22:
+					c = _c(&"rod_cork") if k < thick - 1 else _c(&"rod_cork_dk")
+				elif k == 0:
+					c = shine
+				elif k == thick - 1:
+					c = shadow
+				else:
+					c = steel
 				var q := p + down * float(k)
 				_pixel(img, ox + int(round(q.x)), int(round(q.y)), c)
-		# Haken an der Spitze: zwei Pixel quer. Ohne ihn endet die Rute
-		# im Nichts, mit ihm sieht man, wo die Schnur ansetzt.
-		var tipp := a + (b - a) * 0.99
-		for k in 3:
-			var h := tipp + down * float(k) - dir * float(k) * 0.3
-			_pixel(img, ox + int(round(h.x)), int(round(h.y)), _c(&"rod_tip"))
-		# Rolle: ein heller Punkt kurz hinter dem Griff.
-		var reel := a + (b - a) * 0.18 + down * 2.0
-		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)), _c(&"silver").darkened(0.3))
-		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)) + 1, _c(&"outline"))
+			# Umriss oben und unten -- die gezeichnete Figur hat ueberall einen.
+			var top := p - down
+			var bot := p + down * float(thick)
+			# Kante zwei Pixel stark, sonst verschwindet sie in der Groesse.
+			_pixel(img, ox + int(round((p - down * 2.0).x)), int(round((p - down * 2.0).y)), _c(&"outline"))
+			_pixel(img, ox + int(round((p + down * (thick + 1.0)).x)), int(round((p + down * (thick + 1.0)).y)), _c(&"outline"))
+			_pixel(img, ox + int(round(top.x)), int(round(top.y)), _c(&"outline"))
+			_pixel(img, ox + int(round(bot.x)), int(round(bot.y)), _c(&"outline"))
+		# Messingringe am Schaft
+		var rings: Array[float] = [0.42, 0.62, 0.82]
+		for r in rings:
+			var p2 := a + (b - a) * r
+			for k in 4:
+				var q2 := p2 + down * float(k)
+				_pixel(img, ox + int(round(q2.x)), int(round(q2.y)), _c(&"rod_brass"))
+			var eye := p2 + down * 6.0
+			_pixel(img, ox + int(round(eye.x)), int(round(eye.y)), _c(&"outline"))
+		# Rolle unter dem Griffende, mit Kurbel.
+		var reel := a + (b - a) * 0.24 + down * 10.0
+		_disc(img, ox + reel.x, reel.y, 8.0, _c(&"outline"))
+		_disc(img, ox + reel.x, reel.y, 6.0, _c(&"rod_steel"))
+		_disc(img, ox + reel.x, reel.y, 2.4, _c(&"rod_brass"))
+		var crank := reel + down * 10.0 - dir * 2.0
+		_pixel(img, ox + int(round(crank.x)), int(round(crank.y)), _c(&"outline"))
+		_pixel(img, ox + int(round(crank.x)) + 1, int(round(crank.y)), _c(&"rod_steel"))
 	_save(img, "char_rod_%d" % index)
 
 # --- Fische ---------------------------------------------------------------
@@ -521,10 +557,10 @@ func _orb() -> void:
 	_save(img, "orb")
 
 func _bobber() -> void:
-	var img := _new_image(16, 16)
-	_bulb(img, 8.0, 8.0, 7.0, 7.0, _c(&"cloth_red"))
-	_rect(img, 0, 8, 16, 8, _c(&"foam"))
-	_rect(img, 0, 8, 16, 1, _c(&"outline"))
+	var img := _new_image(64, 64)
+	_bulb(img, 32.0, 32.0, 28.0, 28.0, _c(&"cloth_red"))
+	_rect(img, 0, 32, 64, 32, _c(&"foam"))
+	_rect(img, 0, 32, 64, 4, _c(&"outline"))
 	_save(img, "bobber")
 
 func _init() -> void:
