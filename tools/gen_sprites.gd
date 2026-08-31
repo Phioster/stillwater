@@ -395,19 +395,34 @@ func _rod(index: int) -> void:
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
-		# Fein genug abgetastet, dass keine Luecken bleiben: die Kurve ist
-		# nie laenger als ~35 Pixel, 96 Schritte sind reichlich.
-		for i in 97:
-			var t := float(i) / 96.0
-			var p := AnglerPose.rod_point(f, t)
-			# Am Griff drei Pixel stark, an der Spitze einer.
-			var radius := 1.5 - 1.0 * t
-			var c: Color = _c(&"wood_dark") if t < 0.14 else _c(tone)
-			_disc(img, ox + p.x, p.y, radius, c)
-		# Rolle kurz ueber dem Griff, mit dunkler Halterung.
-		var reel := AnglerPose.rod_point(f, 0.16)
-		_disc(img, ox + reel.x, reel.y + 2.0, 2.2, _c(&"outline"))
-		_disc(img, ox + reel.x, reel.y + 2.0, 1.3, _c(&"silver"))
+		# Erst der Umriss, dann die Rute darauf: die gezeichnete Figur hat
+		# ueberall eine dunkle Kante, eine Rute ohne sie sieht aufgeklebt aus.
+		for pass_index in 3:
+			for i in 97:
+				var t := float(i) / 96.0
+				var p := AnglerPose.rod_point(f, t)
+				# Am Griff drei Pixel stark, an der Spitze einer.
+				var radius := 1.4 - 0.9 * t
+				match pass_index:
+					0:
+						_disc(img, ox + p.x, p.y, radius + 0.9, _c(&"outline"))
+					1:
+						var c: Color = _c(&"wood_dark") if t < 0.18 else _c(tone)
+						_disc(img, ox + p.x, p.y, radius, c)
+					2:
+						# Glanzkante oben: eine Rute ist rund, kein Band.
+						if t > 0.2:
+							_disc(img, ox + p.x, p.y - radius * 0.7, radius * 0.45,
+								_c(tone).lightened(0.35))
+		# Wicklung am Griff
+		for k in 3:
+			var w := AnglerPose.rod_point(f, 0.04 + 0.045 * float(k))
+			_disc(img, ox + w.x, w.y, 1.5, _c(&"accent").darkened(0.2))
+		# Rolle: sitzt UNTER der Rute, mit eigenem Umriss. Klein halten --
+		# ein grosser heller Fleck zieht mehr Blick auf sich als die Figur.
+		var reel := AnglerPose.rod_point(f, 0.22)
+		_disc(img, ox + reel.x, reel.y + 2.5, 2.2, _c(&"outline"))
+		_disc(img, ox + reel.x, reel.y + 2.5, 1.3, _c(&"silver").darkened(0.15))
 	_save(img, "char_rod_%d" % index)
 
 # --- Fische ---------------------------------------------------------------

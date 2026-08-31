@@ -2,8 +2,8 @@
 """Baut die Figurenebenen aus dem erzeugten Ausgangsbild.
 
 Die Anglerin kommt seit 2026-08-31 nicht mehr aus `gen_sprites.gd`, sondern
-aus `assets/source/angler_frames.png` -- fuenf 64x64-Posen nebeneinander
-(ruhig, ausholen, hinten, vorschwingen, geworfen), mit PixelLab erzeugt: eine Pose gezeichnet, die
+aus `assets/source/angler_frames.png` -- zehn 64x64-Posen nebeneinander
+(sechs Ruhebilder, vier Wurfbilder), mit PixelLab erzeugt: eine Pose gezeichnet, die
 beiden anderen daraus animiert. Zwei prozedurale Anlaeufe mit Ellipsen sahen
 nach zusammengesteckten Formen aus; das hier ist gezeichnete Figur.
 
@@ -28,7 +28,7 @@ SOURCE = os.path.join(ROOT, "assets", "source", "angler_frames.png")
 OUT = os.path.join(ROOT, "assets", "art")
 
 FRAME = 64
-FRAMES = 5
+FRAMES = 10
 ## Wie weit die Figur nach links rueckt. Ohne das sitzt die Hand so weit
 ## rechts, dass keine Rute mehr in den Rahmen passt (siehe AnglerPose).
 SHIFT_X = -8

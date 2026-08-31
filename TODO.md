@@ -118,14 +118,20 @@ Bildgröße 64 Pixel je Frame, fünf Rahmen, Vergrößerung in der Welt 2 statt 
   passen im Stil nicht.
 - **Die fünf Frisuren sind alle dieselbe.** Eine zweite Frisur ist ein
   zweites Ausgangsbild, keine Umfärbung.
-- ~~Die Rahmen zeigen dieselbe Pose~~ — erledigt: **fünf** gezeichnete Posen
-  (ruhig, ausholen, hinten, vorschwingen, geworfen), aus der ersten per
-  `animate_image` erzeugt, eine Generierung. Der Wurf läuft über
-  `FishingSim.CAST_TIME` ab, hängt also am selben Zähler wie der Kern.
-- Die **Rute** ist die einzige Figurengrafik, die noch gerechnet wird — eine
-  Rute *ist* eine einfache Form: verjüngt sich zur Spitze, biegt sich beim
-  Schwung, Rolle am Griff. Jede Pose hat eigenen Griff und eigene Richtung
-  (`core/angler_pose.gd`).
+- ~~Die Rahmen zeigen dieselbe Pose~~ — erledigt: **zehn** gezeichnete Bilder,
+  sechs für den Ruhelauf (sie atmet und wiegt sich, Stillstand sah tot aus)
+  und vier für den Wurf. Aus dem ersten Bild per `animate_image` erzeugt, je
+  eine Generierung. Der Wurf läuft über `FishingSim.CAST_TIME` ab, hängt also
+  am selben Zähler wie der Kern; der Ruhelauf zählt für sich weiter.
+- Die **Rute** ist die einzige Figurengrafik, die noch gerechnet wird
+  (`gen_sprites.gd::_rod`): verjüngt sich zur Spitze, biegt sich beim
+  Schwung, dunkler Umriss, Glanzkante, Wicklung am Griff, kleine Rolle. Jede
+  Pose hat eigenen Griff und eigene Richtung (`core/angler_pose.gd`).
+  **Sie bleibt der schwächste Teil des Bildes** — gezeichnet wäre besser.
+  Zwei Versuche, sie per Bild-zu-Bild in die Figur zu generieren, sind
+  gescheitert: bei 64 Pixeln behandelt das Modell die dünne Rute als
+  Rauschen. Nächster Anlauf: lokal erzeugen (Local Dream) und als eigene
+  Ebene einhängen — die Geometrie dafür steht schon.
 - Die **Formvarianten** bei Oberteil und Hose (Lederjacke, Weste, Shorts,
   Rock) sind zurzeit nur Umfärbungen derselben Form.
 

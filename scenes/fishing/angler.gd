@@ -54,24 +54,32 @@ func _tint_hair(color_index: int) -> void:
 	mat.set_shader_parameter("strength", 1.0)
 	sprite.material = mat
 
-## 0 ruhig, 1 ausholen, 2 hinten, 3 vorschwingen, 4 geworfen
+## Der Ruhelauf zaehlt in sich selbst weiter, der Wurf haengt am Zaehler des
+## Kerns: eine zweite Uhr fuer den Wurf koennte davon abdriften, und dann
+## stuende die Figur noch beim Ausholen, waehrend der Koeder schon im Wasser
+## liegt.
+const IDLE_FPS: float = 5.0
+
+var _idle_time: float = 0.0
+
 func play_state(frame: int) -> void:
 	_frame = AnglerPose.frame_of(frame)
 	for name in LAYERS:
 		(get_node(name) as Sprite2D).frame = _frame
 
-## Der Wurf laeuft ueber seine eigene Dauer ab, statt ein einzelnes Bild zu
-## zeigen: der Kern zaehlt beim Werfen ohnehin herunter, also haengt die Pose
-## an diesem Zaehler und nicht an einer zweiten Uhr, die davon abdriften kann.
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	match Game.sim.state:
 		FishingSim.State.CASTING:
 			var left: float = clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
-			play_state(1 + int((1.0 - left) * float(AnglerPose.FRAMES - 1)))
+			var step := int((1.0 - left) * float(AnglerPose.FRAMES - AnglerPose.IDLE_FRAMES))
+			play_state(AnglerPose.IDLE_FRAMES + step)
 		FishingSim.State.FIGHT:
+			# Arm vorn, Rute unter Zug -- das letzte Wurfbild.
 			play_state(AnglerPose.FRAMES - 1)
 		_:
-			play_state(0)
+			# Stillstehen sieht tot aus: sechs Bilder Atmen im Kreis.
+			_idle_time += delta
+			play_state(int(_idle_time * IDLE_FPS) % AnglerPose.IDLE_FRAMES)
 
 func _on_bite(_fish: FishData) -> void:
 	play_state(AnglerPose.FRAMES - 1)
