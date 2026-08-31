@@ -79,6 +79,7 @@ func serialize() -> Dictionary:
 		"owned_cosmetics": Game.owned_cosmetics.duplicate(true),
 		"active_consumables": Game.buffs.to_dict(),
 		"consumable_inventory": Game.consumable_counts.duplicate(),
+		"visitors": Game.visitors.to_dict(),
 		"settings": Game.settings.to_dict(),
 		"statistics": {},
 		"last_seen_unix": int(Time.get_unix_time_from_system()),
@@ -129,6 +130,7 @@ func deserialize(raw: Dictionary) -> void:
 	Game.rng.set_state(int(d["rng_state"]))
 	Game.apply_upgrades()
 	Game.apply_settings()
+	Game.visitors.load_dict(d["visitors"])
 	Game.buffs.load_dict(d["active_consumables"])
 	Game.apply_buffs()
 
@@ -181,6 +183,7 @@ func migrate(raw: Dictionary) -> Dictionary:
 	for key in _safe_dict(raw.get("consumable_inventory"), {}):
 		counts[key] = _safe_int(_safe_dict(raw.get("consumable_inventory"), {})[key], 0)
 	d["consumable_inventory"] = counts
+	d["visitors"] = _safe_dict(raw.get("visitors"), {})
 	d["settings"] = _safe_dict(raw.get("settings"), {})
 	d["statistics"] = _safe_dict(raw.get("statistics"), {})
 
@@ -260,7 +263,7 @@ func _defaults() -> Dictionary:
 		"xp": 0,
 		"current_zone": "willow_lake",
 		"unlocked_zones": ["willow_lake"],
-		"upgrade_levels": {"rod_power": 0, "orb_power": 0, "fish_inventory": 0, "favorite_inventory": 0, "bait_capacity": 0},
+		"upgrade_levels": {"rod_power": 0, "orb_power": 0, "fish_inventory": 0, "favorite_inventory": 0, "bait_capacity": 0, "mouse_shop": 0},
 		"active_bait": String(Database.basic_bait().id) if Database.basic_bait() != null else "",
 		"journal": {"secret_found": false, "entries": {}},
 		"cosmetics": {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0},

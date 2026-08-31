@@ -5,7 +5,7 @@ func test_all_content_loads() -> void:
 	assert_eq(Database.baits.size(), 8)
 	assert_eq(Database.fish.size(), 104)
 	assert_eq(Database.zones.size(), 7)
-	assert_eq(Database.upgrades.size(), 5)
+	assert_eq(Database.upgrades.size(), 6)
 
 func test_validate_reports_no_problems() -> void:
 	var problems := Database.validate()

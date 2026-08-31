@@ -7,6 +7,9 @@ const PANEL_WIDTH := 420.0
 const RAIL_WIDTH := 96.0
 ## Unterreiter der Fischgruppe: Inventar, Vitrine, Geheim.
 const FISH_SUB_SECRET := 2
+## Laden-Reiter und darin der Haendler.
+const SHOP_TAB := 2
+const SHOP_SUB_TRADER := 1
 
 @onready var _side: PanelContainer = $SidePanel
 @onready var _panels: Control = $SidePanel/Panels
@@ -19,6 +22,10 @@ const FISH_SUB_SECRET := 2
 func _ready() -> void:
 	# Umriss und Schatten fuer alles auf einmal.
 	theme = UiTheme.build()
+	# Der Haendler in der Welt oeffnet seinen Reiter: Laden, Unterreiter 1.
+	var world := $Row/World
+	if world.has_signal("visitor_tapped") and not world.visitor_tapped.is_connected(_open_trader):
+		world.visitor_tapped.connect(_open_trader)
 	if not _rail.tab_selected.is_connected(show_tab):
 		_rail.tab_selected.connect(show_tab)
 	if not _journal_panel.fish_tapped.is_connected(_fish_window.open):
@@ -104,3 +111,7 @@ func _update_secret_sub() -> void:
 		return
 	var known := Game.ctx != null and Game.ctx.journal.has_any_secret()
 	_fish_group.set_sub_visible(FISH_SUB_SECRET, known)
+
+func _open_trader() -> void:
+	_rail.select(SHOP_TAB)
+	($SidePanel/Panels/ShopGroup as TabGroup).select_sub(SHOP_SUB_TRADER)

@@ -23,6 +23,7 @@ var coins: int = 0:
 var upgrade_levels: Dictionary = {}
 var settings := Settings.new()
 var buffs := Buffs.new()
+var visitors := Visitors.new()
 ## Wie viele Traenke jeder Sorte im Vorrat sind.
 var consumable_counts: Dictionary = {}
 var unlocked_zones: Array[StringName] = []
@@ -47,7 +48,8 @@ func new_game() -> void:
 	rng = StillRNG.new(randi())
 	sim = FishingSim.new()
 	coins = 0
-	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0}
+	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0, &"mouse_shop": 0}
+	visitors = Visitors.new()
 	unlocked_zones = [&"willow_lake"]
 	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0}
 	owned_cosmetics = {}
@@ -84,6 +86,10 @@ func _process(delta: float) -> void:
 	# hinweg nachzubilden waere Aufwand ohne spuerbaren Gewinn.
 	ctx.hour_of_day = Time.get_datetime_dict_from_system()["hour"]
 	# Traenke laufen NUR bei offenem Spiel ab -- siehe core/buffs.gd.
+	# Besucher haengen an der Uhr, nicht an einem Countdown -- der Wechsel
+	# faellt hier nur auf, damit die Anzeige sich neu zeichnet.
+	if visitors.refresh_mouse(Time.get_unix_time_from_system()):
+		state_changed.emit()
 	var before := buffs.active.size()
 	buffs.tick(delta * time_scale)
 	if buffs.active.size() != before:
@@ -405,3 +411,50 @@ func use_consumable(id: StringName) -> bool:
 	state_changed.emit()
 	progress_changed.emit()
 	return true
+
+# --- Besucher -----------------------------------------------------------------
+
+func mouse_offer_size() -> int:
+	return int(upgrade_value(&"mouse_shop"))
+
+func mouse_offer() -> Array[StringName]:
+	return visitors.mouse_offer(Time.get_unix_time_from_system(), mouse_offer_size())
+
+## Beim Haendler kaufen. Was gekauft ist, ist fuer diese Stunde weg -- ein
+## Angebot, das sich nachfuellt, waere ein Automat und kein Besuch.
+func buy_from_mouse(id: StringName) -> bool:
+	var c: ConsumableData = Database.consumables.get(id)
+	if c == null or visitors.mouse_sold_out(id) or not mouse_offer().has(id):
+		return false
+	if not buy_consumable(id, 1):
+		return false
+	visitors.mouse_buy(id)
+	state_changed.emit()
+	return true
+
+func reroll_mouse() -> bool:
+	if coins < Visitors.REROLL_COST:
+		return false
+	coins -= Visitors.REROLL_COST
+	visitors.reroll()
+	state_changed.emit()
+	progress_changed.emit()
+	return true
+
+func package_waiting() -> bool:
+	return visitors.package_waiting(Time.get_unix_time_from_system())
+
+## Das Paket der Moewe. Es wartet, bis es jemand aufhebt -- verfallen zu
+## lassen, was man verpasst hat, bestraft Abwesenheit.
+func collect_package() -> StringName:
+	var now := Time.get_unix_time_from_system()
+	if not visitors.package_waiting(now):
+		return &""
+	var gift := visitors.package_gift(now)
+	visitors.collect_package(now)
+	if gift != &"":
+		consumable_counts[gift] = consumable_count(gift) + 1
+	Audio.play(&"coin")
+	state_changed.emit()
+	progress_changed.emit()
+	return gift

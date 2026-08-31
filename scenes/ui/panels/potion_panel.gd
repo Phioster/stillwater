@@ -1,5 +1,9 @@
-## Die Tränke. Kaufen und trinken an einer Stelle — was gerade wirkt, steht
-## oben, damit man nicht raten muss, ob der teure Trank noch läuft.
+## Der Trankbeutel: was man hat und was gerade wirkt.
+##
+## Gekauft wird hier NICHT. Tränke kommen vom Maus-Händler und aus dem Paket
+## der Möwe — genau wie in der Referenz, deren Laden nur Ausbau und Köder
+## führt. Das macht aus einem Trank ein Fundstück statt einer Ware aus dem
+## Automaten, und deshalb fühlt sich dort ein Elixier nach etwas an.
 extends PanelBase
 
 func refresh() -> void:
@@ -7,14 +11,22 @@ func refresh() -> void:
 	add_child(_active_block())
 
 	var header := Label.new()
-	header.text = "Vorrat"
+	header.text = "Beutel"
 	header.modulate = Palette.get_color(&"accent")
 	add_child(header)
 
+	var any := false
 	for c in Database.consumables_in_order():
-		if Game.ctx.player_level < c.unlock_level:
+		if Game.consumable_count(c.id) <= 0:
 			continue
+		any = true
 		add_child(_row(c))
+	if not any:
+		var empty := Label.new()
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.text = "Noch nichts da. Tränke bringt der Händler vorbei — oder die Möwe legt eins ab."
+		empty.modulate = Palette.get_color(&"reed_light")
+		add_child(empty)
 
 ## Was gerade wirkt, mit Restzeit. Ohne das ist ein Trank Geld, das man
 ## ausgibt, ohne zu sehen wofür.
@@ -61,26 +73,11 @@ func _row(c: ConsumableData) -> Control:
 	desc.modulate = Palette.get_color(&"reed_light")
 	box.add_child(desc)
 
-	var row := HBoxContainer.new()
-
 	var use := TapButton.new()
 	use.text = "Trinken"
 	use.custom_minimum_size = Vector2(0, 96)
-	use.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	use.tapped.connect(func() -> void:
 		if not Game.use_consumable(c.id):
 			use.refuse())
-	row.add_child(use)
-
-	for amount in [1, 5]:
-		var buy := TapButton.new()
-		buy.text = "%d ×  %d" % [amount, c.cost * amount]
-		buy.custom_minimum_size = Vector2(0, 96)
-		buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		buy.tapped.connect(func() -> void:
-			if not Game.buy_consumable(c.id, amount):
-				buy.refuse())
-		row.add_child(buy)
-
-	box.add_child(row)
+	box.add_child(use)
 	return box

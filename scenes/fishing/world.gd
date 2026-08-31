@@ -2,6 +2,10 @@
 ## und stellt die Fläche bereit, über der die Orbs erscheinen dürfen.
 extends Control
 
+## Meldet, dass jemand den Haendler angetippt hat -- main.gd oeffnet dann
+## seinen Reiter. Die Welt kennt das Menue nicht und soll es nicht kennen.
+signal visitor_tapped
+
 @onready var orb_area: Control = $CatchView.spawn_area
 @onready var _bobber: Sprite2D = $Bobber
 @onready var _background: TextureRect = $Background
@@ -10,6 +14,8 @@ extends Control
 @onready var _line: Line2D = $Line
 @onready var _water_line: Line2D = $WaterLine
 @onready var _water_body: Polygon2D = $WaterBody
+@onready var _package: TextureButton = $Visitors/Package
+@onready var _mouse: TextureButton = $Visitors/Mouse
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
@@ -48,6 +54,7 @@ const CATCH_KICK := 20.0
 const SPLASH_KICK := 7.0
 ## Wie hoch der Wurf ueber die Verbindungslinie hinausgeht.
 const CAST_ARC := 200.0
+const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
@@ -64,6 +71,7 @@ func _ready() -> void:
 	_dock.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_setup_visitors()
 	_water_line.width = 4.0
 	_apply_zone()
 	_layout()
@@ -131,6 +139,7 @@ func _process(delta: float) -> void:
 		_line.points = PackedVector2Array([_angler.rod_tip(), _bobber.position])
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
 	$CatchView.focus_point = _bobber.position
+	_update_visitors()
 	_water_time += delta
 	_water.step(delta)
 	if _bobber.visible and not casting:
@@ -201,3 +210,39 @@ func _cast_position() -> Vector2:
 	var peak: Vector2 = (from + to) * 0.5 - Vector2(0.0, CAST_ARC)
 	var inv := 1.0 - t
 	return inv * inv * from + 2.0 * inv * t * peak + t * t * to
+
+## Besucher stehen am Steg und wollen angetippt werden. Sichtbar nur, wenn
+## es wirklich etwas zu holen gibt -- ein Knopf, der nichts tut, ist Ballast.
+func _setup_visitors() -> void:
+	_package.texture_normal = TextureLoader.load_texture("res://assets/art/package.png")
+	_mouse.texture_normal = TextureLoader.load_texture("res://assets/art/mouse_trader.png")
+	for b in [_package, _mouse]:
+		b.ignore_texture_size = true
+		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		b.custom_minimum_size = Vector2(96, 96)
+		b.size = Vector2(96, 96)
+	if not _package.pressed.is_connected(_on_package_pressed):
+		_package.pressed.connect(_on_package_pressed)
+	if not _mouse.pressed.is_connected(_on_mouse_pressed):
+		_mouse.pressed.connect(_on_mouse_pressed)
+
+func _update_visitors() -> void:
+	_package.visible = Game.package_waiting()
+	_mouse.visible = not Game.mouse_offer().is_empty()
+	var deck_y := _dock.position.y
+	_package.position = Vector2(_dock.position.x + 8.0, deck_y - 104.0)
+	_mouse.position = Vector2(_dock.position.x + 116.0, deck_y - 96.0)
+
+func _on_package_pressed() -> void:
+	var gift := Game.collect_package()
+	if gift == &"":
+		return
+	var c: ConsumableData = Database.consumables.get(gift)
+	var name := c.display_name if c != null else String(gift)
+	var pop := POP_TEXT_SCENE.instantiate()
+	$Visitors.add_child(pop)
+	pop.setup(name, _package.position + Vector2(48.0, 0.0), Palette.get_color(&"accent"))
+
+func _on_mouse_pressed() -> void:
+	Audio.click()
+	visitor_tapped.emit()

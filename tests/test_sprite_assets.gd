@@ -15,6 +15,10 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(96, 32)
 	if filename.begins_with("fish_"):
 		return Vector2i(32, 16)
+	if filename == "package.png":
+		return Vector2i(16, 14)
+	if filename == "mouse_trader.png":
+		return Vector2i(16, 12)
 	if filename == "orb.png":
 		return Vector2i(16, 16)
 	if filename == "bobber.png":

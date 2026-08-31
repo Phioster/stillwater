@@ -346,6 +346,29 @@ func _fishes() -> void:
 			fin = _c(&"wood_dark")
 		_fish_sprite(f.id, body, fin)
 
+## Besucher: das Paket der Moewe und der Maus-Haendler. Beide klein und
+## deutlich, weil sie am Steg stehen und angetippt werden wollen.
+func _visitors() -> void:
+	var pkg := _new_image(16, 14)
+	_rect(pkg, 0, 3, 16, 11, _c(&"wood"))
+	_rect(pkg, 0, 3, 16, 1, _c(&"wood_light"))
+	_rect(pkg, 6, 3, 4, 11, _c(&"cloth_red"))
+	_rect(pkg, 0, 7, 16, 2, _c(&"cloth_red"))
+	# Schleife oben
+	_rect(pkg, 5, 0, 3, 3, _c(&"cloth_red"))
+	_rect(pkg, 8, 0, 3, 3, _c(&"cloth_red"))
+	_save(pkg, "package")
+
+	var mouse := _new_image(16, 12)
+	_ellipse(mouse, 7.0, 7.0, 6.0, 4.0, _c(&"skin_3"))
+	_ellipse(mouse, 3.0, 6.0, 3.0, 3.0, _c(&"skin_3"))
+	_ellipse(mouse, 2.0, 3.0, 2.0, 2.0, _c(&"skin_2"))
+	_ellipse(mouse, 5.0, 3.0, 2.0, 2.0, _c(&"skin_2"))
+	mouse.set_pixel(1, 6, _c(&"outline"))
+	for i in 5:
+		mouse.set_pixel(13 + i / 3, 8 - i / 2, _c(&"skin_2"))
+	_save(mouse, "mouse_trader")
+
 # --- Kleinkram ------------------------------------------------------------
 
 func _orb() -> void:
@@ -372,6 +395,7 @@ func _init() -> void:
 	_background_cistern()
 	_background_sky()
 	_background_void()
+	_visitors()
 	_dock()
 	print("Charakter")
 	for i in 3:

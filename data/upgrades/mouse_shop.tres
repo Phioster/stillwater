@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://resources/upgrade_data.gd" id="1_mouse"]
+
+[resource]
+script = ExtResource("1_mouse")
+id = &"mouse_shop"
+display_name = "Bekanntschaft"
+description = "Der Händler bringt mehr mit, wenn er dich kennt."
+base_cost = 4000
+cost_growth = 2.2
+value_base = 2.0
+value_per_level = 1.0
+max_level = 4

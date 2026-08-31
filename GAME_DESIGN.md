@@ -222,7 +222,26 @@ Kosmetik da, die Stufe für den Fortschritt.
 Die Raritätsgewichte verschieben sich mit der Tiefe: in Willow Lake sind
 70 % der Bisse gewöhnlich, im Sternensee nur noch 24 %.
 
-## Tränke
+## Tränke — und woher sie kommen
+
+Tränke stehen **nicht im Laden**. Der führt nur Köder und Ausbau. Tränke
+bringt der **Maus-Händler** vorbei oder die **Möwe** legt eins ab. Das ist
+die Aufteilung der Referenz, und sie macht aus einem Elixier ein Fundstück
+statt einer Ware aus dem Automaten.
+
+Beide Besucher hängen an der **Uhr**, nicht an einem Countdown: das Angebot
+einer Stunde wird aus dieser Stunde gesät und ist deshalb immer dasselbe,
+auch nach einem Neustart. Nichts läuft ab, während man weg ist — und wer
+lange weg war, findet **ein** Paket, nicht zehn.
+
+- **Händler**: stündlich neu, drei Sachen (mehr mit der Ausbaustufe
+  „Bekanntschaft"). Was gekauft ist, ist weg bis zum nächsten Besuch.
+  Neuwürfeln kostet.
+- **Möwe**: alle vier Stunden ein Paket mit einem Trank. Es wartet, bis man
+  es aufhebt.
+
+Billiges liegt oft aus, Teures selten — sonst wäre ein Legenden-Elixier
+jede Stunde zu haben.
 
 Jeder Trank ist ein **Faktor auf eine Zahl, die es schon gibt** — keiner
 bringt ein eigenes System mit. Das ist die Regel, ohne die mit jedem Trank

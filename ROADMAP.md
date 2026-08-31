@@ -89,6 +89,9 @@ dem Gerät.
 - ~~Weitere Zonen~~ — **sieben Zonen stehen** (2026-08-30): Willow Lake,
   Sunset Coast, Nebelmoor, Frostbucht, Tiefe Zisterne, Wolkensee,
   Sternensee. 104 Arten. Damit sind wir beim Umfang der Referenz.
-- **Quests.** Erst danach lohnt sich der Uhr-Rhythmus aus dem Dossier.
+- ~~Maus-Händler und Möwe~~ — gebaut 2026-08-31, beide aus der Uhr
+  abgeleitet statt heruntergezählt.
+- **Quests.** Der Uhr-Rhythmus steht jetzt (`core/visitors.gd`); Quests
+  gehen genauso.
 - **Veröffentlichen.** Release-Keystore als GitHub-Secret, Paketname,
   Store-Eintrag.
