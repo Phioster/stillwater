@@ -72,6 +72,11 @@ const COLORS := {
 	&"void_deep":   Color("0d0a1c"),
 	&"void_light":  Color("3a2d6b"),
 	&"void_foam":   Color("b9a6f0"),
+	# Die Rute: gemessen an einer erzeugten Vorlage, die im Spiel ueberzeugt
+	# hat -- dunkelbraun am Griff, fast schwarz an der Spitze. Eine helle
+	# Rute verschwindet vor dem Wasser und sieht nach Stock aus.
+	&"rod_grip":    Color("3a291f"),
+	&"rod_tip":     Color("0c0403"),
 	&"wood_dark":   Color("4a3626"),
 	&"wood":        Color("7a5a3c"),
 	&"wood_light":  Color("a5825a"),

@@ -127,11 +127,16 @@ Bildgröße 64 Pixel je Frame, fünf Rahmen, Vergrößerung in der Welt 2 statt 
   (`gen_sprites.gd::_rod`): verjüngt sich zur Spitze, biegt sich beim
   Schwung, dunkler Umriss, Glanzkante, Wicklung am Griff, kleine Rolle. Jede
   Pose hat eigenen Griff und eigene Richtung (`core/angler_pose.gd`).
-  **Sie bleibt der schwächste Teil des Bildes** — gezeichnet wäre besser.
-  Zwei Versuche, sie per Bild-zu-Bild in die Figur zu generieren, sind
-  gescheitert: bei 64 Pixeln behandelt das Modell die dünne Rute als
-  Rauschen. Nächster Anlauf: lokal erzeugen (Local Dream) und als eigene
-  Ebene einhängen — die Geometrie dafür steht schon.
+  Form und Farben sind an einer **gezeichneten Vorlage gemessen** (lokal mit
+  AziibPixelMix erzeugt): durchgehend zwei Pixel stark, dunkelbraun am Griff,
+  fast schwarz an der Spitze, kleiner Haken am Ende. Die Verjüngung liegt in
+  der Farbe, nicht in der Dicke — eine Rute, die zur Spitze dünner wird,
+  franst bei 30 Pixeln zu einem Faden aus.
+
+  **Nicht gedreht, sondern gezeichnet.** Ein fertiges Rutenbild in zehn
+  Winkel zu drehen macht es entweder verwaschen (weiche Abtastung) oder
+  ausgefranst (harte) — drei Anläufe, alle verworfen. Gerechnet ist jeder
+  Pixel gesetzt.
 - Die **Formvarianten** bei Oberteil und Hose (Lederjacke, Weste, Shorts,
   Rock) sind zurzeit nur Umfärbungen derselben Form.
 

@@ -84,26 +84,35 @@ def outline(img, color):
 def block_size(img, limit=16):
     """Wie gross ein gemalter "Pixel" im erzeugten Bild ist.
 
-    Pixelart-Modelle arbeiten auf 512 und malen dort Bloecke -- bei 64
-    Sprite-Pixeln also 8x8 echte. Wer das ignoriert und einfach skaliert,
-    trifft die Blockkanten nicht und bekommt Matsch. Gesucht wird die
-    Blockgroesse, bei der die wenigsten Farbwechsel auf Kanten fallen.
+    Pixelart-Modelle arbeiten auf 512 und malen dort Bloecke. Wer das
+    ignoriert und einfach skaliert, trifft die Blockkanten nicht und bekommt
+    Matsch.
+
+    Gemessen wird, ob die FARBWECHSEL auf ein Raster fallen: bei der
+    richtigen Blockgroesse liegen fast alle Wechsel auf Vielfachen davon.
+    (Die Wechsel bloss zu zaehlen bevorzugt immer die kleinste Groesse --
+    darauf bin ich einmal hereingefallen.)
     """
     px = img.convert("RGB").load()
     w, h = img.size
-    best, best_score = 1, None
+    changes = set()
+    for y in range(0, h, max(1, h // 96)):
+        for x in range(1, w):
+            if px[x, y] != px[x - 1, y]:
+                changes.add(x)
+    for y in range(1, h):
+        for x in range(0, w, max(1, w // 96)):
+            if px[x, y] != px[x, y - 1]:
+                changes.add(y)
+    if not changes:
+        return 1
+    best = 1
     for b in range(2, limit + 1):
         if w % b or h % b:
             continue
-        bad = 0
-        for y in range(0, h, max(1, h // 64)):
-            for x in range(1, w):
-                if x % b == 0:
-                    continue
-                if px[x, y] != px[x - 1, y]:
-                    bad += 1          # Farbwechsel INNERHALB eines Blocks
-        if best_score is None or bad < best_score:
-            best, best_score = b, bad
+        aligned = sum(1 for c in changes if c % b == 0)
+        if aligned / len(changes) > 0.95:
+            best = b            # groesstes Raster gewinnt, das noch passt
     return best
 
 def main():

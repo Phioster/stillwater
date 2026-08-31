@@ -396,42 +396,42 @@ func _hat(index: int) -> void:
 ## Rute IST eine einfache Form: ein Stock, der sich zur Spitze verjuengt und
 ## dabei biegt. Genau das laesst sich besser rechnen als zeichnen.
 func _rod(index: int) -> void:
-	var tone: StringName = [&"wood_light", &"wood_dark", &"silver"][index]
+	# Die Farbe der Rutenvarianten. Der Verlauf zur Spitze bleibt derselbe:
+	# gemessen an einer gezeichneten Vorlage, die im Spiel funktioniert hat.
+	var tone: Color = [_c(&"rod_grip"), _c(&"wood_dark"), _c(&"silver")][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
 		var a := Vector2(AnglerPose.rod_grip(f))
 		var b := Vector2(AnglerPose.rod_tip(f))
 		var dir := (b - a).normalized()
-		# Quer zur Rute, immer nach unten: dort sitzt die dunkle Kante.
 		var down := Vector2(-dir.y, dir.x)
 		if down.y < 0.0:
 			down = -down
 		var length := (b - a).length()
 		var steps := int(ceil(length)) * 3
-
-		# Zuerst die Kante, dann die Rute darauf. Nur UNTEN, nicht rundum:
-		# ein voller Umriss verdoppelt die Breite einer ein Pixel starken
-		# Linie -- genau das machte sie vorher matschig.
-		for pass_index in 2:
-			for i in steps + 1:
-				var t := float(i) / float(steps)
-				var p := a + (b - a) * t
-				# Am Griff zwei Pixel stark, ab der Mitte einer.
-				var thick := 2 if t < 0.45 else 1
-				for k in thick:
-					var q := p + down * float(k)
-					if pass_index == 0:
-						_pixel(img, ox + int(round(q.x)), int(round(q.y + 1.0)), _c(&"outline"))
-					else:
-						var c: Color = _c(&"wood_dark") if t < 0.16 else _c(tone)
-						_pixel(img, ox + int(round(q.x)), int(round(q.y)), c)
-		# Rolle: zwei Pixel unter dem Griff, mit eigener Kante.
-		var reel := a + dir * (length * 0.16) + down * 2.0
-		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)), _c(&"outline"))
-		_pixel(img, ox + int(round(reel.x)) + 1, int(round(reel.y)), _c(&"outline"))
-		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)) + 1, _c(&"silver"))
-		_pixel(img, ox + int(round(reel.x)) + 1, int(round(reel.y)) + 1, _c(&"outline"))
+		for i in steps + 1:
+			var t := float(i) / float(steps)
+			var p := a + (b - a) * t
+			# Durchgehend zwei Pixel stark. Die Verjuengung liegt in der
+			# FARBE, nicht in der Dicke -- eine Rute, die zur Spitze hin
+			# duenner wird, franst bei 30 Pixeln zu einem Faden aus.
+			var c := tone.lerp(_c(&"rod_tip"), t * 0.9)
+			if t < 0.14:
+				c = _c(&"wood_dark")        # Griff, etwas heller
+			for k in 2:
+				var q := p + down * float(k)
+				_pixel(img, ox + int(round(q.x)), int(round(q.y)), c)
+		# Haken an der Spitze: zwei Pixel quer. Ohne ihn endet die Rute
+		# im Nichts, mit ihm sieht man, wo die Schnur ansetzt.
+		var tipp := a + (b - a) * 0.99
+		for k in 3:
+			var h := tipp + down * float(k) - dir * float(k) * 0.3
+			_pixel(img, ox + int(round(h.x)), int(round(h.y)), _c(&"rod_tip"))
+		# Rolle: ein heller Punkt kurz hinter dem Griff.
+		var reel := a + (b - a) * 0.18 + down * 2.0
+		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)), _c(&"silver").darkened(0.3))
+		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)) + 1, _c(&"outline"))
 	_save(img, "char_rod_%d" % index)
 
 # --- Fische ---------------------------------------------------------------
