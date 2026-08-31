@@ -140,6 +140,8 @@ func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	hooked_health = hooked_max_health
 	state = State.FIGHT
 	timer = FishRoll.time_for(fish, hooked_rank, ctx.zone.fight_window) * ctx.fight_bonus
+	if ctx.raining:
+		timer *= Weather.FIGHT_FACTOR
 	hooked_max_time = timer
 	rod_timer = ROD_INTERVAL
 	rod_hits = 0

@@ -20,6 +20,8 @@ var rarity_bonus: Dictionary = {}
 var rank_bonus: int = 0
 var free_bait: bool = false
 var ignore_time_of_day: bool = false
+## Regen: beisst schneller, Kampf dauert laenger. Nie ein Nachteil.
+var raining: bool = false
 ## Siehe Settings.auto_fallback_bait.
 var auto_fallback_bait: bool = true
 var shiny_bonus: float = 1.0
@@ -35,6 +37,8 @@ var journal: Journal
 ## Faktor des aktiven Koeders auf die Bisszeit.
 func bait_bite_mult() -> float:
 	var m := bait.bite_time_mult if bait != null else 1.0
+	if raining:
+		m *= Weather.BITE_FACTOR
 	return maxf(m * bite_bonus, 0.02)
 
 ## Zieht den Rang aus der Tabelle des aktiven Koeders. Ohne Tabelle bleibt es

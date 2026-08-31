@@ -16,6 +16,7 @@ signal visitor_tapped
 @onready var _water_body: Polygon2D = $WaterBody
 @onready var _raven: TextureButton = $Visitors/Raven
 @onready var _trader: TextureButton = $Visitors/Trader
+var _rain: Rain = null
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
@@ -72,6 +73,10 @@ func _ready() -> void:
 	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_setup_visitors()
+	_rain = Rain.new()
+	add_child(_rain)
+	_rain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_rain.visible = false
 	_water_line.width = 4.0
 	_apply_zone()
 	_layout()
@@ -140,6 +145,8 @@ func _process(delta: float) -> void:
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
 	$CatchView.focus_point = _bobber.position
 	_update_visitors()
+	if _rain != null:
+		_rain.visible = Game.ctx.raining
 	_water_time += delta
 	_water.step(delta)
 	if _bobber.visible and not casting:

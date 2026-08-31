@@ -21,7 +21,9 @@ func refresh() -> void:
 	_level.text = "Lvl %d" % Game.ctx.player_level
 	_xp.max_value = Progression.xp_needed(Game.ctx.player_level)
 	_xp.value = Game.ctx.player_xp
-	_zone.text = Game.ctx.zone.display_name
+	# Regen ist ein Vorteil und gehoert deshalb angesagt -- sonst wundert
+	# man sich nur, warum es gerade so gut laeuft.
+	_zone.text = "%s%s" % [Game.ctx.zone.display_name, "  ☂" if Game.ctx.raining else ""]
 
 func _grouped(value: int) -> String:
 	var s := str(absi(value))
