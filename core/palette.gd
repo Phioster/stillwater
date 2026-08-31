@@ -84,6 +84,7 @@ const COLORS := {
 	&"skin_moss":   Color("6f9455"),
 	&"skin_ice":    Color("9fc7d6"),
 	&"skin_ash":    Color("8f8a9c"),
+	&"skin_white":  Color("f4f6f7"),
 	&"cloth_red":   Color("b4523f"),
 	&"cloth_blue":  Color("3f6fb4"),
 	&"cloth_green": Color("4a9455"),

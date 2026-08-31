@@ -8,7 +8,7 @@ func _fresh() -> void:
 ## Die Zahl steht hier bewusst fest: eine Variante, die beim Umbenennen still
 ## verschwindet, faellt sonst niemandem auf.
 func test_every_cosmetic_variant_loads() -> void:
-	assert_eq(Database.cosmetics.size(), 50)
+	assert_eq(Database.cosmetics.size(), 51)
 
 ## Die Haarfarbe ist die einzige Kategorie ohne eigenes Sprite: sie faerbt
 ## die Frisur ein. Gibt es mehr Farben als Toene, waehlt man stumm dieselbe.

@@ -90,6 +90,27 @@ Seltene Varianten sind Fangbedingungen: der **Tanggeist** (Sunset Coast)
 kommt nur zu moosgrüner Haut, der **Nimbusbarsch** (Wolkensee) nur zu
 jemandem mit Heiligenschein.
 
+## Offen bei der Kosmetik
+
+- **Mehr Varianten** (gewünscht 2026-08-31, noch nicht entworfen): Krone,
+  Zylinder, Augenklappe, Flügel, Schal, Brille. Jedes Stück ist eine `.tres`
+  plus Pixel im Generator — es fehlt nur die Zeichnung.
+- Eine **Rock**-Variante bei den Hosen, sobald die Figur steht.
+
+## Figur: Stand der Kunstrichtung (2026-08-31)
+
+Die Bildgröße steht jetzt auf **64 Pixel je Frame** (vorher 32), die
+Vergrößerung in der Welt entsprechend auf 2 statt 4 — am Bildschirm gleich
+groß, aber doppelt so fein. Steg und Schwimmer sind mitgewachsen.
+
+**Die Figur selbst ist offen.** Zwei Anläufe mit prozeduralen Formen
+(frontal, dann im Profil) sahen beide nach zusammengesteckten Ellipsen aus
+und wurden verworfen. Entschieden ist nur die Richtung: **Seitenansicht mit
+Blick aufs Wasser, Anime-Mädchen.** Wie die Grafik entsteht — fertiger
+Sprite-Pack, Vorlage zum Nachpixeln oder von Hand gesetzte Pixelraster —
+ist noch nicht entschieden. Auf dem Gerät gibt es kein Zeichenprogramm und
+kein Bildmodell; was ohne beides geht, ist handgesetzte Pixelarbeit im Code.
+
 ## Inhalte
 
 - ~~Willow Lake auf 12 bis 18 Arten ausbauen~~ — erledigt 2026-08-29:

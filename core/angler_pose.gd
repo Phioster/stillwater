@@ -8,17 +8,21 @@
 class_name AnglerPose
 extends RefCounted
 
-const FRAME_SIZE: int = 32
+## 64 statt 32 seit 2026-08-31: dieselbe Figur auf doppelt so vielen
+## Bildpunkten, dafür halbe Vergrößerung in der Welt (PIXEL_SCALE 4 → 2).
+## Am Bildschirm bleibt sie damit gleich groß, hat aber Platz für Form und
+## Schattierung statt für Klötzchen.
+const FRAME_SIZE: int = 64
 const FRAMES: int = 3
 
 ## Wie weit der Arm je Bild gehoben ist: ruhig, ausholen, werfen.
-const ARM_OFFSET: Array[int] = [0, -3, 4]
+const ARM_OFFSET: Array[int] = [0, -6, 8]
 
-## Die Rute läuft vom Griff diagonal nach oben rechts. ROD_START ist der
-## Griff im Ruhebild; sie muss vollständig in den 32 Pixel breiten Rahmen
-## passen, sonst blutet sie in den nächsten.
-const ROD_START := Vector2i(17, 16)
-const ROD_LENGTH: int = 14
+## Die Rute läuft vom Griff diagonal nach oben rechts. ROD_START ist die
+## Hand im Ruhebild; die Spitze muss in JEDEM Bild zwei Pixel vor dem Rand
+## bleiben, sonst blutet sie in den nächsten Rahmen.
+const ROD_START := Vector2i(38, 32)
+const ROD_LENGTH: int = 23
 
 static func arm_offset(frame: int) -> int:
 	return ARM_OFFSET[clampi(frame, 0, FRAMES - 1)]

@@ -21,14 +21,15 @@ var _rain: Rain = null
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
 const WATERLINE := 84.0 / 180.0
-const PIXEL_SCALE := 4.0
+## Halbiert, seit die Figurenbilder 64 statt 32 Pixel haben -- am Bildschirm
+## bleibt sie dadurch gleich groß (siehe core/angler_pose.gd).
+const PIXEL_SCALE := 2.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
-const CHAR_SIZE := 32.0
-## Die Schuhe enden im 32er-Frame bei Zeile 30 (Generator: _pants zeichnet sie
-## bei 27..29). Die letzten zwei Reihen sind leer -- wer die Sprite-Unterkante
-## aufs Deck setzt, laesst die Figur um 8 Pixel schweben.
-const CHAR_FEET := 30.0
+const CHAR_SIZE := 64.0
+## Die Schuhe enden im 64er-Frame bei Zeile 60. Die letzten Reihen sind leer --
+## wer die Sprite-Unterkante aufs Deck setzt, laesst die Figur schweben.
+const CHAR_FEET := 60.0
 ## Rutenspitze im 32x32-Frame bei (31, 6).
 
 ## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die
