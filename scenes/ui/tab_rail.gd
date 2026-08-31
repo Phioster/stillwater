@@ -5,10 +5,10 @@ extends PanelContainer
 
 signal tab_selected(index: int)
 
-const TABS: Array[String] = ["Fische", "Vitrine", "Journal", "Laden", "Ausbau", "Welt", "Figur", "Optionen", "Geheim"]
-## Dieser Reiter bleibt unsichtbar, bis der erste Geheimfisch an Land ist.
-## Versteckt statt entfernt, damit Reiter- und Panel-Index gleich bleiben.
-const SECRET_TAB: int = 8
+## Fuenf statt neun. Verwandtes steht zusammen: was man kauft, im Laden;
+## was mit gefangenen Fischen zu tun hat, bei den Fischen. Die Unterteilung
+## uebernimmt TabGroup.
+const TABS: Array[String] = ["Fische", "Journal", "Laden", "Welt", "Optionen"]
 ## Untergrenze eines Knopfes -- bewusst KLEIN. Die Mindesthöhen summieren
 ## sich zur Mindesthöhe der Leiste, und ein Control kann nicht kleiner werden
 ## als die. Mit 96 hier wäre die Leiste bei neun Reitern 810 px hoch geworden
@@ -32,21 +32,6 @@ func _ready() -> void:
 		b.tapped.connect(_on_pressed.bind(i))
 		$Box.add_child(b)
 		_buttons.append(b)
-	if not Game.state_changed.is_connected(_update_secret_tab):
-		Game.state_changed.connect(_update_secret_tab)
-	_update_secret_tab()
-
-func _exit_tree() -> void:
-	if Game.state_changed.is_connected(_update_secret_tab):
-		Game.state_changed.disconnect(_update_secret_tab)
-
-## Vor dem ersten Fang soll das Spiel nicht einmal andeuten, dass es
-## Geheimfische gibt -- kein Reiter, keine Hinweiszeile, nichts.
-func _update_secret_tab() -> void:
-	var known := Game.ctx != null and Game.ctx.journal.has_any_secret()
-	_buttons[SECRET_TAB].visible = known
-	if not known and _active == SECRET_TAB:
-		select(SECRET_TAB)
 
 ## Ein zweiter Aufruf mit demselben Index klappt das Panel wieder zu.
 func select(index: int) -> void:

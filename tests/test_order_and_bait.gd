@@ -45,15 +45,15 @@ func test_zones_are_ordered_by_unlock_everywhere() -> void:
 	var m := _main()
 
 	# Weltliste
-	m.show_tab(5)
-	var world := _positions(_texts(m.get_node("SidePanel/Panels/WorldScroll/WorldPanel")), names)
+	m.show_tab(3)
+	var world := _positions(_texts(m.get_node("SidePanel/Panels/WorldGroup/WorldScroll/WorldPanel")), names)
 	assert_eq(world.size(), names.size(), "in der Weltliste fehlt eine Zone")
 	for i in range(1, world.size()):
 		assert_true(world[i - 1] < world[i], "Weltliste steht falsch herum")
 
 	# Journal
-	m.show_tab(2)
-	var journal := _positions(_texts(m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")), names)
+	m.show_tab(1)
+	var journal := _positions(_texts(m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")), names)
 	for i in range(1, journal.size()):
 		assert_true(journal[i - 1] < journal[i], "Journal steht falsch herum")
 	m.free()
@@ -65,11 +65,12 @@ func test_the_secret_tab_lists_zones_in_the_same_order() -> void:
 		if f.is_secret:
 			Game.ctx.journal.record(CaughtFish.make(f.id, 0.0, false), true)
 	var m := _main()
-	m.show_tab(TabRail.SECRET_TAB)
+	m.show_tab(0)
+	m.get_node("SidePanel/Panels/FishGroup").select_sub(2)
 	var names: Array[String] = []
 	for z in Database.zones_in_order():
 		names.append(z.display_name)
-	var seen := _positions(_texts(m.get_node("SidePanel/Panels/SecretScroll/SecretPanel")), names)
+	var seen := _positions(_texts(m.get_node("SidePanel/Panels/FishGroup/SecretScroll/SecretPanel")), names)
 	assert_eq(seen.size(), names.size(), "im Geheimreiter fehlt eine Zone")
 	for i in range(1, seen.size()):
 		assert_true(seen[i - 1] < seen[i], "Geheimreiter steht falsch herum")

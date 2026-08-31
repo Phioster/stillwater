@@ -5,12 +5,15 @@ extends Control
 
 const PANEL_WIDTH := 420.0
 const RAIL_WIDTH := 96.0
+## Unterreiter der Fischgruppe: Inventar, Vitrine, Geheim.
+const FISH_SUB_SECRET := 2
 
 @onready var _side: PanelContainer = $SidePanel
 @onready var _panels: Control = $SidePanel/Panels
 @onready var _rail = $Row/TabRail
-@onready var _journal_panel = $SidePanel/Panels/JournalScroll/JournalPanel
-@onready var _secret_panel = $SidePanel/Panels/SecretScroll/SecretPanel
+@onready var _journal_panel = $SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel
+@onready var _secret_panel = $SidePanel/Panels/FishGroup/SecretScroll/SecretPanel
+@onready var _fish_group: TabGroup = $SidePanel/Panels/FishGroup
 @onready var _fish_window = $FishWindow
 
 func _ready() -> void:
@@ -23,6 +26,9 @@ func _ready() -> void:
 	if not _secret_panel.fish_tapped.is_connected(_fish_window.open):
 		_secret_panel.fish_tapped.connect(_fish_window.open)
 	_setup_scrolling()
+	if not Game.state_changed.is_connected(_update_secret_sub):
+		Game.state_changed.connect(_update_secret_sub)
+	_update_secret_sub()
 	_apply_safe_area()
 	if not get_viewport().size_changed.is_connected(_apply_safe_area):
 		get_viewport().size_changed.connect(_apply_safe_area)
@@ -34,8 +40,12 @@ func _ready() -> void:
 ## Bewegung ein Scrollen ist und kein Tippen.
 var _glides: Array[GlideScroll] = []
 
-func _setup_scrolling() -> void:
-	for child in _panels.get_children():
+## Rekursiv: die Listen stecken seit der Gruppierung eine Ebene tiefer, und
+## eine Schleife nur ueber die direkten Kinder haette sie stumm uebersehen --
+## das Scrollen waere ueberall weg gewesen, ohne dass ein Test anschlaegt.
+func _setup_scrolling(node: Node = null) -> void:
+	var parent: Node = node if node != null else _panels
+	for child in parent.get_children():
 		if child is ScrollContainer:
 			var sc: ScrollContainer = child
 			sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -44,6 +54,8 @@ func _setup_scrolling() -> void:
 			var glide := GlideScroll.new(sc)
 			_glides.append(glide)
 			sc.gui_input.connect(glide.on_input)
+		else:
+			_setup_scrolling(child)
 
 ## Blendet genau ein Panel ein. -1 schließt alle. Ein Index außerhalb der
 ## vorhandenen Panels wirkt wie -1: alles bleibt zu, statt abzustürzen.
@@ -84,3 +96,11 @@ func _apply_safe_area() -> void:
 func _process(delta: float) -> void:
 	for g in _glides:
 		g.update(delta)
+
+## Vor dem ersten Geheimfang soll nichts auf sie hindeuten -- der Unterreiter
+## entsteht erst mit dem Fang. Das war frueher ein eigener Hauptreiter.
+func _update_secret_sub() -> void:
+	if _fish_group == null:
+		return
+	var known := Game.ctx != null and Game.ctx.journal.has_any_secret()
+	_fish_group.set_sub_visible(FISH_SUB_SECRET, known)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://scenes/ui/panels/secret_panel.gd" id="13"]
 [ext_resource type="Script" path="res://scenes/ui/panels/vitrine_panel.gd" id="14"]
 [ext_resource type="Script" path="res://scenes/ui/panels/options_panel.gd" id="15"]
+[ext_resource type="Script" path="res://scenes/ui/tab_group.gd" id="16"]
 [ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/fish_window.tscn" id="12"]
 
@@ -45,86 +46,91 @@ offset_right = -96.0
 
 [node name="Panels" type="Control" parent="SidePanel"]
 
-[node name="FishScroll" type="ScrollContainer" parent="SidePanel/Panels"]
+[node name="FishGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+script = ExtResource("16")
+labels = PackedStringArray("Inventar", "Vitrine", "Geheim")
 
-[node name="FishPanel" type="VBoxContainer" parent="SidePanel/Panels/FishScroll"]
+[node name="FishScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
+
+[node name="FishPanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/FishScroll"]
 size_flags_horizontal = 3
 script = ExtResource("5")
 
-[node name="VitrineScroll" type="ScrollContainer" parent="SidePanel/Panels"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+[node name="VitrineScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
 
-[node name="VitrinePanel" type="VBoxContainer" parent="SidePanel/Panels/VitrineScroll"]
+[node name="VitrinePanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/VitrineScroll"]
 size_flags_horizontal = 3
 script = ExtResource("14")
 
-[node name="JournalScroll" type="ScrollContainer" parent="SidePanel/Panels"]
+[node name="SecretScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
+
+[node name="SecretPanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/SecretScroll"]
+size_flags_horizontal = 3
+script = ExtResource("13")
+
+[node name="JournalGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+script = ExtResource("16")
 
-[node name="JournalPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalScroll"]
+[node name="JournalScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
+
+[node name="JournalPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/JournalScroll"]
 size_flags_horizontal = 3
 script = ExtResource("6")
 
-[node name="ShopScroll" type="ScrollContainer" parent="SidePanel/Panels"]
+[node name="ShopGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+script = ExtResource("16")
+labels = PackedStringArray("Köder", "Kosmetik", "Ausbau")
 
-[node name="ShopPanel" type="VBoxContainer" parent="SidePanel/Panels/ShopScroll"]
+[node name="ShopScroll" type="ScrollContainer" parent="SidePanel/Panels/ShopGroup"]
+
+[node name="ShopPanel" type="VBoxContainer" parent="SidePanel/Panels/ShopGroup/ShopScroll"]
 size_flags_horizontal = 3
 script = ExtResource("7")
 
-[node name="UpgradeScroll" type="ScrollContainer" parent="SidePanel/Panels"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+[node name="CharacterScroll" type="ScrollContainer" parent="SidePanel/Panels/ShopGroup"]
 
-[node name="UpgradePanel" type="VBoxContainer" parent="SidePanel/Panels/UpgradeScroll"]
-size_flags_horizontal = 3
-script = ExtResource("8")
-
-[node name="WorldScroll" type="ScrollContainer" parent="SidePanel/Panels"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-
-[node name="WorldPanel" type="VBoxContainer" parent="SidePanel/Panels/WorldScroll"]
-size_flags_horizontal = 3
-script = ExtResource("9")
-
-[node name="CharacterScroll" type="ScrollContainer" parent="SidePanel/Panels"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-
-[node name="CharacterPanel" type="VBoxContainer" parent="SidePanel/Panels/CharacterScroll"]
+[node name="CharacterPanel" type="VBoxContainer" parent="SidePanel/Panels/ShopGroup/CharacterScroll"]
 size_flags_horizontal = 3
 script = ExtResource("10")
 
-[node name="OptionsScroll" type="ScrollContainer" parent="SidePanel/Panels"]
+[node name="UpgradeScroll" type="ScrollContainer" parent="SidePanel/Panels/ShopGroup"]
+
+[node name="UpgradePanel" type="VBoxContainer" parent="SidePanel/Panels/ShopGroup/UpgradeScroll"]
+size_flags_horizontal = 3
+script = ExtResource("8")
+
+[node name="WorldGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+script = ExtResource("16")
 
-[node name="OptionsPanel" type="VBoxContainer" parent="SidePanel/Panels/OptionsScroll"]
+[node name="WorldScroll" type="ScrollContainer" parent="SidePanel/Panels/WorldGroup"]
+
+[node name="WorldPanel" type="VBoxContainer" parent="SidePanel/Panels/WorldGroup/WorldScroll"]
+size_flags_horizontal = 3
+script = ExtResource("9")
+
+[node name="OptionsGroup" type="VBoxContainer" parent="SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("16")
+
+[node name="OptionsScroll" type="ScrollContainer" parent="SidePanel/Panels/OptionsGroup"]
+
+[node name="OptionsPanel" type="VBoxContainer" parent="SidePanel/Panels/OptionsGroup/OptionsScroll"]
 size_flags_horizontal = 3
 script = ExtResource("15")
-
-[node name="SecretScroll" type="ScrollContainer" parent="SidePanel/Panels"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-
-[node name="SecretPanel" type="VBoxContainer" parent="SidePanel/Panels/SecretScroll"]
-size_flags_horizontal = 3
-script = ExtResource("13")
 
 [node name="Hud" parent="." instance=ExtResource("3")]
 offset_left = 16.0

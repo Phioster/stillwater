@@ -44,6 +44,11 @@ const SHORE_OVERLAP := 10.0
 const BOBBER_DRIVE := 0.05
 const BITE_KICK := 12.0
 const CATCH_KICK := 20.0
+## Der Spritzer beim Aufsetzen. Kleiner als ein Biss -- der Wurf soll das
+## Wasser anstossen, nicht aufschrecken.
+const SPLASH_KICK := 7.0
+## Wie hoch der Wurf ueber die Verbindungslinie hinausgeht.
+const CAST_ARC := 200.0
 
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
@@ -102,13 +107,24 @@ func _process(delta: float) -> void:
 	if Game.sim.state != _last_state:
 		if Game.sim.state == FishingSim.State.CASTING and _last_state != -1:
 			Audio.play(&"cast", 0.3)
+		# Aufsetzen: ein Spritzer da, wo der Schwimmer landet.
+		if Game.sim.state == FishingSim.State.WAITING and _last_state == FishingSim.State.CASTING:
+			_water.disturb_at(_bobber_fraction(), SPLASH_KICK)
 		_last_state = Game.sim.state
 
 	_bob_time += delta
-	var visible_states := [FishingSim.State.WAITING, FishingSim.State.FIGHT]
+	var casting := Game.sim.state == FishingSim.State.CASTING
+	var visible_states := [FishingSim.State.CASTING, FishingSim.State.WAITING, FishingSim.State.FIGHT]
 	_bobber.visible = Game.sim.state in visible_states
 	var amplitude := 10.0 if Game.sim.state == FishingSim.State.FIGHT else 3.0
-	_bobber.position.y = _bobber_home.y + sin(_bob_time * 3.0) * amplitude
+	if casting:
+		# Der Schwimmer war waehrend des Wurfs unsichtbar und tauchte am Ende
+		# an seiner Endstelle auf -- er teleportierte. Jetzt fliegt er einen
+		# Bogen, und die Schnur folgt ihm von selbst.
+		_bobber.position = _cast_position()
+	else:
+		_bobber.position = Vector2(_bobber_home.x,
+			_bobber_home.y + sin(_bob_time * 3.0) * amplitude)
 	# Schnur von der Rutenspitze zum Schwimmer -- folgt dadurch von selbst
 	# dem Auf und Ab und dem Zappeln im Kampf.
 	_line.visible = _bobber.visible
@@ -118,7 +134,7 @@ func _process(delta: float) -> void:
 	$CatchView.focus_point = _bobber.position
 	_water_time += delta
 	_water.step(delta)
-	if _bobber.visible:
+	if _bobber.visible and not casting:
 		# Ableitung der Bob-Sinuskurve: das Wippen selbst stoesst das Wasser an,
 		# nicht ein fester Takt -- schneller im Kampf, ruhiger beim Warten.
 		var bob_velocity := amplitude * 3.0 * cos(_bob_time * 3.0)
@@ -174,3 +190,15 @@ func _apply_zone() -> void:
 	crest.a = 0.85
 	_water_line.default_color = crest
 	_water_body.color = Palette.get_color(zone.shore_key)
+
+## Der Schwimmer auf seinem Flug: eine quadratische Bezierkurve von der
+## Rutenspitze zur Ruhelage, mit einem Scheitel darueber. Der Fortschritt
+## kommt aus der Simulationsuhr, damit Flug und Wurfdauer nicht auseinander
+## laufen koennen.
+func _cast_position() -> Vector2:
+	var t := 1.0 - clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
+	var from := _angler.position + ROD_TIP
+	var to := _bobber_home
+	var peak := (from + to) * 0.5 - Vector2(0.0, CAST_ARC)
+	var inv := 1.0 - t
+	return inv * inv * from + 2.0 * inv * t * peak + t * t * to

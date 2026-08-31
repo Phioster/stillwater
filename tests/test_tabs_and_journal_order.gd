@@ -6,26 +6,36 @@ func _main() -> Control:
 	tree.root.add_child(m)
 	return m
 
-## Reiterleiste und Panel-Liste sind ueber den INDEX gekoppelt. Ein Panel an
-## der falschen Stelle einzufuegen wuerde stumm den falschen Reiter oeffnen --
-## genau das ist beim Einhaengen der Vitrine beinahe passiert.
-func test_every_tab_has_its_panel_in_the_same_order() -> void:
+## Reiterleiste und Gruppen sind ueber den INDEX gekoppelt. Eine Gruppe an
+## der falschen Stelle wuerde stumm den falschen Reiter oeffnen.
+func test_every_tab_has_its_group_in_the_same_order() -> void:
 	Game.new_game()
 	var m := _main()
 	var panels: Node = m.get_node("SidePanel/Panels")
 	assert_eq(TabRail.TABS.size(), panels.get_child_count(),
-		"jeder Reiter braucht genau ein Panel")
-	assert_eq(panels.get_child(TabRail.SECRET_TAB).name, &"SecretScroll",
-		"SECRET_TAB zeigt auf das falsche Panel")
-	assert_eq(TabRail.TABS[TabRail.SECRET_TAB], "Geheim")
-	assert_eq(panels.get_child(1).name, &"VitrineScroll")
-	assert_eq(TabRail.TABS[1], "Vitrine")
+		"jeder Reiter braucht genau eine Gruppe")
+	var expected := ["FishGroup", "JournalGroup", "ShopGroup", "WorldGroup", "OptionsGroup"]
+	for i in expected.size():
+		assert_eq(String(panels.get_child(i).name), expected[i],
+			"Reiter %s zeigt auf %s" % [TabRail.TABS[i], panels.get_child(i).name])
+		assert_true(panels.get_child(i) is TabGroup, "Gruppe %d ist keine TabGroup" % i)
 	m.free()
 
-## Die Leiste darf nie hoeher werden als der Platz, den sie bekommt. Mit
-## grossen Mindesthoehen an den Knoepfen war genau das der Fall: sie
-## summierten sich zur Mindesthoehe der Leiste, und bei neun Reitern lief
-## sie unten aus dem Bild.
+## Jede Gruppe braucht so viele Beschriftungen, wie sie Unterreiter hat --
+## sonst steht dort ein Fragezeichen.
+func test_every_group_labels_all_of_its_sub_tabs() -> void:
+	Game.new_game()
+	var m := _main()
+	for group in m.get_node("SidePanel/Panels").get_children():
+		var subs := 0
+		for child in group.get_children():
+			if child is ScrollContainer:
+				subs += 1
+		if subs > 1:
+			assert_eq(group.labels.size(), subs,
+				"%s hat %d Unterreiter, aber %d Beschriftungen" % [group.name, subs, group.labels.size()])
+	m.free()
+
 func test_the_rail_never_demands_more_room_than_the_screen() -> void:
 	Game.new_game()
 	var m := _main()
@@ -54,16 +64,17 @@ func test_the_showcase_tab_lists_only_favorites() -> void:
 	assert_true(Game.toggle_favorite(1))
 
 	var m := _main()
-	m.show_tab(1)
-	var panel: PanelBase = m.get_node("SidePanel/Panels/VitrineScroll/VitrinePanel")
+	m.show_tab(0)
+	m.get_node("SidePanel/Panels/FishGroup").select_sub(1)
+	var panel: PanelBase = m.get_node("SidePanel/Panels/FishGroup/VitrineScroll/VitrinePanel")
 	var names := _all_text(panel)
 	var joined := "\n".join(names)
 	assert_true("Rotauge" in joined or "roach" in joined, "der Favorit fehlt in der Vitrine")
 	assert_false("Bluegill" in joined, "ein normaler Fang gehört nicht in die Vitrine")
 
 	# ... und umgekehrt: das Inventar zeigt den Favoriten nicht mehr.
-	m.show_tab(0)
-	var fish_panel: PanelBase = m.get_node("SidePanel/Panels/FishScroll/FishPanel")
+	m.get_node("SidePanel/Panels/FishGroup").select_sub(0)
+	var fish_panel: PanelBase = m.get_node("SidePanel/Panels/FishGroup/FishScroll/FishPanel")
 	var inv_text := "\n".join(_all_text(fish_panel))
 	assert_true("Bluegill" in inv_text, "der normale Fang fehlt im Inventar")
 	assert_false("Rotauge" in inv_text, "der Favorit steht doppelt")
@@ -74,7 +85,7 @@ func test_the_showcase_tab_lists_only_favorites() -> void:
 func test_journal_zones_are_in_unlock_order() -> void:
 	Game.new_game()
 	var m := _main()
-	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
+	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	var zones: Array = Database.zones_in_order()
 	assert_eq(zones[0].id, &"willow_lake", "die Startzone muss zuerst kommen")
 	for i in range(1, zones.size()):
@@ -86,7 +97,7 @@ func test_journal_zones_are_in_unlock_order() -> void:
 func test_fish_inside_a_zone_are_sorted_by_rarity_then_name() -> void:
 	Game.new_game()
 	var m := _main()
-	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
+	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	var fish: Array = panel._fish_in_order(&"willow_lake")
 	assert_true(fish.size() > 5, "die Startzone muss mehrere Arten haben")
 	for f in fish:
@@ -107,8 +118,8 @@ func test_fish_inside_a_zone_are_sorted_by_rarity_then_name() -> void:
 func test_the_journal_shows_one_zone_at_a_time() -> void:
 	Game.new_game()
 	var m := _main()
-	m.show_tab(2)
-	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
+	m.show_tab(1)
+	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	var shown: Array[StringName] = []
 	for child in panel.get_children():
 		if child.has_meta(&"fish_id"):
@@ -149,8 +160,8 @@ func test_the_ui_carries_outline_and_shadow_from_one_theme() -> void:
 func test_the_zone_switcher_holds_every_zone_in_one_tap() -> void:
 	Game.new_game()
 	var m := _main()
-	m.show_tab(2)
-	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
+	m.show_tab(1)
+	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	var grid: GridContainer = null
 	for child in panel.get_children():
 		if child is GridContainer:
@@ -170,7 +181,7 @@ func test_the_zone_switcher_holds_every_zone_in_one_tap() -> void:
 func test_the_last_entry_is_the_rarest_and_heaviest_of_its_rarity() -> void:
 	Game.new_game()
 	var m := _main()
-	var panel = m.get_node("SidePanel/Panels/JournalScroll/JournalPanel")
+	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	for zid in Database.zones:
 		var fish: Array = panel._fish_in_order(zid)
 		var last: FishData = fish[fish.size() - 1]
@@ -183,3 +194,26 @@ func test_the_last_entry_is_the_rarest_and_heaviest_of_its_rarity() -> void:
 				assert_true(f.weight_mean <= last.weight_mean,
 					"%s ist schwerer als der letzte Eintrag in %s" % [f.display_name, zid])
 	m.free()
+
+## Das Scrollen steckt seit der Gruppierung eine Ebene tiefer. Eine Schleife
+## nur ueber die direkten Kinder haette es stumm uebersehen -- und niemand
+## haette es gemerkt, bis eine Liste sich nicht mehr wischen laesst.
+func test_every_list_still_scrolls_after_the_regrouping() -> void:
+	Game.new_game()
+	var m := _main()
+	var found := _scrolls(m.get_node("SidePanel/Panels"))
+	assert_eq(found.size(), 9, "es gibt %d Listen, erwartet waren 9" % found.size())
+	for sc in found:
+		assert_eq(sc.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_AUTO,
+			"%s wurde beim Einrichten uebersehen" % sc.name)
+		assert_true(sc.gui_input.get_connections().size() > 0,
+			"%s hat keinen Nachschwung" % sc.name)
+	m.free()
+
+func _scrolls(node: Node) -> Array[ScrollContainer]:
+	var out: Array[ScrollContainer] = []
+	if node is ScrollContainer:
+		out.append(node)
+	for c in node.get_children():
+		out.append_array(_scrolls(c))
+	return out

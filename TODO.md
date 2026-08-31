@@ -32,8 +32,9 @@ Schicht darüber:
 - **Schatten unter Text und Flächen.** Das Referenzspiel hat dafür
   eigene Varianten aller Standardelemente; ein Theme mit
   Umriss/Schatten täte dasselbe an einer Stelle.
-- **Panels mit Titelzeile und Schließen-Knopf** statt nur Ein/Aus über
-  die Reiterleiste.
+- ~~Panels mit Titelzeile~~ — seit 2026-08-31 tragen Gruppen mit mehreren
+  Unterreitern deren Leiste oben; ein Schließen-Knopf fehlt weiter (die
+  Reiterleiste klappt zu, wenn man denselben Reiter noch einmal tippt).
 - **Sortierung des Inventars** (Datum, Rang, Rarität, Wert, Name,
   Gewicht) — sechs Modi, gemerkt.
 - **Tooltips** an Zahlen, die sonst unerklärt bleiben.

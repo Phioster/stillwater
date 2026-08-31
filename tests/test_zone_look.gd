@@ -62,3 +62,50 @@ func test_zones_get_steadily_harder_to_reach() -> void:
 			"%s kostet nicht mehr als %s" % [zones[i].id, zones[i - 1].id])
 		assert_true(zones[i].unlock_level > zones[i - 1].unlock_level,
 			"%s kommt nicht später als %s" % [zones[i].id, zones[i - 1].id])
+
+## Der Wurf war keine Bewegung: der Schwimmer blieb unsichtbar und tauchte am
+## Ende an seiner Endstelle auf. Jetzt fliegt er einen Bogen -- geprüft wird,
+## dass er sich überhaupt bewegt, oben ankommt und unten landet.
+func _cast_world() -> Control:
+	Game.new_game()
+	Game.paused = true
+	Game.sim = FishingSim.new()
+	Game.sim.tick(0.01, Game.ctx, StillRNG.new(1))
+	var w := _world()
+	w.size = Vector2(1280, 720)
+	w._layout()
+	return w
+
+func test_the_bobber_flies_an_arc_while_casting() -> void:
+	var w := _cast_world()
+	assert_eq(Game.sim.state, FishingSim.State.CASTING, "der Wurf muss laufen")
+	var seen: Array[Vector2] = []
+	for i in 5:
+		Game.sim.timer = FishingSim.CAST_TIME * (1.0 - float(i) / 4.0)
+		w._process(0.0)
+		assert_true(w.get_node("Bobber").visible, "der Schwimmer muss beim Wurf zu sehen sein")
+		seen.append(w.get_node("Bobber").position)
+	# Er muss sich bewegen, nicht springen.
+	for i in range(1, seen.size()):
+		assert_true(seen[i] != seen[i - 1], "der Schwimmer steht still")
+	# Ein Bogen ist eine Woelbung gegenueber der VERBINDUNGSLINIE, nicht
+	# gegenueber der Rutenspitze -- ein Wurf muss nicht ueber den Kopf gehen.
+	var from: Vector2 = seen[0]
+	var to: Vector2 = seen[seen.size() - 1]
+	var bulge := 0.0
+	for i in range(1, seen.size() - 1):
+		var t := float(i) / float(seen.size() - 1)
+		var on_chord := from.lerp(to, t)
+		bulge = maxf(bulge, on_chord.y - seen[i].y)
+	assert_true(bulge > 30.0, "der Wurf ist eine gerade Linie, Woelbung nur %f" % bulge)
+	w.free()
+
+func test_the_line_follows_the_bobber_during_the_cast() -> void:
+	var w := _cast_world()
+	Game.sim.timer = FishingSim.CAST_TIME * 0.5
+	w._process(0.0)
+	var line: Line2D = w.get_node("Line")
+	assert_true(line.visible, "die Schnur muss beim Wurf zu sehen sein")
+	assert_eq(line.points.size(), 2)
+	assert_true(line.points[1].is_equal_approx(w.get_node("Bobber").position),
+		"die Schnur endet nicht am Schwimmer")
