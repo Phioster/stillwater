@@ -8,7 +8,7 @@ func _fresh() -> void:
 ## Die Zahl steht hier bewusst fest: eine Variante, die beim Umbenennen still
 ## verschwindet, faellt sonst niemandem auf.
 func test_every_cosmetic_variant_loads() -> void:
-	assert_eq(Database.cosmetics.size(), 33)
+	assert_eq(Database.cosmetics.size(), 50)
 
 ## Die Haarfarbe ist die einzige Kategorie ohne eigenes Sprite: sie faerbt
 ## die Frisur ein. Gibt es mehr Farben als Toene, waehlt man stumm dieselbe.
@@ -63,6 +63,18 @@ func test_cosmetic_of_finds_category_and_variant() -> void:
 func test_cosmetic_of_returns_null_for_unknown_combo() -> void:
 	assert_true(Database.cosmetic_of(&"hat", 99) == null)
 	assert_true(Database.cosmetic_of(&"nonexistent", 0) == null)
+
+## Aussehen ist keine Ware: jeder echte Hautton ist frei. Bezahlt wird nur
+## Fantasie -- Moosgruen, Eisblau, Aschgrau.
+func test_every_real_skin_tone_is_free() -> void:
+	for variant in 5:
+		var c := Database.cosmetic_of(&"skin", variant)
+		assert_true(c != null, "Hautton %d fehlt" % variant)
+		assert_eq(c.cost, 0, "%s kostet %d" % [c.display_name, c.cost])
+		assert_eq(c.unlock_level, 1, "%s ist stufengesperrt" % c.display_name)
+	var fantasy := Database.cosmetic_of(&"skin", 5)
+	assert_true(fantasy != null and fantasy.cost > 0,
+		"die Fantasiefarben sollen etwas kosten")
 
 func test_variant_zero_of_every_category_is_free() -> void:
 	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants", &"hat", &"rod"]:
@@ -254,3 +266,18 @@ func test_validate_catches_a_priced_variant_zero() -> void:
 		if "skin" in p and "kostenlos" in p:
 			found = true
 	assert_true(found, "eine bepreiste Variante 0 muss gemeldet werden")
+
+## Die Kosmetikseite muss ins Seitenpanel passen. Elf Kopfteile in einer
+## Reihe waren 38 Pixel breit je Knopf -- das faellt in keinem Test auf, der
+## nur die Daten prueft.
+func test_the_cosmetics_page_fits_the_side_panel() -> void:
+	_fresh()
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	var panel: PanelBase = m.get_node("SidePanel/Panels/ShopGroup/CharacterScroll/CharacterPanel")
+	panel.refresh()
+	var width: float = m.PANEL_WIDTH
+	assert_true(panel.get_combined_minimum_size().x <= width,
+		"die Seite braucht %d statt %d Pixel" % [panel.get_combined_minimum_size().x, width])
+	m.free()

@@ -11,7 +11,9 @@ func _panel() -> PanelBase:
 	panel.refresh()
 	return panel
 
-func _hat_buttons(panel: PanelBase) -> HBoxContainer:
+## Container-Typ absichtlich offen: die Varianten stehen in einem Raster,
+## seit es elf Kopfteile sind -- der Test prueft die Knoepfe, nicht die Form.
+func _hat_buttons(panel: PanelBase) -> Container:
 	var row: VBoxContainer = panel.get_child(HAT_ROW_INDEX)
 	return row.get_child(1)
 

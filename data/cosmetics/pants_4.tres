@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_pants_4"]
+
+[resource]
+script = ExtResource("1_pants_4")
+id = &"pants_4"
+category = &"pants"
+variant = 4
+display_name = "Shorts"
+cost = 900
+unlock_level = 4

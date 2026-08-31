@@ -8,5 +8,5 @@ id = &"skin_1"
 category = &"skin"
 variant = 1
 display_name = "Mittel"
-cost = 220
-unlock_level = 2
+cost = 0
+unlock_level = 1

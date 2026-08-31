@@ -8,5 +8,5 @@ id = &"skin_3"
 category = &"skin"
 variant = 3
 display_name = "Sehr hell"
-cost = 1400
-unlock_level = 8
+cost = 0
+unlock_level = 1

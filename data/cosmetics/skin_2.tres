@@ -8,5 +8,5 @@ id = &"skin_2"
 category = &"skin"
 variant = 2
 display_name = "Dunkel"
-cost = 780
-unlock_level = 5
+cost = 0
+unlock_level = 1

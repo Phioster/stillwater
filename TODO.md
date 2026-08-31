@@ -75,6 +75,21 @@ Noch offen, jeweils mit Grund:
 Nicht maschinell prüfbar: ob ein `secret_hint` das richtige Kleidungsstück
 oder Zeitfenster benennt. Bei neuen Hinweisen von Hand gegenlesen.
 
+## Kosmetik (Stand 2026-08-31)
+
+50 Varianten in sieben Kategorien. Zwei Regeln, die nicht verhandelbar sind:
+
+- **Echte Hauttöne kosten nichts** und sind ab Stufe 1 da — niemand zahlt
+  für sein Aussehen. Bezahlt wird nur Fantasie (Moosgrün, Eisblau,
+  Aschgrau) und Kleidung.
+- **Der Kopfplatz trägt Hüte UND Kopfschmuck** (Hörner, Heiligenschein,
+  Kopfhörer). Ein zweiter Platz hätte bei jeder Kombination eine neue
+  Überdeckungsfrage aufgeworfen.
+
+Seltene Varianten sind Fangbedingungen: der **Tanggeist** (Sunset Coast)
+kommt nur zu moosgrüner Haut, der **Nimbusbarsch** (Wolkensee) nur zu
+jemandem mit Heiligenschein.
+
 ## Inhalte
 
 - ~~Willow Lake auf 12 bis 18 Arten ausbauen~~ — erledigt 2026-08-29:

@@ -8,7 +8,7 @@ const SLOTS := [
 	{"key": &"hair_color", "label": "Haarfarbe"},
 	{"key": &"shirt", "label": "Oberteil"},
 	{"key": &"pants", "label": "Hose"},
-	{"key": &"hat", "label": "Hut"},
+	{"key": &"hat", "label": "Kopf"},
 	{"key": &"rod", "label": "Rute"},
 ]
 
@@ -32,10 +32,13 @@ func _row(category: StringName, label: String) -> Control:
 	title.text = "%s  %d / %d" % [label, current + 1, count]
 	box.add_child(title)
 
-	var row := HBoxContainer.new()
+	# Ein Raster statt einer Reihe: elf Kopfteile nebeneinander waeren je 38
+	# Pixel breit gewesen. Dieselbe Spaltenzahl wie die anderen Umschalter.
+	var grid := GridContainer.new()
+	grid.columns = CategorySwitch.COLUMNS
 	for variant in count:
-		row.add_child(_variant_button(category, variant, current))
-	box.add_child(row)
+		grid.add_child(_variant_button(category, variant, current))
+	box.add_child(grid)
 
 	return box
 

@@ -11,7 +11,11 @@ const TEX_PREFIX := {
 	"Hat": "char_hat",
 	"Rod": "char_rod",
 }
-const HAIR_TINTS := [&"hair_dark", &"hair_warm", &"hair_pale", &"hair_moss", &"hair_snow"]
+## Die Reihenfolge ist die Variantennummer der Kategorie hair_color -- ein
+## Ton mehr hier verlangt eine .tres mehr, sonst zeigt die Auswahl weniger
+## Farben als es gibt (dagegen steht test_every_hair_colour_has_a_tint).
+const HAIR_TINTS := [&"hair_dark", &"hair_warm", &"hair_pale", &"hair_moss",
+	&"hair_snow", &"hair_teal", &"hair_violet", &"hair_pink"]
 
 var _frame: int = 0
 

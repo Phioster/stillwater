@@ -242,8 +242,11 @@ func _char_sheet() -> Image:
 func _arm_offset(frame: int) -> int:
 	return AnglerPose.arm_offset(frame)
 
+## Die ersten fuenf sind echte Hauttoene und kosten nichts -- niemand soll
+## fuer sein Aussehen zahlen. Was danach kommt, ist Fantasie und kostet.
 func _skin(index: int) -> void:
-	var tone: StringName = [&"skin_1", &"skin_2", &"skin_3", &"skin_0", &"skin_4"][index]
+	var tone: StringName = [&"skin_1", &"skin_2", &"skin_3", &"skin_0", &"skin_4",
+		&"skin_moss", &"skin_ice", &"skin_ash"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
@@ -280,55 +283,107 @@ func _hair(index: int) -> void:
 
 func _shirt(index: int) -> void:
 	var tone: StringName = [&"cloth_blue", &"cloth_red", &"cloth_green",
-		&"cloth_ochre", &"cloth_plum"][index]
+		&"cloth_ochre", &"cloth_plum", &"cloth_grey", &"leather", &"oilskin",
+		&"denim"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
 		_rect(img, ox + 12, 14, 8, 7, _c(tone))
 		_rect(img, ox + 19, 15 + _arm_offset(f), 3, 4, _c(tone))
 		_rect(img, ox + 10, 16, 3, 4, _c(tone))
-		# Das karierte Hemd braucht ein Muster, sonst ist es nur ein zweites Gruen.
-		if index == 2:
-			for y in range(15, 21, 2):
-				_rect(img, ox + 12, y, 8, 1, _c(&"cloth_grey"))
+		# Ohne eigenes Muster waeren mehrere davon nur dieselbe Flaeche in
+		# einer anderen Farbe.
+		match index:
+			2:  # Kariert
+				for y in range(15, 21, 2):
+					_rect(img, ox + 12, y, 8, 1, _c(&"cloth_grey"))
+			5:  # Kapuzenpulli: die Kapuze liegt hinter dem Kopf
+				_rect(img, ox + 10, 8, 2, 6, _c(tone))
+				_rect(img, ox + 20, 8, 2, 6, _c(tone))
+				_rect(img, ox + 15, 15, 2, 4, _c(&"foam"))
+			6:  # Lederjacke: Kragen und Reissverschluss
+				_rect(img, ox + 12, 14, 8, 1, _c(&"wood_dark"))
+				_rect(img, ox + 15, 15, 1, 6, _c(&"silver"))
+			7:  # Anglerweste: zwei Taschen
+				_rect(img, ox + 12, 17, 3, 3, _c(&"wood_dark"))
+				_rect(img, ox + 17, 17, 3, 3, _c(&"wood_dark"))
+			8:  # Streifenpulli
+				for y in range(14, 21, 3):
+					_rect(img, ox + 12, y, 8, 1, _c(&"foam"))
 	_save(img, "char_shirt_%d" % index)
 
 func _pants(index: int) -> void:
-	var tone: StringName = [&"cloth_grey", &"wood_dark", &"oilskin", &"cloth_plum"][index]
+	var tone: StringName = [&"cloth_grey", &"wood_dark", &"oilskin",
+		&"cloth_plum", &"denim", &"cloth_red"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
-		_rect(img, ox + 13, 21, 6, 6, _c(tone))
+		# Die Shorts enden hoeher -- darunter schaut das Bein der Hautebene raus.
+		_rect(img, ox + 13, 21, 6, 3 if index == 4 else 6, _c(tone))
 		_rect(img, ox + 13, 27, 2, 3, _c(&"outline"))
 		_rect(img, ox + 17, 27, 2, 3, _c(&"outline"))
+		if index == 5:  # Karohose
+			for y in range(21, 27, 2):
+				_rect(img, ox + 13, y, 6, 1, _c(&"outline"))
+			_rect(img, ox + 15, 21, 1, 6, _c(&"outline"))
 	_save(img, "char_pants_%d" % index)
 
-## Variante 0 bleibt leer -- das ist "ohne Hut". Die uebrigen unterscheiden
-## sich in Krempe und Kopf, sonst waeren es fuenfmal derselbe Hut in einer
-## anderen Farbe.
+## Variante 0 bleibt leer -- das ist "ohne Hut". Der Kopfplatz traegt Huete
+## UND Kopfschmuck: Hoerner, Heiligenschein und Kopfhoerer sitzen an
+## derselben Stelle, also teilen sie sich einen Platz. Ein zweiter Platz
+## haette bei jeder Kombination eine neue Ueberdeckungsfrage aufgeworfen.
+##
+## Der Kopf sitzt auf x12..19, y6..13, die Haare reichen bis y4 -- alles hier
+## rechnet gegen diese Kante.
 func _hat(index: int) -> void:
 	var img := _char_sheet()
-	var tone: StringName = [&"outline", &"cloth_grey", &"accent",
-		&"cloth_ochre", &"cloth_red", &"wood_dark"][index]
 	for f in FRAMES:
 		var ox := f * FRAME
 		match index:
 			1:  # Kappe: Schirm nur nach vorn
-				_rect(img, ox + 12, 3, 11, 1, _c(tone))
-				_rect(img, ox + 12, 1, 8, 3, _c(tone))
+				_rect(img, ox + 12, 3, 11, 1, _c(&"cloth_grey"))
+				_rect(img, ox + 12, 1, 8, 3, _c(&"cloth_grey"))
 			2:  # Strohhut: sehr breite Krempe, flacher Kopf
-				_rect(img, ox + 8, 4, 16, 1, _c(tone))
-				_rect(img, ox + 11, 2, 10, 2, _c(tone))
+				_rect(img, ox + 8, 4, 16, 1, _c(&"accent"))
+				_rect(img, ox + 11, 2, 10, 2, _c(&"accent"))
 			3:  # Suedwester: Krempe hinten lang
-				_rect(img, ox + 10, 3, 13, 2, _c(tone))
-				_rect(img, ox + 12, 1, 8, 2, _c(tone))
-				_rect(img, ox + 8, 5, 4, 2, _c(tone))
+				_rect(img, ox + 10, 3, 13, 2, _c(&"cloth_ochre"))
+				_rect(img, ox + 12, 1, 8, 2, _c(&"cloth_ochre"))
+				_rect(img, ox + 8, 5, 4, 2, _c(&"cloth_ochre"))
 			4:  # Wollmuetze: keine Krempe, Bommel
-				_rect(img, ox + 11, 2, 10, 3, _c(tone))
+				_rect(img, ox + 11, 2, 10, 3, _c(&"cloth_red"))
 				_rect(img, ox + 15, 0, 2, 2, _c(&"foam"))
 			5:  # Filzhut: breite Krempe
-				_rect(img, ox + 9, 3, 14, 2, _c(tone))
-				_rect(img, ox + 12, 0, 8, 3, _c(tone))
+				_rect(img, ox + 9, 3, 14, 2, _c(&"wood_dark"))
+				_rect(img, ox + 12, 0, 8, 3, _c(&"wood_dark"))
+			6:  # Teufelshoerner: kurz, spitz, nach aussen
+				_rect(img, ox + 11, 2, 2, 3, _c(&"cloth_red"))
+				_rect(img, ox + 19, 2, 2, 3, _c(&"cloth_red"))
+				_rect(img, ox + 10, 0, 1, 2, _c(&"cloth_red"))
+				_rect(img, ox + 21, 0, 1, 2, _c(&"cloth_red"))
+			7:  # Ziegenhoerner: dicker, geschwungen nach hinten
+				_rect(img, ox + 11, 1, 2, 3, _c(&"bone"))
+				_rect(img, ox + 19, 1, 2, 3, _c(&"bone"))
+				_rect(img, ox + 9, 1, 2, 2, _c(&"bone"))
+				_rect(img, ox + 21, 1, 2, 2, _c(&"bone"))
+				_rect(img, ox + 8, 3, 1, 2, _c(&"bone"))
+				_rect(img, ox + 23, 3, 1, 2, _c(&"bone"))
+			8:  # Heiligenschein: schwebt frei ueber dem Kopf
+				_rect(img, ox + 12, 0, 8, 1, _c(&"accent"))
+				_rect(img, ox + 11, 1, 1, 1, _c(&"accent"))
+				_rect(img, ox + 20, 1, 1, 1, _c(&"accent"))
+			9:  # Kopfhoerer: Buegel oben, Muscheln an den Ohren
+				_rect(img, ox + 12, 3, 8, 1, _c(&"outline"))
+				_rect(img, ox + 11, 2, 1, 2, _c(&"outline"))
+				_rect(img, ox + 20, 2, 1, 2, _c(&"outline"))
+				_rect(img, ox + 10, 6, 2, 4, _c(&"outline"))
+				_rect(img, ox + 20, 6, 2, 4, _c(&"outline"))
+				_rect(img, ox + 10, 7, 2, 2, _c(&"cloth_blue"))
+				_rect(img, ox + 20, 7, 2, 2, _c(&"cloth_blue"))
+			10:  # Eimerhut: gerade Krempe, hoher Topf
+				_rect(img, ox + 9, 4, 14, 2, _c(&"reed"))
+				_rect(img, ox + 11, 1, 10, 3, _c(&"reed"))
+				_rect(img, ox + 11, 3, 10, 1, _c(&"reed_dark"))
 	_save(img, "char_hat_%d" % index)
 
 ## Geometrie aus AnglerPose, nicht hier: sie stand doppelt, und beim
@@ -452,13 +507,15 @@ func _init() -> void:
 	_visitors()
 	_dock()
 	print("Charakter")
-	for i in 5:
+	for i in 8:
 		_skin(i)
+	for i in 5:
 		_hair(i)
+	for i in 9:
 		_shirt(i)
-	for i in 6:
+	for i in 11:
 		_hat(i)
-	for i in 4:
+	for i in 6:
 		_pants(i)
 	for i in 3:
 		_rod(i)

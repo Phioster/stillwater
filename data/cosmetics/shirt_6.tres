@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_shirt_6"]
+
+[resource]
+script = ExtResource("1_shirt_6")
+id = &"shirt_6"
+category = &"shirt"
+variant = 6
+display_name = "Lederjacke"
+cost = 4800
+unlock_level = 16

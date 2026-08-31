@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_lvl"]
+[ext_resource type="Script" path="res://resources/cosmetic_condition.gd" id="4_extra"]
+
+[sub_resource type="Resource" id="Resource_lvl"]
+script = ExtResource("3_lvl")
+min_level = 22
+
+[sub_resource type="Resource" id="Resource_extra"]
+script = ExtResource("4_extra")
+category = &"hat"
+variant = 8
+
+[resource]
+script = ExtResource("2_fish")
+id = &"halo_perch"
+display_name = "Nimbusbarsch"
+zone_id = &"cloud_lake"
+rarity_id = &"legendary"
+base_value = 1450
+strength = 300.0
+difficulty = 3.0
+xp = 620
+weight_mean = 3.4
+weight_dev = 0.8
+is_secret = true
+secret_chance = 0.02
+secret_hint = "Über den Wolken beißt er nur bei jemandem, über dessen Kopf selbst ein Ring schwebt."
+conditions = Array[ExtResource("1_cond")]([SubResource("Resource_lvl"), SubResource("Resource_extra")])

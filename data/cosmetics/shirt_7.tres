@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_shirt_7"]
+
+[resource]
+script = ExtResource("1_shirt_7")
+id = &"shirt_7"
+category = &"shirt"
+variant = 7
+display_name = "Anglerweste"
+cost = 2600
+unlock_level = 11

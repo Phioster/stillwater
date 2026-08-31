@@ -3,7 +3,7 @@ extends TestCase
 func test_all_content_loads() -> void:
 	assert_eq(Database.rarities.size(), 5)
 	assert_eq(Database.baits.size(), 8)
-	assert_eq(Database.fish.size(), 105)
+	assert_eq(Database.fish.size(), 107)
 	assert_eq(Database.zones.size(), 7)
 	assert_eq(Database.upgrades.size(), 7)
 

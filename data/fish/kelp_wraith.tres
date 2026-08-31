@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_lvl"]
+[ext_resource type="Script" path="res://resources/cosmetic_condition.gd" id="4_extra"]
+
+[sub_resource type="Resource" id="Resource_lvl"]
+script = ExtResource("3_lvl")
+min_level = 14
+
+[sub_resource type="Resource" id="Resource_extra"]
+script = ExtResource("4_extra")
+category = &"skin"
+variant = 5
+
+[resource]
+script = ExtResource("2_fish")
+id = &"kelp_wraith"
+display_name = "Tanggeist"
+zone_id = &"sunset_coast"
+rarity_id = &"epic"
+base_value = 640
+strength = 210.0
+difficulty = 2.5
+xp = 300
+weight_mean = 2.2
+weight_dev = 0.6
+is_secret = true
+secret_chance = 0.03
+secret_hint = "Er hält jeden für seinesgleichen, dessen Haut so grün ist wie der Tang."
+conditions = Array[ExtResource("1_cond")]([SubResource("Resource_lvl"), SubResource("Resource_extra")])
