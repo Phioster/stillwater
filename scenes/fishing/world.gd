@@ -23,7 +23,10 @@ const CHAR_SIZE := 32.0
 ## aufs Deck setzt, laesst die Figur um 8 Pixel schweben.
 const CHAR_FEET := 30.0
 ## Rutenspitze im 32x32-Frame bei (31, 6).
-const ROD_TIP := Vector2(31.0, 6.0) * PIXEL_SCALE
+## Spitze der Rute im Ruhebild: sie laeuft von (17, 16) 14 Pixel nach oben
+## rechts, endet also bei (30, 3). Der alte Wert (31, 6) zeigte auf eine
+## Stelle, an der gar keine Rute war -- die Schnur begann daneben.
+const ROD_TIP := Vector2(30.0, 3.0) * PIXEL_SCALE
 
 ## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die
 ## gemessenen Kosten pro Frame.

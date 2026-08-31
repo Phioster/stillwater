@@ -18,11 +18,17 @@ func refresh() -> void:
 	hint.text = "Was hier steht, wird nie verkauft und belegt keinen Platz in der Fischkiste."
 	add_child(hint)
 
-	var any := false
+	var favorites: Array[int] = []
 	for i in inv.fish.size():
 		if inv.fish[i].is_favorite:
-			any = true
-			add_child(FishRow.build(i, true))
+			favorites.append(i)
+	var any := not favorites.is_empty()
+	if any:
+		var list := VirtualList.new()
+		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		add_child(list)
+		list.setup(favorites.size(), FishRow.HEIGHT,
+			func(row: int) -> Control: return FishRow.build(favorites[row], true))
 	if not any:
 		var empty := Label.new()
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -1,0 +1,89 @@
+extends TestCase
+
+## Gemessen, nicht vermutet: 395 Inventarzeilen sind 1.583 Knoten, und die
+## kosten 394 ms beim Eintritt in den Baum. Deshalb baut die Liste nur, was
+## im Fenster steht -- und genau das wird hier geprüft.
+
+func _list(count: int) -> VirtualList:
+	var tree := Engine.get_main_loop() as SceneTree
+	var scroll := ScrollContainer.new()
+	scroll.size = Vector2(400, 480)
+	tree.root.add_child(scroll)
+	var list := VirtualList.new()
+	scroll.add_child(list)
+	list.size = Vector2(400, 480)
+	list.setup(count, 96.0, func(i: int) -> Control:
+		var c := Control.new()
+		c.set_meta(&"row", i)
+		return c)
+	return list
+
+func test_only_the_visible_rows_are_built() -> void:
+	var list := _list(395)
+	list._refresh_window()
+	assert_true(list.live_rows() > 0, "es wird gar nichts gebaut")
+	assert_true(list.live_rows() < 40,
+		"es stehen %d Zeilen im Baum, das ist keine Virtualisierung" % list.live_rows())
+	list.get_parent().free()
+
+## Der Scrollbalken muss die GANZE Liste kennen, auch wenn nur ein Ausschnitt
+## im Baum steht -- sonst lässt sich nicht bis unten scrollen.
+func test_the_full_height_is_reserved() -> void:
+	var list := _list(395)
+	assert_almost_eq(list.custom_minimum_size.y, 395.0 * 96.0, 0.001)
+	list.get_parent().free()
+
+func test_scrolling_moves_the_window() -> void:
+	var list := _list(395)
+	list._refresh_window()
+	var first_before: int = int(list.get_child(0).get_meta(&"row"))
+	var scroll: ScrollContainer = list.get_parent()
+	# Ohne Layout-Durchlauf kennt der Scrollbalken seinen Bereich noch nicht
+	# und klemmt jede Position auf 0. Hier von Hand setzen.
+	scroll.get_v_scroll_bar().max_value = 395.0 * 96.0
+	scroll.scroll_vertical = 200 * 96
+	list._refresh_window()
+	var first_after: int = int(list.get_child(0).get_meta(&"row"))
+	assert_true(first_after > first_before + 100,
+		"das Fenster ist nicht mitgewandert: %s -> %s" % [first_before, first_after])
+	list.get_parent().free()
+
+## Die Zeilen müssen an der richtigen Stelle sitzen, sonst liegen sie
+## übereinander.
+func test_rows_sit_at_their_index_position() -> void:
+	var list := _list(50)
+	list._refresh_window()
+	for c in list.get_children():
+		var i := int(c.get_meta(&"row"))
+		assert_almost_eq(c.offset_top, float(i) * 96.0, 0.001,
+			"Zeile %d sitzt falsch" % i)
+	list.get_parent().free()
+
+func test_an_empty_list_builds_nothing_and_does_not_crash() -> void:
+	var list := _list(0)
+	list._refresh_window()
+	assert_eq(list.live_rows(), 0)
+	assert_almost_eq(list.custom_minimum_size.y, 0.0)
+	list.get_parent().free()
+
+## Das ganze Panel darf mit vielen Fischen nicht mehr hunderte Knoten haben.
+func test_the_inventory_panel_stays_small_with_many_fish() -> void:
+	Game.new_game()
+	Game.ctx.inventory.capacity = 500
+	for i in 395:
+		Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.0, false))
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	m.show_tab(0)
+	var panel: PanelBase = m.get_node("SidePanel/Panels/FishGroup/FishScroll/FishPanel")
+	panel.refresh()
+	var nodes := _count(panel)
+	assert_true(nodes < 300, "das Panel hat %d Knoten -- vorher waren es 1.583" % nodes)
+	m.free()
+
+func _count(n: Node) -> int:
+	var c := 1
+	for ch in n.get_children():
+		c += _count(ch)
+	return c

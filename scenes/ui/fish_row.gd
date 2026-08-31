@@ -3,11 +3,16 @@
 class_name FishRow
 extends RefCounted
 
+## Alle Zeilen sind gleich hoch -- daran haengt die virtuelle Liste: nur mit
+## fester Hoehe laesst sich aus der Scrollposition ausrechnen, welche Zeilen
+## sichtbar sind, ohne sie zu bauen.
+const HEIGHT: float = 96.0
+
 static func build(index: int, in_showcase: bool) -> Control:
 	var c: CaughtFish = Game.ctx.inventory.fish[index]
 	var fish: FishData = Database.fish.get(c.fish_id)
 	var row := HBoxContainer.new()
-	row.custom_minimum_size = Vector2(0, 96)
+	row.custom_minimum_size = Vector2(0, HEIGHT)
 
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
