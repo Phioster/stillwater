@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scenes/ui/panels/potion_panel.gd" id="17"]
 [ext_resource type="Script" path="res://scenes/ui/panels/trader_panel.gd" id="18"]
 [ext_resource type="Script" path="res://scenes/ui/panels/quest_panel.gd" id="19"]
+[ext_resource type="Script" path="res://scenes/ui/panels/records_panel.gd" id="20"]
 [ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/fish_window.tscn" id="12"]
 
@@ -85,12 +86,19 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("16")
+labels = PackedStringArray("Arten", "Bilanz")
 
 [node name="JournalScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
 
 [node name="JournalPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/JournalScroll"]
 size_flags_horizontal = 3
 script = ExtResource("6")
+
+[node name="RecordScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
+
+[node name="RecordPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/RecordScroll"]
+size_flags_horizontal = 3
+script = ExtResource("20")
 
 [node name="ShopGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15

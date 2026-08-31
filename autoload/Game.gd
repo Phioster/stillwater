@@ -25,6 +25,7 @@ var settings := Settings.new()
 var buffs := Buffs.new()
 var visitors := Visitors.new()
 var quests := Quests.new()
+var records := Records.new()
 ## Wie viele Traenke jeder Sorte im Vorrat sind.
 var consumable_counts: Dictionary = {}
 var unlocked_zones: Array[StringName] = []
@@ -52,6 +53,7 @@ func new_game() -> void:
 	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0, &"trader": 0, &"quests": 0}
 	visitors = Visitors.new()
 	quests = Quests.new()
+	records = Records.new()
 	unlocked_zones = [&"willow_lake"]
 	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0}
 	owned_cosmetics = {}
@@ -87,11 +89,16 @@ func _process(delta: float) -> void:
 	# rechnet mit der Stunde der Rueckkehr -- ein Tagesfenster ueber Stunden
 	# hinweg nachzubilden waere Aufwand ohne spuerbaren Gewinn.
 	ctx.hour_of_day = Time.get_datetime_dict_from_system()["hour"]
+	records.playtime += delta
 	# Traenke laufen NUR bei offenem Spiel ab -- siehe core/buffs.gd.
 	# Besucher haengen an der Uhr, nicht an einem Countdown -- der Wechsel
 	# faellt hier nur auf, damit die Anzeige sich neu zeichnet.
 	var now := Time.get_unix_time_from_system()
 	if visitors.refresh_trader(now) or quests.refresh(now):
+		state_changed.emit()
+	var wet := raining()
+	if wet != ctx.raining:
+		ctx.raining = wet
 		state_changed.emit()
 	var before := buffs.active.size()
 	buffs.tick(delta * time_scale)
@@ -103,16 +110,24 @@ func _process(delta: float) -> void:
 func tap() -> void:
 	if ctx == null:
 		return
+	if sim.state == FishingSim.State.FIGHT:
+		records.orbs_tapped += 1
 	_dispatch(sim.tap(ctx))
 
 func _dispatch(events: Array) -> void:
 	for e in events:
 		match e["type"]:
+			"cast":
+				records.casts += 1
 			"bite":
 				bite.emit(e["fish"])
 			"caught":
+				records.fish_caught += 1
+				if (e["caught"] as CaughtFish).is_shiny:
+					records.shiny_caught += 1
 				caught.emit(e["caught"], e["fish"], bool(e["discovered"]), bool(e["record"]))
 			"escaped":
+				records.fish_escaped += 1
 				escaped.emit(e["fish"])
 			"level_up":
 				Audio.play(&"level_up")
@@ -145,6 +160,7 @@ func buy_upgrade(id: StringName) -> bool:
 	upgrade_levels[id] = level + 1
 	apply_upgrades()
 	coins -= cost
+	records.coins_spent += cost
 	state_changed.emit()
 	progress_changed.emit()
 	return true
@@ -177,10 +193,13 @@ func _price(c: CaughtFish) -> int:
 
 func sell_all() -> int:
 	var earned := 0
-	for c in ctx.inventory.take_sellable():
+	var sold := ctx.inventory.take_sellable()
+	for c in sold:
 		earned += _price(c)
 	if earned > 0:
 		Audio.play(&"coin")
+		records.fish_sold += sold.size()
+	records.coins_earned += earned
 	coins += earned
 	state_changed.emit()
 	progress_changed.emit()
@@ -195,6 +214,8 @@ func sell_one(index: int) -> int:
 	ctx.inventory.remove_at(index)
 	var earned := _price(c)
 	Audio.play(&"coin")
+	records.fish_sold += 1
+	records.coins_earned += earned
 	coins += earned
 	state_changed.emit()
 	progress_changed.emit()
@@ -239,6 +260,7 @@ func buy_bait(id: StringName, amount: int) -> bool:
 		return false
 	ctx.bait_counts[id] = int(ctx.bait_counts.get(id, 0)) + amount
 	coins -= cost
+	records.coins_spent += cost
 	state_changed.emit()
 	progress_changed.emit()
 	return true
@@ -291,6 +313,7 @@ func unlock_zone(id: StringName) -> bool:
 		return false
 	unlocked_zones.append(id)
 	coins -= z.unlock_cost
+	records.coins_spent += z.unlock_cost
 	state_changed.emit()
 	return true
 
@@ -343,6 +366,7 @@ func buy_cosmetic(category: StringName, variant: int) -> bool:
 	owned.append(variant)
 	owned_cosmetics[key] = owned
 	coins -= c.cost
+	records.coins_spent += c.cost
 	state_changed.emit()
 	progress_changed.emit()
 	return true
@@ -395,6 +419,7 @@ func buy_consumable(id: StringName, amount: int = 1) -> bool:
 	if coins < price:
 		return false
 	coins -= price
+	records.coins_spent += price
 	consumable_counts[id] = consumable_count(id) + amount
 	state_changed.emit()
 	progress_changed.emit()
@@ -409,6 +434,7 @@ func use_consumable(id: StringName) -> bool:
 	consumable_counts[id] = consumable_count(id) - 1
 	if consumable_counts[id] <= 0:
 		consumable_counts.erase(id)
+	records.potions_drunk += 1
 	buffs.apply(c)
 	apply_buffs()
 	state_changed.emit()
@@ -446,6 +472,7 @@ func reroll_trader() -> bool:
 	if coins < Visitors.REROLL_COST:
 		return false
 	coins -= Visitors.REROLL_COST
+	records.coins_spent += Visitors.REROLL_COST
 	visitors.reroll()
 	state_changed.emit()
 	progress_changed.emit()
@@ -533,6 +560,8 @@ func hand_in_quest(id: StringName) -> bool:
 	ctx.player_level = int(after["level"])
 	ctx.player_xp = int(after["xp"])
 	quests.complete(id)
+	records.quests_done += 1
+	records.coins_earned += int(reward["coins"])
 	if int(after["levels_gained"]) > 0:
 		Audio.play(&"level_up")
 		level_up.emit(ctx.player_level)
@@ -541,3 +570,14 @@ func hand_in_quest(id: StringName) -> bool:
 	state_changed.emit()
 	progress_changed.emit()
 	return true
+
+## Regnet es gerade dort, wo geangelt wird?
+func raining() -> bool:
+	if ctx == null or ctx.zone == null:
+		return false
+	return Weather.is_raining(Time.get_unix_time_from_system(), ctx.zone.id)
+
+func rain_minutes_left() -> float:
+	if ctx == null or ctx.zone == null:
+		return 0.0
+	return Weather.minutes_left(Time.get_unix_time_from_system(), ctx.zone.id)

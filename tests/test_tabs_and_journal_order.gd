@@ -203,7 +203,7 @@ func test_every_list_still_scrolls_after_the_regrouping() -> void:
 	var found := _scrolls(m.get_node("SidePanel/Panels"))
 	# Die Zahl steht als Literal da, damit eine neue Liste auffaellt und
 	# jemand prueft, ob sie eingerichtet wurde -- nicht damit sie nie wachsen darf.
-	assert_eq(found.size(), 12, "es gibt %d Listen, erwartet waren 12" % found.size())
+	assert_eq(found.size(), 13, "es gibt %d Listen, erwartet waren 13" % found.size())
 	for sc in found:
 		assert_eq(sc.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_AUTO,
 			"%s wurde beim Einrichten uebersehen" % sc.name)

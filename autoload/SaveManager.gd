@@ -81,6 +81,7 @@ func serialize() -> Dictionary:
 		"consumable_inventory": Game.consumable_counts.duplicate(),
 		"visitors": Game.visitors.to_dict(),
 		"quests": Game.quests.to_dict(),
+		"records": Game.records.to_dict(),
 		"settings": Game.settings.to_dict(),
 		"statistics": {},
 		"last_seen_unix": int(Time.get_unix_time_from_system()),
@@ -133,6 +134,7 @@ func deserialize(raw: Dictionary) -> void:
 	Game.apply_settings()
 	Game.visitors.load_dict(d["visitors"])
 	Game.quests.load_dict(d["quests"])
+	Game.records.load_dict(d["records"])
 	Game.buffs.load_dict(d["active_consumables"])
 	Game.apply_buffs()
 
@@ -187,6 +189,7 @@ func migrate(raw: Dictionary) -> Dictionary:
 	d["consumable_inventory"] = counts
 	d["visitors"] = _safe_dict(raw.get("visitors"), {})
 	d["quests"] = _safe_dict(raw.get("quests"), {})
+	d["records"] = _safe_dict(raw.get("records"), {})
 	d["settings"] = _safe_dict(raw.get("settings"), {})
 	d["statistics"] = _safe_dict(raw.get("statistics"), {})
 
