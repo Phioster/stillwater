@@ -81,6 +81,31 @@ def outline(img, color):
                     break
     return out
 
+def block_size(img, limit=16):
+    """Wie gross ein gemalter "Pixel" im erzeugten Bild ist.
+
+    Pixelart-Modelle arbeiten auf 512 und malen dort Bloecke -- bei 64
+    Sprite-Pixeln also 8x8 echte. Wer das ignoriert und einfach skaliert,
+    trifft die Blockkanten nicht und bekommt Matsch. Gesucht wird die
+    Blockgroesse, bei der die wenigsten Farbwechsel auf Kanten fallen.
+    """
+    px = img.convert("RGB").load()
+    w, h = img.size
+    best, best_score = 1, None
+    for b in range(2, limit + 1):
+        if w % b or h % b:
+            continue
+        bad = 0
+        for y in range(0, h, max(1, h // 64)):
+            for x in range(1, w):
+                if x % b == 0:
+                    continue
+                if px[x, y] != px[x - 1, y]:
+                    bad += 1          # Farbwechsel INNERHALB eines Blocks
+        if best_score is None or bad < best_score:
+            best, best_score = b, bad
+    return best
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("quelle")
@@ -92,9 +117,17 @@ def main():
     ap.add_argument("--toleranz", type=int, default=90,
                     help="wie grosszuegig der Hintergrund entfernt wird")
     ap.add_argument("--ohne-umriss", action="store_true")
+    ap.add_argument("--bloecke", action="store_true",
+                    help="Blockgroesse des erzeugten Bildes erkennen und exakt "
+                         "darauf herunterrechnen (fuer 512er Pixelart-Modelle)")
     args = ap.parse_args()
 
-    img = key_out(Image.open(args.quelle), args.toleranz)
+    img = Image.open(args.quelle)
+    if args.bloecke:
+        b = block_size(img)
+        print("Blockgroesse erkannt: %d" % b)
+        img = img.resize((img.size[0] // b, img.size[1] // b), Image.NEAREST)
+    img = key_out(img, args.toleranz)
     if args.winkel:
         img = img.rotate(args.winkel, resample=Image.BICUBIC, expand=True)
     box = img.getbbox()
