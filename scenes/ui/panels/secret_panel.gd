@@ -6,6 +6,9 @@ extends PanelBase
 
 signal fish_tapped(id: StringName)
 
+## Feste Hoehe je Zeile -- daran haengt die virtuelle Liste.
+const ENTRY_HEIGHT: float = 84.0
+
 func refresh() -> void:
 	clear(self)
 	if not Game.ctx.journal.has_any_secret():
@@ -21,13 +24,19 @@ func refresh() -> void:
 		var title := Label.new()
 		title.text = zone.display_name
 		add_child(title)
-		for f in found:
-			add_child(_entry(f))
+		# Auch hier virtuell: die Liste waechst mit jeder Zone und jedem
+		# neuen Geheimfisch. Je Zone eine eigene, weil die Ueberschriften
+		# dazwischen andere Hoehen haben als die Zeilen.
+		var list := VirtualList.new()
+		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		add_child(list)
+		list.setup(found.size(), ENTRY_HEIGHT,
+			func(row: int) -> Control: return _entry(found[row]))
 
 func _entry(f: FishData) -> Control:
 	var button := TapButton.new()
 	button.flat = true
-	button.custom_minimum_size = Vector2(0, 84)
+	button.custom_minimum_size = Vector2(0, ENTRY_HEIGHT)
 	button.set_meta(&"fish_id", f.id)
 	button.tapped.connect(func() -> void: fish_tapped.emit(f.id))
 

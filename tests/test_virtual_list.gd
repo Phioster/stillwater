@@ -87,3 +87,47 @@ func _count(n: Node) -> int:
 	for ch in n.get_children():
 		c += _count(ch)
 	return c
+
+## Ein Waechter fuer ALLE Panels, nicht nur die, die ich heute kenne: mit
+## vollem Spielstand darf kein Panel hunderte Knoten in den Baum haengen.
+## Gemessen kostet jeder eingehaengte Knoten rund 0,25 ms -- 400 waeren schon
+## eine zehntel Sekunde Standzeit beim Oeffnen.
+func test_no_panel_builds_hundreds_of_nodes_with_a_full_save() -> void:
+	Game.new_game()
+	Game.coins = 9_000_000
+	Game.ctx.player_level = 60
+	Game.ctx.inventory.capacity = 500
+	for id in Database.zones:
+		if not Game.unlocked_zones.has(id):
+			Game.unlocked_zones.append(id)
+	for id in Database.fish:
+		var f: FishData = Database.fish[id]
+		for rank in FishRoll.RANK_NAMES.size():
+			Game.ctx.journal.record(CaughtFish.make(f.id, [-2.5, -1.0, 0.0, 1.0, 1.9, 2.6, 3.3][rank], false), f.is_secret)
+	for i in 400:
+		Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.0, i % 40 == 0))
+	for i in Game.ctx.inventory.fish.size():
+		if Game.ctx.inventory.fish[i].is_shiny:
+			Game.toggle_favorite(i)
+
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	var worst := ""
+	var worst_count := 0
+	for tab in TabRail.TABS.size():
+		m.show_tab(tab)
+		var group: Node = m.get_node("SidePanel/Panels").get_child(tab)
+		for sub in group.get_children():
+			if not (sub is ScrollContainer):
+				continue
+			for panel in sub.get_children():
+				if panel is PanelBase:
+					(panel as PanelBase).refresh()
+					var n := _count(panel)
+					if n > worst_count:
+						worst_count = n
+						worst = String(panel.name)
+	assert_true(worst_count < 400,
+		"%s baut %d Knoten -- das gehoert in eine VirtualList" % [worst, worst_count])
+	m.free()

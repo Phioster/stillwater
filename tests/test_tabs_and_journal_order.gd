@@ -121,9 +121,8 @@ func test_the_journal_shows_one_zone_at_a_time() -> void:
 	m.show_tab(1)
 	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	var shown: Array[StringName] = []
-	for child in panel.get_children():
-		if child.has_meta(&"fish_id"):
-			shown.append(child.get_meta(&"fish_id"))
+	for child in _rows_with_fish_id(panel):
+		shown.append(child.get_meta(&"fish_id"))
 	assert_true(shown.size() > 0, "es wird gar nichts angezeigt")
 	for id in shown:
 		assert_eq(Database.fish[id].zone_id, &"willow_lake",
@@ -216,4 +215,14 @@ func _scrolls(node: Node) -> Array[ScrollContainer]:
 		out.append(node)
 	for c in node.get_children():
 		out.append_array(_scrolls(c))
+	return out
+
+## Zeilen stecken seit der Virtualisierung in einer VirtualList, nicht mehr
+## direkt im Panel -- deshalb rekursiv suchen.
+func _rows_with_fish_id(node: Node) -> Array[Control]:
+	var out: Array[Control] = []
+	if node is Control and node.has_meta(&"fish_id"):
+		out.append(node)
+	for c in node.get_children():
+		out.append_array(_rows_with_fish_id(c))
 	return out

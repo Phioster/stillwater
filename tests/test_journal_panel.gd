@@ -10,10 +10,21 @@ func _panel() -> PanelBase:
 ## Zeilen (auch die gesperrten) tragen ihre Fisch-ID als Metadatum -- robuster
 ## als eine Kindindex-Rechnung ueber die echte Datenbank.
 func _row_for(panel: PanelBase, id: StringName) -> Control:
-	for child in panel.get_children():
-		if child.has_meta(&"fish_id") and child.get_meta(&"fish_id") == id:
-			return child
+	for row in _rows_with_fish_id(panel):
+		if row.get_meta(&"fish_id") == id:
+			return row
 	return null
+
+## Zeilen stecken seit der Virtualisierung in einer VirtualList, nicht mehr
+## direkt im Panel -- deshalb rekursiv suchen.
+func _rows_with_fish_id(node: Node) -> Array[Control]:
+	var out: Array[Control] = []
+	if node is Control and node.has_meta(&"fish_id"):
+		out.append(node)
+	for c in node.get_children():
+		out.append_array(_rows_with_fish_id(c))
+	return out
+
 
 ## Die Zeile ist ein Knopf: druecken statt ein Eingabeereignis nachbauen. Das
 ## ist naeher an dem, was der Spieler tut -- rohe gui_input-Ereignisse kamen auf

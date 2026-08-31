@@ -48,8 +48,8 @@ func test_the_secret_panel_stays_empty_until_the_first_catch() -> void:
 	panel.refresh()
 	assert_true(panel.get_child_count() > 0, "der gefangene Geheimfisch fehlt")
 	var found := false
-	for child in panel.get_children():
-		if child.has_meta(&"fish_id") and child.get_meta(&"fish_id") == id:
+	for child in _rows_with_fish_id(panel):
+		if child.get_meta(&"fish_id") == id:
 			found = true
 	assert_true(found, "der Fisch steht nicht im eigenen Reiter")
 	main.free()
@@ -68,8 +68,17 @@ func test_only_caught_secrets_are_listed() -> void:
 	var panel: PanelBase = main.get_node("SidePanel/Panels/FishGroup/SecretScroll/SecretPanel")
 	Game.ctx.journal.record(CaughtFish.make(ids[0], 1.0, false), true)
 	panel.refresh()
-	for child in panel.get_children():
-		if child.has_meta(&"fish_id"):
-			assert_true(child.get_meta(&"fish_id") == ids[0],
+	for child in _rows_with_fish_id(panel):
+		assert_true(child.get_meta(&"fish_id") == ids[0],
 				"ungefangener Geheimfisch verraten: %s" % child.get_meta(&"fish_id"))
 	main.free()
+
+## Zeilen stecken seit der Virtualisierung in einer VirtualList, nicht mehr
+## direkt im Panel -- deshalb rekursiv suchen.
+func _rows_with_fish_id(node: Node) -> Array[Control]:
+	var out: Array[Control] = []
+	if node is Control and node.has_meta(&"fish_id"):
+		out.append(node)
+	for c in node.get_children():
+		out.append_array(_rows_with_fish_id(c))
+	return out
