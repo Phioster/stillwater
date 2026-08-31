@@ -109,3 +109,33 @@ func test_the_line_follows_the_bobber_during_the_cast() -> void:
 	assert_eq(line.points.size(), 2)
 	assert_true(line.points[1].is_equal_approx(w.get_node("Bobber").position),
 		"die Schnur endet nicht am Schwimmer")
+
+## Beim Wurf zeigt der Angler Bild 2, dessen Rutenspitze tiefer liegt. Die
+## Schnur muss trotzdem AN der Rute beginnen -- mit einer festen Konstante
+## hing sie in der Luft.
+func test_the_line_starts_at_the_rod_in_every_pose() -> void:
+	var w := _cast_world()
+	var angler = w.get_node("Angler")
+	var line: Line2D = w.get_node("Line")
+	for state in [FishingSim.State.CASTING, FishingSim.State.FIGHT, FishingSim.State.WAITING]:
+		Game.sim.state = state
+		w._process(0.0)
+		if not line.visible:
+			continue
+		assert_true(line.points[0].is_equal_approx(angler.rod_tip()),
+			"Zustand %d: Schnur beginnt bei %s, die Rute endet bei %s"
+			% [state, line.points[0], angler.rod_tip()])
+	w.free()
+
+## Die Spitze muss sich zwischen den Posen überhaupt bewegen -- sonst wäre die
+## Rechnung eine verkleidete Konstante.
+func test_the_rod_tip_moves_between_poses() -> void:
+	var w := _cast_world()
+	var angler = w.get_node("Angler")
+	angler.play_state(0)
+	var idle: Vector2 = angler.rod_tip()
+	angler.play_state(2)
+	var cast: Vector2 = angler.rod_tip()
+	assert_true(not idle.is_equal_approx(cast),
+		"die Rutenspitze steht in jeder Pose gleich: %s" % idle)
+	w.free()

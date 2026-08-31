@@ -23,10 +23,6 @@ const CHAR_SIZE := 32.0
 ## aufs Deck setzt, laesst die Figur um 8 Pixel schweben.
 const CHAR_FEET := 30.0
 ## Rutenspitze im 32x32-Frame bei (31, 6).
-## Spitze der Rute im Ruhebild: sie laeuft von (17, 16) 14 Pixel nach oben
-## rechts, endet also bei (30, 3). Der alte Wert (31, 6) zeigte auf eine
-## Stelle, an der gar keine Rute war -- die Schnur begann daneben.
-const ROD_TIP := Vector2(30.0, 3.0) * PIXEL_SCALE
 
 ## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die
 ## gemessenen Kosten pro Frame.
@@ -132,7 +128,7 @@ func _process(delta: float) -> void:
 	# dem Auf und Ab und dem Zappeln im Kampf.
 	_line.visible = _bobber.visible
 	if _line.visible:
-		_line.points = PackedVector2Array([_angler.position + ROD_TIP, _bobber.position])
+		_line.points = PackedVector2Array([_angler.rod_tip(), _bobber.position])
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
 	$CatchView.focus_point = _bobber.position
 	_water_time += delta
@@ -200,8 +196,8 @@ func _apply_zone() -> void:
 ## laufen koennen.
 func _cast_position() -> Vector2:
 	var t := 1.0 - clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
-	var from := _angler.position + ROD_TIP
+	var from: Vector2 = _angler.rod_tip()
 	var to := _bobber_home
-	var peak := (from + to) * 0.5 - Vector2(0.0, CAST_ARC)
+	var peak: Vector2 = (from + to) * 0.5 - Vector2(0.0, CAST_ARC)
 	var inv := 1.0 - t
 	return inv * inv * from + 2.0 * inv * t * peak + t * t * to

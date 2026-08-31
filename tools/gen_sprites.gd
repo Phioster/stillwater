@@ -233,14 +233,14 @@ func _dock() -> void:
 # --- Charakterebenen ------------------------------------------------------
 # Drei Frames nebeneinander: 0 ruhig, 1 Ausholen, 2 Wurf.
 
-const FRAME := 32
-const FRAMES := 3
+const FRAME := AnglerPose.FRAME_SIZE
+const FRAMES := AnglerPose.FRAMES
 
 func _char_sheet() -> Image:
 	return _new_image(FRAME * FRAMES, FRAME)
 
 func _arm_offset(frame: int) -> int:
-	return [0, -3, 4][frame]
+	return AnglerPose.arm_offset(frame)
 
 func _skin(index: int) -> void:
 	var tone: StringName = [&"skin_1", &"skin_2", &"skin_3"][index]
@@ -294,19 +294,15 @@ func _hat(index: int) -> void:
 			_rect(img, ox + 12, 0, 8, 3, _c(tone))
 	_save(img, "char_hat_%d" % index)
 
-## Die Rute lief von x=21 bis x=34 -- der Rahmen ist aber 32 breit. Sie wurde
-## dadurch vorne abgeschnitten UND blutete in den naechsten Rahmen aus, was
-## beim Wurf als zweite, falsche Rute zu sehen war. Jetzt passt sie hinein.
-const ROD_START := 17
-const ROD_LENGTH := 14
-
+## Geometrie aus AnglerPose, nicht hier: sie stand doppelt, und beim
+## Verschieben der Rute wanderte die Schnur nicht mit.
 func _rod() -> void:
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
-		var lift := _arm_offset(f)
-		for i in ROD_LENGTH:
-			_rect(img, ox + ROD_START + i, 16 + lift - i, 1, 1, _c(&"wood_light"))
+		for i in AnglerPose.ROD_LENGTH:
+			var p := AnglerPose.rod_pixel(f, i)
+			_rect(img, ox + p.x, p.y, 1, 1, _c(&"wood_light"))
 	_save(img, "char_rod_0")
 
 # --- Fische ---------------------------------------------------------------

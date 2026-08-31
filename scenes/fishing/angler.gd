@@ -73,3 +73,9 @@ func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
 
 func _on_escaped(_f: FishData) -> void:
 	play_state(0)
+
+## Die Rutenspitze in Weltkoordinaten -- fuer das aktuelle Bild. Beim Wurf
+## liegt sie tiefer als im Ruhebild; eine Konstante in der Welt konnte das
+## nicht abbilden, und die Schnur begann daneben.
+func rod_tip() -> Vector2:
+	return position + Vector2(AnglerPose.rod_tip(_frame)) * scale

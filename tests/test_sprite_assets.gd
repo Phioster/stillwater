@@ -92,20 +92,34 @@ func test_no_character_frame_bleeds_into_the_next() -> void:
 					% [file, f, counts[f], counts[0]])
 	assert_true(checked > 0, "keine Figurenbilder geprüft")
 
-## Die Schnur muss an der Rutenspitze beginnen, nicht daneben.
-func test_the_line_starts_at_the_actual_rod_tip() -> void:
+## Die berechnete Rutenspitze muss in JEDEM Bild auf echte Rutenpixel zeigen.
+## Beim Wurf zeigt der Angler Bild 2, dessen Spitze vier Pixel tiefer liegt --
+## eine feste Konstante konnte das nie treffen, und die Schnur hing in der Luft.
+func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 	var tex := TextureLoader.load_texture("%s/char_rod_0.png" % ART_DIR)
 	assert_true(tex != null)
 	if tex == null:
 		return
 	var img := tex.get_image()
-	var tip := Vector2i(-1, 99)
-	for x in 32:
-		for y in img.get_height():
-			if img.get_pixel(x, y).a > 0.0 and y < tip.y:
-				tip = Vector2i(x, y)
-	# ROD_TIP ist in Weltpixeln, das Bild in Sprite-Pixeln.
-	var world := load("res://scenes/fishing/world.gd")
-	var expected: Vector2 = Vector2(tip) * world.PIXEL_SCALE
-	assert_true(world.ROD_TIP.distance_to(expected) < world.PIXEL_SCALE * 1.5,
-		"ROD_TIP zeigt auf %s, die Spitze liegt aber bei %s" % [world.ROD_TIP, expected])
+	for f in AnglerPose.FRAMES:
+		var tip := AnglerPose.rod_tip(f)
+		var px := Vector2i(f * AnglerPose.FRAME_SIZE + tip.x, tip.y)
+		assert_true(px.x >= 0 and px.x < img.get_width() and px.y >= 0 and px.y < img.get_height(),
+			"Bild %d: die Spitze %s liegt ausserhalb" % [f, tip])
+		assert_true(img.get_pixel(px.x, px.y).a > 0.0,
+			"Bild %d: an der berechneten Spitze %s ist keine Rute" % [f, tip])
+		# Und sie ist wirklich die Spitze: einen Schritt weiter ist nichts mehr.
+		var beyond := Vector2i(px.x + 1, px.y - 1)
+		if beyond.x < img.get_width() and beyond.y >= 0:
+			assert_true(img.get_pixel(beyond.x, beyond.y).a == 0.0,
+				"Bild %d: hinter der Spitze geht die Rute weiter" % f)
+
+## Die Rute muss in jedem Bild vollstaendig in ihren Rahmen passen.
+func test_the_rod_fits_inside_its_frame_in_every_frame() -> void:
+	for f in AnglerPose.FRAMES:
+		for i in AnglerPose.ROD_LENGTH:
+			var p := AnglerPose.rod_pixel(f, i)
+			assert_between(float(p.x), 0.0, float(AnglerPose.FRAME_SIZE - 1),
+				"Bild %d, Pixel %d laeuft waagerecht aus dem Rahmen" % [f, i])
+			assert_between(float(p.y), 0.0, float(AnglerPose.FRAME_SIZE - 1),
+				"Bild %d, Pixel %d laeuft senkrecht aus dem Rahmen" % [f, i])
