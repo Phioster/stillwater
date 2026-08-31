@@ -221,3 +221,28 @@ Kosmetik da, die Stufe für den Fortschritt.
 
 Die Raritätsgewichte verschieben sich mit der Tiefe: in Willow Lake sind
 70 % der Bisse gewöhnlich, im Sternensee nur noch 24 %.
+
+## Tränke
+
+Jeder Trank ist ein **Faktor auf eine Zahl, die es schon gibt** — keiner
+bringt ein eigenes System mit. Das ist die Regel, ohne die mit jedem Trank
+die Sonderfälle im Kern wachsen.
+
+Vier Wirkungen in drei Stufen (600 / 3.000 / 15.000 Münzen, je 15 Minuten):
+Schimmer ×2/×4/×8, Lockstoff −20/−40/−80 % Bisszeit, Erfahrung und Handel
+je +15/+30/+60 %. Dazu drei Elixiere, die die Raritätsgewichte verschieben.
+
+Tränke derselben Gruppe **ersetzen** einander, statt sich zu stapeln.
+
+Drei eigene, die es in der Referenz nicht gibt, weil ihr die Systeme dazu
+fehlen:
+
+- **Tiefenlot** hebt den Rang um eine Stufe. Möglich nur, weil bei uns der
+  Köder den Rang bestimmt — dort kommt er allein aus dem Köder.
+- **Sparhaken** verbraucht keine Köder. Setzt einen Ködervorrat voraus.
+- **Mondglas** hebt Tageszeit-Bedingungen auf, öffnet also die Nachtfische
+  am Tag. Setzt Fangbedingungen voraus.
+
+Die Restzeit läuft **nur bei offenem Spiel**. Einen Trank im
+Offline-Nachlauf zwölf Stunden verfallen zu lassen wäre nur ärgerlich —
+der Spieler hätte nichts davon gehabt.

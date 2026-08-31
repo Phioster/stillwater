@@ -42,6 +42,10 @@ func _init() -> void:
 			owned.append(c.variant)
 		game.owned_cosmetics[String(c.category)] = owned
 
+	# Von jedem Trank ein paar, damit sich alles ausprobieren laesst.
+	for id in db.consumables:
+		game.consumable_counts[id] = 5
+
 	for id in db.baits:
 		var b: BaitData = db.baits[id]
 		if not b.unlimited:

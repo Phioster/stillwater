@@ -8,6 +8,7 @@ var fish: Dictionary = {}
 var zones: Dictionary = {}
 var upgrades: Dictionary = {}
 var cosmetics: Dictionary = {}
+var consumables: Dictionary = {}
 
 const _FOLDERS := {
 	"rarities": "res://data/rarities",
@@ -16,6 +17,7 @@ const _FOLDERS := {
 	"zones": "res://data/zones",
 	"upgrades": "res://data/upgrades",
 	"cosmetics": "res://data/cosmetics",
+	"consumables": "res://data/consumables",
 }
 
 ## Kategorien mit einem eigenen Sprite pro Variante -- "hair_color" faerbt das
@@ -38,6 +40,7 @@ func load_all() -> void:
 	zones = _load_folder(_FOLDERS["zones"])
 	upgrades = _load_folder(_FOLDERS["upgrades"])
 	cosmetics = _load_folder(_FOLDERS["cosmetics"])
+	consumables = _load_folder(_FOLDERS["consumables"])
 	# Kaputte Verweise sollen beim Start auffallen, nicht erst beim ersten Biss -
 	# aber ein Datenfehler soll das Spiel nicht am Starten hindern.
 	for problem in validate():
@@ -109,6 +112,17 @@ func zones_in_order() -> Array[ZoneData]:
 		if a.unlock_level != b.unlock_level:
 			return a.unlock_level < b.unlock_level
 		return a.unlock_cost < b.unlock_cost)
+	return out
+
+## Traenke in Freischaltreihenfolge, dann nach Preis.
+func consumables_in_order() -> Array[ConsumableData]:
+	var out: Array[ConsumableData] = []
+	for id in consumables:
+		out.append(consumables[id])
+	out.sort_custom(func(a: ConsumableData, b: ConsumableData) -> bool:
+		if a.unlock_level != b.unlock_level:
+			return a.unlock_level < b.unlock_level
+		return a.cost < b.cost)
 	return out
 
 ## Köder in Freischaltreihenfolge -- aus demselben Grund wie bei den Zonen.

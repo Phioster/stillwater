@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://resources/consumable_data.gd" id="1_con"]
+
+[resource]
+script = ExtResource("1_con")
+id = &"wert_trank"
+display_name = "Handel-Trank"
+description = "+30% Verkaufswert"
+cost = 3000
+unlock_level = 6
+duration = 900.0
+group = &"wert"
+value_mult = 1.3

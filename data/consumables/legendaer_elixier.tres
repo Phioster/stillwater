@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://resources/consumable_data.gd" id="1_con"]
+
+[resource]
+script = ExtResource("1_con")
+id = &"legendaer_elixier"
+display_name = "Legenden-Elixier"
+description = "Legendäres wird für kurze Zeit erreichbar"
+cost = 180000
+unlock_level = 34
+duration = 900.0
+group = &"raritaet"
+rarity_weight_bonus = {
+&"legendary": 8.0,
+&"epic": 3.0
+}

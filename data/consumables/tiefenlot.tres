@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://resources/consumable_data.gd" id="1_con"]
+
+[resource]
+script = ExtResource("1_con")
+id = &"tiefenlot"
+display_name = "Tiefenlot"
+description = "Jeder Fisch steigt um eine Größenklasse — auch mit einfachem Köder"
+cost = 9000
+unlock_level = 16
+duration = 900.0
+group = &"rang"
+rank_shift = 1

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://resources/consumable_data.gd" id="1_con"]
+
+[resource]
+script = ExtResource("1_con")
+id = &"episch_elixier"
+display_name = "Episch-Elixier"
+description = "Episches beißt spürbar häufiger"
+cost = 60000
+unlock_level = 26
+duration = 900.0
+group = &"raritaet"
+rarity_weight_bonus = {
+&"epic": 5.0,
+&"rare": 2.0
+}

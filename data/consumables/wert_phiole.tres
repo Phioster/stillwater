@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://resources/consumable_data.gd" id="1_con"]
+
+[resource]
+script = ExtResource("1_con")
+id = &"wert_phiole"
+display_name = "Handel-Phiole"
+description = "+15% Verkaufswert"
+cost = 600
+unlock_level = 1
+duration = 900.0
+group = &"wert"
+value_mult = 1.15

@@ -22,6 +22,9 @@ var coins: int = 0:
 			coins_changed.emit(coins)
 var upgrade_levels: Dictionary = {}
 var settings := Settings.new()
+var buffs := Buffs.new()
+## Wie viele Traenke jeder Sorte im Vorrat sind.
+var consumable_counts: Dictionary = {}
 var unlocked_zones: Array[StringName] = []
 var cosmetics: Dictionary = {}
 ## Kategorie (String) -> Array der besessenen Varianten. Variante 0 jeder
@@ -80,6 +83,12 @@ func _process(delta: float) -> void:
 	# rechnet mit der Stunde der Rueckkehr -- ein Tagesfenster ueber Stunden
 	# hinweg nachzubilden waere Aufwand ohne spuerbaren Gewinn.
 	ctx.hour_of_day = Time.get_datetime_dict_from_system()["hour"]
+	# Traenke laufen NUR bei offenem Spiel ab -- siehe core/buffs.gd.
+	var before := buffs.active.size()
+	buffs.tick(delta * time_scale)
+	if buffs.active.size() != before:
+		apply_buffs()
+		state_changed.emit()
 	_dispatch(sim.tick(delta * time_scale, ctx, rng))
 
 func tap() -> void:
@@ -348,3 +357,51 @@ func apply_settings() -> void:
 		ctx.auto_fallback_bait = settings.auto_fallback_bait
 	state_changed.emit()
 	progress_changed.emit()
+
+# --- Traenke ------------------------------------------------------------------
+
+## Traegt die laufenden Traenke in den Simulationskontext. Eine Stelle, damit
+## ein neuer Trank nicht vergessen kann, sich irgendwo einzutragen.
+func apply_buffs() -> void:
+	if ctx == null:
+		return
+	ctx.shiny_bonus = buffs.product(&"shiny_mult")
+	ctx.consumable_bonus = buffs.product(&"value_mult")
+	ctx.xp_bonus = buffs.product(&"xp_mult")
+	ctx.bite_bonus = buffs.product(&"bite_time_mult")
+	ctx.fight_bonus = buffs.product(&"fight_time_mult")
+	ctx.rarity_bonus = buffs.rarity_bonus()
+	ctx.rank_bonus = buffs.rank_shift()
+	ctx.free_bait = buffs.flag(&"free_bait")
+	ctx.ignore_time_of_day = buffs.flag(&"ignore_time_of_day")
+
+func consumable_count(id: StringName) -> int:
+	return int(consumable_counts.get(id, 0))
+
+func buy_consumable(id: StringName, amount: int = 1) -> bool:
+	var c: ConsumableData = Database.consumables.get(id)
+	if c == null or amount <= 0 or ctx.player_level < c.unlock_level:
+		return false
+	var price := c.cost * amount
+	if coins < price:
+		return false
+	coins -= price
+	consumable_counts[id] = consumable_count(id) + amount
+	state_changed.emit()
+	progress_changed.emit()
+	return true
+
+## Trinken. Gibt false zurueck, wenn keiner im Vorrat ist -- das Panel laesst
+## den Knopf dann wackeln, statt stumm nichts zu tun.
+func use_consumable(id: StringName) -> bool:
+	var c: ConsumableData = Database.consumables.get(id)
+	if c == null or consumable_count(id) <= 0:
+		return false
+	consumable_counts[id] = consumable_count(id) - 1
+	if consumable_counts[id] <= 0:
+		consumable_counts.erase(id)
+	buffs.apply(c)
+	apply_buffs()
+	state_changed.emit()
+	progress_changed.emit()
+	return true

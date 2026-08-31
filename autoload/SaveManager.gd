@@ -77,7 +77,8 @@ func serialize() -> Dictionary:
 		# duplicate(true): die Werte sind Arrays (Referenztyp) -- eine flache
 		# Kopie würde nur das Dictionary duplizieren, nicht die Arrays darin.
 		"owned_cosmetics": Game.owned_cosmetics.duplicate(true),
-		"active_consumables": [],
+		"active_consumables": Game.buffs.to_dict(),
+		"consumable_inventory": Game.consumable_counts.duplicate(),
 		"settings": Game.settings.to_dict(),
 		"statistics": {},
 		"last_seen_unix": int(Time.get_unix_time_from_system()),
@@ -92,6 +93,11 @@ func deserialize(raw: Dictionary) -> void:
 		return
 	var d := migrate(raw)
 	Game.settings.load_dict(d["settings"])
+	Game.consumable_counts = {}
+	for key in d["consumable_inventory"]:
+		var n := int(d["consumable_inventory"][key])
+		if n > 0:
+			Game.consumable_counts[StringName(key)] = n
 	Game.coins = int(d["coins"])
 	Game.ctx.player_level = int(d["player_level"])
 	Game.ctx.player_xp = int(d["xp"])
@@ -123,6 +129,8 @@ func deserialize(raw: Dictionary) -> void:
 	Game.rng.set_state(int(d["rng_state"]))
 	Game.apply_upgrades()
 	Game.apply_settings()
+	Game.buffs.load_dict(d["active_consumables"])
+	Game.apply_buffs()
 
 	_run_offline(int(d["last_seen_unix"]))
 	Game.state_changed.emit()
@@ -166,7 +174,13 @@ func migrate(raw: Dictionary) -> Dictionary:
 	d["rng_state"] = _safe_int(raw.get("rng_state"), defaults["rng_state"])
 	d["cosmetics"] = _safe_dict(raw.get("cosmetics"), defaults["cosmetics"])
 	d["owned_cosmetics"] = _safe_owned_cosmetics(raw.get("owned_cosmetics"), defaults["owned_cosmetics"])
-	d["active_consumables"] = _safe_array(raw.get("active_consumables"), [])
+	# War frueher eine leere Liste, ist jetzt id -> Restzeit. Ein alter Stand
+	# mit einer Liste faellt damit auf ein leeres Woerterbuch zurueck.
+	d["active_consumables"] = _safe_dict(raw.get("active_consumables"), {})
+	var counts: Dictionary = {}
+	for key in _safe_dict(raw.get("consumable_inventory"), {}):
+		counts[key] = _safe_int(_safe_dict(raw.get("consumable_inventory"), {})[key], 0)
+	d["consumable_inventory"] = counts
 	d["settings"] = _safe_dict(raw.get("settings"), {})
 	d["statistics"] = _safe_dict(raw.get("statistics"), {})
 

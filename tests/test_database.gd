@@ -92,3 +92,38 @@ func test_every_weighted_rarity_has_fish_in_that_zone() -> void:
 				continue
 			assert_true(present.has(rid),
 				"%s gewichtet %s, hat dort aber keine Art" % [zid, rid])
+
+## Achtzehn Tränke: zwölf nach dem Vorbild (vier Wirkungen mal drei Stufen),
+## drei Raritäts-Elixiere, drei eigene.
+func test_the_potion_range_is_complete() -> void:
+	assert_eq(Database.consumables.size(), 18)
+	for group in ["schimmer", "koeder", "erfahrung", "wert"]:
+		var tiers := 0
+		for id in Database.consumables:
+			if Database.consumables[id].group == StringName(group):
+				tiers += 1
+		assert_eq(tiers, 3, "Gruppe %s hat %d Stufen statt drei" % [group, tiers])
+
+## Innerhalb einer Gruppe muss die teurere Stufe auch stärker sein, sonst
+## kauft man sich schlechter.
+func test_a_dearer_tier_is_always_stronger() -> void:
+	for group in ["schimmer", "erfahrung", "wert"]:
+		var tiers: Array[ConsumableData] = []
+		for c in Database.consumables_in_order():
+			if c.group == StringName(group):
+				tiers.append(c)
+		for i in range(1, tiers.size()):
+			assert_true(tiers[i].cost > tiers[i - 1].cost, "%s: Preis steigt nicht" % group)
+			var a := maxf(maxf(tiers[i - 1].shiny_mult, tiers[i - 1].xp_mult), tiers[i - 1].value_mult)
+			var b := maxf(maxf(tiers[i].shiny_mult, tiers[i].xp_mult), tiers[i].value_mult)
+			assert_true(b > a, "%s: die teurere Stufe ist nicht stärker" % group)
+
+## Der Lockstoff wirkt andersherum -- kleiner ist besser.
+func test_the_bite_potion_gets_faster_with_each_tier() -> void:
+	var tiers: Array[ConsumableData] = []
+	for c in Database.consumables_in_order():
+		if c.group == &"koeder":
+			tiers.append(c)
+	for i in range(1, tiers.size()):
+		assert_true(tiers[i].bite_time_mult < tiers[i - 1].bite_time_mult,
+			"die teurere Stufe beißt nicht schneller")

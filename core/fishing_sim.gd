@@ -139,7 +139,7 @@ func _on_bite(ctx: SimContext, rng: StillRNG, events: Array) -> void:
 	hooked_max_health = FishRoll.health_for(fish, hooked_rank)
 	hooked_health = hooked_max_health
 	state = State.FIGHT
-	timer = FishRoll.time_for(fish, hooked_rank, ctx.zone.fight_window)
+	timer = FishRoll.time_for(fish, hooked_rank, ctx.zone.fight_window) * ctx.fight_bonus
 	hooked_max_time = timer
 	rod_timer = ROD_INTERVAL
 	rod_hits = 0
@@ -160,7 +160,7 @@ func _land(ctx: SimContext, events: Array) -> void:
 	var discovered := ctx.journal.record(caught, fish.is_secret)
 	var is_record := discovered or hooked_dev > previous_best
 	var new_rank := not had_rank
-	var xp := Progression.xp_for_catch(fish, rarity, hooked_rank)
+	var xp := int(round(float(Progression.xp_for_catch(fish, rarity, hooked_rank)) * ctx.xp_bonus))
 	var after := Progression.apply_xp(ctx.player_level, ctx.player_xp, xp)
 	ctx.player_level = int(after["level"])
 	ctx.player_xp = int(after["xp"])
@@ -246,6 +246,8 @@ static func _roll_rarity(ctx: SimContext, rng: StillRNG) -> StringName:
 	var weights := PackedFloat64Array()
 	for id in ids:
 		var w := float(ctx.zone.rarity_weights[id]) if available.has(id) else 0.0
+		# Elixiere verschieben die Verteilung, statt eigene Fische mitzubringen.
+		w *= float(ctx.rarity_bonus.get(id, 1.0))
 		# Seltene Stufen laufen mit der Spielerstufe an: am Anfang beisst fast
 		# nur Gewoehnliches, spaeter wird es bunter.
 		var rarity: RarityData = ctx.rarities.get(id)

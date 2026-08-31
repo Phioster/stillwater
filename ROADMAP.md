@@ -81,8 +81,11 @@ dem Gerät.
 - **Hochauflösende Pixelart.** Die Richtung steht (Dead-Cells-Machart,
   weibliche Figur), aber jedes Sprite ist Geschmackssache. Solange die
   Platzhalter stehen, bleiben auch meine Sinustöne stehen.
-- **Tränke.** Die Wirkungen sind klar (reine Multiplikatoren auf
-  vorhandene Zahlen), die Preise und Dauern sind Balance-Fragen.
+- ~~Tränke~~ — gebaut 2026-08-31. Zwölf nach dem Vorbild (Schimmer,
+  Lockstoff, Erfahrung, Handel × drei Stufen, 600/3.000/15.000, 15 min),
+  drei Raritäts-Elixiere, drei eigene: **Tiefenlot** (Rang +1),
+  **Sparhaken** (kein Köderverbrauch), **Mondglas** (Nachtfische am Tag).
+  Die drei hängen an Systemen, die die Referenz gar nicht hat.
 - ~~Weitere Zonen~~ — **sieben Zonen stehen** (2026-08-30): Willow Lake,
   Sunset Coast, Nebelmoor, Frostbucht, Tiefe Zisterne, Wolkensee,
   Sternensee. 104 Arten. Damit sind wir beim Umfang der Referenz.

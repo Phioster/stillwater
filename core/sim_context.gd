@@ -11,6 +11,15 @@ var bait_counts: Dictionary = {}
 var rod_power: float = 4.0
 var orb_power: float = 6.0
 var consumable_bonus: float = 1.0
+## Weitere Trankwirkungen. Alles Faktoren auf vorhandene Zahlen -- kein Trank
+## bringt ein eigenes System mit.
+var xp_bonus: float = 1.0
+var bite_bonus: float = 1.0
+var fight_bonus: float = 1.0
+var rarity_bonus: Dictionary = {}
+var rank_bonus: int = 0
+var free_bait: bool = false
+var ignore_time_of_day: bool = false
 ## Siehe Settings.auto_fallback_bait.
 var auto_fallback_bait: bool = true
 var shiny_bonus: float = 1.0
@@ -25,7 +34,8 @@ var journal: Journal
 
 ## Faktor des aktiven Koeders auf die Bisszeit.
 func bait_bite_mult() -> float:
-	return maxf(bait.bite_time_mult, 0.05) if bait != null else 1.0
+	var m := bait.bite_time_mult if bait != null else 1.0
+	return maxf(m * bite_bonus, 0.02)
 
 ## Zieht den Rang aus der Tabelle des aktiven Koeders. Ohne Tabelle bleibt es
 ## bei E -- ein Koeder ohne Angabe verspricht nichts und liefert das Kleinste.
@@ -39,7 +49,9 @@ func pull_rank(rng: StillRNG) -> int:
 		if i >= 0 and i < weights.size():
 			weights[i] = maxf(float(bait.rank_probabilities[r]), 0.0)
 	var picked := rng.weighted_pick(weights)
-	return picked if picked >= 0 else 0
+	# Der Trank hebt den gezogenen Rang an, statt die Tabelle zu veraendern:
+	# so bleibt die Zusage des Koeders lesbar und der Trank ist ein Zuschlag.
+	return clampi((picked if picked >= 0 else 0) + rank_bonus, 0, FishRoll.RANK_NAMES.size() - 1)
 
 func rarity_of(fish: FishData) -> RarityData:
 	var r: RarityData = rarities.get(fish.rarity_id)
@@ -60,13 +72,14 @@ func condition_state() -> Dictionary:
 		"cosmetics": cosmetics,
 		"zone_id": zone.id if zone != null else &"",
 		"hour_of_day": hour_of_day,
+		"ignore_time_of_day": ignore_time_of_day,
 		"journal_species": journal.entries.size() if journal != null else 0,
 	}
 
 ## Verbraucht einen Köder; läuft ein gekaufter Köder leer, schaltet
 ## automatisch auf den Grundköder zurück, damit Idle-Sessions nie hängen.
 func consume_bait() -> void:
-	if bait == null or bait.unlimited:
+	if bait == null or bait.unlimited or free_bait:
 		return
 	var left := int(bait_counts.get(bait.id, 0)) - 1
 	bait_counts[bait.id] = maxi(left, 0)

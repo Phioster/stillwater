@@ -8,6 +8,10 @@ extends CatchCondition
 @export var window_name: String = ""
 
 func is_met(state: Dictionary) -> bool:
+	# Das Mondglas hebt die Zeitbedingung auf. Hier statt beim Wurf, damit
+	# jede Prüfung -- auch die im Journal -- dieselbe Antwort gibt.
+	if bool(state.get("ignore_time_of_day", false)):
+		return true
 	var h := int(state.get("hour_of_day", 12))
 	if from_hour <= to_hour:
 		return h >= from_hour and h <= to_hour
