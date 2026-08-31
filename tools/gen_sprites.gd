@@ -401,74 +401,8 @@ func _hat(index: int) -> void:
 ## Die Rute ist die einzige Figurengrafik, die noch gerechnet wird -- eine
 ## Rute IST eine einfache Form: ein Stock, der sich zur Spitze verjuengt und
 ## dabei biegt. Genau das laesst sich besser rechnen als zeichnen.
-## Die Rute. Form und Farben sind an einer gezeichneten Vorlage abgenommen:
-## Korkgriff, Stahlschaft mit Glanzkante oben und dunkler Unterseite,
-## Messingringe, Rolle unter dem Griffende.
-##
-## Gezeichnet und nicht gedreht: ein fertiges Rutenbild in zehn Winkel zu
-## drehen macht es verwaschen oder ausgefranst -- drei Anlaeufe, alle
-## verworfen. Hier ist jeder Pixel gesetzt, in jeder Pose gleich sauber.
-func _rod(index: int) -> void:
-	# Die drei Varianten faerben nur den Schaft um, der Griff bleibt Kork.
-	var steel: Color = [_c(&"rod_steel"), _c(&"wood"), _c(&"silver")][index]
-	var shine: Color = steel.lightened(0.30)
-	var shadow: Color = steel.darkened(0.35)
-	var img := _char_sheet()
-	for f in FRAMES:
-		var ox := f * FRAME
-		var a := Vector2(AnglerPose.rod_grip(f))
-		var b := Vector2(AnglerPose.rod_tip(f))
-		var dir := (b - a).normalized()
-		var down := Vector2(-dir.y, dir.x)
-		if down.y < 0.0:
-			down = -down
-		var length := (b - a).length()
-		var steps := int(ceil(length)) * 3
-		for i in steps + 1:
-			var t := float(i) / float(steps)
-			var p := a + (b - a) * t
-			# Vier Pixel stark, zur Spitze hin drei: Glanzkante oben,
-			# Koerper, dunkle Unterseite. Die Rundung macht den Unterschied
-			# zwischen Rute und Strich.
-			var thick := 8 if t < 0.6 else 6
-			for k in thick:
-				var c: Color
-				if t < 0.22:
-					c = _c(&"rod_cork") if k < thick - 1 else _c(&"rod_cork_dk")
-				elif k == 0:
-					c = shine
-				elif k == thick - 1:
-					c = shadow
-				else:
-					c = steel
-				var q := p + down * float(k)
-				_pixel(img, ox + int(round(q.x)), int(round(q.y)), c)
-			# Umriss oben und unten -- die gezeichnete Figur hat ueberall einen.
-			var top := p - down
-			var bot := p + down * float(thick)
-			# Kante zwei Pixel stark, sonst verschwindet sie in der Groesse.
-			_pixel(img, ox + int(round((p - down * 2.0).x)), int(round((p - down * 2.0).y)), _c(&"outline"))
-			_pixel(img, ox + int(round((p + down * (thick + 1.0)).x)), int(round((p + down * (thick + 1.0)).y)), _c(&"outline"))
-			_pixel(img, ox + int(round(top.x)), int(round(top.y)), _c(&"outline"))
-			_pixel(img, ox + int(round(bot.x)), int(round(bot.y)), _c(&"outline"))
-		# Messingringe am Schaft
-		var rings: Array[float] = [0.42, 0.62, 0.82]
-		for r in rings:
-			var p2 := a + (b - a) * r
-			for k in 4:
-				var q2 := p2 + down * float(k)
-				_pixel(img, ox + int(round(q2.x)), int(round(q2.y)), _c(&"rod_brass"))
-			var eye := p2 + down * 6.0
-			_pixel(img, ox + int(round(eye.x)), int(round(eye.y)), _c(&"outline"))
-		# Rolle unter dem Griffende, mit Kurbel.
-		var reel := a + (b - a) * 0.24 + down * 10.0
-		_disc(img, ox + reel.x, reel.y, 8.0, _c(&"outline"))
-		_disc(img, ox + reel.x, reel.y, 6.0, _c(&"rod_steel"))
-		_disc(img, ox + reel.x, reel.y, 2.4, _c(&"rod_brass"))
-		var crank := reel + down * 10.0 - dir * 2.0
-		_pixel(img, ox + int(round(crank.x)), int(round(crank.y)), _c(&"outline"))
-		_pixel(img, ox + int(round(crank.x)) + 1, int(round(crank.y)), _c(&"rod_steel"))
-	_save(img, "char_rod_%d" % index)
+# Die Rute baut tools/import_rod.py aus assets/source/rod_45.png --
+# gezeichnete Vorlage statt gerechneter Strich.
 
 # --- Fische ---------------------------------------------------------------
 
@@ -582,8 +516,6 @@ func _init() -> void:
 	# sie werden aus dem gezeichneten Ausgangsbild zerlegt, nicht gemalt.
 	for i in 11:
 		_hat(i)
-	for i in 3:
-		_rod(i)
 	print("Fische")
 	_fishes()
 	print("Kleinkram")

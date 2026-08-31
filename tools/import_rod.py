@@ -1,186 +1,188 @@
 #!/usr/bin/env python3
-"""Setzt eine gezeichnete Rute in alle Posen ein.
+"""Baut die Rutenblaetter aus der gezeichneten Vorlage.
 
-ZURZEIT NICHT IM EINSATZ. Die Rute im Spiel kommt aus
-`gen_sprites.gd::_rod`, weil das Drehen eines fertigen Pixelbildes in zehn
-Winkel es entweder verwaschen (weiche Abtastung) oder ausgefranst (harte
-Abtastung) macht -- gerechnet ist jeder Pixel gesetzt statt abgetastet.
+Die Rute kommt aus `assets/source/rod_45.png` -- einem 100x100-Sprite, das
+diagonal von unten links (Korkgriff) nach oben rechts (Spitze) laeuft.
 
-Dieses Werkzeug bleibt fuer den Tag, an dem es je Pose ein eigenes
-gezeichnetes Bild gibt; dann faellt das Drehen weg.
+Die sechs RUHEPOSEN bekommen dieses Bild **eins zu eins**: die Vorlage ist
+genau so lang wie die Rute im Spiel, es wird nichts skaliert und nichts
+gedreht. Die vier WURFPOSEN zeigen in andere Richtungen; die werden in
+denselben Farben nachgezeichnet. Ein fertiges Pixelbild in einen anderen
+Winkel zu drehen macht es verwaschen oder ausgefranst -- drei Anlaeufe,
+alle verworfen.
 
-Die Rute ist EIN Bild. Fuer jede der zehn Posen liest dieses Werkzeug Griff
-und Spitze aus `core/angler_pose.gd` -- dieselbe Quelle, aus der das Spiel
-die Schnur ansetzt -- dreht die Rute in den passenden Winkel, skaliert sie
-auf die passende Laenge und legt sie in das Blatt.
-
-    python3 tools/import_rod.py rute_roh.png
-
-Gedreht wird im GROSSEN Bild und erst danach verkleinert: ein fertiges
-Pixelbild zu drehen zerreisst die Kanten.
+    python3 tools/import_rod.py
 """
 import math
 import os
 import re
-import sys
 
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POSE = os.path.join(ROOT, "core", "angler_pose.gd")
+SOURCE = os.path.join(ROOT, "assets", "source", "rod_45.png")
 OUT = os.path.join(ROOT, "assets", "art")
-FRAME = 64
-## Dieselben drei Ruten wie bisher: Bambus, Eiche, Silber.
-ROD_TONES = ["a5825a", "4a3626", "b9c3c8"]
 
-def read_vectors(name):
-    """Liest eine Vector2i-Liste aus der Pose-Datei."""
+## Die drei Varianten faerben nur den Schaft um. Kork und Messing bleiben --
+## eine Silberrute mit silbernem Griff waere ein Barren, keine Rute.
+SHAFT_TONES = [None, "6b4a2c", "b9c3c8"]
+
+def read_ints(name):
+    head = "const %s: Array[Vector2i] = [" % name
     text = open(POSE, encoding="utf-8").read()
-    block = text.split("const %s: Array[Vector2i] = [" % name)[1].split("]")[0]
-    return [(int(a), int(b)) for a, b in re.findall(r"Vector2i\((-?\d+),\s*(-?\d+)\)", block)]
+    i = text.index(head) + len(head)
+    j = text.index("]", i)
+    return [(int(a), int(b)) for a, b in
+            re.findall(r"Vector2i\((-?\d+),\s*(-?\d+)\)", text[i:j])]
 
-def principal_angle(img):
-    """In welche Richtung die Rute im Rohbild zeigt.
+def read_int(name):
+    text = open(POSE, encoding="utf-8").read()
+    return int(re.search(r"const %s: int = (\d+)" % name, text).group(1))
 
-    Ueber die Hauptachse der sichtbaren Pixel und nicht ueber die Ecken der
-    Bounding-Box: eine waagerechte Rute mit dicker Rolle hat eine Box, deren
-    Diagonale in eine ganz andere Richtung zeigt als die Rute selbst.
+def classify(img):
+    """Teilt die Palette der Vorlage in Kork, Messing, Umriss und Schaft.
+
+    Ueber Farbton und Helligkeit statt ueber eine Liste: die Vorlage kann
+    neu erzeugt werden, ohne dass hier Werte nachgetragen werden muessen.
     """
     px = img.load()
-    pts = [(x, y) for y in range(img.size[1]) for x in range(img.size[0])
-           if px[x, y][3] > 0]
-    n = len(pts)
-    mx = sum(p[0] for p in pts) / n
-    my = sum(p[1] for p in pts) / n
-    sxx = sum((p[0] - mx) ** 2 for p in pts) / n
-    syy = sum((p[1] - my) ** 2 for p in pts) / n
-    sxy = sum((p[0] - mx) * (p[1] - my) for p in pts) / n
-    # Groesster Eigenvektor der Kovarianzmatrix.
-    angle = 0.5 * math.atan2(2.0 * sxy, sxx - syy)
-    return math.degrees(-angle)
-
-def tip_is_right(img, angle):
-    """Zeigt die duenne Spitze nach rechts? Sonst muss das Bild gespiegelt
-    werden -- der Griff gehoert immer an den Anker."""
-    rot = img.rotate(-angle, resample=Image.BICUBIC, expand=True)
-    rot = rot.crop(rot.getbbox())
-    px = rot.load()
-    w, h = rot.size
-    def mass(x0, x1):
-        return sum(1 for y in range(h) for x in range(x0, x1) if px[x, y][3] > 0)
-    return mass(0, max(1, w // 3)) > mass(w - max(1, w // 3), w)
-
-def harden(img, keep_alpha=110):
-    """Macht aus weichen Kanten wieder Pixelart.
-
-    Drehen und Verkleinern erzeugen halbe Transparenz -- im Bild sieht das
-    verwaschen aus. Also: Alpha auf ganz oder gar nicht. Die FARBEN bleiben,
-    wie sie sind; sie zusaetzlich zu quantisieren zerlegte die Rute in
-    Streifen, weil benachbarte Toene in verschiedene Faecher fielen.
-    """
-    px = img.load()
+    groups = {"cork": [], "brass": [], "outline": [], "shaft": []}
     for y in range(img.size[1]):
         for x in range(img.size[0]):
             r, g, b, a = px[x, y]
-            px[x, y] = (0, 0, 0, 0) if a < keep_alpha else (r, g, b, 255)
-    return img
-
-def thicken(img, angle):
-    """Verdickt die Rute quer zu ihrer Achse.
-
-    Auf 30 Pixel Laenge bleibt von einer Rute sonst ein Haar uebrig: sie
-    ist im Rohbild funf Pixel stark, nach dem Verkleinern noch einer.
-    """
-    rad = math.radians(-angle)
-    step = (round(-math.sin(rad)), round(math.cos(rad)))
-    if step == (0, 0):
-        step = (0, 1)
-    grown = Image.new("RGBA", (img.size[0] + abs(step[0]), img.size[1] + abs(step[1])),
-                      (0, 0, 0, 0))
-    grown.alpha_composite(img, (max(0, step[0]), max(0, step[1])))
-    grown.alpha_composite(img, (max(0, -step[0]), max(0, -step[1])))
-    return grown
-
-def outline(img, color=(26, 35, 32)):
-    """Dunkle Kante -- die gezeichnete Figur hat ueberall eine."""
-    w, h = img.size
-    grown = Image.new("RGBA", (w + 2, h + 2), (0, 0, 0, 0))
-    grown.alpha_composite(img, (1, 1))
-    src = grown.copy().load()
-    dst = grown.load()
-    for y in range(h + 2):
-        for x in range(w + 2):
-            if src[x, y][3] > 0:
+            if a == 0:
                 continue
-            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < w + 2 and 0 <= ny < h + 2 and src[nx, ny][3] > 0:
-                    dst[x, y] = color + (255,)
-                    break
-    return grown
+            lum = 0.299 * r + 0.587 * g + 0.114 * b
+            warm = r - b
+            if lum < 45:
+                groups["outline"].append((r, g, b))
+            elif warm > 55 and lum < 120:
+                groups["cork"].append((r, g, b))
+            elif warm > 45:
+                groups["brass"].append((r, g, b))
+            else:
+                groups["shaft"].append((r, g, b))
+    return groups
 
-## Nur der echte Umriss bleibt schwarz. Bei der Kleidung liegt die Grenze
-## hoeher, dort ist Dunkles Stoff -- bei der Rute ist Dunkles der Schaft.
-DARK_KEEP = 0.09
+def grip_of(img):
+    """Das Griffende der Vorlage: der Punkt, der auf der Rutenachse am
+    weitesten unten links liegt."""
+    px = img.load()
+    best, low = (0, img.size[1] - 1), None
+    for y in range(img.size[1]):
+        for x in range(img.size[0]):
+            if px[x, y][3] == 0:
+                continue
+            if low is None or x - y < low:
+                low, best = x - y, (x, y)
+    return best
+
+def average(colors, fallback):
+    if not colors:
+        return fallback
+    n = len(colors)
+    return tuple(sum(c[i] for c in colors) // n for i in range(3))
 
 def tint(pixel, target):
     r, g, b, a = pixel
-    luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
-    if luma < DARK_KEEP:
-        return pixel
-    f = 0.55 + 0.9 * luma
+    lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+    f = 0.55 + 0.9 * lum
     return (min(255, int(target[0] * f)), min(255, int(target[1] * f)),
             min(255, int(target[2] * f)), a)
 
+def is_shaft(pixel):
+    r, g, b, a = pixel
+    lum = 0.299 * r + 0.587 * g + 0.114 * b
+    return a > 0 and lum >= 45 and (r - b) <= 45
+
+def draw_cast(sheet, frame, anchor, tip, size, tones):
+    """Zeichnet die Rute fuer eine Wurfpose -- Pixel fuer Pixel."""
+    ox = frame * size
+    a = complex(*anchor)
+    b = complex(anchor[0] + tip[0], anchor[1] + tip[1])
+    direction = (b - a) / abs(b - a)
+    down = complex(-direction.imag, direction.real)
+    if down.imag < 0:
+        down = -down
+    length = abs(b - a)
+    px = sheet.load()
+
+    def put(p, color):
+        x, y = int(round(p.real)), int(round(p.imag))
+        if 0 <= x < size and 0 <= y < size:
+            px[ox + x, y] = color + (255,)
+
+    steps = int(length * 3)
+    for i in range(steps + 1):
+        t = i / steps
+        p = a + (b - a) * t
+        thick = 8 if t < 0.6 else 6
+        for k in range(thick):
+            q = p + down * k
+            if t < 0.20:
+                put(q, tones["cork"])
+            elif k == 0:
+                put(q, tones["shine"])
+            elif k == thick - 1:
+                put(q, tones["shadow"])
+            else:
+                put(q, tones["shaft"])
+        put(p - down, tones["outline"])
+        put(p + down * thick, tones["outline"])
+    for r in (0.42, 0.62, 0.82):
+        p = a + (b - a) * r
+        for k in range(4):
+            put(p + down * k, tones["brass"])
+    reel = a + (b - a) * 0.24 + down * 10
+    for dy in range(-7, 8):
+        for dx in range(-7, 8):
+            d = math.hypot(dx, dy)
+            if d <= 7.5:
+                put(reel + complex(dx, dy),
+                    tones["outline"] if d > 5.5 else tones["shaft"])
+
 def main():
-    if len(sys.argv) < 2:
-        sys.exit(__doc__)
-    raw = Image.open(sys.argv[1]).convert("RGBA")
-    box = raw.getbbox()
-    if box is None:
-        sys.exit("das Bild ist leer -- erst mit import_prop.py freistellen")
-    raw = raw.crop(box)
-    raw_angle = principal_angle(raw)
+    rod = Image.open(SOURCE).convert("RGBA")
+    size = read_int("FRAME_SIZE")
+    frames = read_int("FRAMES")
+    idle = read_int("IDLE_FRAMES")
+    anchors = read_ints("ROD_ANCHOR")
+    tips = read_ints("ROD_TIP_OFF")
+    groups = classify(rod)
+    base = {
+        "cork": average(groups["cork"], (140, 90, 50)),
+        "brass": average(groups["brass"], (200, 160, 70)),
+        "outline": average(groups["outline"], (16, 16, 20)),
+        "shaft": average(groups["shaft"], (70, 76, 86)),
+    }
 
-    if not tip_is_right(raw, raw_angle):
-        raw = raw.transpose(Image.FLIP_LEFT_RIGHT)
-        raw_angle = -raw_angle
-
-    anchors = read_vectors("ROD_ANCHOR")
-    tips = read_vectors("ROD_TIP_OFF")
-    if len(anchors) != len(tips):
-        sys.exit("Griffe und Spitzen zaehlen verschieden")
-
-    for variant, tone in enumerate(ROD_TONES):
-        sheet = Image.new("RGBA", (FRAME * len(anchors), FRAME), (0, 0, 0, 0))
-        for f, (anchor, tip) in enumerate(zip(anchors, tips)):
-            length = math.hypot(tip[0], tip[1])
-            # Bildkoordinaten zeigen nach unten, Winkel nach oben.
-            want = math.degrees(math.atan2(-tip[1], tip[0]))
-            # Erst vierfach vergroessern, dann drehen, dann auf Groesse
-            # bringen: eine Drehung auf dem kleinen Bild zerreisst die
-            # Kanten, eine auf dem grossen laesst sich sauber zurueckrechnen.
-            big = raw.resize((raw.size[0] * 4, raw.size[1] * 4), Image.NEAREST)
-            rod = big.rotate(want - raw_angle, resample=Image.BICUBIC, expand=True)
-            rod = rod.crop(rod.getbbox())
-            scale = length / math.hypot(*rod.size)
-            rod = rod.resize((max(1, round(rod.size[0] * scale)),
-                              max(1, round(rod.size[1] * scale))), Image.BOX)
-            # Nicht mehr verdicken: die Rohrute ist schon drei Pixel stark.
-            rod = outline(harden(rod))
-            if tone:
-                target = tuple(int(tone[i:i + 2], 16) for i in (0, 2, 4))
-                px = rod.load()
-                for y in range(rod.size[1]):
-                    for x in range(rod.size[0]):
-                        if px[x, y][3] > 0:
-                            px[x, y] = tint(px[x, y], target)
-            # Der Griff der gedrehten Rute ist die Ecke, die zum Anker zeigt.
-            gx = anchor[0] - (0 if tip[0] >= 0 else rod.size[0] - 1)
-            gy = anchor[1] - (0 if tip[1] >= 0 else rod.size[1] - 1)
-            sheet.alpha_composite(rod, (f * FRAME + gx, gy))
+    for variant, tone in enumerate(SHAFT_TONES):
+        target = tuple(int(tone[i:i + 2], 16) for i in (0, 2, 4)) if tone else None
+        sheet = Image.new("RGBA", (size * frames, size), (0, 0, 0, 0))
+        art = rod.copy()
+        if target:
+            px = art.load()
+            for y in range(art.size[1]):
+                for x in range(art.size[0]):
+                    if is_shaft(px[x, y]):
+                        px[x, y] = tint(px[x, y], target)
+        # Ruheposen: die Vorlage sitzt mit ihrem GRIFF auf dem Ankerpunkt --
+        # nicht mit ihrer Bildecke. Die Rolle steht unten aus dem Bild
+        # heraus, die Ecke liegt also woanders als das Griffende.
+        gx, gy = grip_of(art)
+        for f in range(idle):
+            ax, ay = anchors[f]
+            sheet.alpha_composite(art, (f * size + ax - gx, ay - gy))
+        tones = dict(base)
+        if target:
+            tones["shaft"] = target
+        tones["shine"] = tuple(min(255, int(c * 1.25)) for c in tones["shaft"])
+        tones["shadow"] = tuple(int(c * 0.6) for c in tones["shaft"])
+        for f in range(idle, frames):
+            draw_cast(sheet, f, anchors[f], tips[f], size, tones)
         sheet.save(os.path.join(OUT, "char_rod_%d.png" % variant))
-    print("%d Rutenblaetter geschrieben" % len(ROD_TONES))
+    print("%d Rutenblaetter geschrieben" % len(SHAFT_TONES))
 
 if __name__ == "__main__":
     main()

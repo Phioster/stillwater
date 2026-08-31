@@ -32,9 +32,13 @@ const ROD_ANCHOR: Array[Vector2i] = [
 	Vector2i(132, 96), Vector2i(120, 96), Vector2i(164, 160), Vector2i(152, 168),
 ]
 ## Die Spitze, relativ zum Griff. Die Rute schwingt zurück und wieder vor.
+## Die sechs Ruheposen tragen exakt den Versatz der gezeichneten Vorlage
+## (assets/source/rod_45.png): Griff (1,97), Spitze (98,1) im Bild, also
+## (97,-96). Gemessen, nicht gewählt — dann liegt die Schnur wirklich an
+## der gezeichneten Spitze an.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(84, -84), Vector2i(84, -84), Vector2i(84, -84),
-	Vector2i(84, -84), Vector2i(84, -84), Vector2i(84, -84),
+	Vector2i(97, -96), Vector2i(97, -96), Vector2i(97, -96),
+	Vector2i(97, -96), Vector2i(97, -96), Vector2i(97, -96),
 	Vector2i(-20, -76), Vector2i(-76, -52), Vector2i(76, -36), Vector2i(84, 4),
 ]
 ## Wie weit sich die Rute quer zur Achse biegt. Eine gerade Rute sieht aus
