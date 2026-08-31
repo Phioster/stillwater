@@ -131,3 +131,31 @@ func test_no_panel_builds_hundreds_of_nodes_with_a_full_save() -> void:
 	assert_true(worst_count < 400,
 		"%s baut %d Knoten -- das gehoert in eine VirtualList" % [worst, worst_count])
 	m.free()
+
+## Ein Control schluckt Berührungen standardmäßig -- damit fing die Liste
+## jede Wischgeste ab, und in keiner Liste liess sich mehr scrollen.
+func test_the_list_lets_the_drag_reach_the_scroll_container() -> void:
+	var list := _list(10)
+	assert_eq(list.mouse_filter, Control.MOUSE_FILTER_IGNORE,
+		"die Liste schluckt die Wischgeste")
+	list.get_parent().free()
+
+## Und dasselbe für jede Liste, die wirklich im Spiel hängt.
+func test_no_panel_swallows_the_drag() -> void:
+	Game.new_game()
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	for tab in TabRail.TABS.size():
+		m.show_tab(tab)
+	for node in _all(m.get_node("SidePanel/Panels")):
+		if node is VirtualList:
+			assert_eq(node.mouse_filter, Control.MOUSE_FILTER_IGNORE,
+				"%s schluckt die Wischgeste" % node.get_path())
+	m.free()
+
+func _all(n: Node) -> Array[Node]:
+	var out: Array[Node] = [n]
+	for c in n.get_children():
+		out.append_array(_all(c))
+	return out

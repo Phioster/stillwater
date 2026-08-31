@@ -14,6 +14,12 @@ extends Control
 ## damit beim Wischen nichts leer aufblitzt.
 const OVERSCAN: int = 3
 
+func _init() -> void:
+	# Ein Control schluckt Beruehrungen standardmaessig. Damit fing die Liste
+	# jede Wischgeste ab, bevor der ScrollContainer sie sah -- dieselbe Falle
+	# wie bei den Knoepfen, nur eine Ebene hoeher.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 var _count: int = 0
 var _row_height: float = 96.0
 var _build: Callable = Callable()
