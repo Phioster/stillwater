@@ -152,3 +152,59 @@ func _has(texts: Array[String], needle: String) -> bool:
 		if needle in t:
 			return true
 	return false
+
+# --- Sortierung der Fischliste -------------------------------------------------
+
+func _stock() -> void:
+	Game.new_game()
+	Game.ctx.inventory.capacity = 50
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", -1.5, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 3.2, false))
+	Game.ctx.inventory.add(CaughtFish.make(&"bluegill", 0.5, false))
+
+func test_sorting_by_rank_puts_the_best_on_top() -> void:
+	_stock()
+	var all: Array[int] = [0, 1, 2]
+	var by_rank := FishSort.sorted(all, &"rang")
+	assert_eq(by_rank[0], 1, "der beste Rang steht nicht oben")
+	assert_eq(by_rank[2], 0, "der schlechteste steht nicht unten")
+
+func test_sorting_by_catch_keeps_the_order_of_catching() -> void:
+	_stock()
+	var all: Array[int] = [0, 1, 2]
+	assert_eq(FishSort.sorted(all, &"fang"), all, "Fang darf nichts umstellen")
+
+## Sortiert werden Indizes -- eine umgestellte Liste zeigte sonst beim
+## Verkaufen auf den falschen Fisch.
+func test_sorting_leaves_the_inventory_itself_alone() -> void:
+	_stock()
+	var before := Game.ctx.inventory.fish.duplicate()
+	FishSort.sorted([0, 1, 2] as Array[int], &"gewicht")
+	assert_eq(Game.ctx.inventory.fish, before, "die Kiste selbst wurde umsortiert")
+
+func test_the_chosen_order_is_remembered() -> void:
+	_stock()
+	Game.settings.fish_sort = &"wert"
+	var blob := SaveManager.serialize()
+	blob["last_seen_unix"] = int(Time.get_unix_time_from_system()) + 3600
+	Game.new_game()
+	SaveManager.deserialize(blob)
+	assert_eq(Game.settings.fish_sort, &"wert", "die Sortierung wird nicht gemerkt")
+
+func test_nonsense_in_the_save_falls_back() -> void:
+	var s := Settings.new()
+	s.load_dict({"fish_sort": "nach_laune"})
+	assert_eq(s.fish_sort, &"fang", "ein unbekannter Schluessel muss zurueckfallen")
+
+func test_the_inventory_shows_the_switch_and_uses_it() -> void:
+	_stock()
+	Game.settings.fish_sort = &"rang"
+	var tree := Engine.get_main_loop() as SceneTree
+	var m: Control = load("res://scenes/main.tscn").instantiate()
+	tree.root.add_child(m)
+	var panel: PanelBase = m.get_node("SidePanel/Panels/FishGroup/FishScroll/FishPanel")
+	panel.refresh()
+	var texts := _texts(panel)
+	for label in FishSort.LABELS.values():
+		assert_true(_has(texts, label), "der Knopf %s fehlt" % label)
+	m.free()

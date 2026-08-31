@@ -68,6 +68,9 @@ func rarity_of(fish: FishData) -> RarityData:
 ## Stunde der echten Uhr. Als Feld statt als direkter Uhrenzugriff, damit die
 ## Simulation deterministisch bleibt und Tests jede Stunde stellen koennen.
 var hour_of_day: int = 12
+## Welche Trankgruppen gerade wirken. Als Feld statt eines Griffs nach
+## Game.buffs: die Simulation soll nichts kennen, was sie nicht bekommt.
+var potion_groups: Array[StringName] = []
 
 func condition_state() -> Dictionary:
 	return {
@@ -78,6 +81,7 @@ func condition_state() -> Dictionary:
 		"hour_of_day": hour_of_day,
 		"ignore_time_of_day": ignore_time_of_day,
 		"journal_species": journal.entries.size() if journal != null else 0,
+		"potion_groups": potion_groups,
 	}
 
 ## Verbraucht einen Köder; läuft ein gekaufter Köder leer, schaltet

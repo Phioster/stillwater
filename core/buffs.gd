@@ -39,6 +39,16 @@ func is_active(id: StringName) -> bool:
 	return active.has(id)
 
 ## Produkt aller laufenden Faktoren für eine Eigenschaft.
+## Welche Gruppen gerade wirken. Geheimfische haengen an der Gruppe, nicht an
+## der einzelnen Kennung -- sonst lockte nur genau eine Trankstufe.
+func active_groups() -> Array[StringName]:
+	var out: Array[StringName] = []
+	for id in active:
+		var c := _data(id)
+		if c != null and c.group != &"" and not out.has(c.group):
+			out.append(c.group)
+	return out
+
 func product(property: StringName) -> float:
 	var f := 1.0
 	for id in active:

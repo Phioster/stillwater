@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_lvl"]
+[ext_resource type="Script" path="res://resources/potion_condition.gd" id="4_extra"]
+
+[sub_resource type="Resource" id="Resource_lvl"]
+script = ExtResource("3_lvl")
+min_level = 20
+
+[sub_resource type="Resource" id="Resource_extra"]
+script = ExtResource("4_extra")
+potion_group = &"schimmer"
+
+[resource]
+script = ExtResource("2_fish")
+id = &"glass_tide"
+display_name = "Glasflut"
+zone_id = &"deep_cistern"
+rarity_id = &"epic"
+base_value = 720
+strength = 235.0
+difficulty = 2.6
+xp = 340
+weight_mean = 2.6
+weight_dev = 0.7
+is_secret = true
+secret_chance = 0.03
+secret_hint = "Sie zeigt sich nur dem, auf dem selbst ein Schimmer liegt."
+conditions = Array[ExtResource("1_cond")]([SubResource("Resource_lvl"), SubResource("Resource_extra")])

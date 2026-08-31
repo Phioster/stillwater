@@ -79,7 +79,7 @@ func test_every_condition_type_is_used_by_a_secret_fish() -> void:
 		for c in Database.fish[id].conditions:
 			seen[c.get_script().get_global_name()] = true
 	for type_name in ["LevelCondition", "BaitCondition", "CosmeticCondition",
-			"TimeOfDayCondition", "JournalCondition"]:
+			"TimeOfDayCondition", "JournalCondition", "PotionCondition"]:
 		assert_true(seen.has(type_name), "kein Fisch verlangt %s" % type_name)
 
 ## Ein Fisch, der ein Kleidungsstueck verlangt, das es nicht gibt -- oder das
@@ -110,3 +110,23 @@ func test_cosmetic_conditions_point_at_reachable_cosmetics() -> void:
 				assert_true(found.unlock_level <= min_level,
 					"%s ist ab Level %d fangbar, %s aber erst ab %d"
 					% [fish_id, min_level, found.display_name, found.unlock_level])
+
+## Ein Geheimfisch, der einen wirkenden Trank verlangt. Die Bedingung fragt
+## nach der GRUPPE, damit jede Stufe desselben Tranks zaehlt.
+func test_a_potion_condition_asks_for_the_group_not_the_bottle() -> void:
+	var cond := PotionCondition.new()
+	cond.potion_group = &"schimmer"
+	assert_false(cond.is_met({}), "ohne Trank darf sie nicht erfuellt sein")
+	assert_false(cond.is_met({"potion_groups": [&"wert"]}), "die falsche Gruppe zaehlt mit")
+	assert_true(cond.is_met({"potion_groups": [&"schimmer"]}))
+
+func test_a_drunk_potion_reaches_the_condition_state() -> void:
+	Game.new_game()
+	Game.consumable_counts[&"schimmer_elixier"] = 1
+	assert_true(Game.use_consumable(&"schimmer_elixier"))
+	assert_true(&"schimmer" in Game.ctx.condition_state()["potion_groups"],
+		"der Trank kommt nicht bei der Bedingung an")
+	Game.buffs.active.clear()
+	Game.apply_buffs()
+	assert_false(&"schimmer" in Game.ctx.condition_state()["potion_groups"],
+		"nach dem Ablaufen wirkt sie weiter")

@@ -44,8 +44,22 @@ func refresh() -> void:
 	for i in inv.fish.size():
 		if not inv.fish[i].is_favorite:
 			visible_indices.append(i)
+	visible_indices = FishSort.sorted(visible_indices, Game.settings.fish_sort)
+	add_child(_sort_switch())
 	var list := VirtualList.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(list)
 	list.setup(visible_indices.size(), FishRow.HEIGHT,
 		func(row: int) -> Control: return FishRow.build(visible_indices[row], false))
+
+## Dieselbe Knopfreihe wie im Journal und im Beutel -- eine Umschaltung soll
+## sich ueberall gleich anfuehlen.
+func _sort_switch() -> Control:
+	var labels: Array = []
+	for m in FishSort.MODES:
+		labels.append(FishSort.LABELS[m])
+	return CategorySwitch.build(FishSort.MODES, labels, Game.settings.fish_sort,
+		func(mode: Variant) -> void:
+			Game.settings.fish_sort = mode
+			SaveManager.save()
+			refresh())

@@ -22,6 +22,9 @@ func refresh() -> void:
 	for i in inv.fish.size():
 		if inv.fish[i].is_favorite:
 			favorites.append(i)
+	# Dieselbe Sortierung wie die Fischkiste: die Vitrine ist dieselbe Liste,
+	# nur mit den behaltenen Fischen.
+	favorites = FishSort.sorted(favorites, Game.settings.fish_sort)
 	var any := not favorites.is_empty()
 	if any:
 		var list := VirtualList.new()

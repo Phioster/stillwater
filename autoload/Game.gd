@@ -404,6 +404,7 @@ func apply_buffs() -> void:
 	ctx.xp_bonus = buffs.product(&"xp_mult")
 	ctx.bite_bonus = buffs.product(&"bite_time_mult")
 	ctx.fight_bonus = buffs.product(&"fight_time_mult")
+	ctx.potion_groups = buffs.active_groups()
 	ctx.rarity_bonus = buffs.rarity_bonus()
 	ctx.rank_bonus = buffs.rank_shift()
 	ctx.free_bait = buffs.flag(&"free_bait")
