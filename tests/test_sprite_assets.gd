@@ -61,7 +61,10 @@ func test_all_sprites_have_correct_size_and_are_not_empty() -> void:
 
 ## Die Rute lief über den Rahmenrand hinaus: sie wurde vorne abgeschnitten
 ## und blutete in den nächsten Rahmen, was beim Wurf als zweite, falsche Rute
-## zu sehen war. Ein Bild pro Rahmen zu prüfen fängt genau diese Klasse.
+## zu sehen war.
+##
+## Geprüft wird jetzt der Rand selbst und nicht mehr die Pixelzahl je Rahmen:
+## seit jede Pose anders aussieht, sind unterschiedliche Zahlen normal.
 func test_no_character_frame_bleeds_into_the_next() -> void:
 	var dir := DirAccess.open(ART_DIR)
 	assert_true(dir != null)
@@ -76,29 +79,19 @@ func test_no_character_frame_bleeds_into_the_next() -> void:
 		if tex == null:
 			continue
 		var img := tex.get_image()
-		var frame := img.get_height()
-		var frames := img.get_width() / frame
-		var counts: Array[int] = []
-		for f in frames:
-			var n := 0
-			for x in range(f * frame, (f + 1) * frame):
-				for y in img.get_height():
-					if img.get_pixel(x, y).a > 0.0:
-						n += 1
-			counts.append(n)
+		var size := img.get_height()
+		var frames := img.get_width() / size
 		checked += 1
-		# Ein Element, das über den Rand läuft, hinterlässt in einem Rahmen
-		# weniger und im nächsten mehr Pixel. Gleich viele heißt: es passt.
-		if file == "char_rod_0.png":
-			for f in range(1, counts.size()):
-				assert_eq(counts[f], counts[0],
-					"%s: Rahmen %d hat %d Pixel, Rahmen 0 aber %d -- läuft über den Rand"
-					% [file, f, counts[f], counts[0]])
-	assert_true(checked > 0, "keine Figurenbilder geprüft")
+		for f in frames:
+			for y in size:
+				for x in [f * size, (f + 1) * size - 1]:
+					assert_eq(img.get_pixel(x, y).a, 0.0,
+						"%s: Rahmen %d beruehrt in Zeile %d seinen Rand" % [file, f, y])
+	assert_true(checked > 0, "keine Figurenbilder geprueft")
 
 ## Die berechnete Rutenspitze muss in JEDEM Bild auf echte Rutenpixel zeigen.
-## Beim Wurf zeigt der Angler Bild 2, dessen Spitze vier Pixel tiefer liegt --
-## eine feste Konstante konnte das nie treffen, und die Schnur hing in der Luft.
+## Jede Pose hat ihren eigenen Griff und ihre eigene Richtung -- eine feste
+## Konstante konnte das nie treffen, und die Schnur hing in der Luft.
 func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 	var tex := TextureLoader.load_texture("%s/char_rod_0.png" % ART_DIR)
 	assert_true(tex != null)
@@ -112,18 +105,20 @@ func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 			"Bild %d: die Spitze %s liegt ausserhalb" % [f, tip])
 		assert_true(img.get_pixel(px.x, px.y).a > 0.0,
 			"Bild %d: an der berechneten Spitze %s ist keine Rute" % [f, tip])
-		# Und sie ist wirklich die Spitze: einen Schritt weiter ist nichts mehr.
-		var beyond := Vector2i(px.x + 1, px.y - 1)
-		if beyond.x < img.get_width() and beyond.y >= 0:
-			assert_true(img.get_pixel(beyond.x, beyond.y).a == 0.0,
-				"Bild %d: hinter der Spitze geht die Rute weiter" % f)
+		# Und der Griff liegt an der Hand, nicht irgendwo im Rahmen.
+		var grip := AnglerPose.rod_grip(f)
+		var gp := Vector2i(f * AnglerPose.FRAME_SIZE + grip.x, grip.y)
+		assert_true(img.get_pixel(gp.x, gp.y).a > 0.0,
+			"Bild %d: am Griff %s ist keine Rute" % [f, grip])
 
-## Die Rute muss in jedem Bild vollstaendig in ihren Rahmen passen.
+## Die Rute muss in jedem Bild vollstaendig in ihren Rahmen passen -- sonst
+## blutet sie in den naechsten und ist dort als zweite Rute zu sehen.
 func test_the_rod_fits_inside_its_frame_in_every_frame() -> void:
+	var limit := float(AnglerPose.FRAME_SIZE - 1)
 	for f in AnglerPose.FRAMES:
-		for i in AnglerPose.ROD_LENGTH:
-			var p := AnglerPose.rod_pixel(f, i)
-			assert_between(float(p.x), 0.0, float(AnglerPose.FRAME_SIZE - 1),
-				"Bild %d, Pixel %d laeuft waagerecht aus dem Rahmen" % [f, i])
-			assert_between(float(p.y), 0.0, float(AnglerPose.FRAME_SIZE - 1),
-				"Bild %d, Pixel %d laeuft senkrecht aus dem Rahmen" % [f, i])
+		for i in 33:
+			var p := AnglerPose.rod_point(f, float(i) / 32.0)
+			assert_between(p.x, 2.0, limit - 2.0,
+				"Bild %d: die Rute laeuft waagerecht aus dem Rahmen (%s)" % [f, p])
+			assert_between(p.y, 2.0, limit - 2.0,
+				"Bild %d: die Rute laeuft senkrecht aus dem Rahmen (%s)" % [f, p])

@@ -54,23 +54,27 @@ func _tint_hair(color_index: int) -> void:
 	mat.set_shader_parameter("strength", 1.0)
 	sprite.material = mat
 
-## 0 ruhig, 1 Ausholen, 2 Wurf
-func play_state(state: int) -> void:
-	_frame = clampi(state, 0, 2)
+## 0 ruhig, 1 ausholen, 2 hinten, 3 vorschwingen, 4 geworfen
+func play_state(frame: int) -> void:
+	_frame = AnglerPose.frame_of(frame)
 	for name in LAYERS:
 		(get_node(name) as Sprite2D).frame = _frame
 
+## Der Wurf laeuft ueber seine eigene Dauer ab, statt ein einzelnes Bild zu
+## zeigen: der Kern zaehlt beim Werfen ohnehin herunter, also haengt die Pose
+## an diesem Zaehler und nicht an einer zweiten Uhr, die davon abdriften kann.
 func _process(_delta: float) -> void:
 	match Game.sim.state:
 		FishingSim.State.CASTING:
-			play_state(2)
+			var left: float = clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
+			play_state(1 + int((1.0 - left) * float(AnglerPose.FRAMES - 1)))
 		FishingSim.State.FIGHT:
-			play_state(1)
+			play_state(AnglerPose.FRAMES - 1)
 		_:
 			play_state(0)
 
 func _on_bite(_fish: FishData) -> void:
-	play_state(1)
+	play_state(AnglerPose.FRAMES - 1)
 
 func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
 	play_state(0)

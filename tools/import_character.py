@@ -2,10 +2,10 @@
 """Baut die Figurenebenen aus dem erzeugten Ausgangsbild.
 
 Die Anglerin kommt seit 2026-08-31 nicht mehr aus `gen_sprites.gd`, sondern
-aus `assets/source/angler_base.png` -- einem 64x64-Pixelbild, das mit
-PixelLab erzeugt wurde (Seitenansicht, Blick nach rechts). Zwei prozedurale
-Anlaeufe mit Ellipsen sahen nach zusammengesteckten Formen aus; das hier ist
-gezeichnete Figur.
+aus `assets/source/angler_frames.png` -- fuenf 64x64-Posen nebeneinander
+(ruhig, ausholen, hinten, vorschwingen, geworfen), mit PixelLab erzeugt: eine Pose gezeichnet, die
+beiden anderen daraus animiert. Zwei prozedurale Anlaeufe mit Ellipsen sahen
+nach zusammengesteckten Formen aus; das hier ist gezeichnete Figur.
 
 Ein flaches Bild kennt aber keine Ebenen, und unser Kosmetiksystem lebt
 davon. Also zerlegt dieses Werkzeug das Bild anhand seiner Farbfamilien in
@@ -24,11 +24,11 @@ import sys
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SOURCE = os.path.join(ROOT, "assets", "source", "angler_base.png")
+SOURCE = os.path.join(ROOT, "assets", "source", "angler_frames.png")
 OUT = os.path.join(ROOT, "assets", "art")
 
 FRAME = 64
-FRAMES = 3
+FRAMES = 5
 ## Wie weit die Figur nach links rueckt. Ohne das sitzt die Hand so weit
 ## rechts, dass keine Rute mehr in den Rahmen passt (siehe AnglerPose).
 SHIFT_X = -8
@@ -108,54 +108,58 @@ def split(img):
         layers[(x, y)] = max(votes, key=votes.get) if votes else "pants"
     return layers
 
-def sheet(img, layers, name, target=None, only=None):
-    """Ein Blatt aus FRAMES gleichen Bildern. Die Pose ist in allen Rahmen
-    dieselbe -- was sich bewegt, ist die Rute, und die ist eine eigene Ebene."""
-    px = img.load()
+def sheet(frames, name, target=None, only=None):
+    """Ein Blatt aus allen Posen -- jede Pose ist ein eigenes Bild mit eigener
+    Zerlegung, sonst haette die Figur beim Wurf denselben Arm wie im Stand."""
     out = Image.new("RGBA", (FRAME * FRAMES, FRAME), (0, 0, 0, 0))
-    single = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
-    q = single.load()
-    for (x, y), lay in layers.items():
-        if lay != name:
-            continue
-        if only == "skirt" and y >= BOOT_TOP:
-            continue
-        if only == "boots" and y < BOOT_TOP:
-            continue
-        nx = x + SHIFT_X
-        if 0 <= nx < FRAME:
-            q[nx, y] = tint(px[x, y], target) if target else px[x, y]
-    for f in range(FRAMES):
+    for f, (img, layers) in enumerate(frames):
+        px = img.load()
+        single = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
+        q = single.load()
+        for (x, y), lay in layers.items():
+            if lay != name:
+                continue
+            if only == "skirt" and y >= BOOT_TOP:
+                continue
+            if only == "boots" and y < BOOT_TOP:
+                continue
+            nx = x + SHIFT_X
+            if 0 <= nx < FRAME:
+                q[nx, y] = tint(px[x, y], target) if target else px[x, y]
         out.alpha_composite(single, (f * FRAME, 0))
     return out
 
 def main():
     if not os.path.exists(SOURCE):
         sys.exit("Ausgangsbild fehlt: %s" % SOURCE)
-    img = Image.open(SOURCE).convert("RGBA")
-    if img.size != (FRAME, FRAME):
-        sys.exit("Ausgangsbild muss %dx%d sein, ist %s" % (FRAME, FRAME, img.size))
-    layers = split(img)
+    strip = Image.open(SOURCE).convert("RGBA")
+    if strip.size != (FRAME * FRAMES, FRAME):
+        sys.exit("Ausgangsbild muss %dx%d sein, ist %s"
+                 % (FRAME * FRAMES, FRAME, strip.size))
+    frames = []
+    for f in range(FRAMES):
+        img = strip.crop((f * FRAME, 0, (f + 1) * FRAME, FRAME))
+        frames.append((img, split(img)))
 
     written = 0
     for i, tone in enumerate(SKIN_TONES):
-        sheet(img, layers, "skin", hexc(tone) if i else None).save(
+        sheet(frames, "skin", hexc(tone) if i else None).save(
             os.path.join(OUT, "char_skin_%d.png" % i))
         written += 1
     # Die Haarfarbe macht der Shader zur Laufzeit; die Frisuren sind noch
     # alle dieselbe -- eine zweite Frisur ist ein zweites Ausgangsbild.
     for i in range(5):
-        sheet(img, layers, "hair").save(os.path.join(OUT, "char_hair_%d.png" % i))
+        sheet(frames, "hair").save(os.path.join(OUT, "char_hair_%d.png" % i))
         written += 1
     for i, tone in enumerate(SHIRT_TONES):
-        sheet(img, layers, "shirt", hexc(tone) if i else None).save(
+        sheet(frames, "shirt", hexc(tone) if i else None).save(
             os.path.join(OUT, "char_shirt_%d.png" % i))
         written += 1
     # Der Rock nimmt die Farbe an, die Stiefel bleiben dunkel: eine
     # pflaumenfarbene Hose faerbt keine Schuhe mit ein.
-    boots = sheet(img, layers, "pants", None, only="boots")
+    boots = sheet(frames, "pants", None, only="boots")
     for i, tone in enumerate(PANTS_TONES):
-        skirt = sheet(img, layers, "pants", hexc(tone) if i else None, only="skirt")
+        skirt = sheet(frames, "pants", hexc(tone) if i else None, only="skirt")
         skirt.alpha_composite(boots)
         skirt.save(os.path.join(OUT, "char_pants_%d.png" % i))
         written += 1

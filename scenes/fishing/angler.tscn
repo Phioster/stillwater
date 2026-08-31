@@ -6,25 +6,25 @@
 script = ExtResource("1")
 
 [node name="Skin" type="Sprite2D" parent="."]
-hframes = 3
+hframes = 5
 centered = false
 
 [node name="Pants" type="Sprite2D" parent="."]
-hframes = 3
+hframes = 5
 centered = false
 
 [node name="Shirt" type="Sprite2D" parent="."]
-hframes = 3
+hframes = 5
 centered = false
 
 [node name="Hair" type="Sprite2D" parent="."]
-hframes = 3
+hframes = 5
 centered = false
 
 [node name="Hat" type="Sprite2D" parent="."]
-hframes = 3
+hframes = 5
 centered = false
 
 [node name="Rod" type="Sprite2D" parent="."]
-hframes = 3
+hframes = 5
 centered = false

@@ -109,7 +109,7 @@ Haare, Oberteil, Hose+Stiefel) und färbt daraus die Farbvarianten ein — mit
 derselben Formel wie der Tönungs-Shader, damit ein umgefärbtes Oberteil
 aussieht wie umgetönte Haare. **Kosten: null Generierungen je Variante.**
 
-Bildgröße 64 Pixel je Frame, Vergrößerung in der Welt 2 statt 4.
+Bildgröße 64 Pixel je Frame, fünf Rahmen, Vergrößerung in der Welt 2 statt 4.
 
 **Was daran noch Platzhalter ist:**
 
@@ -118,8 +118,14 @@ Bildgröße 64 Pixel je Frame, Vergrößerung in der Welt 2 statt 4.
   passen im Stil nicht.
 - **Die fünf Frisuren sind alle dieselbe.** Eine zweite Frisur ist ein
   zweites Ausgangsbild, keine Umfärbung.
-- **Die drei Rahmen zeigen dieselbe Pose.** Was sich beim Wurf bewegt, ist
-  allein die Rute (eigene Ebene). Echte Posen bräuchten `animate_image`.
+- ~~Die Rahmen zeigen dieselbe Pose~~ — erledigt: **fünf** gezeichnete Posen
+  (ruhig, ausholen, hinten, vorschwingen, geworfen), aus der ersten per
+  `animate_image` erzeugt, eine Generierung. Der Wurf läuft über
+  `FishingSim.CAST_TIME` ab, hängt also am selben Zähler wie der Kern.
+- Die **Rute** ist die einzige Figurengrafik, die noch gerechnet wird — eine
+  Rute *ist* eine einfache Form: verjüngt sich zur Spitze, biegt sich beim
+  Schwung, Rolle am Griff. Jede Pose hat eigenen Griff und eigene Richtung
+  (`core/angler_pose.gd`).
 - Die **Formvarianten** bei Oberteil und Hose (Lederjacke, Weste, Shorts,
   Rock) sind zurzeit nur Umfärbungen derselben Form.
 

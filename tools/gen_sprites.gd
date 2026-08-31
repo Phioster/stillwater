@@ -24,6 +24,24 @@ func _ellipse(img: Image, cx: float, cy: float, rx: float, ry: float, c: Color) 
 			if dx * dx + dy * dy <= 1.0:
 				img.set_pixel(ix, iy, c)
 
+## Eine gefuellte Scheibe. Eigene Funktion statt _ellipse, weil die ueber das
+## ganze Blatt laeuft -- bei hunderten Aufrufen je Rute ist das der
+## Unterschied zwischen einer Sekunde und einer Minute.
+func _disc(img: Image, cx: float, cy: float, r: float, c: Color) -> void:
+	var x0 := int(floor(cx - r))
+	var x1 := int(ceil(cx + r))
+	var y0 := int(floor(cy - r))
+	var y1 := int(ceil(cy + r))
+	for y in range(maxi(y0, 0), mini(y1 + 1, img.get_height())):
+		for x in range(maxi(x0, 0), mini(x1 + 1, img.get_width())):
+			# Ohne den halben Pixel Versatz liegt die berechnete Spitze
+			# NEBEN dem gezeichneten Pixel -- die Schnur haengt dann in der
+			# Luft (tests/test_sprite_assets.gd).
+			var dx := float(x) - cx
+			var dy := float(y) - cy
+			if dx * dx + dy * dy <= r * r:
+				img.set_pixel(x, y, c)
+
 func _save(img: Image, name: String) -> void:
 	DirAccess.make_dir_recursive_absolute(OUT)
 	var path := "%s/%s.png" % [OUT, name]
@@ -271,9 +289,6 @@ const FEET_Y := 61
 func _char_sheet() -> Image:
 	return _new_image(FRAME * FRAMES, FRAME)
 
-func _arm_offset(frame: int) -> int:
-	return AnglerPose.arm_offset(frame)
-
 ## Licht und Schatten werden aus der Grundfarbe gerechnet, statt fuer jede
 ## Flaeche drei Palettenwerte zu fuehren: die Palette bleibt die Quelle, die
 ## Abstufung ist Arithmetik. Ohne sie ist jede Flaeche ein flacher Klotz.
@@ -371,22 +386,28 @@ func _hat(index: int) -> void:
 
 ## Geometrie aus AnglerPose, nicht hier: sie stand doppelt, und beim
 ## Verschieben der Rute wanderte die Schnur nicht mit.
+##
+## Die Rute ist die einzige Figurengrafik, die noch gerechnet wird -- eine
+## Rute IST eine einfache Form: ein Stock, der sich zur Spitze verjuengt und
+## dabei biegt. Genau das laesst sich besser rechnen als zeichnen.
 func _rod(index: int) -> void:
 	var tone: StringName = [&"wood_light", &"wood_dark", &"silver"][index]
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
-		for i in AnglerPose.ROD_LENGTH:
-			var p := AnglerPose.rod_pixel(f, i)
-			# Der Griff bleibt Holz, egal woraus die Rute ist.
-			var c: Color = _c(&"wood_dark") if i < 4 else _c(tone)
-			# Zwei Pixel stark -- ausser der Spitze: hinter ihr muss der
-			# Rahmen leer bleiben, sonst zeigt die Schnur ins Nichts
-			# (tests/test_sprite_assets.gd).
-			if i == AnglerPose.ROD_LENGTH - 1:
-				_rect(img, ox + p.x, p.y, 1, 1, c)
-			else:
-				_rect(img, ox + p.x, p.y, 2, 2, c)
+		# Fein genug abgetastet, dass keine Luecken bleiben: die Kurve ist
+		# nie laenger als ~35 Pixel, 96 Schritte sind reichlich.
+		for i in 97:
+			var t := float(i) / 96.0
+			var p := AnglerPose.rod_point(f, t)
+			# Am Griff drei Pixel stark, an der Spitze einer.
+			var radius := 1.5 - 1.0 * t
+			var c: Color = _c(&"wood_dark") if t < 0.14 else _c(tone)
+			_disc(img, ox + p.x, p.y, radius, c)
+		# Rolle kurz ueber dem Griff, mit dunkler Halterung.
+		var reel := AnglerPose.rod_point(f, 0.16)
+		_disc(img, ox + reel.x, reel.y + 2.0, 2.2, _c(&"outline"))
+		_disc(img, ox + reel.x, reel.y + 2.0, 1.3, _c(&"silver"))
 	_save(img, "char_rod_%d" % index)
 
 # --- Fische ---------------------------------------------------------------
