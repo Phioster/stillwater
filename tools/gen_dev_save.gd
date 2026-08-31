@@ -29,10 +29,11 @@ func _init() -> void:
 			game.unlocked_zones.append(id)
 
 	# Ausbau auf die Haelfte der Hoechststufe: hoch genug, um alles zu sehen,
-	# niedrig genug, dass Kaufen noch etwas zeigt.
+	# niedrig genug, dass Kaufen noch etwas zeigt. Nie ueber die Hoechststufe
+	# hinaus -- bei kurzen Leitern (Haendler, Auftragsbuch) trifft das sonst zu.
 	for id in db.upgrades:
 		var u: UpgradeData = db.upgrades[id]
-		game.upgrade_levels[id] = maxi(u.max_level / 2, 5)
+		game.upgrade_levels[id] = mini(maxi(u.max_level / 2, 5), u.max_level)
 	game.apply_upgrades()
 
 	for id in db.cosmetics:
@@ -68,6 +69,23 @@ func _init() -> void:
 	for i in mini(6, zone_fish.size()):
 		var caught := CaughtFish.make(zone_fish[i].id, 1.8, i == 0)
 		game.ctx.inventory.add(caught)
+
+	# Eine plausible Bilanz, sonst zeigt die Seite lauter Nullen neben einem
+	# vollen Journal -- das sieht nach einem Fehler aus, nicht nach einem
+	# Entwicklerstand.
+	var r = game.records
+	r.started_unix = int(Time.get_unix_time_from_system()) - 12 * 86400
+	r.playtime = 9.0 * 3600.0 + 25.0 * 60.0
+	r.casts = 1840
+	r.fish_caught = 1613
+	r.shiny_caught = 47
+	r.fish_escaped = 227
+	r.fish_sold = 1580
+	r.coins_earned = 11_400_000
+	r.coins_spent = 2_400_000
+	r.orbs_tapped = 9312
+	r.potions_drunk = 38
+	r.quests_done = 26
 
 	var path := "user://dev_save.json"
 	var f2 := FileAccess.open(path, FileAccess.WRITE)
