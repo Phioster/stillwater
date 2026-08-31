@@ -73,8 +73,9 @@ jeder Schritt setzt nur auf Fertiges auf. Abgehakt wird hier.
 
 ---
 
-**Stand 2026-08-30: A bis E sind abgearbeitet.** 324 Tests grün, alles auf
-dem Gerät.
+**Stand 2026-08-31: A bis E sind abgearbeitet, dazu Tränke, Besucher,
+Aufträge, Wetter, Bilanz und Sortierung.** 432 Tests grün, alles auf dem
+Gerät. Offen bleiben nur noch Grafik, Ton und das Veröffentlichen.
 
 **Was jetzt noch offen ist, braucht eine Entscheidung — also gemeinsam:**
 
@@ -89,9 +90,14 @@ dem Gerät.
 - ~~Weitere Zonen~~ — **sieben Zonen stehen** (2026-08-30): Willow Lake,
   Sunset Coast, Nebelmoor, Frostbucht, Tiefe Zisterne, Wolkensee,
   Sternensee. 104 Arten. Damit sind wir beim Umfang der Referenz.
-- ~~Maus-Händler und Möwe~~ — gebaut 2026-08-31, beide aus der Uhr
-  abgeleitet statt heruntergezählt.
-- **Quests.** Der Uhr-Rhythmus steht jetzt (`core/visitors.gd`); Quests
-  gehen genauso.
+- ~~Waschbär-Händler und Rabe~~ — gebaut 2026-08-31, beide aus der Uhr
+  abgeleitet statt heruntergezählt. Der Händler zieht weiter, sobald man
+  bei ihm gekauft und den Laden geschlossen hat.
+- ~~Quests~~ — gebaut 2026-08-31, gleicher Uhr-Rhythmus, freischaltbar und
+  gegen Geld von 3 auf 6 erweiterbar.
+- ~~Wetter~~ — Regen zieht über GENAU EINE Zone und höchstens einmal je
+  Sechs-Stunden-Block; die Weltliste zeigt mit „☂", wo.
+- ~~Bilanzseite, Beutel im Inventar, Inventarsortierung, Kosmetik auf 33
+  Varianten inkl. Ruten~~ — 2026-08-31.
 - **Veröffentlichen.** Release-Keystore als GitHub-Secret, Paketname,
   Store-Eintrag.

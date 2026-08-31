@@ -26,6 +26,9 @@ Noch nicht angefasst, aber der Grund, warum das Referenzspiel „fertig"
 wirkt und unseres noch nicht. Die Mechanik steht — das hier ist die
 Schicht darüber:
 
+- ~~**Sortierung des Inventars**~~ — erledigt 2026-08-31: sechs Modi
+  (Fang, Rang, Gewicht, Wert, Art, Selten) in `core/fish_sort.gd`, gemerkt
+  in den Einstellungen, Kiste und Vitrine teilen sie sich.
 - **Rückmeldung auf jeden Griff.** Knöpfe federn, Panels wackeln bei
   Fehlschlägen, Zahlen hüpfen. Wir haben `pop_text` und `burst`, aber
   nur im Kampf.
@@ -35,21 +38,23 @@ Schicht darüber:
 - ~~Panels mit Titelzeile~~ — seit 2026-08-31 tragen Gruppen mit mehreren
   Unterreitern deren Leiste oben; ein Schließen-Knopf fehlt weiter (die
   Reiterleiste klappt zu, wenn man denselben Reiter noch einmal tippt).
-- **Sortierung des Inventars** (Datum, Rang, Rarität, Wert, Name,
-  Gewicht) — sechs Modi, gemerkt.
 - **Tooltips** an Zahlen, die sonst unerklärt bleiben.
 
 ## Danach
 
-- Quest-System mit erneuerbaren Aufgaben.
-- Consumables — **über Anzahl Fänge statt Echtzeit** („nächste 50
-  Fänge" statt „nächste 15 Minuten"). Ein zeitbasierter Buff auf einem
-  Handy verpufft, während der Spieler weg ist.
-- Ein einziger Rückkehr-Rhythmus statt mehrerer Echtzeituhren (nicht
-  drei parallele Timer wie im Referenzspiel).
-- Raritäten Epic und Legendary (in der Spec bereits mit Werten
-  hinterlegt, in Slice 1 aber ungenutzt).
-- Weitere Zonen.
+- ~~Quest-System mit erneuerbaren Aufgaben~~ — gebaut 2026-08-31
+  (`core/quests.gd`, aus der Uhr abgeleitet, über den Ausbau
+  „Auftragsbuch" von 3 auf 6 erweiterbar).
+- ~~Consumables~~ — gebaut 2026-08-31. **Entschieden gegen die alte Idee
+  „über Anzahl Fänge statt Echtzeit":** die Wirkdauer läuft in Echtzeit,
+  tickt aber NUR bei offenem Spiel (`core/buffs.gd`). Damit verpufft
+  nichts, während man weg ist, und die Zahl auf der Flasche bleibt
+  verständlich.
+- ~~Ein einziger Rückkehr-Rhythmus~~ — alles Wiederkehrende hängt an
+  derselben Uhrableitung `floor(jetzt / dauer)`: Händler (1 h), Rabe
+  (4 h), Aufträge (3 h), Regen (Block aus 6 h). Keine laufenden Timer.
+- ~~Raritäten Epic und Legendary~~ — über die Stufenrampe erreichbar.
+- ~~Weitere Zonen~~ — sieben Zonen, 105 Arten.
 
 ## Bedingungstypen für Secret-Fische
 
@@ -63,8 +68,9 @@ Noch offen, jeweils mit Grund:
 - **Fänge in dieser Zone** — braucht einen neuen, gespeicherten Zähler pro
   Zone. Machbar, aber es vergrößert die Speicherfläche; erst bauen, wenn
   ein Fisch ihn wirklich verlangt.
-- **Aktiver Trank** — blockiert, solange es keine Consumables gibt (siehe
-  "Danach").
+- ~~**Aktiver Trank**~~ — gebaut 2026-08-31 als `PotionCondition`. Sie fragt
+  nach der Trank-GRUPPE, nicht nach der einzelnen Flasche, sonst lockte nur
+  genau eine Stufe. Die Glasflut in der Tiefen Zisterne verlangt sie.
 
 Nicht maschinell prüfbar: ob ein `secret_hint` das richtige Kleidungsstück
 oder Zeitfenster benennt. Bei neuen Hinweisen von Hand gegenlesen.
@@ -83,10 +89,10 @@ oder Zeitfenster benennt. Bei neuen Hinweisen von Hand gegenlesen.
 
 - Lokalisierung über Godots eingebaute CSV-Übersetzungen. Anzeigenamen
   sind aktuell fest Deutsch im Code/in den `.tres`.
-- Release-Keystore über GitHub-Secrets. `build.yml` erzeugt aktuell nur
-  einen Debug-Keystore zur Laufzeit (siehe unten, "Bekannte Punkte").
-- Statistiken.
-- Einstellungen.
+- ~~Statistiken~~ — erledigt 2026-08-31: `core/records.gd` und die Seite
+  „Bilanz" im Journal.
+- ~~Einstellungen~~ — erledigt (Ton, Lautstärken, Köder-Rückfall).
+- Release-Keystore, Paketname und Store-Eintrag fürs Veröffentlichen.
 
 ## Bekannte Punkte (geparkt, keine Bugs)
 
