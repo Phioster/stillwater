@@ -5,11 +5,13 @@ extends Control
 
 const PANEL_WIDTH := 420.0
 const RAIL_WIDTH := 96.0
-## Unterreiter der Fischgruppe: Inventar, Vitrine, Geheim.
-const FISH_SUB_SECRET := 3
+## Unterreiter der Fischgruppe: Inventar, Vitrine, Beutel, Auftraege, Geheim.
+const FISH_SUB_SECRET := 4
 ## Laden-Reiter und darin der Haendler.
 const SHOP_TAB := 2
 const SHOP_SUB_TRADER := 1
+
+var _tab: int = -1
 
 @onready var _side: PanelContainer = $SidePanel
 @onready var _panels: Control = $SidePanel/Panels
@@ -69,6 +71,11 @@ func _setup_scrolling(node: Node = null) -> void:
 func show_tab(index: int) -> void:
 	var count := _panels.get_child_count()
 	var valid := index >= 0 and index < count
+	# Den Laden zu schliessen verabschiedet den Haendler, falls man bei ihm
+	# gekauft hat. Deshalb haengt das hier und nicht am Kaufknopf.
+	if _tab == SHOP_TAB and index != SHOP_TAB:
+		Game.close_shop()
+	_tab = index if valid else -1
 	_side.visible = valid
 	for i in count:
 		(_panels.get_child(i) as Control).visible = (valid and i == index)

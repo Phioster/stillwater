@@ -10,22 +10,46 @@ func test_the_same_hour_and_zone_always_give_the_same_weather() -> void:
 		var b := Weather.is_raining(now + 3000.0, &"willow_lake")
 		assert_eq(a, b, "innerhalb der Stunde darf das Wetter nicht umschlagen")
 
-func test_zones_have_their_own_weather() -> void:
-	var differ := 0
-	for h in 60:
+## Die Kernregel: nie zwei nasse Zonen gleichzeitig.
+func test_it_only_ever_rains_in_one_zone() -> void:
+	var zones := Database.zones_in_order()
+	assert_true(zones.size() > 1, "der Test braucht mehrere Zonen")
+	for h in 300:
 		var now := float(h) * Weather.INTERVAL
-		if Weather.is_raining(now, &"willow_lake") != Weather.is_raining(now, &"star_lake"):
-			differ += 1
-	assert_true(differ > 5, "es regnet überall gleichzeitig (%d von 60 verschieden)" % differ)
+		var wet := 0
+		for z in zones:
+			if Weather.is_raining(now, z.id):
+				wet += 1
+		assert_true(wet <= 1, "in Stunde %d regnet es in %d Zonen" % [h, wet])
+
+## Und jede Zone kommt auch mal dran, statt dass es immer dieselbe trifft.
+func test_every_zone_gets_its_turn() -> void:
+	var seen: Dictionary = {}
+	for h in 2000:
+		var id := Weather.rain_zone(float(h) * Weather.INTERVAL)
+		if id != &"":
+			seen[id] = true
+	assert_eq(seen.size(), Database.zones_in_order().size(),
+		"nur %d Zonen wurden je nass" % seen.size())
+
+## Die Abklingzeit: nach einer Regenstunde bleibt es eine Weile trocken.
+func test_rain_has_a_cooldown() -> void:
+	var last := -999
+	for h in 2000:
+		if Weather.rain_zone(float(h) * Weather.INTERVAL) == &"":
+			continue
+		assert_true(h - last > Weather.DRY_TAIL,
+			"Stunde %d regnet zu kurz nach %d" % [h, last])
+		last = h
 
 ## Nicht dauernd und nicht nie -- sonst ist es entweder Alltag oder Deko.
 func test_rain_is_occasional() -> void:
 	var wet := 0
-	for h in 400:
-		if Weather.is_raining(float(h) * Weather.INTERVAL, &"willow_lake"):
+	for h in 2000:
+		if Weather.rain_zone(float(h) * Weather.INTERVAL) != &"":
 			wet += 1
-	var share := float(wet) / 400.0
-	assert_between(share, 0.15, 0.45, "es regnet in %d %% der Stunden" % int(share * 100.0))
+	var share := float(wet) / 2000.0
+	assert_between(share, 0.04, 0.16, "es regnet in %d %% der Stunden" % int(share * 100.0))
 
 func test_rain_only_ever_helps() -> void:
 	assert_true(Weather.BITE_FACTOR < 1.0, "Regen muss die Wartezeit kürzen")

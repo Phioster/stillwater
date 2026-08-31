@@ -18,15 +18,19 @@ func _secret_id() -> StringName:
 func _fish_group(main: Control) -> TabGroup:
 	return main.get_node("SidePanel/Panels/FishGroup")
 
-## Der Geheim-Unterreiter ist der dritte in der Fischgruppe.
+## Ueber die Beschriftung gesucht, nicht ueber den Index: der wandert, sobald
+## ein Unterreiter dazukommt, und der Test pruefte dann stumm den falschen.
 func _secret_button(main: Control) -> Button:
-	return _fish_group(main)._buttons[3]
+	for b in _fish_group(main)._buttons:
+		if b.text == "Geheim":
+			return b
+	return null
 
 func test_the_secret_tab_is_hidden_until_the_first_catch() -> void:
 	Game.new_game()
 	var main := _main()
 	var tab := _secret_button(main)
-	assert_eq(tab.text, "Geheim", "falscher Reiter geprueft")
+	assert_true(tab != null, "es gibt keinen Geheim-Reiter")
 	assert_false(tab.visible, "vor dem ersten Fang darf es den Reiter nicht geben")
 
 	Game.ctx.journal.record(CaughtFish.make(_secret_id(), 1.0, false), true)
@@ -40,7 +44,7 @@ func test_the_secret_panel_stays_empty_until_the_first_catch() -> void:
 	var main := _main()
 	var panel: PanelBase = main.get_node("SidePanel/Panels/FishGroup/SecretScroll/SecretPanel")
 	main.show_tab(0)
-	_fish_group(main).select_sub(3)
+	_fish_group(main).select_sub(4)
 	assert_eq(panel.get_child_count(), 0, "leer, solange nichts gefangen ist")
 
 	var id := _secret_id()

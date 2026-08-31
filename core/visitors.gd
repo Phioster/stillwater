@@ -1,4 +1,4 @@
-## Die beiden Besucher: der Maus-Händler und die Möwe.
+## Die beiden Besucher: der Waschbär-Händler und der Rabe.
 ##
 ## Beide hängen an der Uhr, nicht an einem Countdown. Die Referenz zählt
 ## herunter (`trader_time -= delta`), was nur läuft, solange das Spiel
@@ -12,7 +12,7 @@
 class_name Visitors
 extends RefCounted
 
-## Der Händler wechselt stündlich, die Möwe kommt alle vier Stunden.
+## Der Händler wechselt stündlich, der Rabe kommt alle vier Stunden.
 const TRADER_INTERVAL: float = 3600.0
 const RAVEN_INTERVAL: float = 14400.0
 ## Was ein neues Angebot kostet.
@@ -27,9 +27,13 @@ var trader_slot: int = -1
 var trader_bought: Array[StringName] = []
 ## Jedes Neuwürfeln verändert den Samen, also auch das Angebot.
 var trader_rerolls: int = 0
+## Ist er für diesen Besuch schon weitergezogen? Er geht, sobald man bei ihm
+## gekauft und den Laden wieder geschlossen hat -- so wie in der Referenz.
+## Ohne das stünde er die ganze Stunde da, obwohl nichts mehr zu holen ist.
+var trader_gone: bool = false
 var raven_slot: int = -1
 
-# --- Maus-Haendler ------------------------------------------------------------
+# --- Waschbaer-Haendler ------------------------------------------------------------
 
 func refresh_trader(now: float) -> bool:
 	var s := slot(now, TRADER_INTERVAL)
@@ -38,6 +42,7 @@ func refresh_trader(now: float) -> bool:
 	trader_slot = s
 	trader_bought = []
 	trader_rerolls = 0
+	trader_gone = false
 	return true
 
 ## Das Angebot dieser Stunde. Aus dem Zeitfenster gesät, also für dieselbe
@@ -68,11 +73,20 @@ func trader_buy(id: StringName) -> void:
 func sold_out(id: StringName) -> bool:
 	return trader_bought.has(id)
 
+## Er zieht weiter -- aber nur, wenn er auch etwas verkauft hat. Wer nur
+## geschaut hat, soll nicht mit einem geschlossenen Menü den Besuch verlieren.
+## Gibt zurück, ob sich dadurch etwas geändert hat.
+func trader_leave() -> bool:
+	if trader_gone or trader_bought.is_empty():
+		return false
+	trader_gone = true
+	return true
+
 func reroll() -> void:
 	trader_rerolls += 1
 	trader_bought = []
 
-# --- Moewe --------------------------------------------------------------------
+# --- Rabe --------------------------------------------------------------------
 
 ## Wartet ein Paket? Nach langer Abwesenheit liegt EINES da, nicht drei --
 ## sonst wäre Wegbleiben die beste Strategie.
@@ -118,12 +132,14 @@ func to_dict() -> Dictionary:
 		"trader_slot": trader_slot,
 		"trader_bought": bought,
 		"trader_rerolls": trader_rerolls,
+		"trader_gone": trader_gone,
 		"raven_slot": raven_slot,
 	}
 
 func load_dict(d: Dictionary) -> void:
 	trader_slot = int(d.get("trader_slot", -1))
 	trader_rerolls = int(d.get("trader_rerolls", 0))
+	trader_gone = bool(d.get("trader_gone", false))
 	raven_slot = int(d.get("raven_slot", -1))
 	trader_bought = []
 	for id in d.get("trader_bought", []):

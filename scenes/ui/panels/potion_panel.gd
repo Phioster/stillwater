@@ -1,32 +1,85 @@
 ## Der Trankbeutel: was man hat und was gerade wirkt.
 ##
-## Gekauft wird hier NICHT. Tränke kommen vom Maus-Händler und aus dem Paket
-## der Möwe — genau wie in der Referenz, deren Laden nur Ausbau und Köder
-## führt. Das macht aus einem Trank ein Fundstück statt einer Ware aus dem
-## Automaten, und deshalb fühlt sich dort ein Elixier nach etwas an.
+## Er steht bei den Fischen und nicht im Laden, weil er zum Inventar gehört
+## und nicht zum Sortiment: gekauft wird hier NICHT. Tränke kommen vom
+## Waschbär-Händler und aus dem Paket des Raben — genau wie in der Referenz,
+## deren Laden nur Ausbau und Köder führt. Das macht aus einem Trank ein
+## Fundstück statt einer Ware aus dem Automaten.
+##
+## Umgeschaltet wird nach Trankart, mit demselben Knopfraster wie das Journal
+## für die Zonen.
 extends PanelBase
+
+const ALL: StringName = &"alle"
+## Trankgruppe -> Überschrift. Die Gruppe steht schon in den Daten (gleiche
+## Gruppe heißt: ersetzt einander), also braucht die Kategorie kein zweites
+## Feld, das mit ihr aus dem Tritt geraten könnte.
+const GROUP_LABELS := {
+	&"schimmer": "Schimmer",
+	&"koeder": "Lockstoff",
+	&"erfahrung": "Erfahrung",
+	&"wert": "Handel",
+	&"raritaet": "Seltenheit",
+}
+## Alles, was keine eigene Leiter hat, landet zusammen unter einem Dach.
+const OTHER: String = "Besonderes"
+
+var _category: StringName = ALL
 
 func refresh() -> void:
 	clear(self)
 	add_child(_active_block())
+
+	var owned := _owned()
+	add_child(_switch(owned))
 
 	var header := Label.new()
 	header.text = "Beutel"
 	header.modulate = Palette.get_color(&"accent")
 	add_child(header)
 
-	var any := false
-	for c in Database.consumables_in_order():
-		if Game.consumable_count(c.id) <= 0:
+	var shown := 0
+	for c in owned:
+		if _category != ALL and _key(c) != _category:
 			continue
-		any = true
+		shown += 1
 		add_child(_row(c))
-	if not any:
+	if shown == 0:
 		var empty := Label.new()
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty.text = "Noch nichts da. Tränke bringt der Händler vorbei — oder die Möwe legt eins ab."
+		empty.text = "Noch nichts da. Tränke bringt der Händler vorbei — oder der Rabe legt eins ab." \
+			if owned.is_empty() else "In dieser Kategorie liegt gerade nichts."
 		empty.modulate = Palette.get_color(&"reed_light")
 		add_child(empty)
+
+func _owned() -> Array[ConsumableData]:
+	var out: Array[ConsumableData] = []
+	for c in Database.consumables_in_order():
+		if Game.consumable_count(c.id) > 0:
+			out.append(c)
+	return out
+
+func _key(c: ConsumableData) -> StringName:
+	return c.group if GROUP_LABELS.has(c.group) else &"besonderes"
+
+func _label(key: StringName) -> String:
+	return GROUP_LABELS.get(key, OTHER)
+
+## Nur Kategorien, in denen wirklich etwas liegt. Ein Beutel soll zeigen, was
+## drin ist, und nicht sechs leere Fächer.
+func _switch(owned: Array[ConsumableData]) -> Control:
+	var keys: Array = [ALL]
+	var labels: Array = ["Alle"]
+	for c in owned:
+		var k := _key(c)
+		if not keys.has(k):
+			keys.append(k)
+			labels.append(_label(k))
+	if not keys.has(_category):
+		_category = ALL
+	return CategorySwitch.build(keys, labels, _category, func(k: Variant) -> void:
+		_category = k
+		refresh())
 
 ## Was gerade wirkt, mit Restzeit. Ohne das ist ein Trank Geld, das man
 ## ausgibt, ohne zu sehen wofür.

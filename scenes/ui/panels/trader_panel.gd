@@ -1,4 +1,4 @@
-## Der Maus-Händler. Er kommt jede Stunde vorbei und hat dabei, was er
+## Der Waschbär-Händler. Er kommt jede Stunde vorbei und hat dabei, was er
 ## gerade hat — nicht, was man bestellen würde.
 ##
 ## Das Angebot wird aus der Stunde gesät, nicht gewürfelt und gespeichert:
@@ -13,6 +13,11 @@ func refresh() -> void:
 	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if not Game.trader_unlocked():
 		header.text = "Am Ufer huscht manchmal etwas vorbei. Solange es dich nicht kennt, bleibt es weg — im Ausbau steht, was das ändert."
+		header.modulate = Palette.get_color(&"reed_light")
+		add_child(header)
+		return
+	if not Game.trader_present():
+		header.text = "Er hat eingepackt und ist weitergezogen. Nächste Stunde schaut er wieder vorbei."
 		header.modulate = Palette.get_color(&"reed_light")
 		add_child(header)
 		return

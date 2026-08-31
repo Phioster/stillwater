@@ -12,7 +12,10 @@ func _row(z: ZoneData) -> Control:
 	var here := Game.ctx.zone.id == z.id
 
 	var title := Label.new()
-	title.text = z.display_name + ("  ← hier" if here else "")
+	# Es regnet immer nur ueber einer Zone. Steht das nicht hier, bleibt die
+	# Regel unsichtbar -- und mit ihr der Grund, dafuer umzuziehen.
+	var wet := unlocked and Game.rain_zone() == z.id
+	title.text = z.display_name + ("  ← hier" if here else "") + ("  ☂" if wet else "")
 	box.add_child(title)
 
 	var detail := Label.new()

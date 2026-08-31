@@ -13,8 +13,6 @@ extends PanelBase
 
 signal fish_tapped(id: StringName)
 
-## Mehr als drei nebeneinander werden auf einem Handy zu schmal zum Lesen.
-const SWITCH_COLUMNS: int = 3
 ## Feste Hoehe je Zeile -- daran haengt die virtuelle Liste.
 const ENTRY_HEIGHT: float = 84.0
 
@@ -72,21 +70,14 @@ func refresh() -> void:
 		func(row: int) -> Control: return _entry(fish[row]))
 
 func _zone_switch(zones: Array[ZoneData]) -> Control:
-	var grid := GridContainer.new()
-	grid.columns = SWITCH_COLUMNS
+	var keys: Array = []
+	var labels: Array = []
 	for z in zones:
-		var b := TapButton.new()
-		b.text = z.display_name
-		b.custom_minimum_size = Vector2(0, 72)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.toggle_mode = true
-		b.button_pressed = z.id == _zone
-		b.disabled = z.id == _zone
-		b.tapped.connect(func() -> void:
-			_zone = z.id
-			refresh())
-		grid.add_child(b)
-	return grid
+		keys.append(z.id)
+		labels.append(z.display_name)
+	return CategorySwitch.build(keys, labels, _zone, func(id: Variant) -> void:
+		_zone = id
+		refresh())
 
 ## Zwei Vollständigkeiten: Arten und Art-mal-Rang. Die zweite ist die lange.
 func _progress(zone: ZoneData, fish: Array[FishData]) -> Control:

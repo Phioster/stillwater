@@ -451,8 +451,20 @@ func trader_unlocked() -> bool:
 func trader_offer_size() -> int:
 	return int(upgrade_value(&"trader")) if trader_unlocked() else 0
 
+## Steht er gerade am Steg? Nach einem Kauf verschwindet er, sobald der Laden
+## zugeht, und kommt erst zur nächsten Stunde wieder.
+func trader_present() -> bool:
+	return trader_unlocked() and not visitors.trader_gone
+
+## Der Laden wurde geschlossen. Wer gekauft hat, sieht den Händler danach
+## weiterziehen -- der Abschied hängt am Schließen, nicht am Kauf selbst,
+## sonst verschwände er dem Spieler unter den Fingern weg.
+func close_shop() -> void:
+	if visitors.trader_leave():
+		state_changed.emit()
+
 func trader_offer() -> Array[StringName]:
-	if not trader_unlocked():
+	if not trader_present():
 		return []
 	return visitors.trader_offer(Time.get_unix_time_from_system(), trader_offer_size())
 
@@ -469,7 +481,7 @@ func buy_from_trader(id: StringName) -> bool:
 	return true
 
 func reroll_trader() -> bool:
-	if coins < Visitors.REROLL_COST:
+	if not trader_present() or coins < Visitors.REROLL_COST:
 		return false
 	coins -= Visitors.REROLL_COST
 	records.coins_spent += Visitors.REROLL_COST
@@ -481,7 +493,7 @@ func reroll_trader() -> bool:
 func raven_waiting() -> bool:
 	return visitors.raven_waiting(Time.get_unix_time_from_system())
 
-## Das Paket der Moewe. Es wartet, bis es jemand aufhebt -- verfallen zu
+## Das Paket des Raben. Es wartet, bis es jemand aufhebt -- verfallen zu
 ## lassen, was man verpasst hat, bestraft Abwesenheit.
 func collect_raven() -> StringName:
 	var now := Time.get_unix_time_from_system()
@@ -576,6 +588,11 @@ func raining() -> bool:
 	if ctx == null or ctx.zone == null:
 		return false
 	return Weather.is_raining(Time.get_unix_time_from_system(), ctx.zone.id)
+
+## Über welcher Zone es gerade regnet -- die Weltliste zeigt es an, sonst
+## bliebe die Ein-Zonen-Regel für den Spieler unsichtbar.
+func rain_zone() -> StringName:
+	return Weather.rain_zone(Time.get_unix_time_from_system())
 
 func rain_minutes_left() -> float:
 	if ctx == null or ctx.zone == null:

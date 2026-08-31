@@ -235,7 +235,7 @@ func _setup_visitors() -> void:
 
 func _update_visitors() -> void:
 	_raven.visible = Game.raven_waiting()
-	_trader.visible = not Game.trader_offer().is_empty()
+	_trader.visible = Game.trader_present() and not Game.trader_offer().is_empty()
 	var deck_y := _dock.position.y
 	_raven.position = Vector2(_dock.position.x + 8.0, deck_y - 104.0)
 	_trader.position = Vector2(_dock.position.x + 116.0, deck_y - 96.0)
