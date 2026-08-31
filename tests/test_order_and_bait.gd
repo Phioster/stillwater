@@ -66,7 +66,7 @@ func test_the_secret_tab_lists_zones_in_the_same_order() -> void:
 			Game.ctx.journal.record(CaughtFish.make(f.id, 0.0, false), true)
 	var m := _main()
 	m.show_tab(0)
-	m.get_node("SidePanel/Panels/FishGroup").select_sub(2)
+	m.get_node("SidePanel/Panels/FishGroup").select_sub(3)
 	var names: Array[String] = []
 	for z in Database.zones_in_order():
 		names.append(z.display_name)

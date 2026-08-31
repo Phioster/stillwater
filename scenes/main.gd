@@ -6,7 +6,7 @@ extends Control
 const PANEL_WIDTH := 420.0
 const RAIL_WIDTH := 96.0
 ## Unterreiter der Fischgruppe: Inventar, Vitrine, Geheim.
-const FISH_SUB_SECRET := 2
+const FISH_SUB_SECRET := 3
 ## Laden-Reiter und darin der Haendler.
 const SHOP_TAB := 2
 const SHOP_SUB_TRADER := 1

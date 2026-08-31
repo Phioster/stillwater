@@ -14,8 +14,8 @@ signal visitor_tapped
 @onready var _line: Line2D = $Line
 @onready var _water_line: Line2D = $WaterLine
 @onready var _water_body: Polygon2D = $WaterBody
-@onready var _package: TextureButton = $Visitors/Package
-@onready var _mouse: TextureButton = $Visitors/Mouse
+@onready var _raven: TextureButton = $Visitors/Raven
+@onready var _trader: TextureButton = $Visitors/Trader
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
@@ -214,35 +214,35 @@ func _cast_position() -> Vector2:
 ## Besucher stehen am Steg und wollen angetippt werden. Sichtbar nur, wenn
 ## es wirklich etwas zu holen gibt -- ein Knopf, der nichts tut, ist Ballast.
 func _setup_visitors() -> void:
-	_package.texture_normal = TextureLoader.load_texture("res://assets/art/package.png")
-	_mouse.texture_normal = TextureLoader.load_texture("res://assets/art/mouse_trader.png")
-	for b in [_package, _mouse]:
+	_raven.texture_normal = TextureLoader.load_texture("res://assets/art/raven.png")
+	_trader.texture_normal = TextureLoader.load_texture("res://assets/art/trader.png")
+	for b in [_raven, _trader]:
 		b.ignore_texture_size = true
 		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		b.custom_minimum_size = Vector2(96, 96)
 		b.size = Vector2(96, 96)
-	if not _package.pressed.is_connected(_on_package_pressed):
-		_package.pressed.connect(_on_package_pressed)
-	if not _mouse.pressed.is_connected(_on_mouse_pressed):
-		_mouse.pressed.connect(_on_mouse_pressed)
+	if not _raven.pressed.is_connected(_on_raven_pressed):
+		_raven.pressed.connect(_on_raven_pressed)
+	if not _trader.pressed.is_connected(_on_trader_pressed):
+		_trader.pressed.connect(_on_trader_pressed)
 
 func _update_visitors() -> void:
-	_package.visible = Game.package_waiting()
-	_mouse.visible = not Game.mouse_offer().is_empty()
+	_raven.visible = Game.raven_waiting()
+	_trader.visible = not Game.trader_offer().is_empty()
 	var deck_y := _dock.position.y
-	_package.position = Vector2(_dock.position.x + 8.0, deck_y - 104.0)
-	_mouse.position = Vector2(_dock.position.x + 116.0, deck_y - 96.0)
+	_raven.position = Vector2(_dock.position.x + 8.0, deck_y - 104.0)
+	_trader.position = Vector2(_dock.position.x + 116.0, deck_y - 96.0)
 
-func _on_package_pressed() -> void:
-	var gift := Game.collect_package()
+func _on_raven_pressed() -> void:
+	var gift := Game.collect_raven()
 	if gift == &"":
 		return
 	var c: ConsumableData = Database.consumables.get(gift)
 	var name := c.display_name if c != null else String(gift)
 	var pop := POP_TEXT_SCENE.instantiate()
 	$Visitors.add_child(pop)
-	pop.setup(name, _package.position + Vector2(48.0, 0.0), Palette.get_color(&"accent"))
+	pop.setup(name, _raven.position + Vector2(48.0, 0.0), Palette.get_color(&"accent"))
 
-func _on_mouse_pressed() -> void:
+func _on_trader_pressed() -> void:
 	Audio.click()
 	visitor_tapped.emit()

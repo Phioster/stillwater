@@ -346,28 +346,42 @@ func _fishes() -> void:
 			fin = _c(&"wood_dark")
 		_fish_sprite(f.id, body, fin)
 
-## Besucher: das Paket der Moewe und der Maus-Haendler. Beide klein und
-## deutlich, weil sie am Steg stehen und angetippt werden wollen.
+## Besucher am Steg. Bewusst KEINE Maus und keine Möwe: die Mechanik ist eine
+## Idee, eine bestimmte Figur ist es nicht. Ein Waschbär lebt am Wasser und
+## greift Dinge mit den Händen, ein Rabe bringt wirklich Sachen zu Menschen,
+## die ihn füttern — beides passt besser als geborgte Figuren.
 func _visitors() -> void:
-	var pkg := _new_image(16, 14)
-	_rect(pkg, 0, 3, 16, 11, _c(&"wood"))
-	_rect(pkg, 0, 3, 16, 1, _c(&"wood_light"))
-	_rect(pkg, 6, 3, 4, 11, _c(&"cloth_red"))
-	_rect(pkg, 0, 7, 16, 2, _c(&"cloth_red"))
-	# Schleife oben
-	_rect(pkg, 5, 0, 3, 3, _c(&"cloth_red"))
-	_rect(pkg, 8, 0, 3, 3, _c(&"cloth_red"))
-	_save(pkg, "package")
+	# Waschbär: Körper, dunkle Augenbinde, geringelter Schwanz.
+	var coon := _new_image(18, 13)
+	_ellipse(coon, 9.0, 8.0, 6.0, 4.0, _c(&"fur"))
+	_ellipse(coon, 4.0, 5.0, 3.5, 3.0, _c(&"fur_light"))
+	_rect(coon, 1, 4, 7, 2, _c(&"fur_dark"))
+	coon.set_pixel(2, 4, _c(&"outline"))
+	coon.set_pixel(6, 4, _c(&"outline"))
+	_rect(coon, 1, 2, 2, 2, _c(&"fur_dark"))
+	_rect(coon, 6, 2, 2, 2, _c(&"fur_dark"))
+	for i in 6:
+		_rect(coon, 13 + i / 2, 9 - i, 2, 1, _c(&"fur_dark") if i % 2 == 0 else _c(&"fur_light"))
+	_rect(coon, 5, 11, 2, 2, _c(&"fur_dark"))
+	_rect(coon, 10, 11, 2, 2, _c(&"fur_dark"))
+	_save(coon, "trader")
 
-	var mouse := _new_image(16, 12)
-	_ellipse(mouse, 7.0, 7.0, 6.0, 4.0, _c(&"skin_3"))
-	_ellipse(mouse, 3.0, 6.0, 3.0, 3.0, _c(&"skin_3"))
-	_ellipse(mouse, 2.0, 3.0, 2.0, 2.0, _c(&"skin_2"))
-	_ellipse(mouse, 5.0, 3.0, 2.0, 2.0, _c(&"skin_2"))
-	mouse.set_pixel(1, 6, _c(&"outline"))
+	# Rabe mit einem Bündel im Schnabel.
+	var raven := _new_image(18, 15)
+	_ellipse(raven, 10.0, 8.0, 5.0, 4.0, _c(&"raven"))
+	_ellipse(raven, 11.0, 7.0, 3.0, 2.0, _c(&"raven_sheen"))
+	_ellipse(raven, 5.0, 5.0, 3.0, 2.5, _c(&"raven"))
+	_rect(raven, 0, 5, 3, 2, _c(&"beak"))
+	raven.set_pixel(5, 4, _c(&"star"))
 	for i in 5:
-		mouse.set_pixel(13 + i / 3, 8 - i / 2, _c(&"skin_2"))
-	_save(mouse, "mouse_trader")
+		_rect(raven, 13 + i / 2, 6 + i, 2, 1, _c(&"raven"))
+	_rect(raven, 8, 12, 2, 3, _c(&"beak"))
+	_rect(raven, 11, 12, 2, 3, _c(&"beak"))
+	# Das Bündel, das er mitgebracht hat.
+	_rect(raven, 0, 8, 5, 5, _c(&"wood"))
+	_rect(raven, 0, 8, 5, 1, _c(&"wood_light"))
+	_rect(raven, 2, 8, 1, 5, _c(&"cloth_red"))
+	_save(raven, "raven")
 
 # --- Kleinkram ------------------------------------------------------------
 

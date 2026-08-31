@@ -225,20 +225,36 @@ Die Raritätsgewichte verschieben sich mit der Tiefe: in Willow Lake sind
 ## Tränke — und woher sie kommen
 
 Tränke stehen **nicht im Laden**. Der führt nur Köder und Ausbau. Tränke
-bringt der **Maus-Händler** vorbei oder die **Möwe** legt eins ab. Das ist
-die Aufteilung der Referenz, und sie macht aus einem Elixier ein Fundstück
-statt einer Ware aus dem Automaten.
+bringt der **Waschbär** am Steg vorbei, oder der **Rabe** legt eins ab. Die
+Aufteilung stammt aus der Referenz — sie macht aus einem Elixier ein
+Fundstück statt einer Ware aus dem Automaten. Die beiden Tiere sind unsere:
+ein Waschbär lebt am Wasser und greift Dinge mit den Händen, ein Rabe bringt
+wirklich Sachen zu Menschen, die ihn füttern. Eine Mechanik ist eine Idee,
+eine bestimmte Figur ist es nicht.
 
 Beide Besucher hängen an der **Uhr**, nicht an einem Countdown: das Angebot
 einer Stunde wird aus dieser Stunde gesät und ist deshalb immer dasselbe,
 auch nach einem Neustart. Nichts läuft ab, während man weg ist — und wer
 lange weg war, findet **ein** Paket, nicht zehn.
 
-- **Händler**: stündlich neu, drei Sachen (mehr mit der Ausbaustufe
-  „Bekanntschaft"). Was gekauft ist, ist weg bis zum nächsten Besuch.
+- **Waschbär**: kommt erst, wenn man „Vertrauen" gekauft hat, dann stündlich
+  mit 2 bis 5 Sachen. Was gekauft ist, ist weg bis zum nächsten Besuch;
   Neuwürfeln kostet.
-- **Möwe**: alle vier Stunden ein Paket mit einem Trank. Es wartet, bis man
-  es aufhebt.
+- **Rabe**: alle vier Stunden ein Bündel mit einem Trank, ohne Freischaltung.
+  Es wartet, bis man es aufhebt.
+
+## Aufträge
+
+Alle drei Stunden ein neuer Satz, aus dem Zeitblock gesät wie die Besucher.
+Verlangt werden nur Arten aus Zonen, die man erreichen kann, und keine
+Geheimfische — ein Auftrag, den man nicht erfüllen kann, wäre eine Sperre.
+
+Das Auftragsbuch muss man kaufen; jede weitere Stufe bringt einen Auftrag
+mehr, drei bis sechs. Abgeben zahlt das **2,5-fache** des Verkaufswerts und
+das Dreifache der XP — sonst würde man den Fisch einfach verkaufen.
+
+Weggegeben wird immer das **leichteste** passende Exemplar, und Favoriten
+nie. Sonst kostet ein Auftrag versehentlich den Rekordfisch.
 
 Billiges liegt oft aus, Teures selten — sonst wäre ein Legenden-Elixier
 jede Stunde zu haben.

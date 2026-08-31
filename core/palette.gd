@@ -32,6 +32,13 @@ const COLORS := {
 	&"peat":        Color("332d24"),
 	&"willow":      Color("46543f"),
 	&"wisp":        Color("cfe07a"),
+	# Besucher am Steg: der Waschbär und der Rabe.
+	&"fur":         Color("8a8d92"),
+	&"fur_dark":    Color("4e5257"),
+	&"fur_light":   Color("c3c7cc"),
+	&"raven":       Color("232630"),
+	&"raven_sheen": Color("4a5570"),
+	&"beak":        Color("d9cdb4"),
 	# Frostbucht: Eis, Polarlicht, offenes kaltes Wasser.
 	&"polar_high":  Color("15243d"),
 	&"polar_low":   Color("3c6a8e"),

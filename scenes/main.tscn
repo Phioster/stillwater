@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scenes/ui/tab_group.gd" id="16"]
 [ext_resource type="Script" path="res://scenes/ui/panels/potion_panel.gd" id="17"]
 [ext_resource type="Script" path="res://scenes/ui/panels/trader_panel.gd" id="18"]
+[ext_resource type="Script" path="res://scenes/ui/panels/quest_panel.gd" id="19"]
 [ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/fish_window.tscn" id="12"]
 
@@ -53,7 +54,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("16")
-labels = PackedStringArray("Inventar", "Vitrine", "Geheim")
+labels = PackedStringArray("Inventar", "Vitrine", "Aufträge", "Geheim")
 
 [node name="FishScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
 
@@ -66,6 +67,12 @@ script = ExtResource("5")
 [node name="VitrinePanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/VitrineScroll"]
 size_flags_horizontal = 3
 script = ExtResource("14")
+
+[node name="QuestScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
+
+[node name="QuestPanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/QuestScroll"]
+size_flags_horizontal = 3
+script = ExtResource("19")
 
 [node name="SecretScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
 

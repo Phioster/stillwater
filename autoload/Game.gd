@@ -24,6 +24,7 @@ var upgrade_levels: Dictionary = {}
 var settings := Settings.new()
 var buffs := Buffs.new()
 var visitors := Visitors.new()
+var quests := Quests.new()
 ## Wie viele Traenke jeder Sorte im Vorrat sind.
 var consumable_counts: Dictionary = {}
 var unlocked_zones: Array[StringName] = []
@@ -48,8 +49,9 @@ func new_game() -> void:
 	rng = StillRNG.new(randi())
 	sim = FishingSim.new()
 	coins = 0
-	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0, &"mouse_shop": 0}
+	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0, &"trader": 0, &"quests": 0}
 	visitors = Visitors.new()
+	quests = Quests.new()
 	unlocked_zones = [&"willow_lake"]
 	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0, "hat": 0}
 	owned_cosmetics = {}
@@ -88,7 +90,8 @@ func _process(delta: float) -> void:
 	# Traenke laufen NUR bei offenem Spiel ab -- siehe core/buffs.gd.
 	# Besucher haengen an der Uhr, nicht an einem Countdown -- der Wechsel
 	# faellt hier nur auf, damit die Anzeige sich neu zeichnet.
-	if visitors.refresh_mouse(Time.get_unix_time_from_system()):
+	var now := Time.get_unix_time_from_system()
+	if visitors.refresh_trader(now) or quests.refresh(now):
 		state_changed.emit()
 	var before := buffs.active.size()
 	buffs.tick(delta * time_scale)
@@ -414,25 +417,32 @@ func use_consumable(id: StringName) -> bool:
 
 # --- Besucher -----------------------------------------------------------------
 
-func mouse_offer_size() -> int:
-	return int(upgrade_value(&"mouse_shop"))
+## Stufe 0 heisst: man kennt ihn noch nicht. Erst der Kauf macht ihn
+## ueberhaupt sichtbar, danach bringt er mehr mit -- zwei bis fuenf.
+func trader_unlocked() -> bool:
+	return int(upgrade_levels.get(&"trader", 0)) > 0
 
-func mouse_offer() -> Array[StringName]:
-	return visitors.mouse_offer(Time.get_unix_time_from_system(), mouse_offer_size())
+func trader_offer_size() -> int:
+	return int(upgrade_value(&"trader")) if trader_unlocked() else 0
+
+func trader_offer() -> Array[StringName]:
+	if not trader_unlocked():
+		return []
+	return visitors.trader_offer(Time.get_unix_time_from_system(), trader_offer_size())
 
 ## Beim Haendler kaufen. Was gekauft ist, ist fuer diese Stunde weg -- ein
 ## Angebot, das sich nachfuellt, waere ein Automat und kein Besuch.
-func buy_from_mouse(id: StringName) -> bool:
+func buy_from_trader(id: StringName) -> bool:
 	var c: ConsumableData = Database.consumables.get(id)
-	if c == null or visitors.mouse_sold_out(id) or not mouse_offer().has(id):
+	if c == null or visitors.sold_out(id) or not trader_offer().has(id):
 		return false
 	if not buy_consumable(id, 1):
 		return false
-	visitors.mouse_buy(id)
+	visitors.trader_buy(id)
 	state_changed.emit()
 	return true
 
-func reroll_mouse() -> bool:
+func reroll_trader() -> bool:
 	if coins < Visitors.REROLL_COST:
 		return false
 	coins -= Visitors.REROLL_COST
@@ -441,20 +451,93 @@ func reroll_mouse() -> bool:
 	progress_changed.emit()
 	return true
 
-func package_waiting() -> bool:
-	return visitors.package_waiting(Time.get_unix_time_from_system())
+func raven_waiting() -> bool:
+	return visitors.raven_waiting(Time.get_unix_time_from_system())
 
 ## Das Paket der Moewe. Es wartet, bis es jemand aufhebt -- verfallen zu
 ## lassen, was man verpasst hat, bestraft Abwesenheit.
-func collect_package() -> StringName:
+func collect_raven() -> StringName:
 	var now := Time.get_unix_time_from_system()
-	if not visitors.package_waiting(now):
+	if not visitors.raven_waiting(now):
 		return &""
-	var gift := visitors.package_gift(now)
-	visitors.collect_package(now)
+	var gift := visitors.raven_gift(now)
+	visitors.collect_raven(now)
 	if gift != &"":
 		consumable_counts[gift] = consumable_count(gift) + 1
 	Audio.play(&"coin")
 	state_changed.emit()
 	progress_changed.emit()
 	return gift
+
+# --- Auftraege ----------------------------------------------------------------
+
+func quests_unlocked() -> bool:
+	return int(upgrade_levels.get(&"quests", 0)) > 0
+
+func quest_count() -> int:
+	return int(upgrade_value(&"quests")) + 1 if quests_unlocked() else 0
+
+## Nur Arten aus Zonen, die man erreichen kann, und keine Geheimfische --
+## ein Auftrag, den man nicht erfuellen kann, waere eine Sperre.
+func quest_pool() -> Array[StringName]:
+	var out: Array[StringName] = []
+	for zone_id in unlocked_zones:
+		for f in Database.fish_of_zone(zone_id):
+			if not f.is_secret:
+				out.append(f.id)
+	out.sort()
+	return out
+
+func quest_offer() -> Array[StringName]:
+	if not quests_unlocked():
+		return []
+	return quests.offer(Time.get_unix_time_from_system(), quest_count(), quest_pool())
+
+## Lohn fuer einen Auftrag: ein Vielfaches des Verkaufswerts, damit Abgeben
+## sich lohnt, statt den Fisch einfach zu verkaufen.
+func quest_reward(id: StringName) -> Dictionary:
+	var f: FishData = Database.fish.get(id)
+	if f == null:
+		return {"coins": 0, "xp": 0}
+	var rarity := ctx.rarity_of(f)
+	var sample := CaughtFish.make(id, 0.0, false)
+	return {
+		"coins": int(round(float(Economy.sell_price(sample, f, rarity)) * Quests.MONEY_FACTOR)),
+		"xp": int(round(float(Progression.xp_for_catch(f, rarity, 2)) * Quests.XP_FACTOR)),
+	}
+
+## Findet den passendsten Fisch im Inventar: den LEICHTESTEN, damit ein
+## Rekordexemplar nicht versehentlich weggegeben wird. Favoriten bleiben tabu.
+func _cheapest_matching(id: StringName) -> int:
+	var best := -1
+	for i in ctx.inventory.fish.size():
+		var c: CaughtFish = ctx.inventory.fish[i]
+		if c.fish_id != id or c.is_favorite:
+			continue
+		if best < 0 or c.weight_dev < ctx.inventory.fish[best].weight_dev:
+			best = i
+	return best
+
+func can_hand_in(id: StringName) -> bool:
+	return quests_unlocked() and not quests.is_done(id) \
+		and quest_offer().has(id) and _cheapest_matching(id) >= 0
+
+func hand_in_quest(id: StringName) -> bool:
+	if not can_hand_in(id):
+		return false
+	var index := _cheapest_matching(id)
+	ctx.inventory.remove_at(index)
+	var reward := quest_reward(id)
+	coins += int(reward["coins"])
+	var after := Progression.apply_xp(ctx.player_level, ctx.player_xp, int(reward["xp"]))
+	ctx.player_level = int(after["level"])
+	ctx.player_xp = int(after["xp"])
+	quests.complete(id)
+	if int(after["levels_gained"]) > 0:
+		Audio.play(&"level_up")
+		level_up.emit(ctx.player_level)
+	else:
+		Audio.play(&"coin")
+	state_changed.emit()
+	progress_changed.emit()
+	return true

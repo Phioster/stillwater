@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://resources/upgrade_data.gd" id="1_tr"]
+
+[resource]
+script = ExtResource("1_tr")
+id = &"trader"
+display_name = "Vertrauen"
+description = "Der Waschbär am Steg fasst Zutrauen und bringt mehr mit: 2 bis 5 Sachen."
+base_cost = 4000
+cost_growth = 2.2
+value_base = 1.0
+value_per_level = 1.0
+max_level = 4

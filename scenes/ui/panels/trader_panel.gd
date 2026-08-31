@@ -11,11 +11,16 @@ func refresh() -> void:
 
 	var header := Label.new()
 	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if not Game.trader_unlocked():
+		header.text = "Am Ufer huscht manchmal etwas vorbei. Solange es dich nicht kennt, bleibt es weg — im Ausbau steht, was das ändert."
+		header.modulate = Palette.get_color(&"reed_light")
+		add_child(header)
+		return
 	header.text = "Der Händler hat %d Sachen dabei. Nächste Stunde bringt er andere." \
-		% Game.mouse_offer_size()
+		% Game.trader_offer_size()
 	add_child(header)
 
-	for id in Game.mouse_offer():
+	for id in Game.trader_offer():
 		var c: ConsumableData = Database.consumables.get(id)
 		if c != null:
 			add_child(_row(c))
@@ -24,13 +29,13 @@ func refresh() -> void:
 	reroll.text = "Anderes zeigen lassen  ·  %d" % Visitors.REROLL_COST
 	reroll.custom_minimum_size = Vector2(0, 96)
 	reroll.tapped.connect(func() -> void:
-		if not Game.reroll_mouse():
+		if not Game.reroll_trader():
 			reroll.refuse())
 	add_child(reroll)
 
 func _row(c: ConsumableData) -> Control:
 	var box := VBoxContainer.new()
-	var sold := Game.visitors.mouse_sold_out(c.id)
+	var sold := Game.visitors.sold_out(c.id)
 
 	var title := Label.new()
 	title.text = "%s  (im Beutel: %d)" % [c.display_name, Game.consumable_count(c.id)]
@@ -49,7 +54,7 @@ func _row(c: ConsumableData) -> Control:
 	buy.text = "Schon verkauft" if sold else "Kaufen  ·  %d" % c.cost
 	buy.disabled = sold
 	buy.tapped.connect(func() -> void:
-		if not Game.buy_from_mouse(c.id):
+		if not Game.buy_from_trader(c.id):
 			buy.refuse())
 	box.add_child(buy)
 	return box

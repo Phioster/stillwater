@@ -1,7 +1,7 @@
 ## Die beiden Besucher: der Maus-Händler und die Möwe.
 ##
 ## Beide hängen an der Uhr, nicht an einem Countdown. Die Referenz zählt
-## herunter (`mouse_shop_time -= delta`), was nur läuft, solange das Spiel
+## herunter (`trader_time -= delta`), was nur läuft, solange das Spiel
 ## offen ist — für ein Handy-Spiel falsch herum: wer einen Tag nicht spielt,
 ## verpasst nichts, aber wer zusieht, wartet.
 ##
@@ -13,8 +13,8 @@ class_name Visitors
 extends RefCounted
 
 ## Der Händler wechselt stündlich, die Möwe kommt alle vier Stunden.
-const MOUSE_INTERVAL: float = 3600.0
-const BIRD_INTERVAL: float = 14400.0
+const TRADER_INTERVAL: float = 3600.0
+const RAVEN_INTERVAL: float = 14400.0
 ## Was ein neues Angebot kostet.
 const REROLL_COST: int = 750
 
@@ -22,30 +22,30 @@ const REROLL_COST: int = 750
 static func slot(now: float, interval: float) -> int:
 	return int(floor(now / interval))
 
-var mouse_slot: int = -1
+var trader_slot: int = -1
 ## Was in diesem Angebot schon gekauft wurde.
-var mouse_bought: Array[StringName] = []
+var trader_bought: Array[StringName] = []
 ## Jedes Neuwürfeln verändert den Samen, also auch das Angebot.
-var mouse_rerolls: int = 0
-var bird_slot: int = -1
+var trader_rerolls: int = 0
+var raven_slot: int = -1
 
 # --- Maus-Haendler ------------------------------------------------------------
 
-func refresh_mouse(now: float) -> bool:
-	var s := slot(now, MOUSE_INTERVAL)
-	if s == mouse_slot:
+func refresh_trader(now: float) -> bool:
+	var s := slot(now, TRADER_INTERVAL)
+	if s == trader_slot:
 		return false
-	mouse_slot = s
-	mouse_bought = []
-	mouse_rerolls = 0
+	trader_slot = s
+	trader_bought = []
+	trader_rerolls = 0
 	return true
 
 ## Das Angebot dieser Stunde. Aus dem Zeitfenster gesät, also für dieselbe
 ## Stunde immer dasselbe -- auch nach einem Neustart.
-func mouse_offer(now: float, size: int) -> Array[StringName]:
-	var s := slot(now, MOUSE_INTERVAL)
+func trader_offer(now: float, size: int) -> Array[StringName]:
+	var s := slot(now, TRADER_INTERVAL)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("maus:%d:%d" % [s, mouse_rerolls])
+	rng.seed = hash("haendler:%d:%d" % [s, trader_rerolls])
 	var pool: Array[ConsumableData] = []
 	for c in Database.consumables_in_order():
 		pool.append(c)
@@ -61,28 +61,28 @@ func mouse_offer(now: float, size: int) -> Array[StringName]:
 		pool.remove_at(pick)
 	return out
 
-func mouse_buy(id: StringName) -> void:
-	if not mouse_bought.has(id):
-		mouse_bought.append(id)
+func trader_buy(id: StringName) -> void:
+	if not trader_bought.has(id):
+		trader_bought.append(id)
 
-func mouse_sold_out(id: StringName) -> bool:
-	return mouse_bought.has(id)
+func sold_out(id: StringName) -> bool:
+	return trader_bought.has(id)
 
 func reroll() -> void:
-	mouse_rerolls += 1
-	mouse_bought = []
+	trader_rerolls += 1
+	trader_bought = []
 
 # --- Moewe --------------------------------------------------------------------
 
 ## Wartet ein Paket? Nach langer Abwesenheit liegt EINES da, nicht drei --
 ## sonst wäre Wegbleiben die beste Strategie.
-func package_waiting(now: float) -> bool:
-	return slot(now, BIRD_INTERVAL) > bird_slot
+func raven_waiting(now: float) -> bool:
+	return slot(now, RAVEN_INTERVAL) > raven_slot
 
 ## Was im Paket liegt. Auch das aus dem Zeitfenster gesät.
-func package_gift(now: float) -> StringName:
+func raven_gift(now: float) -> StringName:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("moewe:%d" % slot(now, BIRD_INTERVAL))
+	rng.seed = hash("rabe:%d" % slot(now, RAVEN_INTERVAL))
 	var pool := Database.consumables_in_order()
 	if pool.is_empty():
 		return &""
@@ -91,8 +91,8 @@ func package_gift(now: float) -> StringName:
 		weights.append(1000.0 / maxf(float(c.cost), 1.0))
 	return pool[_weighted(rng, weights)].id
 
-func collect_package(now: float) -> void:
-	bird_slot = slot(now, BIRD_INTERVAL)
+func collect_raven(now: float) -> void:
+	raven_slot = slot(now, RAVEN_INTERVAL)
 
 # --- Hilfen -------------------------------------------------------------------
 
@@ -112,19 +112,19 @@ func _weighted(rng: RandomNumberGenerator, weights: PackedFloat64Array) -> int:
 
 func to_dict() -> Dictionary:
 	var bought: Array = []
-	for id in mouse_bought:
+	for id in trader_bought:
 		bought.append(String(id))
 	return {
-		"mouse_slot": mouse_slot,
-		"mouse_bought": bought,
-		"mouse_rerolls": mouse_rerolls,
-		"bird_slot": bird_slot,
+		"trader_slot": trader_slot,
+		"trader_bought": bought,
+		"trader_rerolls": trader_rerolls,
+		"raven_slot": raven_slot,
 	}
 
 func load_dict(d: Dictionary) -> void:
-	mouse_slot = int(d.get("mouse_slot", -1))
-	mouse_rerolls = int(d.get("mouse_rerolls", 0))
-	bird_slot = int(d.get("bird_slot", -1))
-	mouse_bought = []
-	for id in d.get("mouse_bought", []):
-		mouse_bought.append(StringName(id))
+	trader_slot = int(d.get("trader_slot", -1))
+	trader_rerolls = int(d.get("trader_rerolls", 0))
+	raven_slot = int(d.get("raven_slot", -1))
+	trader_bought = []
+	for id in d.get("trader_bought", []):
+		trader_bought.append(StringName(id))

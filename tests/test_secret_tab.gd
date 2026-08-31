@@ -20,7 +20,7 @@ func _fish_group(main: Control) -> TabGroup:
 
 ## Der Geheim-Unterreiter ist der dritte in der Fischgruppe.
 func _secret_button(main: Control) -> Button:
-	return _fish_group(main)._buttons[2]
+	return _fish_group(main)._buttons[3]
 
 func test_the_secret_tab_is_hidden_until_the_first_catch() -> void:
 	Game.new_game()
@@ -40,7 +40,7 @@ func test_the_secret_panel_stays_empty_until_the_first_catch() -> void:
 	var main := _main()
 	var panel: PanelBase = main.get_node("SidePanel/Panels/FishGroup/SecretScroll/SecretPanel")
 	main.show_tab(0)
-	_fish_group(main).select_sub(2)
+	_fish_group(main).select_sub(3)
 	assert_eq(panel.get_child_count(), 0, "leer, solange nichts gefangen ist")
 
 	var id := _secret_id()
