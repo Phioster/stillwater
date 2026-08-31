@@ -27,6 +27,11 @@ func _ellipse(img: Image, cx: float, cy: float, rx: float, ry: float, c: Color) 
 ## Eine gefuellte Scheibe. Eigene Funktion statt _ellipse, weil die ueber das
 ## ganze Blatt laeuft -- bei hunderten Aufrufen je Rute ist das der
 ## Unterschied zwischen einer Sekunde und einer Minute.
+## Ein einzelnes Pixel, mit Randpruefung.
+func _pixel(img: Image, x: int, y: int, c: Color) -> void:
+	if x >= 0 and y >= 0 and x < img.get_width() and y < img.get_height():
+		img.set_pixel(x, y, c)
+
 func _disc(img: Image, cx: float, cy: float, r: float, c: Color) -> void:
 	var x0 := int(floor(cx - r))
 	var x1 := int(ceil(cx + r))
@@ -395,34 +400,38 @@ func _rod(index: int) -> void:
 	var img := _char_sheet()
 	for f in FRAMES:
 		var ox := f * FRAME
-		# Erst der Umriss, dann die Rute darauf: die gezeichnete Figur hat
-		# ueberall eine dunkle Kante, eine Rute ohne sie sieht aufgeklebt aus.
-		for pass_index in 3:
-			for i in 97:
-				var t := float(i) / 96.0
-				var p := AnglerPose.rod_point(f, t)
-				# Am Griff drei Pixel stark, an der Spitze einer.
-				var radius := 1.4 - 0.9 * t
-				match pass_index:
-					0:
-						_disc(img, ox + p.x, p.y, radius + 0.9, _c(&"outline"))
-					1:
-						var c: Color = _c(&"wood_dark") if t < 0.18 else _c(tone)
-						_disc(img, ox + p.x, p.y, radius, c)
-					2:
-						# Glanzkante oben: eine Rute ist rund, kein Band.
-						if t > 0.2:
-							_disc(img, ox + p.x, p.y - radius * 0.7, radius * 0.45,
-								_c(tone).lightened(0.35))
-		# Wicklung am Griff
-		for k in 3:
-			var w := AnglerPose.rod_point(f, 0.04 + 0.045 * float(k))
-			_disc(img, ox + w.x, w.y, 1.5, _c(&"accent").darkened(0.2))
-		# Rolle: sitzt UNTER der Rute, mit eigenem Umriss. Klein halten --
-		# ein grosser heller Fleck zieht mehr Blick auf sich als die Figur.
-		var reel := AnglerPose.rod_point(f, 0.22)
-		_disc(img, ox + reel.x, reel.y + 2.5, 2.2, _c(&"outline"))
-		_disc(img, ox + reel.x, reel.y + 2.5, 1.3, _c(&"silver").darkened(0.15))
+		var a := Vector2(AnglerPose.rod_grip(f))
+		var b := Vector2(AnglerPose.rod_tip(f))
+		var dir := (b - a).normalized()
+		# Quer zur Rute, immer nach unten: dort sitzt die dunkle Kante.
+		var down := Vector2(-dir.y, dir.x)
+		if down.y < 0.0:
+			down = -down
+		var length := (b - a).length()
+		var steps := int(ceil(length)) * 3
+
+		# Zuerst die Kante, dann die Rute darauf. Nur UNTEN, nicht rundum:
+		# ein voller Umriss verdoppelt die Breite einer ein Pixel starken
+		# Linie -- genau das machte sie vorher matschig.
+		for pass_index in 2:
+			for i in steps + 1:
+				var t := float(i) / float(steps)
+				var p := a + (b - a) * t
+				# Am Griff zwei Pixel stark, ab der Mitte einer.
+				var thick := 2 if t < 0.45 else 1
+				for k in thick:
+					var q := p + down * float(k)
+					if pass_index == 0:
+						_pixel(img, ox + int(round(q.x)), int(round(q.y + 1.0)), _c(&"outline"))
+					else:
+						var c: Color = _c(&"wood_dark") if t < 0.16 else _c(tone)
+						_pixel(img, ox + int(round(q.x)), int(round(q.y)), c)
+		# Rolle: zwei Pixel unter dem Griff, mit eigener Kante.
+		var reel := a + dir * (length * 0.16) + down * 2.0
+		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)), _c(&"outline"))
+		_pixel(img, ox + int(round(reel.x)) + 1, int(round(reel.y)), _c(&"outline"))
+		_pixel(img, ox + int(round(reel.x)), int(round(reel.y)) + 1, _c(&"silver"))
+		_pixel(img, ox + int(round(reel.x)) + 1, int(round(reel.y)) + 1, _c(&"outline"))
 	_save(img, "char_rod_%d" % index)
 
 # --- Fische ---------------------------------------------------------------
