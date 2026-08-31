@@ -240,6 +240,10 @@ func _dock() -> void:
 # --- Charakterebenen ------------------------------------------------------
 # Drei Frames nebeneinander: 0 ruhig, 1 Ausholen, 2 Wurf.
 #
+# NUR NOCH Huete und Ruten. Haut, Haare, Oberteil und Hose baut
+# tools/import_character.py aus assets/source/angler_base.png -- dort steht
+# auch, warum die Figur nicht mehr gemalt, sondern zerlegt wird.
+#
 # SEITENANSICHT, Blick nach rechts aufs Wasser (Kunstrichtung in TODO.md:
 # Anime-Maedchen im Profil, nicht die alte Frontalfigur). Im Profil ist die
 # Figur schmal, dafuer liest man Pose und Wurf ueberhaupt erst -- frontal
@@ -253,6 +257,8 @@ const FRAMES := AnglerPose.FRAMES
 
 ## Mittelachse und die Zeilen, an denen alle Ebenen haengen.
 const CX := 33
+## Kopfmitte der gezeichneten Figur -- siehe _hat().
+const HAT_CX := 26
 const HEAD_Y := 16
 const NECK_Y := 22
 const CHEST_Y := 29
@@ -310,162 +316,57 @@ func _profile_head(img: Image, ox: int, c: Color) -> void:
 	# Mund, ein Pixel
 	_rect(img, ox + CX + 5, HEAD_Y + 3, 1, 1, _shadow(c))
 
-## Die ersten fuenf sind echte Hauttoene und kosten nichts -- niemand soll
-## fuer sein Aussehen zahlen. Was danach kommt, ist Fantasie und kostet.
-func _skin(index: int) -> void:
-	var tone: StringName = [&"skin_1", &"skin_2", &"skin_3", &"skin_0", &"skin_4",
-		&"skin_moss", &"skin_ice", &"skin_ash", &"skin_white"][index]
-	var c := _c(tone)
-	var img := _char_sheet()
-	for f in FRAMES:
-		var ox := f * FRAME
-		var arm := _arm_offset(f)
-		_profile_head(img, ox, c)
-		_limb(img, ox + CX - 2, NECK_Y, 3, 4, _shadow(c))
-		# Rumpf im Profil: schmal, vorn die Brust, hinten der Ruecken.
-		_bulb(img, ox + CX, CHEST_Y, 5.5, 5.0, c)
-		_limb(img, ox + CX - 4, WAIST_Y, 7, 8, c)
-		_bulb(img, ox + CX - 1, HIP_Y, 6.5, 4.5, c)
-		# Beine: das hintere dunkler, damit die Tiefe stimmt.
-		_limb(img, ox + CX - 5, LEG_TOP, 4, FEET_Y - LEG_TOP, _shadow(c))
-		_limb(img, ox + CX - 1, LEG_TOP, 4, FEET_Y - LEG_TOP, c)
-		# Hinterer Arm haengt am Koerper, vorderer haelt die Rute. Die Hand
-		# liegt auf AnglerPose.ROD_START -- dort setzt die Rute an.
-		_limb(img, ox + CX - 4, CHEST_Y - 3, 3, 11, _shadow(c))
-		_limb(img, ox + CX + 1, CHEST_Y - 3 + arm, 4, 6, c)
-		_limb(img, ox + CX + 4, CHEST_Y + 2 + arm, 4, 4, c)
-		_bulb(img, ox + AnglerPose.ROD_START.x, AnglerPose.ROD_START.y + arm, 2.5, 2.5, c)
-	_save(img, "char_skin_%d" % index)
-
-## Die Frisuren unterscheiden sich in der Form, nicht in der Farbe -- die
-## kommt aus der eigenen Kategorie und wird als Toenung darueber gelegt.
-func _hair(index: int) -> void:
-	var c := _c(&"hair_dark")
-	var img := _char_sheet()
-	for f in FRAMES:
-		var ox := f * FRAME
-		# Schaedeldach und Pony ueber der Stirn -- fuer alle gleich.
-		_bulb(img, ox + CX - 1, HEAD_Y - 3, 6.5, 5.0, c)
-		_rect(img, ox + CX + 2, HEAD_Y - 5, 5, 3, c)
-		_rect(img, ox + CX + 5, HEAD_Y - 3, 2, 2, _shadow(c))
-		match index:
-			0:  # Kurzhaar: endet am Kiefer
-				_limb(img, ox + CX - 7, HEAD_Y - 4, 4, 8, c)
-			1:  # Zopf: laengeres Deckhaar, Zopf im Nacken
-				_limb(img, ox + CX - 7, HEAD_Y - 4, 4, 10, c)
-				_limb(img, ox + CX - 9, HEAD_Y + 5, 3, 10, c)
-				_bulb(img, ox + CX - 8, HEAD_Y + 15, 2.0, 2.0, c)
-			2:  # Wuschelkopf: rundum voller
-				_bulb(img, ox + CX - 6, HEAD_Y - 2, 4.0, 5.0, c)
-				_limb(img, ox + CX - 8, HEAD_Y - 3, 4, 9, c)
-				_bulb(img, ox + CX + 4, HEAD_Y - 7, 3.0, 2.5, c)
-			3:  # Pferdeschwanz: hoch gebunden, faellt nach hinten
-				_limb(img, ox + CX - 7, HEAD_Y - 4, 4, 7, c)
-				_bulb(img, ox + CX - 8, HEAD_Y - 6, 2.5, 2.5, c)
-				_limb(img, ox + CX - 12, HEAD_Y - 5, 4, 14, c)
-				_bulb(img, ox + CX - 11, HEAD_Y + 9, 2.5, 2.5, c)
-			4:  # Kurzgeschoren: nur das Deckhaar
-				_rect(img, ox + CX - 6, HEAD_Y - 8, 10, 3, _shadow(c))
-	_save(img, "char_hair_%d" % index)
-
-## Oberteile: Grundform ist Rumpf plus zwei Aermel, das Muster liegt darauf.
-## Ohne eigenes Muster waeren mehrere davon dieselbe Flaeche in anderer Farbe.
-func _shirt(index: int) -> void:
-	var tone: StringName = [&"cloth_blue", &"cloth_red", &"cloth_green",
-		&"cloth_ochre", &"cloth_plum", &"cloth_grey", &"leather", &"oilskin",
-		&"denim"][index]
-	var c := _c(tone)
-	var img := _char_sheet()
-	for f in FRAMES:
-		var ox := f * FRAME
-		var arm := _arm_offset(f)
-		_bulb(img, ox + CX, CHEST_Y, 6.0, 5.5, c)
-		_limb(img, ox + CX - 4, WAIST_Y, 7, 7, c)
-		_limb(img, ox + CX - 4, CHEST_Y - 3, 3, 8, _shadow(c))
-		_limb(img, ox + CX + 1, CHEST_Y - 3 + arm, 4, 5, c)
-		match index:
-			2:  # Kariert
-				for y in range(CHEST_Y - 4, WAIST_Y + 7, 4):
-					_rect(img, ox + CX - 5, y, 11, 1, _c(&"cloth_grey"))
-			5:  # Kapuzenpulli: die Kapuze liegt im Nacken
-				_bulb(img, ox + CX - 4, NECK_Y, 4.5, 3.5, c)
-				_rect(img, ox + CX + 2, CHEST_Y, 1, 8, _c(&"foam"))
-			6:  # Lederjacke: Kragen und Reissverschluss
-				_rect(img, ox + CX - 3, CHEST_Y - 5, 7, 2, _shadow(c))
-				_rect(img, ox + CX + 3, CHEST_Y - 3, 1, 12, _c(&"silver"))
-			7:  # Anglerweste: aufgesetzte Taschen
-				_limb(img, ox + CX, CHEST_Y + 3, 5, 6, _c(&"wood_dark"))
-			8:  # Streifenpulli
-				for y in range(CHEST_Y - 5, WAIST_Y + 7, 4):
-					_rect(img, ox + CX - 5, y, 11, 2, _c(&"foam"))
-	_save(img, "char_shirt_%d" % index)
-
-func _pants(index: int) -> void:
-	var tone: StringName = [&"cloth_grey", &"wood_dark", &"oilskin",
-		&"cloth_plum", &"denim", &"cloth_red"][index]
-	var c := _c(tone)
-	var img := _char_sheet()
-	for f in FRAMES:
-		var ox := f * FRAME
-		_bulb(img, ox + CX - 1, HIP_Y, 7.0, 4.5, c)
-		# Die Shorts enden ueber dem Knie -- darunter schaut das Bein heraus.
-		var length := 5 if index == 4 else BOOT_Y - LEG_TOP
-		_limb(img, ox + CX - 5, LEG_TOP, 4, length, _shadow(c))
-		_limb(img, ox + CX - 1, LEG_TOP, 4, length, c)
-		# Stiefel: die Spitze zeigt nach vorn.
-		_limb(img, ox + CX - 6, BOOT_Y, 7, FEET_Y - BOOT_Y, _shadow(_c(&"outline")))
-		_limb(img, ox + CX - 2, BOOT_Y, 8, FEET_Y - BOOT_Y, _c(&"outline"))
-		if index == 5:  # Karohose
-			for y in range(LEG_TOP, BOOT_Y, 3):
-				_rect(img, ox + CX - 5, y, 9, 1, _c(&"outline"))
-	_save(img, "char_pants_%d" % index)
-
 ## Variante 0 bleibt leer -- das ist "ohne Hut". Der Kopfplatz traegt Huete
 ## UND Kopfschmuck: Hoerner, Heiligenschein und Kopfhoerer sitzen an derselben
 ## Stelle, also teilen sie sich einen Platz. Ein zweiter haette bei jeder
 ## Kombination eine neue Ueberdeckungsfrage aufgeworfen.
 func _hat(index: int) -> void:
 	var img := _char_sheet()
-	var top := HEAD_Y - 9   # Oberkante des Kopfes samt Haar
+	# Der Kopf der gezeichneten Figur sitzt im Rahmen bei x 19..35, Oberkante
+	# y 2. Huete rechnen gegen diese Kante, nicht gegen die Koerpermitte --
+	# der Zopf zieht die Mitte sonst nach links.
+	var cx := HAT_CX
+	var top := 1
 	for f in FRAMES:
 		var ox := f * FRAME
 		match index:
 			1:  # Kappe: Schirm nach vorn
-				_limb(img, ox + CX - 6, top, 12, 5, _c(&"cloth_grey"))
-				_limb(img, ox + CX + 5, top + 3, 6, 2, _c(&"cloth_grey"))
+				_limb(img, ox + cx - 8, top + 1, 16, 5, _c(&"cloth_grey"))
+				_limb(img, ox + cx + 6, top + 5, 9, 2, _c(&"cloth_grey"))
 			2:  # Strohhut: breite Krempe
-				_limb(img, ox + CX - 10, top + 4, 21, 2, _c(&"accent"))
-				_limb(img, ox + CX - 5, top, 10, 5, _c(&"accent"))
+				_limb(img, ox + cx - 13, top + 6, 27, 2, _c(&"accent"))
+				_limb(img, ox + cx - 7, top + 1, 14, 5, _c(&"accent"))
 			3:  # Suedwester: Krempe hinten lang
-				_limb(img, ox + CX - 9, top + 3, 18, 3, _c(&"cloth_ochre"))
-				_limb(img, ox + CX - 5, top - 1, 10, 5, _c(&"cloth_ochre"))
-				_limb(img, ox + CX - 12, top + 5, 5, 3, _c(&"cloth_ochre"))
+				_limb(img, ox + cx - 11, top + 5, 23, 3, _c(&"cloth_ochre"))
+				_limb(img, ox + cx - 7, top + 1, 14, 4, _c(&"cloth_ochre"))
+				_limb(img, ox + cx - 15, top + 8, 6, 3, _c(&"cloth_ochre"))
 			4:  # Wollmuetze: keine Krempe, Bommel
-				_limb(img, ox + CX - 6, top - 1, 12, 6, _c(&"cloth_red"))
-				_bulb(img, ox + CX - 1, top - 3, 2.5, 2.0, _c(&"foam"))
+				_limb(img, ox + cx - 8, top, 16, 7, _c(&"cloth_red"))
+				_bulb(img, ox + cx, top - 1, 3.0, 2.0, _c(&"foam"))
 			5:  # Filzhut: breite Krempe, hoher Kopf
-				_limb(img, ox + CX - 10, top + 3, 20, 3, _c(&"wood_dark"))
-				_limb(img, ox + CX - 5, top - 4, 10, 7, _c(&"wood_dark"))
-			6:  # Teufelshoerner
-				_limb(img, ox + CX - 6, top - 2, 3, 5, _c(&"cloth_red"))
-				_limb(img, ox + CX + 3, top - 2, 3, 5, _c(&"cloth_red"))
-				_rect(img, ox + CX - 8, top - 5, 2, 4, _c(&"cloth_red"))
-				_rect(img, ox + CX + 5, top - 5, 2, 4, _c(&"cloth_red"))
-			7:  # Ziegenhoerner: nach hinten gebogen
-				_limb(img, ox + CX - 6, top - 3, 4, 4, _c(&"bone"))
-				_limb(img, ox + CX + 2, top - 3, 4, 4, _c(&"bone"))
-				_limb(img, ox + CX - 10, top - 2, 4, 4, _c(&"bone"))
-				_rect(img, ox + CX - 12, top + 2, 3, 4, _c(&"bone"))
+				_limb(img, ox + cx - 13, top + 6, 26, 3, _c(&"wood_dark"))
+				_limb(img, ox + cx - 7, top, 14, 6, _c(&"wood_dark"))
+			6:  # Teufelshoerner: kurz, spitz, nach aussen
+				_limb(img, ox + cx - 9, top + 1, 3, 6, _c(&"cloth_red"))
+				_limb(img, ox + cx + 6, top + 1, 3, 6, _c(&"cloth_red"))
+				_rect(img, ox + cx - 11, top - 1, 2, 4, _c(&"cloth_red"))
+				_rect(img, ox + cx + 9, top - 1, 2, 4, _c(&"cloth_red"))
+			7:  # Ziegenhoerner: dicker, nach hinten gebogen
+				_limb(img, ox + cx - 9, top, 4, 5, _c(&"bone"))
+				_limb(img, ox + cx + 5, top, 4, 5, _c(&"bone"))
+				_limb(img, ox + cx - 13, top + 1, 4, 4, _c(&"bone"))
+				_limb(img, ox + cx + 9, top + 1, 4, 4, _c(&"bone"))
+				_rect(img, ox + cx - 15, top + 5, 3, 4, _c(&"bone"))
 			8:  # Heiligenschein: schwebt frei ueber dem Kopf
-				_ellipse(img, ox + CX, top - 4, 7.5, 2.5, _c(&"accent"))
-				_erase(img, ox + CX, top - 4, 5.0, 1.2)
+				_ellipse(img, ox + cx, top, 8.5, 2.5, _c(&"accent"))
+				_erase(img, ox + cx, top, 6.0, 1.2)
 			9:  # Kopfhoerer: Buegel oben, Muschel am Ohr
-				_limb(img, ox + CX - 6, top - 1, 12, 2, _c(&"outline"))
-				_limb(img, ox + CX - 3, top + 5, 5, 7, _c(&"outline"))
-				_rect(img, ox + CX - 2, top + 7, 3, 3, _c(&"cloth_blue"))
+				_limb(img, ox + cx - 8, top, 16, 3, _c(&"outline"))
+				_limb(img, ox + cx + 4, top + 10, 5, 7, _c(&"outline"))
+				_rect(img, ox + cx + 5, top + 12, 3, 3, _c(&"cloth_blue"))
 			10:  # Eimerhut: gerade Krempe, hoher Topf
-				_limb(img, ox + CX - 9, top + 4, 18, 3, _c(&"reed"))
-				_limb(img, ox + CX - 5, top - 2, 11, 6, _c(&"reed"))
+				_limb(img, ox + cx - 12, top + 6, 24, 3, _c(&"reed"))
+				_limb(img, ox + cx - 7, top + 1, 14, 5, _c(&"reed"))
 	_save(img, "char_hat_%d" % index)
 
 ## Geometrie aus AnglerPose, nicht hier: sie stand doppelt, und beim
@@ -596,16 +497,10 @@ func _init() -> void:
 	_visitors()
 	_dock()
 	print("Charakter")
-	for i in 9:
-		_skin(i)
-	for i in 5:
-		_hair(i)
-	for i in 9:
-		_shirt(i)
+	# Haut, Haare, Oberteil und Hose kommen aus tools/import_character.py --
+	# sie werden aus dem gezeichneten Ausgangsbild zerlegt, nicht gemalt.
 	for i in 11:
 		_hat(i)
-	for i in 6:
-		_pants(i)
 	for i in 3:
 		_rod(i)
 	print("Fische")

@@ -27,9 +27,9 @@ const PIXEL_SCALE := 2.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
 const CHAR_SIZE := 64.0
-## Die Schuhe enden im 64er-Frame bei Zeile 60. Die letzten Reihen sind leer --
+## Die Stiefel enden im 64er-Frame bei Zeile 61. Die letzte Reihe ist leer --
 ## wer die Sprite-Unterkante aufs Deck setzt, laesst die Figur schweben.
-const CHAR_FEET := 60.0
+const CHAR_FEET := 62.0
 ## Rutenspitze im 32x32-Frame bei (31, 6).
 
 ## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die

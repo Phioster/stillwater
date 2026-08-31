@@ -97,19 +97,31 @@ jemandem mit Heiligenschein.
   plus Pixel im Generator — es fehlt nur die Zeichnung.
 - Eine **Rock**-Variante bei den Hosen, sobald die Figur steht.
 
-## Figur: Stand der Kunstrichtung (2026-08-31)
+## Figur: gezeichnet statt gemalt (2026-08-31)
 
-Die Bildgröße steht jetzt auf **64 Pixel je Frame** (vorher 32), die
-Vergrößerung in der Welt entsprechend auf 2 statt 4 — am Bildschirm gleich
-groß, aber doppelt so fein. Steg und Schwimmer sind mitgewachsen.
+Die Anglerin kommt jetzt aus `assets/source/angler_base.png` — einem mit
+PixelLab erzeugten 64×64-Bild in Seitenansicht (Anime, Blick nach rechts).
+Zwei prozedurale Anläufe mit Ellipsen sahen nach zusammengesteckten Formen
+aus und sind verworfen.
 
-**Die Figur selbst ist offen.** Zwei Anläufe mit prozeduralen Formen
-(frontal, dann im Profil) sahen beide nach zusammengesteckten Ellipsen aus
-und wurden verworfen. Entschieden ist nur die Richtung: **Seitenansicht mit
-Blick aufs Wasser, Anime-Mädchen.** Wie die Grafik entsteht — fertiger
-Sprite-Pack, Vorlage zum Nachpixeln oder von Hand gesetzte Pixelraster —
-ist noch nicht entschieden. Auf dem Gerät gibt es kein Zeichenprogramm und
-kein Bildmodell; was ohne beides geht, ist handgesetzte Pixelarbeit im Code.
+`tools/import_character.py` zerlegt das flache Bild in unsere Ebenen (Haut,
+Haare, Oberteil, Hose+Stiefel) und färbt daraus die Farbvarianten ein — mit
+derselben Formel wie der Tönungs-Shader, damit ein umgefärbtes Oberteil
+aussieht wie umgetönte Haare. **Kosten: null Generierungen je Variante.**
+
+Bildgröße 64 Pixel je Frame, Vergrößerung in der Welt 2 statt 4.
+
+**Was daran noch Platzhalter ist:**
+
+- **Hüte und Kopfschmuck** kommen weiter aus `gen_sprites.gd` und sind
+  gemalte Klötze auf einer gezeichneten Figur. Sie sitzen richtig, aber sie
+  passen im Stil nicht.
+- **Die fünf Frisuren sind alle dieselbe.** Eine zweite Frisur ist ein
+  zweites Ausgangsbild, keine Umfärbung.
+- **Die drei Rahmen zeigen dieselbe Pose.** Was sich beim Wurf bewegt, ist
+  allein die Rute (eigene Ebene). Echte Posen bräuchten `animate_image`.
+- Die **Formvarianten** bei Oberteil und Hose (Lederjacke, Weste, Shorts,
+  Rock) sind zurzeit nur Umfärbungen derselben Form.
 
 ## Inhalte
 

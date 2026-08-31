@@ -19,9 +19,10 @@ const FRAMES: int = 3
 const ARM_OFFSET: Array[int] = [0, -6, 8]
 
 ## Die Rute läuft vom Griff diagonal nach oben rechts. ROD_START ist die
-## Hand im Ruhebild; die Spitze muss in JEDEM Bild zwei Pixel vor dem Rand
-## bleiben, sonst blutet sie in den nächsten Rahmen.
-const ROD_START := Vector2i(38, 32)
+## offene Hand der Figur (gemessen im Ausgangsbild, nach dem Versatz aus
+## tools/import_character.py); die Spitze muss in JEDEM Bild zwei Pixel vor
+## dem Rand bleiben, sonst blutet sie in den nächsten Rahmen.
+const ROD_START := Vector2i(37, 36)
 const ROD_LENGTH: int = 23
 
 static func arm_offset(frame: int) -> int:
