@@ -21,11 +21,19 @@ var _rain: Rain = null
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
 const WATERLINE := 84.0 / 180.0
-## Ganzzahlig halten! Bei 1,5 landen Pixelkanten zwischen Bildschirmpunkten
-## und das ganze Bild flimmert. Bei 256er Rahmen ist 1 die richtige Wahl:
-## die Figur steht so gross da wie vorher, hat aber viermal so viele
-## Bildpunkte (siehe core/angler_pose.gd).
-const PIXEL_SCALE := 1.0
+## Steg und Figur stehen fest an ihrem Platz, deshalb darf die Vergroesserung
+## hier krumm sein: das Flimmern, vor dem die alte Regel "ganzzahlig halten"
+## schuetzte, entsteht erst, wenn ein Sprite BEI krummer Vergroesserung ueber
+## den Bildschirm wandert und die verdoppelten Pixelreihen mitwandern. Der
+## Schwimmer wandert -- der hat deshalb seine eigene, ganzzahlige.
+const PIXEL_SCALE := 1.08
+## Der Schwimmer wippt, also ganzzahlig. Klein genug ist er jetzt ueber seine
+## Bildgroesse (tools/gen_sprites.gd::_bobber).
+const BOBBER_SCALE := 1.0
+## Wie hoch die Deckoberkante ueber der Wasserlinie liegt. Frueher 48 -- die
+## Figur stand dadurch so weit oben, dass ihr Kopf fast in der Kopfzeile
+## klebte. Weiter herunter geht kaum: der Steg wuerde im Wasser stehen.
+const DECK_OVER_WATER := 16.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
 const CHAR_SIZE := 256.0
@@ -74,7 +82,7 @@ func _ready() -> void:
 	_dock.texture = TextureLoader.load_texture("res://assets/art/dock.png")
 	_dock.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
 	_angler.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
-	_bobber.scale = Vector2(PIXEL_SCALE, PIXEL_SCALE)
+	_bobber.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
 	_setup_visitors()
 	_rain = Rain.new()
 	add_child(_rain)
@@ -104,7 +112,7 @@ func _layout() -> void:
 	# Pfosten ragen ins Wasser.
 	# Buendig mit dem linken Rand: ein Steg, der frei im Wasser beginnt, sieht
 	# abgeschnitten aus statt am Ufer angebaut.
-	_dock.position = Vector2(0.0, water_y - 48.0 * PIXEL_SCALE)
+	_dock.position = Vector2(0.0, water_y - DECK_OVER_WATER * PIXEL_SCALE)
 	var deck_y := _dock.position.y
 	# Fuesse auf die Deckoberkante: der Sprite haengt an seiner oberen linken
 	# Ecke, also zaehlt CHAR_FEET von dort.

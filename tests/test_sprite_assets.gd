@@ -22,7 +22,7 @@ func _expected_size(filename: String) -> Vector2i:
 	if filename == "orb.png":
 		return Vector2i(16, 16)
 	if filename == "bobber.png":
-		return Vector2i(64, 64)
+		return Vector2i(20, 20)
 	return Vector2i(-1, -1)
 
 func _count_opaque(img: Image) -> int:

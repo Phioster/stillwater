@@ -490,11 +490,15 @@ func _orb() -> void:
 	_ellipse(img, 8.0, 8.0, 4.5, 4.5, _c(&"foam"))
 	_save(img, "orb")
 
+## Zwanzig statt vierundsechzig Pixel. Bei 64 war der Schwimmer im
+## Massstab der Figur (216 Pixel fuer 1,70 m) einen halben Meter breit --
+## eine Boje, kein Schwimmer. Zwanzig sind rund sechzehn Zentimeter: immer
+## noch grosszuegig, aber man erkennt, was es sein soll.
 func _bobber() -> void:
-	var img := _new_image(64, 64)
-	_bulb(img, 32.0, 32.0, 28.0, 28.0, _c(&"cloth_red"))
-	_rect(img, 0, 32, 64, 32, _c(&"foam"))
-	_rect(img, 0, 32, 64, 4, _c(&"outline"))
+	var img := _new_image(20, 20)
+	_bulb(img, 10.0, 10.0, 9.0, 9.0, _c(&"cloth_red"))
+	_rect(img, 0, 10, 20, 10, _c(&"foam"))
+	_rect(img, 0, 10, 20, 1, _c(&"outline"))
 	_save(img, "bobber")
 
 func _init() -> void:
