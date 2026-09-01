@@ -2,12 +2,15 @@
 ## Texturen und Farben tauschen statt den Charakter neu zu zeichnen.
 extends Node2D
 
-const LAYERS := ["Skin", "Pants", "Shirt", "Hair", "Hat", "Rod"]
+## Reihenfolge = Zeichenreihenfolge. "Base" traegt Umriss und Schatten und
+## wird nie umgefaerbt -- deshalb liegt es ueber der Kleidung.
+const LAYERS := ["Skin", "Pants", "Shirt", "Hair", "Base", "Hat", "Rod"]
 const TEX_PREFIX := {
 	"Skin": "char_skin",
 	"Pants": "char_pants",
 	"Shirt": "char_shirt",
 	"Hair": "char_hair",
+	"Base": "char_base",
 	"Hat": "char_hat",
 	"Rod": "char_rod",
 }
@@ -34,6 +37,7 @@ func set_cosmetics(c: Dictionary) -> void:
 	_set_layer("Pants", int(c.get("pants", 0)))
 	_set_layer("Shirt", int(c.get("shirt", 0)))
 	_set_layer("Hair", int(c.get("hair", 0)))
+	_set_layer("Base", 0)
 	_set_layer("Hat", int(c.get("hat", 0)))
 	_set_layer("Rod", int(c.get("rod", 0)))
 	_tint_hair(int(c.get("hair_color", 0)))
@@ -59,8 +63,15 @@ func _tint_hair(color_index: int) -> void:
 ## stuende die Figur noch beim Ausholen, waehrend der Koeder schon im Wasser
 ## liegt.
 const IDLE_FPS: float = 5.0
+## Wie lange ein Blinzeln dauert und wie oft es kommt. Nicht im Atemtakt:
+## sechs Ruhebilder sind gut eine Sekunde, so oft blinzelt niemand.
+const BLINK_TIME: float = 0.12
+const BLINK_MIN: float = 2.5
+const BLINK_MAX: float = 6.0
 
 var _idle_time: float = 0.0
+var _blink_in: float = 3.0
+var _blink_left: float = 0.0
 
 func play_state(frame: int) -> void:
 	_frame = AnglerPose.frame_of(frame)
@@ -71,14 +82,23 @@ func _process(delta: float) -> void:
 	match Game.sim.state:
 		FishingSim.State.CASTING:
 			var left: float = clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
-			var step := int((1.0 - left) * float(AnglerPose.FRAMES - AnglerPose.IDLE_FRAMES))
-			play_state(AnglerPose.IDLE_FRAMES + step)
+			var span := AnglerPose.FRAMES - AnglerPose.CAST_START
+			play_state(AnglerPose.CAST_START + int((1.0 - left) * float(span)))
 		FishingSim.State.FIGHT:
 			# Arm vorn, Rute unter Zug -- das letzte Wurfbild.
 			play_state(AnglerPose.FRAMES - 1)
 		_:
-			# Stillstehen sieht tot aus: sechs Bilder Atmen im Kreis.
+			# Stillstehen sieht tot aus: sechs Bilder Atmen im Kreis, und
+			# hin und wieder ein Blinzeln dazwischen.
 			_idle_time += delta
+			if _blink_left > 0.0:
+				_blink_left -= delta
+				play_state(AnglerPose.BLINK_FRAME)
+				return
+			_blink_in -= delta
+			if _blink_in <= 0.0:
+				_blink_left = BLINK_TIME
+				_blink_in = randf_range(BLINK_MIN, BLINK_MAX)
 			play_state(int(_idle_time * IDLE_FPS) % AnglerPose.IDLE_FRAMES)
 
 func _on_bite(_fish: FishData) -> void:

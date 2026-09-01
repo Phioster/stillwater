@@ -54,6 +54,10 @@ func new_game() -> void:
 	visitors = Visitors.new()
 	quests = Quests.new()
 	records = Records.new()
+	# Beutel und Wirkungen gehoeren zum Spielstand, nicht zum Programm: ohne
+	# das startet ein neues Spiel mit den Traenken des alten.
+	consumable_counts = {}
+	buffs = Buffs.new()
 	unlocked_zones = [&"willow_lake"]
 	cosmetics = {"skin": 0, "hair": 0, "hair_color": 0, "shirt": 0, "pants": 0,
 		"hat": 0, "rod": 0}

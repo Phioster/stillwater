@@ -4,7 +4,7 @@
 Die Rute kommt aus `assets/source/rod_45.png` -- einem 100x100-Sprite, das
 diagonal von unten links (Korkgriff) nach oben rechts (Spitze) laeuft.
 
-Die sechs RUHEPOSEN bekommen dieses Bild **eins zu eins**: die Vorlage ist
+Die Ruheposen und das Blinzeln bekommen dieses Bild **eins zu eins**: die Vorlage ist
 genau so lang wie die Rute im Spiel, es wird nichts skaliert und nichts
 gedreht. Die vier WURFPOSEN zeigen in andere Richtungen; die werden in
 denselben Farben nachgezeichnet. Ein fertiges Pixelbild in einen anderen
@@ -146,7 +146,7 @@ def main():
     rod = Image.open(SOURCE).convert("RGBA")
     size = read_int("FRAME_SIZE")
     frames = read_int("FRAMES")
-    idle = read_int("IDLE_FRAMES")
+    idle = read_int("CAST_START")   # Ruhelauf UND Blinzeln tragen die Vorlage
     anchors = read_ints("ROD_ANCHOR")
     tips = read_ints("ROD_TIP_OFF")
     groups = classify(rod)

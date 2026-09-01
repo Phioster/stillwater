@@ -314,3 +314,14 @@ func test_a_favorite_is_never_handed_in() -> void:
 	Game.ctx.inventory.add(CaughtFish.make(id, 0.0, false))
 	Game.toggle_favorite(0)
 	assert_false(Game.can_hand_in(id), "ein Favorit darf nicht weggehen")
+
+## Ein neues Spiel faengt mit leerem Beutel an. Klingt selbstverstaendlich,
+## war es aber nicht: der Beutel ueberlebte new_game() und ein frischer
+## Spielstand erbte die Traenke des vorigen.
+func test_a_new_game_starts_with_an_empty_satchel() -> void:
+	Game.new_game()
+	Game.consumable_counts[&"schimmer_phiole"] = 3
+	Game.buffs.apply(Database.consumables[&"schimmer_phiole"])
+	Game.new_game()
+	assert_eq(Game.consumable_count(&"schimmer_phiole"), 0, "der Beutel ist nicht leer")
+	assert_true(Game.buffs.active.is_empty(), "eine Wirkung hat ueberlebt")
