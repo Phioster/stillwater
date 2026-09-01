@@ -34,6 +34,14 @@ const BOBBER_SCALE := 1.0
 ## Figur stand dadurch so weit oben, dass ihr Kopf fast in der Kopfzeile
 ## klebte. Weiter herunter geht kaum: der Steg wuerde im Wasser stehen.
 const DECK_OVER_WATER := 16.0
+## Wo die Anglerin auf dem Steg steht, vom linken Stegende gezaehlt. Frueher
+## 200 -- sie stand in der Stegmitte, und die Schnur schnitt auf ihrem Weg
+## zum Schwimmer durch die letzten Planken. Bei 290 stehen ihre Fuesse bei
+## knapp achtzig Prozent der Steglaenge, und die Rutenspitze ragt schon ueber
+## das Stegende hinaus.
+const ANGLER_ON_DECK := 290.0
+## Wie weit hinter dem Stegende der Schwimmer liegt.
+const BOBBER_OFF_DOCK := 120.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
 const CHAR_SIZE := 256.0
@@ -116,8 +124,14 @@ func _layout() -> void:
 	var deck_y := _dock.position.y
 	# Fuesse auf die Deckoberkante: der Sprite haengt an seiner oberen linken
 	# Ecke, also zaehlt CHAR_FEET von dort.
-	_angler.position = Vector2(_dock.position.x + 200.0 * PIXEL_SCALE, deck_y - CHAR_FEET * PIXEL_SCALE)
-	_bobber_home = Vector2(size.x * 0.42, water_y + size.y * 0.14)
+	_angler.position = Vector2(_dock.position.x + ANGLER_ON_DECK * PIXEL_SCALE,
+		deck_y - CHAR_FEET * PIXEL_SCALE)
+	# Der Schwimmer haengt am ENDE des Stegs, nicht an einem Bruchteil der
+	# Bildbreite: die Schnur lief sonst je nach Seitenverhaeltnis quer ueber
+	# die Planken. So beginnt sie immer erst hinter dem Steg.
+	var dock_right := _dock.position.x + 512.0 * PIXEL_SCALE
+	_bobber_home = Vector2(min(dock_right + BOBBER_OFF_DOCK * PIXEL_SCALE, size.x * 0.75),
+		water_y + size.y * 0.14)
 	_bobber.position = _bobber_home
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
