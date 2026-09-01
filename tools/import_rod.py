@@ -64,6 +64,9 @@ SKIN = ["char_skin_0"]
 SILHOUETTE = ["char_skin_0", "char_pants_0", "char_shirt_0",
               "char_hair_0", "char_base_0"]
 
+def lum(c):
+    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+
 def read_ints(name):
     head = "const %s: Array[Vector2i] = [" % name
     text = open(POSE, encoding="utf-8").read()
@@ -150,8 +153,13 @@ def shade_tip(img, thin, mid, dark):
     Wo die Rute nur noch zwei Pixel dick ist, war einer davon der HELLSTE
     Schaftton -- und er sprang von Scheibe zu Scheibe die Seite. Als duenne
     Linie gelesen war das ein helles Flimmern statt einer Rutenspitze. Jetzt
-    liegt oben der mittlere Ton und unten der dunkle, in jeder Scheibe
-    gleich: eine Lichtrichtung, zwei Farben, dunkler als vorher.
+    liegt oben der mittlere Ton und unten der schwarze Umriss, in jeder
+    Scheibe gleich: eine Lichtrichtung, zwei Farben.
+
+    Die zwei Pixel bleiben zwei. Ein Umriss AUCH oben braeuchte ein drittes,
+    und weil nur nach oben Platz ist, waere die Spitze dabei um ein Pixel
+    hochgerutscht -- an der Stelle, wo der duenne Teil in den dicken
+    uebergeht, gab das einen sichtbaren Knick.
     """
     px = img.load()
     w, h = img.size
@@ -168,12 +176,6 @@ def shade_tip(img, thin, mid, dark):
         top, bottom = sorted(pts, key=lambda p: p[0] + p[1])
         px[top] = mid + (255,)
         px[bottom] = dark + (255,)
-        # Und darueber der Umriss. Unten steht er schon (der dunkle Ton IST
-        # der Umrisston); oben lag der Schaft blank am Hintergrund. Innerhalb
-        # einer Scheibe geht "hoeher" um (-1,-1).
-        ax, ay = top[0] - 1, top[1] - 1
-        if 0 <= ax < w and 0 <= ay < h and px[ax, ay][3] == 0:
-            px[ax, ay] = dark + (255,)
     return img
 
 def gild_tip(img, gold, gold_dark, span=9):
@@ -436,7 +438,10 @@ def main():
 
     thin = set(groups["shaft"]) | set(groups["outline"])
     mid = Counter(groups["shaft"]).most_common(1)[0][0]
-    dark = Counter(groups["outline"]).most_common(1)[0][0]
+    # Der DUNKELSTE Umrisston, nicht der haeufigste: der haeufigste ist ein
+    # blaugraues 232932 und war neben dem Schaft kaum vom Schaft zu
+    # unterscheiden.
+    dark = min(groups["outline"], key=lum)
     golds = Counter(groups["brass"]).most_common()
     gold = max(g for g, _ in golds)          # der hellste Messington
     gold_dark = min(g for g, _ in golds)
