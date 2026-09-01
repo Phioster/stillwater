@@ -24,6 +24,7 @@ Wie weit die Faust reicht, wird an den fertigen Figurenblaettern abgetastet
 import math
 import os
 import re
+from collections import Counter
 
 from PIL import Image
 
@@ -57,7 +58,11 @@ STUB = 5
 ## Getastet wird NUR auf der Hautebene. Beim Wurf haelt sie die Rute neben
 ## dem Kopf, und ueber den ganzen Umriss zu tasten lief durch den Zopf
 ## weiter -- dann wurde die halbe Rute abgeschnitten.
-LAYER_SHEETS = ["char_skin_0"]
+SKIN = ["char_skin_0"]
+## Beschnitten wird dagegen am ganzen Umriss: das Griffende laeuft hinter der
+## Faust ueber den Unterarm, und dort gehoert es nach HINTEN.
+SILHOUETTE = ["char_skin_0", "char_pants_0", "char_shirt_0",
+              "char_hair_0", "char_base_0"]
 
 def read_ints(name):
     head = "const %s: Array[Vector2i] = [" % name
@@ -137,6 +142,32 @@ def shade_cork(img, cork):
         # Quer zur Rute ist "unten" die Richtung wachsender Summe x+y.
         for x, y in sorted(pts, key=lambda p: -(p[0] + p[1]))[:2]:
             px[x, y] = dark + (255,)
+    return img
+
+def shade_tip(img, thin, mid, dark):
+    """Nimmt der Spitze das Grelle.
+
+    Wo die Rute nur noch zwei Pixel dick ist, war einer davon der HELLSTE
+    Schaftton -- und er sprang von Scheibe zu Scheibe die Seite. Als duenne
+    Linie gelesen war das ein helles Flimmern statt einer Rutenspitze. Jetzt
+    liegt oben der mittlere Ton und unten der dunkle, in jeder Scheibe
+    gleich: eine Lichtrichtung, zwei Farben, dunkler als vorher.
+    """
+    px = img.load()
+    w, h = img.size
+    slices = {}
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3]:
+                slices.setdefault(x - y, []).append((x, y))
+    for pts in slices.values():
+        if len(pts) != 2:
+            continue
+        if any(px[x, y][:3] not in thin for x, y in pts):
+            continue
+        top, bottom = sorted(pts, key=lambda p: p[0] + p[1])
+        px[top] = mid + (255,)
+        px[bottom] = dark + (255,)
     return img
 
 def lengthen(img, steps, cuts):
@@ -252,10 +283,10 @@ def is_shaft(pixel):
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     return a > 0 and lum >= 45 and (r - b) <= 45
 
-def figure_layers():
-    """Die fertigen Figurenblaetter -- fuer den Umriss der Faust."""
+def figure_layers(names):
+    """Fertige Figurenblaetter laden."""
     out = []
-    for name in LAYER_SHEETS:
+    for name in names:
         path = os.path.join(OUT, "%s.png" % name)
         if os.path.exists(path):
             img = Image.open(path).convert("RGBA")
@@ -286,7 +317,7 @@ def skin_run(layers, frame, anchor, step, size):
                 break
     return reach
 
-def cut_at_hand(sheet, frame, anchor, direction, front, back, size):
+def cut_at_hand(sheet, frame, anchor, direction, front, back, size, body):
     """Nimmt die Rute dort weg, wo die Faust sie verdeckt.
 
     Zwei Schnitte, beide senkrecht auf der Rute und deshalb gerade: vor der
@@ -303,6 +334,11 @@ def cut_at_hand(sheet, frame, anchor, direction, front, back, size):
                 continue
             along = (x - ax) * direction.real + (y - ay) * direction.imag
             if back <= along < front or along < back - STUB:
+                px[ox + x, y] = (0, 0, 0, 0)
+            elif along < back and any(lp[ox + x, y][3] > 0 for _, lp in body):
+                # Der Stummel liegt hinter der Figur, nicht auf ihr. Pixel
+                # fuer Pixel am Umriss beschnitten -- ein gerader Schnitt
+                # koennte das nicht, der Unterarm laeuft ja quer dazu.
                 px[ox + x, y] = (0, 0, 0, 0)
 
 def draw_cast(sheet, frame, anchor, tip, size, tones):
@@ -358,7 +394,8 @@ def main():
     idle = read_int("CAST_START")   # Ruhelauf UND Blinzeln tragen die Vorlage
     anchors = read_ints("ROD_ANCHOR")
     tips = read_ints("ROD_TIP_OFF")
-    layers = figure_layers()
+    skin = figure_layers(SKIN)
+    body = figure_layers(SILHOUETTE)
     groups = classify(rod)
     base = {
         "cork": average(groups["cork"], (140, 90, 50)),
@@ -367,8 +404,11 @@ def main():
         "shaft": average(groups["shaft"], (70, 76, 86)),
     }
 
-    small = lengthen(shade_cork(shrink(rod), base["cork"]),
-                     STRETCH, STRETCH_CUTS)
+    thin = set(groups["shaft"]) | set(groups["outline"])
+    mid = Counter(groups["shaft"]).most_common(1)[0][0]
+    dark = Counter(groups["outline"]).most_common(1)[0][0]
+    small = lengthen(shade_tip(shade_cork(shrink(rod), base["cork"]),
+                               thin, mid, dark), STRETCH, STRETCH_CUTS)
     gx, gy = grip_of(small)
     tx, ty = tip_of(small)
     print("ROD_TIP_OFF Ruhelauf: Vector2i(%d, %d)" % (tx - gx, ty - gy))
@@ -400,9 +440,9 @@ def main():
         for f in range(frames):
             d = complex(tips[f][0], tips[f][1])
             d = d / abs(d)
-            front = skin_run(layers, f, anchors[f], d, size)
-            back = -skin_run(layers, f, anchors[f], -d, size)
-            cut_at_hand(sheet, f, anchors[f], d, front, back, size)
+            front = skin_run(skin, f, anchors[f], d, size)
+            back = -skin_run(skin, f, anchors[f], -d, size)
+            cut_at_hand(sheet, f, anchors[f], d, front, back, size, body)
         sheet.save(os.path.join(OUT, "char_rod_%d.png" % variant))
     print("%d Rutenblaetter geschrieben" % len(SHAFT_TONES))
 
