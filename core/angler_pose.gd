@@ -46,14 +46,15 @@ const ROD_ANCHOR: Array[Vector2i] = [
 	Vector2i(170, 98), Vector2i(168, 130),
 ]
 ## Die Spitze, relativ zum Griff. Die Ruheposen tragen den Versatz der
-## gezeichneten Rute (assets/source/rod_45.png, auf 0.7 verkleinert): die
-## Hand liegt in der MITTE des Korkgriffs, die Spitze 58 rechts und 57 ueber
-## ihr. Gemessen und nicht gewaehlt -- tools/import_rod.py rechnet den Wert
-## aus und schreibt ihn beim Bauen auf die Konsole.
+## gezeichneten Rute (assets/source/rod_45.png, auf 0.7 verkleinert und
+## entlang der Achse wieder gestreckt): die Hand liegt in der MITTE des
+## Korkgriffs, die Spitze 83 rechts und 82 ueber ihr. Gemessen und nicht
+## gewaehlt -- tools/import_rod.py rechnet den Wert aus und schreibt ihn
+## beim Bauen auf die Konsole.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(58, -57), Vector2i(58, -57), Vector2i(58, -57),
-	Vector2i(58, -57),
-	Vector2i(58, -57),
+	Vector2i(83, -82), Vector2i(83, -82), Vector2i(83, -82),
+	Vector2i(83, -82),
+	Vector2i(83, -82),
 	Vector2i(60, -85), Vector2i(-40, -70), Vector2i(-65, -45),
 	Vector2i(65, -70), Vector2i(75, -40),
 ]

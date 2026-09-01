@@ -44,6 +44,16 @@ HAND_REACH = 14
 ## Auf 0.7 verkleinert sind es sieben, und die Rute liegt IN der Hand statt
 ## neben ihr. Weiter herunter ging nicht: bei 0.6 zerfaellt die Rolle.
 SCALE = 0.7
+## Verkleinern kuerzt die Rute mit, und kurz sah sie falsch aus. Der Schaft
+## wird deshalb entlang seiner Achse wieder gestreckt -- nur der Schaft, die
+## Dicke bleibt. Fuenfundzwanzig Schritte bringen sie auf ihre alte Laenge.
+STRETCH = 25
+## Wo gestreckt wird: drei Stellen im glatten Schaft, zwischen den Ringen.
+## An einer Stelle allein klafft eine Luecke, und ueber Ring oder Rolle
+## gestreckt werden die oval.
+STRETCH_CUTS = [15, 42, 59]
+## Wie weit das Griffende hinten aus der Faust schaut.
+STUB = 5
 ## Getastet wird NUR auf der Hautebene. Beim Wurf haelt sie die Rute neben
 ## dem Kopf, und ueber den ganzen Umriss zu tasten lief durch den Zopf
 ## weiter -- dann wurde die halbe Rute abgeschnitten.
@@ -107,6 +117,68 @@ def shrink(img):
             best = min(palette, key=lambda c: (c[0] - r) ** 2 + (c[1] - g) ** 2
                        + (c[2] - b) ** 2)
             px[x, y] = best + (255,)
+    return out
+
+def shade_cork(img, cork):
+    """Gibt dem Korkgriff eine zweite, dunklere Farbe an der Unterseite.
+
+    Die Vorlage hat fuer den Kork genau EINEN Ton -- als Block sieht der
+    flach aus, waehrend der Schaft schon Glanz und Schatten hat.
+    """
+    dark = tuple(int(c * 0.68) for c in cork)
+    px = img.load()
+    w, h = img.size
+    slices = {}
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] and px[x, y][:3] == cork:
+                slices.setdefault(x - y, []).append((x, y))
+    for pts in slices.values():
+        # Quer zur Rute ist "unten" die Richtung wachsender Summe x+y.
+        for x, y in sorted(pts, key=lambda p: -(p[0] + p[1]))[:2]:
+            px[x, y] = dark + (255,)
+    return img
+
+def lengthen(img, steps, cuts):
+    """Streckt die Rute entlang ihrer Achse, ohne sie dicker zu machen.
+
+    Die Rute laeuft genau diagonal, also ist eine Scheibe quer zu ihr die
+    Menge der Pixel mit gleichem x-y. Gestreckt wird, indem an ein paar
+    Stellen solche Scheiben verdoppelt werden und alles dahinter um (1,-1)
+    weiterrueckt. Ringe, Rolle und Kork bleiben dabei Pixel fuer Pixel wie
+    gezeichnet -- ein Verzerren des ganzen Bildes haette die Rolle zum Ei
+    gemacht.
+    """
+    if steps <= 0:
+        return img
+    share = [steps // len(cuts)] * len(cuts)
+    for i in range(steps - sum(share)):
+        share[i] += 1
+    px = img.load()
+    w, h = img.size
+    src = {}
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3]:
+                src.setdefault(x - y, []).append((x, y, px[x, y]))
+    out = Image.new("RGBA", (w + 2 * steps, h + 2 * steps), (0, 0, 0, 0))
+    q = out.load()
+
+    def put(x, y, color):
+        bx, by = x + steps, y + steps
+        if 0 <= bx < out.size[0] and 0 <= by < out.size[1]:
+            q[bx, by] = color
+
+    for c in sorted(src):
+        moved = sum(t for cut, t in zip(cuts, share) if cut < c - 1)
+        for x, y, color in src[c]:
+            put(x + moved, y - moved, color)
+    for cut, count in zip(cuts, share):
+        base = sum(t for other, t in zip(cuts, share) if other < cut)
+        for j in range(1, count + 1):
+            for c in (cut, cut + 1):
+                for x, y, color in src.get(c, []):
+                    put(x + base + j, y - base - j, color)
     return out
 
 def tip_of(img):
@@ -190,39 +262,37 @@ def figure_layers():
             out.append((img, img.load()))
     return out
 
-def hand_front(layers, frame, anchor, direction, size):
-    """Wie weit die Faust in Rutenrichtung reicht -- in Pixeln ab dem Anker.
+def skin_run(layers, frame, anchor, step, size):
+    """Wie weit die Hand ab dem Anker in Richtung `step` reicht.
 
-    Genau bis zum letzten Handpixel, nicht einen weiter: die Faust ist vorn
-    rund, die Schnittkante gerade. Ein Pixel Luft dazwischen sieht aus, als
-    schwebe die Rute neben der Hand.
-
-    Abgetastet statt geschaetzt: die Hand steht in jeder Pose woanders und
+    Getastet und nicht geschaetzt: die Hand steht in jeder Pose woanders und
     ist beim Wurf anders gedreht.
     """
     ax, ay = anchor
     reach, miss = 0, 0
     for k in range(HAND_REACH + 1):
-        x = int(round(ax + direction.real * k))
-        y = int(round(ay + direction.imag * k))
+        x = int(round(ax + step.real * k))
+        y = int(round(ay + step.imag * k))
         if not (0 <= x < size and 0 <= y < size):
             break
         if any(lp[frame * size + x, y][3] > 0 for _, lp in layers):
             reach, miss = k, 0
         else:
             # Ein Loch ueberspringen (der Umriss hat Luecken), zwei nicht:
-            # sonst laeuft der Taster beim Wurf durch die Luft weiter in
-            # die Haare und schneidet die halbe Rute ab.
+            # sonst laeuft der Taster durch die Luft weiter in den naechsten
+            # Koerperteil und schneidet die halbe Rute ab.
             miss += 1
             if miss > 1:
                 break
     return reach
 
-def cut_behind_hand(sheet, frame, anchor, direction, front, size):
-    """Nimmt alles weg, was hinter der Faust liegt.
+def cut_at_hand(sheet, frame, anchor, direction, front, back, size):
+    """Nimmt die Rute dort weg, wo die Faust sie verdeckt.
 
-    Ein Halbebenen-Schnitt: die Kante steht senkrecht auf der Rute und ist
-    deshalb gerade, egal wie die Rute liegt.
+    Zwei Schnitte, beide senkrecht auf der Rute und deshalb gerade: vor der
+    Faust steht die Rute, hinter ihr schaut ein kurzer Stummel Griffende
+    heraus. Ohne Stummel steckt der Griff ganz in der Faust; mit dem ganzen
+    Griffende lag er quer ueber dem Unterarm.
     """
     ox = frame * size
     ax, ay = anchor
@@ -232,7 +302,7 @@ def cut_behind_hand(sheet, frame, anchor, direction, front, size):
             if px[ox + x, y][3] == 0:
                 continue
             along = (x - ax) * direction.real + (y - ay) * direction.imag
-            if along < front:
+            if back <= along < front or along < back - STUB:
                 px[ox + x, y] = (0, 0, 0, 0)
 
 def draw_cast(sheet, frame, anchor, tip, size, tones):
@@ -297,7 +367,8 @@ def main():
         "shaft": average(groups["shaft"], (70, 76, 86)),
     }
 
-    small = shrink(rod)
+    small = lengthen(shade_cork(shrink(rod), base["cork"]),
+                     STRETCH, STRETCH_CUTS)
     gx, gy = grip_of(small)
     tx, ty = tip_of(small)
     print("ROD_TIP_OFF Ruhelauf: Vector2i(%d, %d)" % (tx - gx, ty - gy))
@@ -327,11 +398,11 @@ def main():
         for f in range(idle, frames):
             draw_cast(sheet, f, anchors[f], tips[f], size, tones)
         for f in range(frames):
-            tip = tips[f]
-            d = complex(tip[0], tip[1])
+            d = complex(tips[f][0], tips[f][1])
             d = d / abs(d)
-            front = hand_front(layers, f, anchors[f], d, size)
-            cut_behind_hand(sheet, f, anchors[f], d, front, size)
+            front = skin_run(layers, f, anchors[f], d, size)
+            back = -skin_run(layers, f, anchors[f], -d, size)
+            cut_at_hand(sheet, f, anchors[f], d, front, back, size)
         sheet.save(os.path.join(OUT, "char_rod_%d.png" % variant))
     print("%d Rutenblaetter geschrieben" % len(SHAFT_TONES))
 
