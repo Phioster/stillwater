@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 """Baut die Figurenebenen aus den gezeichneten Vorlagen.
 
-Die Anglerin kommt aus `assets/source/`: ein Streifen mit vier Ruhebildern,
-ein Blinzelbild und fuenf Wurfbilder. Dieses Werkzeug macht daraus die zehn
+Die Anglerin kommt aus `assets/source/`: ein Streifen mit neun Ruhebildern,
+ein Blinzelbild und fuenf Wurfbilder. Dieses Werkzeug macht daraus die 23
 Bilder, die das Spiel braucht:
 
-    0-3   Ruhelauf  -- die vier gezeichneten Bilder des Atemzugs
-    4     Blinzeln  -- Auge aus dem gezeichneten Blinzelbild, Rest wie 0
-    5-9   Wurf      -- die fuenf gezeichneten Posen
+    0-8    Ruhelauf  -- ein Atemzug von der Ruhe bis zum Umkehrpunkt
+    9-17   Blinzeln  -- zu JEDEM Ruhebild eins, Augen zu, Koerper gleich
+    18-22  Wurf      -- die fuenf gezeichneten Posen
 
-Der Ruhelauf laeuft als Pingpong 0-1-2-3-2-1 (siehe AnglerPose.IDLE_ORDER):
-Bild 3 ist der Umkehrpunkt, nicht die Rueckkehr zum Anfang. Direkt von 3 auf
-0 zu springen aendert dreimal so viele Umrisspixel wie jeder andere Schritt,
-und der Zopf wird sichtbar zurueckgerissen.
+Jedes Ruhebild hat seinen eigenen Blinzelzwilling, weil der Scheitel ueber
+den Atemzug acht Pixel wandert: mit nur einem Blinzelbild spraenge der Kopf
+fuer den Sekundenbruchteil des Blinzelns auf die Haltung von Bild 0 zurueck.
 
-Die vier Ruhebilder entstehen in EINER Generierung als ein Streifen. Vier
-getrennte Bilder waeren vier leicht verschiedene Figuren -- andere Palette,
-andere Proportionen -- und das flackert in Bewegung.
+Der Ruhelauf laeuft als Pingpong 0-1-...-8-7-...-1 (AnglerPose.IDLE_ORDER):
+Bild 8 ist der Umkehrpunkt, nicht die Rueckkehr zum Anfang. Direkt von 8 auf
+0 zu springen aendert 2486 Umrisspixel, der groesste Schritt innerhalb der
+Schwingung dagegen 1949 -- der Zopf wuerde sichtbar zurueckgerissen.
+
+Die neun Ruhebilder entstehen in EINER Generierung: zwei gezeichnete
+Endposen gehen an PixelLab, das die sieben Bilder dazwischen rechnet. Beide
+Endposen kommen unveraendert zurueck (nachgemessen: null abweichende
+Umrisspixel), und die Faust steht in allen neun auf demselben Pixel -- sonst
+wuerde die Angel bei jedem Atemzug mitwandern.
 
 Die Kosmetik braucht Ebenen, das flache Bild hat keine. Zerlegt wird
 deshalb ueber die PALETTE, nicht ueber die Pixel: achtzehn der dreissig
@@ -38,9 +44,10 @@ SRC = os.path.join(ROOT, "assets", "source")
 OUT = os.path.join(ROOT, "assets", "art")
 
 FRAME = 256
-IDLE = 4
+IDLE = 9
 CAST = 5
-FRAMES = IDLE + 1 + CAST
+## Jedes Ruhebild hat seinen Blinzelzwilling, deshalb IDLE zweimal.
+FRAMES = IDLE * 2 + CAST
 
 ## Koerpermass, an dem alle Posen ausgerichtet werden: Scheitel bis Sohle.
 ## Nicht die Bildhoehe -- der Zopf steht je nach Pose verschieden weit ab.
@@ -83,64 +90,22 @@ def measure(img):
           if px[x, sole][3] > 128 or px[x, max(0, sole - 2)][3] > 128]
     return top, sole, (min(xs) + max(xs)) // 2
 
-def split_figures(path, count):
-    """Zerlegt einen Streifen in seine Figuren.
+def idle_frames():
+    """Die Ruhebilder aus ihrem Streifen holen.
 
-    Nicht in gleich breite Felder schneiden: die Zoepfe schwingen ueber die
-    Feldgrenze hinweg, im Streifen bis zu 60 Pixel weit. Jede Figur ist aber
-    eine zusammenhaengende Flaeche, also wird gefuellt statt geschnitten --
-    dann kommt der Zopf mit, egal wo er hinreicht.
+    Nur zerschneiden, NICHT durch prepare_image() schicken: die Bilder liegen
+    schon im 256er Raster, weil sie genau daraus ausgeschnitten und wieder
+    hineingesetzt wurden. Sie neu auszumessen und auf die Fusszeile zu
+    schieben verschoebe jedes Bild um ein Pixel hin und her -- und genau
+    dieses Zittern soll der Ruhelauf ja nicht haben.
     """
-    img = Image.open(path).convert("RGBA")
-    w, h = img.size
-    px = img.load()
-    solid = bytearray(w * h)
-    for y in range(h):
-        for x in range(w):
-            if px[x, y][3] > 128:
-                solid[y * w + x] = 1
-    seen = bytearray(w * h)
-    blobs = []
-    for sy in range(h):
-        for sx in range(w):
-            if not solid[sy * w + sx] or seen[sy * w + sx]:
-                continue
-            stack = [(sx, sy)]
-            seen[sy * w + sx] = 1
-            pts = []
-            while stack:
-                x, y = stack.pop()
-                pts.append((x, y))
-                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    nx, ny = x + dx, y + dy
-                    if 0 <= nx < w and 0 <= ny < h and solid[ny * w + nx] \
-                            and not seen[ny * w + nx]:
-                        seen[ny * w + nx] = 1
-                        stack.append((nx, ny))
-            if len(pts) > 5000:
-                blobs.append(pts)
-    if len(blobs) != count:
-        raise SystemExit("%s: %d Figuren gefunden, %d erwartet"
-                         % (os.path.basename(path), len(blobs), count))
-    # Nach der Sohlenmitte sortieren, nicht nach dem linken Rand: der Zopf
-    # der rechten Figur reicht weiter nach links als der Koerper der linken.
-    def sole_mid(pts):
-        bottom = max(p[1] for p in pts)
-        row = [p[0] for p in pts if p[1] > bottom - 20]
-        return (min(row) + max(row)) // 2
-    blobs.sort(key=sole_mid)
-    out = []
-    for pts in blobs:
-        x0 = min(p[0] for p in pts)
-        y0 = min(p[1] for p in pts)
-        x1 = max(p[0] for p in pts)
-        y1 = max(p[1] for p in pts)
-        cut = Image.new("RGBA", (x1 - x0 + 1, y1 - y0 + 1), (0, 0, 0, 0))
-        cp = cut.load()
-        for x, y in pts:
-            cp[x - x0, y - y0] = px[x, y]
-        out.append(cut)
-    return out
+    strip = Image.open(os.path.join(SRC, "angler_idle_frames.png")).convert("RGBA")
+    count = strip.size[0] // FRAME
+    if count != IDLE or strip.size[1] != FRAME:
+        raise SystemExit("angler_idle_frames.png: %s passt nicht zu %d Bildern à %d"
+                         % (strip.size, IDLE, FRAME))
+    return [strip.crop((i * FRAME, 0, (i + 1) * FRAME, FRAME))
+            for i in range(count)]
 
 def prepare(path):
     """Vorlage -> 256er Rahmen."""
@@ -189,8 +154,10 @@ def apply_palette(img, palette):
             px[x, y] = (0, 0, 0, 0) if a < 128 else (r, g, b, 255)
     return flat
 
-## Das Fenster, in dem das Auge sitzt (Rahmenkoordinaten).
-EYE_BOX = (102, 52, 162, 98)
+## Das Fenster, in dem das Auge sitzt (Rahmenkoordinaten). Eng halten: das
+## Gesicht ist nur achtzehn Pixel breit, und ein weiteres Fenster nimmt den
+## Pony mit -- dann wechselt beim Blinzeln die Frisur.
+EYE_BOX = (114, 60, 136, 84)
 
 def transplant_blink(base, drawn):
     """Nimmt NUR das Auge aus dem gezeichneten Blinzelbild.
@@ -202,11 +169,14 @@ def transplant_blink(base, drawn):
     """
     pa, pb = base.load(), drawn.load()
     best, score = (0, 0), -1
-    for dy in range(-6, 7):
-        for dx in range(-6, 7):
+    # Suchfenster am Auge ausgerichtet (EYE_BOX), nicht an festen Zahlen:
+    # als die Figur sechs Pixel nach links rueckte, zeigte das alte Fenster
+    # auf die Wange, und der Abgleich zog den Pony mit ins Gesicht.
+    for dy in range(-10, 11):
+        for dx in range(-10, 11):
             hit = 0
-            for y in range(30, 100, 2):
-                for x in range(96, 176, 2):
+            for y in range(EYE_BOX[1] - 22, EYE_BOX[3] + 2, 2):
+                for x in range(EYE_BOX[0] - 6, EYE_BOX[2] + 14, 2):
                     bx, by = x + dx, y + dy
                     if not (0 <= bx < FRAME and 0 <= by < FRAME):
                         continue
@@ -222,6 +192,55 @@ def transplant_blink(base, drawn):
             bx, by = x + dx, y + dy
             if 0 <= bx < FRAME and 0 <= by < FRAME and pb[bx, by][3]:
                 q[x, y] = pb[bx, by]
+    return out
+
+def head_shift(base, other, span=10):
+    """Wie weit der Kopf zwischen zwei Ruhebildern verrutscht ist."""
+    pa, pb = base.load(), other.load()
+    x0, y0, x1, y1 = EYE_BOX
+    best, score = (0, 0), -1
+    for dy in range(-span, span + 1):
+        for dx in range(-span, span + 1):
+            hit = 0
+            for y in range(y0 - 20, y1 + 10):
+                for x in range(x0 - 20, x1 + 20):
+                    bx, by = x + dx, y + dy
+                    if not (0 <= bx < FRAME and 0 <= by < FRAME):
+                        continue
+                    if (pa[x, y][3] > 0) == (pb[bx, by][3] > 0):
+                        hit += 1
+            if hit > score:
+                score, best = hit, (dx, dy)
+    return best
+
+def blink_series(idles, shut):
+    """Zu jedem Ruhebild eins mit geschlossenem Auge.
+
+    Das gezeichnete Blinzelbild laesst sich nur auf die URSPRUENGLICHE
+    Kopfhaltung ausrichten -- mitten im Atemzug steht der Kopf woanders, und
+    der Abgleich zieht dann Haarstraehnen ins Gesicht. Also einmal sauber
+    auf Bild 0 verpflanzen, den fertigen Augenbereich als Flicken nehmen und
+    ihn fuer jedes weitere Bild dorthin schieben, wo dessen Kopf steht.
+    """
+    first = transplant_blink(idles[0], shut)
+    # NUR die Pixel uebernehmen, die das Blinzeln wirklich aendert. Das ganze
+    # Augenfenster zu kopieren brachte auch Wange und Pony aus Bild 0 mit --
+    # gemessen 1150 statt 350 abweichende Pixel, und der Pony sprang.
+    pa, pb = idles[0].load(), first.load()
+    patch = [(x, y, pb[x, y])
+             for y in range(EYE_BOX[1], EYE_BOX[3])
+             for x in range(EYE_BOX[0], EYE_BOX[2])
+             if pa[x, y] != pb[x, y]]
+    out = [first]
+    for img in idles[1:]:
+        dx, dy = head_shift(idles[0], img)
+        copy = img.copy()
+        q = copy.load()
+        for x, y, color in patch:
+            bx, by = x + dx, y + dy
+            if 0 <= bx < FRAME and 0 <= by < FRAME:
+                q[bx, by] = color
+        out.append(copy)
     return out
 
 def blink(base):
@@ -341,14 +360,17 @@ def rod_grip(img):
     return (right - 7, (min(ys) + max(ys)) // 2 + 2)
 
 def main():
-    idles = [prepare_image(f) for f in
-             split_figures(os.path.join(SRC, "angler_idle_frames.png"), IDLE)]
-    frames = list(idles)
+    idles = idle_frames()
+    # Jedes Ruhebild bekommt seinen eigenen Blinzelzwilling. EIN Blinzelbild
+    # fuer den ganzen Ruhelauf hiesse: blinzelt sie mitten im Atemzug,
+    # springt der Kopf auf die Haltung von Bild 0 zurueck -- ueber den
+    # Atemzug wandert der Scheitel acht Pixel, das sieht man.
     drawn_blink = os.path.join(SRC, "angler_blink.png")
     if os.path.exists(drawn_blink):
-        frames.append(transplant_blink(idles[0], prepare(drawn_blink)))
+        blinks = blink_series(idles, prepare(drawn_blink))
     else:
-        frames.append(blink(idles[0]))
+        blinks = [blink(f) for f in idles]
+    frames = idles + blinks
     for i in range(1, CAST + 1):
         frames.append(prepare(os.path.join(SRC, "angler_cast_%d.png" % i)))
     palette = shared_palette(frames)
@@ -372,8 +394,9 @@ def main():
     sheet(frames, groups, "base").save(os.path.join(OUT, "char_base_0.png"))
     written += 1
     print("%d Blaetter geschrieben" % written)
-    print("ROD_ANCHOR 0-%d: %s" % (IDLE, ", ".join(
-        "Vector2i(%d, %d)" % rod_grip(f) for f in frames[:IDLE + 1])))
+    print("ROD_ANCHOR 0-%d (Ruhelauf und Blinzeln):\n\t%s," % (IDLE * 2 - 1,
+        ", ".join("Vector2i(%d, %d)" % rod_grip(f)
+                  for f in frames[:IDLE * 2])))
 
 if __name__ == "__main__":
     main()
