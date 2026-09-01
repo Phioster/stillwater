@@ -373,51 +373,72 @@ def cut_at_hand(sheet, frame, anchor, direction, front, back, size, body):
                 # koennte das nicht, der Unterarm laeuft ja quer dazu.
                 px[ox + x, y] = (0, 0, 0, 0)
 
-def draw_cast(sheet, frame, anchor, tip, size, tones):
-    """Zeichnet die Rute fuer eine Wurfpose -- Pixel fuer Pixel."""
+def rod_profile(art):
+    """Die Rute als Querschnitt statt als Bild.
+
+    Jeder Pixel bekommt zwei Zahlen: wie weit er auf der Rutenachse vom Griff
+    entfernt liegt (t) und wie weit quer dazu (s). In dieser Form laesst sie
+    sich in JEDEM Winkel neu zeichnen. Ein fertiges Bild zu drehen macht es
+    verwaschen oder ausgefranst -- drei Anlaeufe von Hand, alle verworfen, und
+    ein Bildmodell hat die Rute auf Zuruf nicht gedreht, sondern verschoben
+    (13 Bilder, Winkel durchgehend 45 bis 49 Grad).
+
+    Der Kork, die Ringe und die Rolle kommen dabei von selbst mit: die Rolle
+    haengt im Profil zwanzig Pixel quer zur Achse und bleibt dort, egal wohin
+    die Rute zeigt.
+    """
+    px = art.load()
+    w, h = art.size
+    gx, gy = grip_of(art)
+    tx, ty = tip_of(art)
+    length = math.hypot(tx - gx, ty - gy)
+    ux, uy = (tx - gx) / length, (ty - gy) / length
+    nx, ny = -uy, ux
+    grid = {}
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] > 128:
+                vx, vy = x - gx, y - gy
+                t = vx * ux + vy * uy
+                sp = vx * nx + vy * ny
+                grid.setdefault((int(round(t)), int(round(sp))), []).append(
+                    (t, sp, px[x, y]))
+    return grid, length
+
+## Wie nah ein Zielpixel an einem Profilpunkt liegen muss. Die Profilpunkte
+## bilden ein gedrehtes Einheitsgitter, der groesste Abstand ist also die
+## halbe Diagonale: 0,71. Etwas Reserve, damit keine Loecher bleiben.
+NEAR = 0.8
+
+def sweep_rod(sheet, frame, anchor, tip_off, grid, src_len, size):
+    """Zeichnet die Rute in der Richtung dieser Pose.
+
+    Rueckwaerts abgebildet -- fuer jeden Zielpixel wird der naechste
+    Profilpunkt gesucht. Vorwaerts blieben Luecken, wo die Achse sich dreht.
+    """
     ox = frame * size
-    a = complex(*anchor)
-    b = complex(anchor[0] + tip[0], anchor[1] + tip[1])
-    direction = (b - a) / abs(b - a)
-    down = complex(-direction.imag, direction.real)
-    if down.imag < 0:
-        down = -down
-    length = abs(b - a)
+    ax, ay = anchor
+    length = math.hypot(tip_off[0], tip_off[1])
+    ux, uy = tip_off[0] / length, tip_off[1] / length
+    nx, ny = -uy, ux
+    stretch = length / src_len
     px = sheet.load()
-
-    def put(p, color):
-        x, y = int(round(p.real)), int(round(p.imag))
-        if 0 <= x < size and 0 <= y < size:
-            px[ox + x, y] = color + (255,)
-
-    steps = int(length * 3)
-    for i in range(steps + 1):
-        t = i / steps
-        p = a + (b - a) * t
-        thick = 6 if t < 0.6 else 4
-        for k in range(thick):
-            q = p + down * k
-            if t < 0.20:
-                put(q, tones["cork"])
-            elif k == 0:
-                put(q, tones["shine"])
-            elif k == thick - 1:
-                put(q, tones["shadow"])
-            else:
-                put(q, tones["shaft"])
-        put(p - down, tones["outline"])
-        put(p + down * thick, tones["outline"])
-    for r in (0.42, 0.62, 0.82):
-        p = a + (b - a) * r
-        for k in range(3):
-            put(p + down * k, tones["brass"])
-    reel = a + (b - a) * 0.24 + down * 7
-    for dy in range(-6, 7):
-        for dx in range(-6, 7):
-            d = math.hypot(dx, dy)
-            if d <= 5.5:
-                put(reel + complex(dx, dy),
-                    tones["outline"] if d > 4.0 else tones["shaft"])
+    reach = int(src_len * max(stretch, 1.0)) + 26
+    for y in range(max(0, ay - reach), min(size, ay + reach + 1)):
+        for x in range(max(0, ax - reach), min(size, ax + reach + 1)):
+            vx, vy = x - ax, y - ay
+            t = (vx * ux + vy * uy) / stretch
+            sp = vx * nx + vy * ny
+            best, dist = None, NEAR
+            ti, si = int(round(t)), int(round(sp))
+            for dt in (-1, 0, 1):
+                for ds in (-1, 0, 1):
+                    for pt, ps, color in grid.get((ti + dt, si + ds), ()):
+                        d = math.hypot(pt - t, ps - sp)
+                        if d < dist:
+                            dist, best = d, color
+            if best is not None:
+                px[ox + x, y] = best
 
 def main():
     rod = Image.open(SOURCE).convert("RGBA")
@@ -470,13 +491,12 @@ def main():
         for f in range(idle):
             ax, ay = anchors[f]
             sheet.alpha_composite(art, (f * size + ax - gx, ay - gy))
-        tones = dict(base)
-        if target:
-            tones["shaft"] = target
-        tones["shine"] = tuple(min(255, int(c * 1.25)) for c in tones["shaft"])
-        tones["shadow"] = tuple(int(c * 0.6) for c in tones["shaft"])
+        # Die Wurfposen bekommen dieselbe gezeichnete Rute, nur in ihre
+        # Richtung gelegt -- frueher war sie dort nachgemalt und damit die
+        # einzige Figurengrafik im Bild, die nicht gezeichnet war.
+        grid, src_len = rod_profile(art)
         for f in range(idle, frames):
-            draw_cast(sheet, f, anchors[f], tips[f], size, tones)
+            sweep_rod(sheet, f, anchors[f], tips[f], grid, src_len, size)
         for f in range(frames):
             d = complex(tips[f][0], tips[f][1])
             d = d / abs(d)

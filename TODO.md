@@ -128,20 +128,16 @@ Bildgröße 64 Pixel je Frame, fünf Rahmen, Vergrößerung in der Welt 2 statt 
   jeder andere Schritt, und der Zopf wird sichtbar zurückgerissen. Der Wurf
   läuft über `FishingSim.CAST_TIME` ab, hängt also am selben Zähler wie der
   Kern; der Ruhelauf zählt für sich weiter.
-- Die **Rute** ist die einzige Figurengrafik, die noch gerechnet wird
-  (`gen_sprites.gd::_rod`): verjüngt sich zur Spitze, biegt sich beim
-  Schwung, dunkler Umriss, Glanzkante, Wicklung am Griff, kleine Rolle. Jede
-  Pose hat eigenen Griff und eigene Richtung (`core/angler_pose.gd`).
-  Form und Farben sind an einer **gezeichneten Vorlage gemessen** (lokal mit
-  AziibPixelMix erzeugt): durchgehend zwei Pixel stark, dunkelbraun am Griff,
-  fast schwarz an der Spitze, kleiner Haken am Ende. Die Verjüngung liegt in
-  der Farbe, nicht in der Dicke — eine Rute, die zur Spitze dünner wird,
-  franst bei 30 Pixeln zu einem Faden aus.
-
-  **Nicht gedreht, sondern gezeichnet.** Ein fertiges Rutenbild in zehn
-  Winkel zu drehen macht es entweder verwaschen (weiche Abtastung) oder
-  ausgefranst (harte) — drei Anläufe, alle verworfen. Gerechnet ist jeder
-  Pixel gesetzt.
+- ~~Die **Rute** ist die einzige Figurengrafik, die noch gerechnet wird~~ —
+  erledigt: sie ist gezeichnet (`assets/source/rod_45.png`) und wird für die
+  Wurfposen nicht mehr nachgemalt, sondern als **Querschnittsprofil** in deren
+  Richtung gelegt (`tools/import_rod.py::rod_profile`/`sweep_rod`). Jeder
+  Pixel bekommt zwei Zahlen — wie weit auf der Rutenachse, wie weit quer dazu
+  — und wird rückwärts abgebildet. Kork, Ringe und Rolle kommen dabei von
+  selbst mit. Ein fertiges Bild zu **drehen** geht nicht: von Hand wird es
+  verwaschen oder ausgefranst (drei Anläufe), und ein Bildmodell hat die Rute
+  auf Zuruf nicht gedreht, sondern über die Leinwand geschoben (13 Bilder,
+  Winkel durchgehend 45–49 Grad).
 - Die **Formvarianten** bei Oberteil und Hose (Lederjacke, Weste, Shorts,
   Rock) sind zurzeit nur Umfärbungen derselben Form.
 
