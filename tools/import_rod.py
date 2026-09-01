@@ -168,6 +168,36 @@ def shade_tip(img, thin, mid, dark):
         top, bottom = sorted(pts, key=lambda p: p[0] + p[1])
         px[top] = mid + (255,)
         px[bottom] = dark + (255,)
+        # Und darueber der Umriss. Unten steht er schon (der dunkle Ton IST
+        # der Umrisston); oben lag der Schaft blank am Hintergrund. Innerhalb
+        # einer Scheibe geht "hoeher" um (-1,-1).
+        ax, ay = top[0] - 1, top[1] - 1
+        if 0 <= ax < w and 0 <= ay < h and px[ax, ay][3] == 0:
+            px[ax, ay] = dark + (255,)
+    return img
+
+def gild_tip(img, gold, gold_dark, span=9):
+    """Faerbt den vordersten Ring gelbgold statt braun.
+
+    Der Ring an der Spitze trug in der Vorlage die braunen Toene der
+    Wicklung und verschwand dadurch fast im Schaft.
+    """
+    px = img.load()
+    w, h = img.size
+    warm = []
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a and r - b > 25 and 0.299 * r + 0.587 * g + 0.114 * b > 30:
+                warm.append((x, y))
+    if not warm:
+        return img
+    edge = max(x - y for x, y in warm)
+    ring = [(x, y) for x, y in warm if x - y > edge - span]
+    for x, y in ring:
+        # Oben hell, unten dunkel -- dieselbe Lichtrichtung wie am Schaft.
+        above = px[x - 1, y - 1] if x and y else (0, 0, 0, 0)
+        px[x, y] = (gold if above[3] == 0 else gold_dark) + (255,)
     return img
 
 def lengthen(img, steps, cuts):
@@ -407,8 +437,13 @@ def main():
     thin = set(groups["shaft"]) | set(groups["outline"])
     mid = Counter(groups["shaft"]).most_common(1)[0][0]
     dark = Counter(groups["outline"]).most_common(1)[0][0]
-    small = lengthen(shade_tip(shade_cork(shrink(rod), base["cork"]),
-                               thin, mid, dark), STRETCH, STRETCH_CUTS)
+    golds = Counter(groups["brass"]).most_common()
+    gold = max(g for g, _ in golds)          # der hellste Messington
+    gold_dark = min(g for g, _ in golds)
+    small = lengthen(
+        gild_tip(shade_tip(shade_cork(shrink(rod), base["cork"]),
+                           thin, mid, dark), gold, gold_dark),
+        STRETCH, STRETCH_CUTS)
     gx, gy = grip_of(small)
     tx, ty = tip_of(small)
     print("ROD_TIP_OFF Ruhelauf: Vector2i(%d, %d)" % (tx - gx, ty - gy))
