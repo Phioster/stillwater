@@ -18,40 +18,48 @@ extends RefCounted
 ## vielen Bildpunkten wie beim 64er-Anfang. Bei 512 füllte sie zwei Drittel
 ## des Bildschirms, und kleiner anzeigen hieße wieder herunterrechnen.
 const FRAME_SIZE: int = 256
-## Zwoelf Bilder: sechs fuer den Ruhelauf, eins fuers Blinzeln, fuenf fuer
-## den Wurf. Der Ruhelauf ist aus dem Ruhebild gerechnet, alles andere ist
-## gezeichnet (siehe tools/import_character.py).
-const FRAMES: int = 12
+## Zehn Bilder: vier fuer den Ruhelauf, eins fuers Blinzeln, fuenf fuer den
+## Wurf. Alle zehn sind gezeichnet (siehe tools/import_character.py).
+const FRAMES: int = 10
 ## Wo der Ruhelauf endet.
-const IDLE_FRAMES: int = 6
+const IDLE_FRAMES: int = 4
 ## Das Blinzeln steht fuer sich: es blitzt gelegentlich dazwischen, statt im
 ## Atemtakt mitzulaufen -- sonst blinzelt sie im Sekundentakt.
-const BLINK_FRAME: int = 6
+const BLINK_FRAME: int = 4
 ## Ab hier laeuft der Wurf.
-const CAST_START: int = 7
+const CAST_START: int = 5
 
-## Der Griff je Pose -- an der Hand der gezeichneten Figur gemessen.
+## Der Ruhelauf laeuft hin und zurueck, nicht im Kreis. Bild 3 ist der
+## Umkehrpunkt des Atemzugs: von dort direkt auf Bild 0 zu springen aendert
+## 3282 Umrisspixel, jeder andere Schritt hoechstens 1860 -- der Zopf wird
+## sichtbar zurueckgerissen. Ueber Bild 2 und 1 zurueck faellt er.
+const IDLE_ORDER: Array[int] = [0, 1, 2, 3, 2, 1]
+
+## Der Griff je Pose -- an der Hand der gezeichneten Figur gemessen
+## (tools/import_character.py, rod_grip). Die Hand steht nicht still: im
+## dritten Ruhebild zieht der Arm zehn Pixel zurueck.
 const ROD_ANCHOR: Array[Vector2i] = [
-	Vector2i(156, 128), Vector2i(156, 127), Vector2i(156, 127),
-	Vector2i(156, 128), Vector2i(156, 129), Vector2i(156, 128),
-	Vector2i(156, 128),
-	Vector2i(148, 100), Vector2i(86, 82), Vector2i(79, 69),
-	Vector2i(176, 98), Vector2i(174, 130),
+	Vector2i(150, 127), Vector2i(154, 126), Vector2i(150, 127),
+	Vector2i(140, 127),
+	Vector2i(150, 127),
+	Vector2i(142, 100), Vector2i(80, 82), Vector2i(73, 69),
+	Vector2i(170, 98), Vector2i(168, 130),
 ]
 ## Die Spitze, relativ zum Griff. Die Ruheposen tragen den Versatz der
-## gezeichneten Rute (assets/source/rod_45.png): Griff (1,97), Spitze (98,1)
-## im Bild, also (97,-96). Gemessen, nicht gewaehlt -- dann liegt die Schnur
-## wirklich an der gezeichneten Spitze an.
+## gezeichneten Rute (assets/source/rod_45.png): die Hand liegt in der MITTE
+## des Korkgriffs bei (16,83), die Spitze bei (98,1) im Bild, also (82,-82).
+## Gemessen, nicht gewaehlt -- dann liegt die Schnur wirklich an der
+## gezeichneten Spitze an.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(97, -96), Vector2i(97, -96), Vector2i(97, -96),
-	Vector2i(97, -96), Vector2i(97, -96), Vector2i(97, -96),
-	Vector2i(97, -96),
+	Vector2i(82, -82), Vector2i(82, -82), Vector2i(82, -82),
+	Vector2i(82, -82),
+	Vector2i(82, -82),
 	Vector2i(60, -85), Vector2i(-40, -70), Vector2i(-65, -45),
 	Vector2i(65, -70), Vector2i(75, -40),
 ]
 ## Wie weit sich die Rute quer zur Achse biegt. Eine gerade Rute sieht aus
 ## wie ein Stock; die Biegung macht aus dem Wurf eine Bewegung.
-const ROD_BEND: Array[float] = [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0,
+const ROD_BEND: Array[float] = [3.0, 3.0, 3.0, 3.0, 3.0,
 	6.0, 8.0, 8.0, -7.0, -4.0]
 
 static func frame_of(frame: int) -> int:

@@ -11,6 +11,13 @@ denselben Farben nachgezeichnet. Ein fertiges Pixelbild in einen anderen
 Winkel zu drehen macht es verwaschen oder ausgefranst -- drei Anlaeufe,
 alle verworfen.
 
+Die Hand fasst die Rute in der MITTE des Korkgriffs, nicht an ihrem Ende:
+der Ankerpunkt traegt den Schwerpunkt des Korks, das Griffende steht hinten
+aus der Faust heraus. Und sie fasst DURCH: wo die Figur eine Faust hat, wird
+die Rute weggenommen, sonst liegt sie wie ein Brett obenauf statt in der
+Hand. Dafuer liest dieses Werkzeug die fertigen Figurenblaetter --
+tools/import_character.py muss also vorher gelaufen sein.
+
     python3 tools/import_rod.py
 """
 import math
@@ -27,6 +34,18 @@ OUT = os.path.join(ROOT, "assets", "art")
 ## Die drei Varianten faerben nur den Schaft um. Kork und Messing bleiben --
 ## eine Silberrute mit silbernem Griff waere ein Barren, keine Rute.
 SHAFT_TONES = [None, "6b4a2c", "b9c3c8"]
+
+## Wie weit die Faust um den Ankerpunkt herum reicht -- an der gezeichneten
+## Figur abgelesen (nach hinten sechs Pixel, nach vorn acht, oben und unten
+## je sieben). Nur in diesem Fenster wird die Rute weggenommen: weiter unten
+## kreuzt sie beim Wurf den Koerper, und dort gehoert sie nach vorn.
+HAND_BOX = (-6, -7, 8, 7)
+## Wie weit das Griffende bei den gemalten Wurfposen hinter der Hand steht.
+## Bei der gezeichneten Vorlage sind es fuenfzehn Pixel.
+BUTT = 15
+## Aus diesen Blaettern entsteht der Umriss der Figur.
+LAYER_SHEETS = ["char_skin_0", "char_pants_0", "char_shirt_0",
+                "char_hair_0", "char_base_0"]
 
 def read_ints(name):
     head = "const %s: Array[Vector2i] = [" % name
@@ -65,7 +84,7 @@ def classify(img):
                 groups["shaft"].append((r, g, b))
     return groups
 
-def grip_of(img):
+def butt_of(img):
     """Das Griffende der Vorlage: der Punkt, der auf der Rutenachse am
     weitesten unten links liegt."""
     px = img.load()
@@ -77,6 +96,33 @@ def grip_of(img):
             if low is None or x - y < low:
                 low, best = x - y, (x, y)
     return best
+
+def grip_of(img):
+    """Die Mitte des Korkgriffs -- dort liegt die Hand.
+
+    Nicht ueber die Farbe allein: die Messingringe am Schaft sind genauso
+    warm wie der Kork. Vom Griffende aus durch die warmen Pixel fluten
+    findet den zusammenhaengenden Korkblock und sonst nichts.
+    """
+    px = img.load()
+    w, h = img.size
+    warm = {(x, y) for y in range(h) for x in range(w)
+            if px[x, y][3] and (px[x, y][0] - px[x, y][2]) > 45}
+    if not warm:
+        return butt_of(img)
+    bx, by = butt_of(img)
+    start = min(warm, key=lambda p: (p[0] - bx) ** 2 + (p[1] - by) ** 2)
+    blob, stack = {start}, [start]
+    while stack:
+        x, y = stack.pop()
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                n = (x + dx, y + dy)
+                if n in warm and n not in blob:
+                    blob.add(n)
+                    stack.append(n)
+    return (round(sum(p[0] for p in blob) / len(blob)),
+            round(sum(p[1] for p in blob) / len(blob)))
 
 def average(colors, fallback):
     if not colors:
@@ -96,6 +142,34 @@ def is_shaft(pixel):
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     return a > 0 and lum >= 45 and (r - b) <= 45
 
+def figure_layers():
+    """Die fertigen Figurenblaetter -- fuer den Umriss der Faust."""
+    out = []
+    for name in LAYER_SHEETS:
+        path = os.path.join(OUT, "%s.png" % name)
+        if os.path.exists(path):
+            img = Image.open(path).convert("RGBA")
+            out.append((img, img.load()))
+    return out
+
+def cut_hand(sheet, frame, anchor, size, layers):
+    """Nimmt die Rute dort weg, wo die Faust ist.
+
+    Die Rute liegt als oberste Ebene ueber der Figur. Ohne diesen Schnitt
+    liegt sie auch ueber den Fingern -- und dann haelt die Anglerin sie
+    nicht, sie klebt an ihr.
+    """
+    ox = frame * size
+    ax, ay = anchor
+    px = sheet.load()
+    x0, y0, x1, y1 = HAND_BOX
+    for y in range(ay + y0, ay + y1 + 1):
+        for x in range(ax + x0, ax + x1 + 1):
+            if not (0 <= x < size and 0 <= y < size):
+                continue
+            if any(lp[ox + x, y][3] > 0 for _, lp in layers):
+                px[ox + x, y] = (0, 0, 0, 0)
+
 def draw_cast(sheet, frame, anchor, tip, size, tones):
     """Zeichnet die Rute fuer eine Wurfpose -- Pixel fuer Pixel."""
     ox = frame * size
@@ -112,6 +186,17 @@ def draw_cast(sheet, frame, anchor, tip, size, tones):
         x, y = int(round(p.real)), int(round(p.imag))
         if 0 <= x < size and 0 <= y < size:
             px[ox + x, y] = color + (255,)
+
+    # Das Griffende steht hinten aus der Faust heraus, wie bei der
+    # gezeichneten Vorlage. Ohne das waechst die Rute aus der Faust heraus.
+    butt = a - direction * BUTT
+    steps_butt = BUTT * 3
+    for i in range(steps_butt + 1):
+        p = butt + (a - butt) * (i / steps_butt)
+        for k in range(8):
+            put(p + down * k, tones["cork"])
+        put(p - down, tones["outline"])
+        put(p + down * 8, tones["outline"])
 
     steps = int(length * 3)
     for i in range(steps + 1):
@@ -149,6 +234,7 @@ def main():
     idle = read_int("CAST_START")   # Ruhelauf UND Blinzeln tragen die Vorlage
     anchors = read_ints("ROD_ANCHOR")
     tips = read_ints("ROD_TIP_OFF")
+    layers = figure_layers()
     groups = classify(rod)
     base = {
         "cork": average(groups["cork"], (140, 90, 50)),
@@ -181,6 +267,8 @@ def main():
         tones["shadow"] = tuple(int(c * 0.6) for c in tones["shaft"])
         for f in range(idle, frames):
             draw_cast(sheet, f, anchors[f], tips[f], size, tones)
+        for f in range(frames):
+            cut_hand(sheet, f, anchors[f], size, layers)
         sheet.save(os.path.join(OUT, "char_rod_%d.png" % variant))
     print("%d Rutenblaetter geschrieben" % len(SHAFT_TONES))
 

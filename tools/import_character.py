@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """Baut die Figurenebenen aus den gezeichneten Vorlagen.
 
-Die Anglerin kommt aus `assets/source/`: ein Ruhebild und fuenf Wurfbilder,
-gezeichnete Pixelart in etwa 1400 Pixel Hoehe. Dieses Werkzeug macht daraus
-die zwoelf Bilder, die das Spiel braucht:
+Die Anglerin kommt aus `assets/source/`: ein Streifen mit vier Ruhebildern,
+ein Blinzelbild und fuenf Wurfbilder. Dieses Werkzeug macht daraus die zehn
+Bilder, die das Spiel braucht:
 
-    0-5   Ruhelauf  -- aus dem Ruhebild abgeleitet (Atmen, Zopf schwingt)
-    6     Blinzeln  -- ebenfalls abgeleitet
-    7-11  Wurf      -- die fuenf gezeichneten Posen
+    0-3   Ruhelauf  -- die vier gezeichneten Bilder des Atemzugs
+    4     Blinzeln  -- Auge aus dem gezeichneten Blinzelbild, Rest wie 0
+    5-9   Wurf      -- die fuenf gezeichneten Posen
 
-Der Ruhelauf wird GERECHNET und nicht gezeichnet: ein Bildmodell zeichnet
-dieselbe Pose jedes Mal minimal anders, und diese zufaelligen ein bis zwei
-Pixel an der Kontur sehen in Bewegung aus, als koche die Figur. Was sich
-hier bewegt, bewegt sich absichtlich; der Rest steht bombenfest.
+Der Ruhelauf laeuft als Pingpong 0-1-2-3-2-1 (siehe AnglerPose.IDLE_ORDER):
+Bild 3 ist der Umkehrpunkt, nicht die Rueckkehr zum Anfang. Direkt von 3 auf
+0 zu springen aendert dreimal so viele Umrisspixel wie jeder andere Schritt,
+und der Zopf wird sichtbar zurueckgerissen.
+
+Die vier Ruhebilder entstehen in EINER Generierung als ein Streifen. Vier
+getrennte Bilder waeren vier leicht verschiedene Figuren -- andere Palette,
+andere Proportionen -- und das flackert in Bewegung.
 
 Die Kosmetik braucht Ebenen, das flache Bild hat keine. Zerlegt wird
 deshalb ueber die PALETTE, nicht ueber die Pixel: achtzehn der dreissig
@@ -34,16 +38,22 @@ SRC = os.path.join(ROOT, "assets", "source")
 OUT = os.path.join(ROOT, "assets", "art")
 
 FRAME = 256
-IDLE = 6
-BLINK = 6
+IDLE = 4
 CAST = 5
 FRAMES = IDLE + 1 + CAST
 
 ## Koerpermass, an dem alle Posen ausgerichtet werden: Scheitel bis Sohle.
 ## Nicht die Bildhoehe -- der Zopf steht je nach Pose verschieden weit ab.
+## Das faengt nebenbei ab, dass das Bildmodell die Figur von Bild zu Bild
+## groesser zeichnet: im Streifen wuchsen selbst die Stiefel um drei Prozent,
+## obwohl sie stillstehen sollten. Nach dem Normieren stimmen sie auf ein bis
+## zwei Pixel ueberein.
 BODY = 216
 SOLE_ROW = 247
-SOLE_X = 118
+## Nicht die Rahmenmitte: der Rahmen traegt Figur UND Rute, und die
+## gezeichnete Rute steht 97 Pixel rechts von der Hand. Bei 118 stiess sie
+## im zweiten Ruhebild aus dem Rahmen und blutete ins naechste Bild.
+SOLE_X = 112
 
 ## Farben, aus denen die Varianten gemacht werden. Reihenfolge wie in
 ## data/cosmetics/.
@@ -73,10 +83,73 @@ def measure(img):
           if px[x, sole][3] > 128 or px[x, max(0, sole - 2)][3] > 128]
     return top, sole, (min(xs) + max(xs)) // 2
 
+def split_figures(path, count):
+    """Zerlegt einen Streifen in seine Figuren.
+
+    Nicht in gleich breite Felder schneiden: die Zoepfe schwingen ueber die
+    Feldgrenze hinweg, im Streifen bis zu 60 Pixel weit. Jede Figur ist aber
+    eine zusammenhaengende Flaeche, also wird gefuellt statt geschnitten --
+    dann kommt der Zopf mit, egal wo er hinreicht.
+    """
+    img = Image.open(path).convert("RGBA")
+    w, h = img.size
+    px = img.load()
+    solid = bytearray(w * h)
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] > 128:
+                solid[y * w + x] = 1
+    seen = bytearray(w * h)
+    blobs = []
+    for sy in range(h):
+        for sx in range(w):
+            if not solid[sy * w + sx] or seen[sy * w + sx]:
+                continue
+            stack = [(sx, sy)]
+            seen[sy * w + sx] = 1
+            pts = []
+            while stack:
+                x, y = stack.pop()
+                pts.append((x, y))
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < w and 0 <= ny < h and solid[ny * w + nx] \
+                            and not seen[ny * w + nx]:
+                        seen[ny * w + nx] = 1
+                        stack.append((nx, ny))
+            if len(pts) > 5000:
+                blobs.append(pts)
+    if len(blobs) != count:
+        raise SystemExit("%s: %d Figuren gefunden, %d erwartet"
+                         % (os.path.basename(path), len(blobs), count))
+    # Nach der Sohlenmitte sortieren, nicht nach dem linken Rand: der Zopf
+    # der rechten Figur reicht weiter nach links als der Koerper der linken.
+    def sole_mid(pts):
+        bottom = max(p[1] for p in pts)
+        row = [p[0] for p in pts if p[1] > bottom - 20]
+        return (min(row) + max(row)) // 2
+    blobs.sort(key=sole_mid)
+    out = []
+    for pts in blobs:
+        x0 = min(p[0] for p in pts)
+        y0 = min(p[1] for p in pts)
+        x1 = max(p[0] for p in pts)
+        y1 = max(p[1] for p in pts)
+        cut = Image.new("RGBA", (x1 - x0 + 1, y1 - y0 + 1), (0, 0, 0, 0))
+        cp = cut.load()
+        for x, y in pts:
+            cp[x - x0, y - y0] = px[x, y]
+        out.append(cut)
+    return out
+
 def prepare(path):
+    """Vorlage -> 256er Rahmen."""
+    return prepare_image(Image.open(path).convert("RGBA"))
+
+def prepare_image(img):
     """Vorlage -> 256er Rahmen: freistellen, auf Koerpermass bringen,
     auf die Fusszeile setzen, Farben zusammenziehen."""
-    img = Image.open(path).convert("RGBA")
+    img = img.copy()
     px = img.load()
     for y in range(img.size[1]):
         for x in range(img.size[0]):
@@ -116,80 +189,8 @@ def apply_palette(img, palette):
             px[x, y] = (0, 0, 0, 0) if a < 128 else (r, g, b, 255)
     return flat
 
-## Bis zu dieser Zeile hebt und senkt sich der Oberkoerper beim Atmen.
-BREATH_BOUND = 150
-## Das Band, in dem der Zopf schwingt: unterhalb des Kinns und oberhalb des
-## Rocks. Waagerecht bis zur Koerpermitte -- eine engere Grenze schneidet
-## mitten durch die Straehnen und hinterlaesst einen hellen Spalt.
-TAIL_BOX = (30, 96, 128, 152)
-
-def breathe(base, step):
-    """Ein Ruhebild. Der Oberkoerper hebt und senkt sich um einen Pixel, der
-    Zopf schwingt hinterher -- eine Bewegung, kein Zittern."""
-    # Deutlich genug, um es zu sehen, klein genug, um nicht zu zappeln:
-    # der Oberkoerper geht zwei Pixel hoch und wieder herunter, der Zopf
-    # schwingt vier hinterher und laeuft dabei der Brust nach.
-    lift = [0, -1, -2, -2, -1, 0][step]
-    sway = [0, 2, 3, 4, 3, 1][step]
-    img = base.copy()
-    if lift:
-        # Versetzt DARUEBERKOPIEREN statt die alte Stelle zu leeren: sonst
-        # bleibt an der Naht eine leere Zeile stehen, und die sieht im Spiel
-        # aus wie ein Riss quer durch die Figur.
-        src = base.load()
-        dst = img.load()
-        for y in range(BREATH_BOUND):
-            ty = y + lift
-            if 0 <= ty < FRAME:
-                for x in range(FRAME):
-                    dst[x, ty] = src[x, y]
-    if sway:
-        # Den Zopf NICHT als Block verschieben -- dann reisst er an der
-        # Ansatzstelle vom Kopf weg und hinterlaesst einen hellen Spalt.
-        # Stattdessen biegen: oben null Versatz, zur Spitze hin voller.
-        x0, y0, x1, y1 = TAIL_BOX
-        src = img.load()
-        strands = [(x, y) for y in range(y0, y1) for x in range(x0, x1)
-                   if src[x, y][3] and lum(src[x, y][:3]) < 110]
-        moved = {}
-        for x, y in strands:
-            t = (y - y0) / float(y1 - y0 - 1)
-            dx = int(round(-sway * t))
-            moved[(x + dx, y)] = src[x, y]
-        for x, y in strands:
-            src[x, y] = (0, 0, 0, 0)
-        for (x, y), c in moved.items():
-            if 0 <= x < FRAME and 0 <= y < FRAME:
-                src[x, y] = c
-        _close_holes(img)
-    return img
-
-def _close_holes(img):
-    """Schliesst Loecher, die der schwingende Zopf freilegt.
-
-    In einem flachen Bild verdeckt der Zopf den Koerper dahinter -- schwingt
-    er weg, ist dort schlicht nichts gezeichnet. Sichtbar wird das als
-    heller Spalt. Gefuellt wird mit der Mehrheitsfarbe der Nachbarn, also
-    mit dem Pullover, wenn Pullover drumherum ist.
-    """
-    px = img.load()
-    for _ in range(4):
-        holes = []
-        for y in range(1, FRAME - 1):
-            for x in range(1, FRAME - 1):
-                if px[x, y][3]:
-                    continue
-                near = [px[x + dx, y + dy] for dx in (-1, 0, 1) for dy in (-1, 0, 1)
-                        if (dx or dy) and px[x + dx, y + dy][3]]
-                if len(near) >= 5:
-                    holes.append(((x, y), Counter(near).most_common(1)[0][0]))
-        if not holes:
-            break
-        for (x, y), c in holes:
-            px[x, y] = c
-
 ## Das Fenster, in dem das Auge sitzt (Rahmenkoordinaten).
-EYE_BOX = (108, 52, 168, 98)
+EYE_BOX = (102, 52, 162, 98)
 
 def transplant_blink(base, drawn):
     """Nimmt NUR das Auge aus dem gezeichneten Blinzelbild.
@@ -228,7 +229,7 @@ def blink(base):
     Wimpernstrich. Ohne den Strich sieht es aus, als fehle das Auge."""
     img = base.copy()
     px = img.load()
-    face = [(x, y) for y in range(55, 95) for x in range(110, 160)
+    face = [(x, y) for y in range(55, 95) for x in range(104, 154)
             if px[x, y][3] and is_skin(px[x, y])]
     if not face:
         return img
@@ -323,14 +324,31 @@ def sheet(frames, groups, want, target=None):
         out.alpha_composite(single, (f * FRAME, 0))
     return out
 
+def rod_grip(img):
+    """Der Griffpunkt dieser Pose, an der geschlossenen Faust gemessen.
+
+    Die Faust ist der rechteste Punkt im Armband; der Griff sitzt sieben
+    Pixel dahinter und zwei tiefer. Gemessen und nicht gewaehlt: die Hand
+    wandert von Bild zu Bild, im Streifen bis zu zehn Pixel. Ein fester
+    Ankerpunkt haette die Rute aus der Hand rutschen lassen. Die Werte
+    gehoeren nach core/angler_pose.gd, ROD_ANCHOR.
+    """
+    px = img.load()
+    band = [(x, y) for y in range(110, 150) for x in range(FRAME)
+            if px[x, y][3]]
+    right = max(p[0] for p in band)
+    ys = [p[1] for p in band if p[0] >= right - 2]
+    return (right - 7, (min(ys) + max(ys)) // 2 + 2)
+
 def main():
-    idle = prepare(os.path.join(SRC, "angler_idle.png"))
-    frames = [breathe(idle, i) for i in range(IDLE)]
+    idles = [prepare_image(f) for f in
+             split_figures(os.path.join(SRC, "angler_idle_frames.png"), IDLE)]
+    frames = list(idles)
     drawn_blink = os.path.join(SRC, "angler_blink.png")
     if os.path.exists(drawn_blink):
-        frames.append(transplant_blink(idle, prepare(drawn_blink)))
+        frames.append(transplant_blink(idles[0], prepare(drawn_blink)))
     else:
-        frames.append(blink(idle))
+        frames.append(blink(idles[0]))
     for i in range(1, CAST + 1):
         frames.append(prepare(os.path.join(SRC, "angler_cast_%d.png" % i)))
     palette = shared_palette(frames)
@@ -354,6 +372,8 @@ def main():
     sheet(frames, groups, "base").save(os.path.join(OUT, "char_base_0.png"))
     written += 1
     print("%d Blaetter geschrieben" % written)
+    print("ROD_ANCHOR 0-%d: %s" % (IDLE, ", ".join(
+        "Vector2i(%d, %d)" % rod_grip(f) for f in frames[:IDLE + 1])))
 
 if __name__ == "__main__":
     main()

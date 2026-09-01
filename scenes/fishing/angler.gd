@@ -62,9 +62,13 @@ func _tint_hair(color_index: int) -> void:
 ## Kerns: eine zweite Uhr fuer den Wurf koennte davon abdriften, und dann
 ## stuende die Figur noch beim Ausholen, waehrend der Koeder schon im Wasser
 ## liegt.
-const IDLE_FPS: float = 5.0
+## Drei Bilder je Sekunde, also zwei Sekunden je Atemzug. Bei fuenf war der
+## Zug in gut einer Sekunde durch, und der Zopf schlug wie eine Peitsche --
+## er schwingt in den gezeichneten Bildern rund zwanzig Pixel aus, und ein
+## Ausschlag dieser Groesse braucht Zeit.
+const IDLE_FPS: float = 3.0
 ## Wie lange ein Blinzeln dauert und wie oft es kommt. Nicht im Atemtakt:
-## sechs Ruhebilder sind gut eine Sekunde, so oft blinzelt niemand.
+## ein Atemzug dauert zwei Sekunden, so oft blinzelt niemand.
 const BLINK_TIME: float = 0.12
 const BLINK_MIN: float = 2.5
 const BLINK_MAX: float = 6.0
@@ -88,7 +92,7 @@ func _process(delta: float) -> void:
 			# Arm vorn, Rute unter Zug -- das letzte Wurfbild.
 			play_state(AnglerPose.FRAMES - 1)
 		_:
-			# Stillstehen sieht tot aus: sechs Bilder Atmen im Kreis, und
+			# Stillstehen sieht tot aus: ein Atemzug hin und zurueck, und
 			# hin und wieder ein Blinzeln dazwischen.
 			_idle_time += delta
 			if _blink_left > 0.0:
@@ -99,7 +103,8 @@ func _process(delta: float) -> void:
 			if _blink_in <= 0.0:
 				_blink_left = BLINK_TIME
 				_blink_in = randf_range(BLINK_MIN, BLINK_MAX)
-			play_state(int(_idle_time * IDLE_FPS) % AnglerPose.IDLE_FRAMES)
+			var step := int(_idle_time * IDLE_FPS) % AnglerPose.IDLE_ORDER.size()
+			play_state(AnglerPose.IDLE_ORDER[step])
 
 func _on_bite(_fish: FishData) -> void:
 	play_state(AnglerPose.FRAMES - 1)

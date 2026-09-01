@@ -134,7 +134,7 @@ func test_the_rod_tip_moves_between_poses() -> void:
 	var angler = w.get_node("Angler")
 	angler.play_state(0)
 	var idle: Vector2 = angler.rod_tip()
-	angler.play_state(4)
+	angler.play_state(AnglerPose.CAST_START)
 	var cast: Vector2 = angler.rod_tip()
 	assert_true(not idle.is_equal_approx(cast),
 		"die Rutenspitze steht in jeder Pose gleich: %s" % idle)

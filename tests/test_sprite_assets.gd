@@ -105,11 +105,20 @@ func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 			"Bild %d: die Spitze %s liegt ausserhalb" % [f, tip])
 		assert_true(img.get_pixel(px.x, px.y).a > 0.0,
 			"Bild %d: an der berechneten Spitze %s ist keine Rute" % [f, tip])
-		# Und der Griff liegt an der Hand, nicht irgendwo im Rahmen.
+		# Am Griff selbst steht absichtlich nichts: dort ist die Faust, und
+		# die Rute wird darunter weggenommen (tools/import_rod.py::cut_hand).
+		# Rundherum muss sie aber liegen, sonst haelt die Hand nichts.
 		var grip := AnglerPose.rod_grip(f)
-		var gp := Vector2i(f * AnglerPose.FRAME_SIZE + grip.x, grip.y)
-		assert_true(img.get_pixel(gp.x, gp.y).a > 0.0,
-			"Bild %d: am Griff %s ist keine Rute" % [f, grip])
+		var around := 0
+		for dy in range(-14, 15):
+			for dx in range(-14, 15):
+				var q := Vector2i(f * AnglerPose.FRAME_SIZE + grip.x + dx, grip.y + dy)
+				if q.x < 0 or q.x >= img.get_width() or q.y < 0 or q.y >= img.get_height():
+					continue
+				if img.get_pixel(q.x, q.y).a > 0.0:
+					around += 1
+		assert_true(around > 40,
+			"Bild %d: um die Hand %s liegt kaum Rute (%d Pixel)" % [f, grip, around])
 
 ## Die Rute muss in jedem Bild vollstaendig in ihren Rahmen passen -- sonst
 ## blutet sie in den naechsten und ist dort als zweite Rute zu sehen.
@@ -122,3 +131,36 @@ func test_the_rod_fits_inside_its_frame_in_every_frame() -> void:
 				"Bild %d: die Rute laeuft waagerecht aus dem Rahmen (%s)" % [f, p])
 			assert_between(p.y, 2.0, limit - 2.0,
 				"Bild %d: die Rute laeuft senkrecht aus dem Rahmen (%s)" % [f, p])
+
+## Der Griff muss in der HAND der gezeichneten Figur liegen, nicht nur dort,
+## wo das Rutenblatt Pixel hat -- das Blatt wird ja aus denselben Ankern
+## erzeugt und bestaetigt sich sonst selbst. Die Hand wandert von Pose zu
+## Pose, im Ruhelauf um bis zu zehn Pixel.
+func test_the_grip_sits_in_the_hand_in_every_frame() -> void:
+	var tex := TextureLoader.load_texture("%s/char_skin_0.png" % ART_DIR)
+	assert_true(tex != null)
+	if tex == null:
+		return
+	var img := tex.get_image()
+	for f in AnglerPose.FRAMES:
+		var grip := AnglerPose.rod_grip(f)
+		var p := Vector2i(f * AnglerPose.FRAME_SIZE + grip.x, grip.y)
+		assert_true(img.get_pixel(p.x, p.y).a > 0.0,
+			"Bild %d: der Griff %s liegt neben der Hand" % [f, grip])
+
+## Der Ruhelauf geht denselben Weg zurueck, den er gekommen ist. Ein Sprung
+## vom Umkehrpunkt zurueck auf den Anfang aendert dreimal so viele
+## Umrisspixel wie jeder andere Schritt, und der Zopf wird zurueckgerissen.
+func test_the_idle_loop_comes_back_the_way_it_went() -> void:
+	var order := AnglerPose.IDLE_ORDER
+	assert_true(order.size() >= AnglerPose.IDLE_FRAMES,
+		"der Ruhelauf laesst gezeichnete Bilder ungenutzt: %s" % [order])
+	for f in AnglerPose.IDLE_FRAMES:
+		assert_true(order.has(f), "Bild %d kommt im Ruhelauf nicht vor" % f)
+	for i in order.size():
+		var a: int = order[i]
+		var b: int = order[(i + 1) % order.size()]
+		assert_true(a >= 0 and a < AnglerPose.IDLE_FRAMES,
+			"der Ruhelauf zeigt Bild %d, das kein Ruhebild ist" % a)
+		assert_true(absi(a - b) == 1,
+			"der Ruhelauf springt von Bild %d auf %d" % [a, b])

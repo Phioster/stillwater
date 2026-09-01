@@ -119,10 +119,15 @@ Bildgröße 64 Pixel je Frame, fünf Rahmen, Vergrößerung in der Welt 2 statt 
 - **Die fünf Frisuren sind alle dieselbe.** Eine zweite Frisur ist ein
   zweites Ausgangsbild, keine Umfärbung.
 - ~~Die Rahmen zeigen dieselbe Pose~~ — erledigt: **zehn** gezeichnete Bilder,
-  sechs für den Ruhelauf (sie atmet und wiegt sich, Stillstand sah tot aus)
-  und vier für den Wurf. Aus dem ersten Bild per `animate_image` erzeugt, je
-  eine Generierung. Der Wurf läuft über `FishingSim.CAST_TIME` ab, hängt also
-  am selben Zähler wie der Kern; der Ruhelauf zählt für sich weiter.
+  vier für den Ruhelauf, eins fürs Blinzeln, fünf für den Wurf. Die vier
+  Ruhebilder kommen als **ein Streifen** aus einer Generierung — vier
+  getrennte Bilder wären vier leicht verschiedene Figuren und würden in
+  Bewegung flackern. Der Ruhelauf spielt sie als Pingpong 0‑1‑2‑3‑2‑1
+  (`AnglerPose.IDLE_ORDER`) mit drei Bildern je Sekunde: vom Umkehrpunkt
+  direkt auf den Anfang zu springen ändert dreimal so viele Umrisspixel wie
+  jeder andere Schritt, und der Zopf wird sichtbar zurückgerissen. Der Wurf
+  läuft über `FishingSim.CAST_TIME` ab, hängt also am selben Zähler wie der
+  Kern; der Ruhelauf zählt für sich weiter.
 - Die **Rute** ist die einzige Figurengrafik, die noch gerechnet wird
   (`gen_sprites.gd::_rod`): verjüngt sich zur Spitze, biegt sich beim
   Schwung, dunkler Umriss, Glanzkante, Wicklung am Griff, kleine Rolle. Jede
