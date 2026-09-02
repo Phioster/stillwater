@@ -67,11 +67,10 @@ func _tint_hair(color_index: int) -> void:
 ## Kerns: eine zweite Uhr fuer den Wurf koennte davon abdriften, und dann
 ## stuende die Figur noch beim Ausholen, waehrend der Koeder schon im Wasser
 ## liegt.
-## Sechs Bilder je Sekunde: der Ruhelauf hat sechzehn Schritte, das macht
-## knapp drei Sekunden je Atemzug. Der Zopf schwingt rund zwanzig Pixel aus,
-## und ein Ausschlag dieser Groesse braucht Zeit -- schneller schlug er wie
-## eine Peitsche.
-const IDLE_FPS: float = 6.0
+## Drei Bilder je Sekunde: der Ruhelauf hat neun Schritte (Index 0-8), das macht
+## drei Sekunden je Atemzug. Der Zopf schwingt rund zwanzig Pixel aus, und ein
+## Ausschlag dieser Groesse braucht Zeit -- schneller schlug er wie eine Peitsche.
+const IDLE_FPS: float = 3.0
 ## Wie lange ein Blinzeln dauert und wie oft es kommt. Nicht im Atemtakt:
 ## ein Atemzug dauert drei Sekunden, so oft blinzelt niemand.
 const BLINK_TIME: float = 0.12
