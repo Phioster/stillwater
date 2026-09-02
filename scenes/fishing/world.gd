@@ -21,12 +21,9 @@ var _rain: Rain = null
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
 const WATERLINE := 84.0 / 180.0
-## Steg und Figur stehen fest an ihrem Platz, deshalb darf die Vergroesserung
-## hier krumm sein: das Flimmern, vor dem die alte Regel "ganzzahlig halten"
-## schuetzte, entsteht erst, wenn ein Sprite BEI krummer Vergroesserung ueber
-## den Bildschirm wandert und die verdoppelten Pixelreihen mitwandern. Der
-## Schwimmer wandert -- der hat deshalb seine eigene, ganzzahlige.
-const PIXEL_SCALE := 1.08
+## Doppelt so gross gezeichnet bei halber Bildgroesse = gleiche Groesse auf dem
+## Schirm. Steg und Figur stehen fest, darf also krumm sein.
+const PIXEL_SCALE := 2.16
 ## Der Schwimmer wippt, also ganzzahlig. Klein genug ist er jetzt ueber seine
 ## Bildgroesse (tools/gen_sprites.gd::_bobber).
 const BOBBER_SCALE := 1.0
@@ -44,11 +41,10 @@ const ANGLER_ON_DECK := 290.0
 const BOBBER_OFF_DOCK := 120.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
-const CHAR_SIZE := 256.0
-## Die Stiefel enden im 256er-Frame bei Zeile 247. Die letzten Reihen sind
-## leer -- wer die Sprite-Unterkante aufs Deck setzt, laesst die Figur
-## schweben.
-const CHAR_FEET := 248.0
+const CHAR_SIZE := 128.0
+## Die Stiefel enden im 128er-Frame bei Zeile 124. Die Zeile darunter ist leer
+## -- wer die Sprite-Unterkante aufs Deck setzt, laesst die Figur schweben.
+const CHAR_FEET := 125.0
 
 ## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die
 ## gemessenen Kosten pro Frame.

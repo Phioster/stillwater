@@ -148,19 +148,55 @@ func test_the_grip_sits_in_the_hand_in_every_frame() -> void:
 		assert_true(img.get_pixel(p.x, p.y).a > 0.0,
 			"Bild %d: der Griff %s liegt neben der Hand" % [f, grip])
 
-## Der Ruhelauf geht denselben Weg zurueck, den er gekommen ist. Ein Sprung
-## vom Umkehrpunkt zurueck auf den Anfang aendert dreimal so viele
-## Umrisspixel wie jeder andere Schritt, und der Zopf wird zurueckgerissen.
-func test_the_idle_loop_comes_back_the_way_it_went() -> void:
+func _schritt(img: Image, a: int, b: int, frame_size: int) -> int:
+	## Zahl der Pixel, die in genau einem der beiden Bilder sichtbar sind.
+	var count := 0
+	var ax := a * frame_size
+	var bx := b * frame_size
+	for y in frame_size:
+		for x in frame_size:
+			var px_a := img.get_pixel(ax + x, y).a > 0.0
+			var px_b := img.get_pixel(bx + x, y).a > 0.0
+			if px_a != px_b:
+				count += 1
+	return count
+
+## Der Ruhelauf darf nicht sichtbar springen. Frueher stand hier "jeder Schritt
+## geht um genau ein Bild weiter" -- das setzte einen Pingpong voraus und war
+## rot, sobald die Reihenfolge eine geschlossene Schleife ist. Gemessen wird
+## jetzt, was gemeint war.
+func test_the_idle_loop_does_not_jump() -> void:
+	var tex := TextureLoader.load_texture("%s/char_base_0.png" % ART_DIR)
+	assert_true(tex != null, "char_base_0.png nicht ladbar")
+	if tex == null:
+		return
+	var img := tex.get_image()
+	var frame_size := AnglerPose.FRAME_SIZE
+
+	# groesster_nachbar: Maximum der Schritte 0→1, 1→2, ..., 7→8
+	var groesster_nachbar := 0
+	for i in range(AnglerPose.IDLE_FRAMES - 1):
+		groesster_nachbar = maxi(groesster_nachbar, _schritt(img, i, i + 1, frame_size))
+
+	# Reihenfolge-Prüfungen
 	var order := AnglerPose.IDLE_ORDER
 	assert_true(order.size() >= AnglerPose.IDLE_FRAMES,
 		"der Ruhelauf laesst gezeichnete Bilder ungenutzt: %s" % [order])
 	for f in AnglerPose.IDLE_FRAMES:
 		assert_true(order.has(f), "Bild %d kommt im Ruhelauf nicht vor" % f)
+	for frame_idx in order.size():
+		var a: int = order[frame_idx]
+		assert_true(a >= 0 and a < AnglerPose.IDLE_FRAMES,
+			"der Ruhelauf zeigt Bild %d, das kein Ruhebild ist" % a)
+
+	# groesster_schritt: Maximum über die ganze Reihenfolge, inkl. Rundschluss
+	var groesster_schritt := 0
 	for i in order.size():
 		var a: int = order[i]
 		var b: int = order[(i + 1) % order.size()]
-		assert_true(a >= 0 and a < AnglerPose.IDLE_FRAMES,
-			"der Ruhelauf zeigt Bild %d, das kein Ruhebild ist" % a)
-		assert_true(absi(a - b) == 1,
-			"der Ruhelauf springt von Bild %d auf %d" % [a, b])
+		groesster_schritt = maxi(groesster_schritt, _schritt(img, a, b, frame_size))
+
+	# Zusicherung: 1.25-Faktor
+	var schwelle := float(groesster_nachbar) * 1.25
+	assert_true(float(groesster_schritt) <= schwelle,
+		"Ruhelauf springt: %d Pixel vs %.0f (Faktor: %.2f)" % [groesster_schritt, schwelle, float(groesster_schritt) / float(groesster_nachbar)])
