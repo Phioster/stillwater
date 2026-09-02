@@ -76,6 +76,64 @@ class TestFindeMehrdeutige(unittest.TestCase):
         self.assertGreater(entry["grenze"], 25)
         self.assertLess(entry["grenze"], 50)
 
+    def test_umriss_nachbarn_zaehlen_nicht(self):
+        ## Ein Haufen, dessen Nachbarn mehrheitlich Umriss sind, aber unter
+        ## den Nicht-Umriss-Nachbarn eindeutig zu einem Teil gehoeren, soll
+        ## dieses Teil bekommen, nicht "base".
+
+        # Baue ein Bild: oben Haare, unten Stiefel, beide vom Umriss umrandet.
+        img = Image.new("RGBA", (30, 80), (0, 0, 0, 0))
+        px = img.load()
+
+        # Farben
+        hair_color = (0xDF, 0x90, 0xD2)
+        shared_color = (0x20, 0xB6, 0x92)
+        boots_color_alt = (0x1A, 0x9D, 0x7F)
+        outline_color = (0x1A, 0x1A, 0x22)  # sehr dunkel -> assign() gibt "base"
+
+        # Oben (0-25): Haarfeld
+        for y in range(25):
+            for x in range(30):
+                px[x, y] = hair_color + (255,)
+
+        # Oben: Umriss umrandet die Haare an den Kanten
+        for x in range(30):
+            px[x, 0] = outline_color + (255,)
+            px[x, 1] = outline_color + (255,)
+
+        # Oben: ein paar Pixel der gemeinsamen Farbe, umgeben von Haaren
+        # und oben viel Umriss (kante)
+        px[10, 2] = shared_color + (255,)
+        px[11, 2] = shared_color + (255,)
+        px[12, 2] = shared_color + (255,)
+
+        # Unten (50-79): Stiefelfeld, auch vom Umriss umrandet
+        for y in range(50, 80):
+            for x in range(30):
+                px[x, y] = boots_color_alt + (255,)
+
+        # Unten: Umriss umrandet die Stiefel
+        for x in range(30):
+            px[x, 79] = outline_color + (255,)
+            px[x, 78] = outline_color + (255,)
+
+        # Unten: Pixel der gemeinsamen Farbe
+        px[10, 65] = shared_color + (255,)
+        px[11, 65] = shared_color + (255,)
+        px[12, 65] = shared_color + (255,)
+
+        result = finde_mehrdeutige(img)
+
+        # Die gemeinsame Farbe sollte gefunden werden
+        self.assertIn(shared_color, result)
+        entry = result[shared_color]
+
+        # Oben sollte hair sein (trotz Umriss-Nachbarn)
+        self.assertEqual(entry["oben"], "hair")
+
+        # Unten sollte boots sein (trotz Umriss-Nachbarn), nicht "base"
+        self.assertEqual(entry["unten"], "boots")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -66,6 +66,10 @@ def finde_mehrdeutige(img, mindestluecke=20, mindestpixel=4):
         if len(pixels) < mindestpixel:
             continue
 
+        # Ueberspringe Umrissfarben: Farben, die assign() als "base" erkennt
+        if assign(color) == "base":
+            continue
+
         # Sammel alle belegten Zeilen dieser Farbe
         zeilen = [y for x, y in pixels]
 
@@ -80,7 +84,12 @@ def finde_mehrdeutige(img, mindestluecke=20, mindestpixel=4):
 
         # Bestimme das umgebende Teil fuer jeden Haufen
         def find_surrounding_part(haufen):
-            """Das haeufigste Teil, das diese Pixel umgibt."""
+            """Das haeufigste Teil, das diese Pixel umgibt.
+
+            Ueberspringe Umriss-Nachbarn (die als "base" erkannt werden) —
+            sie umranden jeden Teil gleichermaßen und sagen nichts über
+            die Zugehoerigkeit aus.
+            """
             part_counts = defaultdict(int)
 
             for x, y in haufen:
@@ -108,9 +117,14 @@ def finde_mehrdeutige(img, mindestluecke=20, mindestpixel=4):
 
                     # Ordne dieser Farbe ein Teil zu
                     part = assign((nr, ng, nb))
+
+                    # Ueberspringe Umriss-Nachbarn
+                    if part == "base":
+                        continue
+
                     part_counts[part] += 1
 
-            # Das haeufigste Teil
+            # Das haeufigste Teil (wenn es noch Nachbarn gibt)
             if part_counts:
                 return max(part_counts, key=part_counts.get)
             return None
