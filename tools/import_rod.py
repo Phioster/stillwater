@@ -79,6 +79,21 @@ def read_int(name):
     text = open(POSE, encoding="utf-8").read()
     return int(re.search(r"const %s: int = (\d+)" % name, text).group(1))
 
+def read_vec(name):
+    text = open(POSE, encoding="utf-8").read()
+    m = re.search(r"const %s: Vector2i = Vector2i\((-?\d+),\s*(-?\d+)\)" % name, text)
+    return (int(m.group(1)), int(m.group(2)))
+
+def read_array_ints(name):
+    """Liest eine Array[int]-Konstante."""
+    head = r"const %s: Array\[int\] = \[" % name
+    text = open(POSE, encoding="utf-8").read()
+    match = re.search(head + r"(.*?)\]", text, re.DOTALL)
+    if not match:
+        return []
+    content = match.group(1)
+    return [int(v) for v in re.findall(r"-?\d+", content)]
+
 def classify(img):
     """Teilt die Palette der Vorlage in Kork, Messing, Umriss und Schaft.
 
@@ -440,6 +455,49 @@ def sweep_rod(sheet, frame, anchor, tip_off, grid, src_len, size):
             if best is not None:
                 px[ox + x, y] = best
 
+def sweep_rod_at_grip(sheet, frame, tip_off, grid, src_len, size, grip):
+    """Zeichnet die Rute in der Richtung dieser Pose, mit Griff in der Mitte."""
+    ox = frame * size
+    ax, ay = grip
+    length = math.hypot(tip_off[0], tip_off[1])
+    ux, uy = tip_off[0] / length, tip_off[1] / length
+    nx, ny = -uy, ux
+    px = sheet.load()
+    reach = int(src_len * 1.0) + 26
+    for y in range(max(0, ay - reach), min(size, ay + reach + 1)):
+        for x in range(max(0, ax - reach), min(size, ax + reach + 1)):
+            vx, vy = x - ax, y - ay
+            t = (vx * ux + vy * uy)
+            sp = vx * nx + vy * ny
+            best, dist = None, NEAR
+            ti, si = int(round(t)), int(round(sp))
+            for dt in (-1, 0, 1):
+                for ds in (-1, 0, 1):
+                    for pt, ps, color in grid.get((ti + dt, si + ds), ()):
+                        d = math.hypot(pt - t, ps - sp)
+                        if d < dist:
+                            dist, best = d, color
+            if best is not None:
+                px[ox + x, y] = best
+
+def cut_at_hand_rod(sheet, frame, grip, direction, front, back, size, body=None):
+    """Nimmt die Rute dort weg, wo die Faust sie verdeckt (Rutenraster)."""
+    ox = frame * size
+    px = sheet.load()
+    for y in range(size):
+        for x in range(size):
+            if px[ox + x, y][3] == 0:
+                continue
+            along = (x - grip[0]) * direction.real + (y - grip[1]) * direction.imag
+            if back <= along < front or along < back - STUB:
+                px[ox + x, y] = (0, 0, 0, 0)
+            elif along < back:
+                # Der Stummel kann hinter der Figur sichtbar sein, aber hier
+                # ist die Rutengroesse unterschiedlich von der Figur. Wir
+                # koennen nicht auf die Figurenebenen pruefe, weil die x,y
+                # Koordinaten unterschiedlich sind. Einfach alles abschneiden.
+                px[ox + x, y] = (0, 0, 0, 0)
+
 def main():
     rod = Image.open(SOURCE).convert("RGBA")
     size = read_int("FRAME_SIZE")
@@ -447,6 +505,13 @@ def main():
     idle = read_int("CAST_START")   # Ruhelauf UND Blinzeln tragen die Vorlage
     anchors = read_ints("ROD_ANCHOR")
     tips = read_ints("ROD_TIP_OFF")
+
+    # Neue Konstanten fuer die Rute als eigenes Bildraster
+    rod_size = read_int("ROD_FRAME_SIZE")
+    rod_frames = read_int("ROD_FRAMES")
+    rod_grip = read_vec("ROD_GRIP")
+    rod_frame_mapping = read_array_ints("ROD_FRAME")
+
     skin = figure_layers(SKIN)
     body = figure_layers(SILHOUETTE)
     groups = classify(rod)
@@ -476,7 +541,8 @@ def main():
 
     for variant, tone in enumerate(SHAFT_TONES):
         target = tuple(int(tone[i:i + 2], 16) for i in (0, 2, 4)) if tone else None
-        sheet = Image.new("RGBA", (size * frames, size), (0, 0, 0, 0))
+        # Die Rute hat jetzt ihr eigenes, groesseres Bildraster
+        sheet = Image.new("RGBA", (rod_size * rod_frames, rod_size), (0, 0, 0, 0))
         art = small.copy()
         if target:
             px = art.load()
@@ -484,25 +550,40 @@ def main():
                 for x in range(art.size[0]):
                     if is_shaft(px[x, y]):
                         px[x, y] = tint(px[x, y], target)
-        # Ruheposen: die Vorlage sitzt mit ihrem GRIFF auf dem Ankerpunkt --
-        # nicht mit ihrer Bildecke. Die Rolle steht unten aus dem Bild
-        # heraus, die Ecke liegt also woanders als das Griffende.
+
+        # Alle Ruhelauf- und Blinzelposen (0 bis idle-1) nutzen Rutenbild 0
         gx, gy = grip_of(art)
-        for f in range(idle):
-            ax, ay = anchors[f]
-            sheet.alpha_composite(art, (f * size + ax - gx, ay - gy))
-        # Die Wurfposen bekommen dieselbe gezeichnete Rute, nur in ihre
-        # Richtung gelegt -- frueher war sie dort nachgemalt und damit die
-        # einzige Figurengrafik im Bild, die nicht gezeichnet war.
+        # Im Rutenraster sitzt der Griff in ROD_GRIP, nicht auf dem Ankerpunkt
+        sheet.alpha_composite(art, (0 * rod_size + rod_grip[0] - gx, rod_grip[1] - gy))
+
+        # Die Wurfposen: jede bekommt ein eigenes Rutenbild (1 bis rod_frames-1)
         grid, src_len = rod_profile(art)
-        for f in range(idle, frames):
-            sweep_rod(sheet, f, anchors[f], tips[f], grid, src_len, size)
-        for f in range(frames):
+        for r in range(1, rod_frames):
+            # Finde die erste Figurenpose, die auf Rutenbild r zeigt
+            f = idle  # Start mit der ersten Wurfpose
+            for i in range(idle, frames):
+                if rod_frame_mapping[i] == r:
+                    f = i
+                    break
+            # Zeichne die Rute fuer diese Pose an der richtigen Stelle
+            sweep_rod_at_grip(sheet, r, tips[f], grid, src_len, rod_size, rod_grip)
+
+        # Beschneidung: fuer jedes Rutenbild eine Pose waehlen und die Hand beschneiden
+        for r in range(rod_frames):
+            # Finde die erste Figurenpose, die auf Rutenbild r zeigt
+            f = 0
+            for i in range(frames):
+                if rod_frame_mapping[i] == r:
+                    f = i
+                    break
+            # Beschneidung basiert auf Rutenrichtung und Figurengriff
             d = complex(tips[f][0], tips[f][1])
-            d = d / abs(d)
+            if abs(d) > 0:
+                d = d / abs(d)
             front = skin_run(skin, f, anchors[f], d, size)
             back = -skin_run(skin, f, anchors[f], -d, size)
-            cut_at_hand(sheet, f, anchors[f], d, front, back, size, body)
+            cut_at_hand_rod(sheet, r, rod_grip, d, front, back, rod_size)
+
         sheet.save(os.path.join(OUT, "char_rod_%d.png" % variant))
     print("%d Rutenblaetter geschrieben" % len(SHAFT_TONES))
 

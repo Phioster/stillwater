@@ -45,28 +45,48 @@ const ROD_ANCHOR: Array[Vector2i] = [
 	Vector2i(62, 75), Vector2i(61, 74), Vector2i(57, 71), Vector2i(67, 61),
 	Vector2i(56, 49), Vector2i(11, 24), Vector2i(87, 60), Vector2i(87, 58),
 ]
-## Die Spitze, relativ zum Griff. Die Ruheposen tragen den Versatz der
-## gezeichneten Rute (assets/source/rod_45.png, auf 0.7 verkleinert und
-## entlang der Achse wieder gestreckt): die Hand liegt in der MITTE des
-## Korkgriffs, die Spitze 83 rechts und 82 ueber ihr. Gemessen und nicht
-## gewaehlt -- tools/import_rod.py rechnet den Wert aus und schreibt ihn
-## beim Bauen auf die Konsole.
+## Die Spitze, relativ zum Griff. Die Rute hat ihr EIGENES Bildraster und
+## sitzt deshalb in ROD_GRIP, nicht im Figurengriff. Die Ruhe- und Blinzelposen
+## zeigen auf 1 Uhr 30, skaliert auf die gleiche Laenge wie die Wurfposen:
+## etwa 140 Pixel, siebzig Prozent der Koerperhoehe stehender Pose.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(83, -82), Vector2i(83, -82), Vector2i(83, -82),
-	Vector2i(83, -82), Vector2i(83, -82), Vector2i(83, -82),
-	Vector2i(83, -82), Vector2i(83, -82), Vector2i(83, -82),
-	Vector2i(83, -82), Vector2i(83, -82), Vector2i(83, -82),
-	Vector2i(83, -82), Vector2i(83, -82), Vector2i(83, -82),
-	Vector2i(83, -82), Vector2i(83, -82), Vector2i(83, -82),
-	Vector2i(60, -85), Vector2i(-40, -70), Vector2i(-65, -45),
-	Vector2i(65, -70), Vector2i(75, -40), Vector2i(75, -40),
+	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
+	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
+	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
+	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
+	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
+	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
+	Vector2i(81, -114), Vector2i(-69, -122), Vector2i(-115, -80),
+	Vector2i(95, -103), Vector2i(123, -66), Vector2i(121, 71),
 ]
 ## Wie weit sich die Rute quer zur Achse biegt. Eine gerade Rute sieht aus
 ## wie ein Stock; die Biegung macht aus dem Wurf eine Bewegung.
 const ROD_BEND: Array[float] = [
 	3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0,
 	3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0,
-	6.0, 8.0, 8.0, -7.0, -4.0, -4.0]
+	6.0, 8.0, 8.0, -7.0, -4.0, -4.0, -4.0]
+
+## --- Die Rute hat ihr EIGENES Bildraster ------------------------------------
+##
+## Beim Ausholen sitzt die Faust neben dem Kopf, und die Rute zeigt von dort
+## nach hinten oben. Im 128er-Feld der Figur sind an dieser Stelle nur wenig
+## Platz; das Rasterfeld wird groesser, damit die Rute nicht abgeschnitten wird.
+## Die Rute wird als eigenes Sprite an den Griff der Pose geschoben statt
+## in jedes Figurenbild einzeln gezeichnet.
+const ROD_FRAME_SIZE: int = 320
+## Wo der Griff INNERHALB eines Rutenbildes liegt: in der Mitte, damit die
+## Rute in jede Richtung gleich weit reicht.
+const ROD_GRIP: Vector2i = Vector2i(160, 160)
+## Der Ruhelauf und das Blinzeln halten die Rute im selben Winkel -- es
+## wandert nur die Hand, und die traegt jetzt das Sprite. Achtzehn Posen
+## teilen sich deshalb EIN Rutenbild, und eine neue Rute kostet sieben
+## Zeichnungen statt vierundzwanzig.
+const ROD_FRAMES: int = 7
+const ROD_FRAME: Array[int] = [
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	1, 2, 3, 4, 5, 6,
+]
 
 static func frame_of(frame: int) -> int:
 	return clampi(frame, 0, FRAMES - 1)
@@ -90,3 +110,9 @@ static func rod_tip(frame: int) -> Vector2i:
 ## Der Griff für dieses Bild.
 static func rod_grip(frame: int) -> Vector2i:
 	return ROD_ANCHOR[frame_of(frame)]
+
+## Wohin das Rutensprite muss, damit sein Griff auf dem Anker dieser Pose
+## liegt. Das Sprite ist groesser als das Figurenfeld und haengt deshalb an
+## einer eigenen Position, nicht am gemeinsamen Bildindex.
+static func rod_offset(frame: int) -> Vector2i:
+	return ROD_ANCHOR[frame_of(frame)] - ROD_GRIP
