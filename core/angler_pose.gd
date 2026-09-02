@@ -4,15 +4,15 @@
 ## eine Konstante für deren Spitze. Beim Verschieben der Rute wurde die
 ## Konstante nicht mitgezogen, und die Schnur begann daneben.
 ##
-## Seit die Figur gezeichnet ist (assets/source/angler_frames.png) hat jede
-## Pose ihren EIGENEN Griff und ihre eigene Richtung: beim Ausholen zeigt die
-## Rute nach hinten, beim Wurf nach vorn. Ein gemeinsamer Startpunkt mit
-## einem Höhenversatz konnte das nie abbilden.
+## Die Figur kommt aus PixelLab (assets/source/angler.png) mit 128 Pixeln
+## Kantenlänge. Jede Pose hat ihren EIGENEN Griff und ihre eigene Richtung:
+## beim Ausholen zeigt die Rute nach hinten, beim Wurf nach vorn. Ein
+## gemeinsamer Startpunkt mit einem Höhenversatz konnte das nie abbilden.
 class_name AnglerPose
 extends RefCounted
 
-## 128 ist die Arbeitsgröße des Bildmodells. Bei Vergrößerung 2 steht die
-## Figur genauso groß auf dem Schirm wie vorher bei 256 und Vergrößerung 1
+## 128 ist die Arbeitsgröße des Bildmodells. Bei Vergrößerung 2.16 steht die
+## Figur genauso groß auf dem Schirm wie vorher bei 256 und Vergrößerung 1.08
 ## — kostet aber ein Viertel an Textur und beim Erzeugen von Animationen
 ## ein Viertel an Rechenaufwand.
 const FRAME_SIZE: int = 128
@@ -64,7 +64,7 @@ const ROD_TIP_OFF: Array[Vector2i] = [
 const ROD_BEND: Array[float] = [
 	3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0,
 	3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0,
-	6.0, 8.0, 8.0, -7.0, -4.0, -4.0, -4.0]
+	6.0, 8.0, 8.0, -7.0, -4.0, -4.0]
 
 ## --- Die Rute hat ihr EIGENES Bildraster ------------------------------------
 ##
