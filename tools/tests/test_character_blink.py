@@ -50,5 +50,27 @@ class TestBlinzeln(unittest.TestCase):
             self.assertEqual(px[i, 8], DUNKEL)
 
 
+AUGE_ANDERSFARBIG = (0x22, 0x1d, 0x4e, 255)  # assign() stuft das als "shirt" ein
+
+
+def _gesicht_farbiges_auge():
+    """Wie _gesicht(), aber das Auge liegt in der Pullover-Familie, nicht im
+    Umriss -- der Fall, den eine auf die Umriss-Ebene beschraenkte Suche
+    nicht findet."""
+    img = _gesicht()
+    px = img.load()
+    for x, y in ((4, 4), (5, 4), (4, 5), (5, 5)):
+        px[x, y] = AUGE_ANDERSFARBIG
+    return img
+
+
+class TestBlinzelnAndersfarbigesAuge(unittest.TestCase):
+    def test_auge_ausserhalb_der_umrissfamilie_wird_trotzdem_gefunden(self):
+        zu = close_eye(_gesicht_farbiges_auge(), None)
+        px = zu.load()
+        self.assertNotEqual(px[4, 4][:3], AUGE_ANDERSFARBIG[:3])
+        self.assertNotEqual(px[5, 5][:3], AUGE_ANDERSFARBIG[:3])
+
+
 if __name__ == "__main__":
     unittest.main()
