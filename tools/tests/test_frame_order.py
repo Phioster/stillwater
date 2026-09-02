@@ -37,7 +37,9 @@ class TestReihenfolge(unittest.TestCase):
         self.assertEqual(pingpong_order(frames), [0, 1, 2, 3, 4, 3, 2, 1])
 
     def test_kein_schritt_springt_um_mehr_als_ein_bild(self):
-        ## Dieselbe Zusicherung, die der Godot-Test stellt.
+        ## Keine zu grossen Sprunge: jeder Schritt in der Reihenfolge geht um
+        ## hoechstens ein Bild weiter. Groessere Sprunge waeren am Bildschirm
+        ## sichtbar und wuerden dafuer sorgen, dass die Animation flackert.
         frames = [_balken(h) for h in (1, 2, 3, 4, 5, 4, 3, 2)]
         order = pingpong_order(frames)
         for i in range(len(order)):

@@ -272,7 +272,7 @@ func _dock() -> void:
 # Figur schmal, dafuer liest man Pose und Wurf ueberhaupt erst -- frontal
 # stand sie steif da und die Rute ragte seitlich weg.
 #
-# 64 Pixel je Frame. Alle Ebenen rechnen gegen dieselben Zeilen und dieselbe
+# 128 Pixel je Frame. Alle Ebenen rechnen gegen dieselben Zeilen und dieselbe
 # Mittelachse, sonst sitzt das Oberteil neben dem Rumpf.
 
 const FRAME := AnglerPose.FRAME_SIZE
@@ -280,8 +280,6 @@ const FRAMES := AnglerPose.FRAMES
 
 ## Mittelachse und die Zeilen, an denen alle Ebenen haengen.
 const CX := 33
-## Kopfmitte der gezeichneten Figur -- siehe _hat().
-const HAT_CX := 26
 const HEAD_Y := 16
 const NECK_Y := 22
 const CHEST_Y := 29

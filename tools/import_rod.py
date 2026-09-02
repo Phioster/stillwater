@@ -364,30 +364,6 @@ def skin_run(layers, frame, anchor, step, size):
                 break
     return reach
 
-def cut_at_hand(sheet, frame, anchor, direction, front, back, size, body):
-    """Nimmt die Rute dort weg, wo die Faust sie verdeckt.
-
-    Zwei Schnitte, beide senkrecht auf der Rute und deshalb gerade: vor der
-    Faust steht die Rute, hinter ihr schaut ein kurzer Stummel Griffende
-    heraus. Ohne Stummel steckt der Griff ganz in der Faust; mit dem ganzen
-    Griffende lag er quer ueber dem Unterarm.
-    """
-    ox = frame * size
-    ax, ay = anchor
-    px = sheet.load()
-    for y in range(size):
-        for x in range(size):
-            if px[ox + x, y][3] == 0:
-                continue
-            along = (x - ax) * direction.real + (y - ay) * direction.imag
-            if back <= along < front or along < back - STUB:
-                px[ox + x, y] = (0, 0, 0, 0)
-            elif along < back and any(lp[ox + x, y][3] > 0 for _, lp in body):
-                # Der Stummel liegt hinter der Figur, nicht auf ihr. Pixel
-                # fuer Pixel am Umriss beschnitten -- ein gerader Schnitt
-                # koennte das nicht, der Unterarm laeuft ja quer dazu.
-                px[ox + x, y] = (0, 0, 0, 0)
-
 def rod_profile(art):
     """Die Rute als Querschnitt statt als Bild.
 
@@ -424,36 +400,6 @@ def rod_profile(art):
 ## bilden ein gedrehtes Einheitsgitter, der groesste Abstand ist also die
 ## halbe Diagonale: 0,71. Etwas Reserve, damit keine Loecher bleiben.
 NEAR = 0.8
-
-def sweep_rod(sheet, frame, anchor, tip_off, grid, src_len, size):
-    """Zeichnet die Rute in der Richtung dieser Pose.
-
-    Rueckwaerts abgebildet -- fuer jeden Zielpixel wird der naechste
-    Profilpunkt gesucht. Vorwaerts blieben Luecken, wo die Achse sich dreht.
-    """
-    ox = frame * size
-    ax, ay = anchor
-    length = math.hypot(tip_off[0], tip_off[1])
-    ux, uy = tip_off[0] / length, tip_off[1] / length
-    nx, ny = -uy, ux
-    stretch = length / src_len
-    px = sheet.load()
-    reach = int(src_len * max(stretch, 1.0)) + 26
-    for y in range(max(0, ay - reach), min(size, ay + reach + 1)):
-        for x in range(max(0, ax - reach), min(size, ax + reach + 1)):
-            vx, vy = x - ax, y - ay
-            t = (vx * ux + vy * uy) / stretch
-            sp = vx * nx + vy * ny
-            best, dist = None, NEAR
-            ti, si = int(round(t)), int(round(sp))
-            for dt in (-1, 0, 1):
-                for ds in (-1, 0, 1):
-                    for pt, ps, color in grid.get((ti + dt, si + ds), ()):
-                        d = math.hypot(pt - t, ps - sp)
-                        if d < dist:
-                            dist, best = d, color
-            if best is not None:
-                px[ox + x, y] = best
 
 def sweep_rod_at_grip(sheet, frame, tip_off, grid, src_len, size, grip):
     """Zeichnet die Rute in der Richtung dieser Pose, mit Griff in der Mitte.
@@ -524,7 +470,6 @@ def main():
     rod_frame_mapping = read_array_ints("ROD_FRAME")
 
     skin = figure_layers(SKIN)
-    body = figure_layers(SILHOUETTE)
     groups = classify(rod)
     base = {
         "cork": average(groups["cork"], (140, 90, 50)),
