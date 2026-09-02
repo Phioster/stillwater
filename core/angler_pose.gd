@@ -4,7 +4,7 @@
 ## eine Konstante für deren Spitze. Beim Verschieben der Rute wurde die
 ## Konstante nicht mitgezogen, und die Schnur begann daneben.
 ##
-## Die Figur kommt aus PixelLab (assets/source/angler.png) mit 128 Pixeln
+## Die Figur kommt aus PixelLab (assets/source/figure/) mit 128 Pixeln
 ## Kantenlänge. Jede Pose hat ihren EIGENEN Griff und ihre eigene Richtung:
 ## beim Ausholen zeigt die Rute nach hinten, beim Wurf nach vorn. Ein
 ## gemeinsamer Startpunkt mit einem Höhenversatz konnte das nie abbilden.

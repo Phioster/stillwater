@@ -272,25 +272,12 @@ func _dock() -> void:
 # Figur schmal, dafuer liest man Pose und Wurf ueberhaupt erst -- frontal
 # stand sie steif da und die Rute ragte seitlich weg.
 #
-# 128 Pixel je Frame. Alle Ebenen rechnen gegen dieselben Zeilen und dieselbe
-# Mittelachse, sonst sitzt das Oberteil neben dem Rumpf.
+# Die Figurenebenen entstehen hier NICHT mehr -- die schneidet
+# tools/import_character.py aus den PixelLab-Bildern. Geblieben ist der
+# Kopfplatz: die Huete werden weiter gezeichnet.
 
 const FRAME := AnglerPose.FRAME_SIZE
 const FRAMES := AnglerPose.FRAMES
-
-## Mittelachse und die Zeilen, an denen alle Ebenen haengen.
-const CX := 33
-const HEAD_Y := 16
-const NECK_Y := 22
-const CHEST_Y := 29
-const WAIST_Y := 34
-const HIP_Y := 41
-const LEG_TOP := 45
-const BOOT_Y := 56
-const FEET_Y := 61
-
-func _char_sheet() -> Image:
-	return _new_image(FRAME * FRAMES, FRAME)
 
 ## Licht und Schatten werden aus der Grundfarbe gerechnet, statt fuer jede
 ## Flaeche drei Palettenwerte zu fuehren: die Palette bleibt die Quelle, die
@@ -316,23 +303,6 @@ func _bulb(img: Image, cx: float, cy: float, rx: float, ry: float, c: Color) -> 
 
 func _erase(img: Image, cx: float, cy: float, rx: float, ry: float) -> void:
 	_ellipse(img, cx, cy, rx, ry, Color(0, 0, 0, 0))
-
-## Der Kopf im Profil: rundes Schaedeldach, spitzes Kinn nach vorn, eine
-## kleine Nasenkante. Das Auge sitzt weit vorn und ist gross -- daran haengt
-## der Anime-Eindruck mehr als an allem anderen.
-func _profile_head(img: Image, ox: int, c: Color) -> void:
-	_bulb(img, ox + CX, HEAD_Y, 6.0, 6.5, c)
-	# Kinn: hinten unten weg, vorn unten eine Spitze stehen lassen.
-	_erase(img, ox + CX - 5.0, HEAD_Y + 5.0, 3.5, 3.0)
-	_rect(img, ox + CX + 4, HEAD_Y + 4, 2, 2, c)
-	# Nase
-	_rect(img, ox + CX + 6, HEAD_Y + 1, 1, 2, c)
-	# Auge: Wimpernstrich, dunkle Iris, ein Lichtpunkt.
-	_rect(img, ox + CX + 2, HEAD_Y - 2, 4, 1, _c(&"outline"))
-	_rect(img, ox + CX + 3, HEAD_Y - 1, 3, 3, _c(&"outline"))
-	_rect(img, ox + CX + 3, HEAD_Y - 1, 1, 1, _c(&"foam"))
-	# Mund, ein Pixel
-	_rect(img, ox + CX + 5, HEAD_Y + 3, 1, 1, _shadow(c))
 
 ## Variante 0 bleibt leer -- das ist "ohne Hut". Der Kopfplatz traegt Huete
 ## UND Kopfschmuck: Hoerner, Heiligenschein und Kopfhoerer sitzen an derselben
