@@ -6,6 +6,10 @@ Pullover-Familie, nicht in den Umriss. Seit die Haut eine bekannte
 Schluesselfarbe hat, ist "keine Haut, ringsum Haut" ohne Raten zu pruefen:
 ein Pixel gehoert zum Auge, wenn in allen vier Richtungen Haut kommt, bevor
 Rand oder Transparenz erreicht wird.
+
+Gesucht wird nur innerhalb des Gesichts, nicht im ganzen Bild -- sonst
+gewinnt zuverlaessig eine groessere Nicht-Haut-Insel anderswo (bei dieser
+Figur: der Pferdeschwanz, der ueber die im Schoss gefalteten Haende haengt).
 """
 from collections import Counter
 
@@ -55,20 +59,45 @@ def _helligkeit(farbe):
     r, g, b = farbe
     return 0.299 * r + 0.587 * g + 0.114 * b
 
+def _gesichtsfeld(haut_px, w, h, anteil=0.05, mindestgroesse=8):
+    """Das umschliessende Rechteck des Gesichts.
+
+    Nicht die groesste Hautflaeche -- beim Wurf verschmelzen Hautflaechen
+    und tauschen Groessenraenge. Aber der Kopf ist immer oben: unter den
+    Flaechen, die gross genug sind, um ueberhaupt Koerperteile zu sein
+    (mindestens 5% aller Hautpixel, mindestens 8 Pixel absolut gegen den
+    entarteten Fall fast leerer Bilder), ist das Gesicht die mit der
+    obersten Zeile. Erst filtern, dann waehlen -- andersherum macht ein
+    einzelnes Rauschpixel an der Zopfspitze zum "Gesicht".
+    """
+    punkte = [(x, y) for y in range(h) for x in range(w) if haut_px[x, y][3] > 0]
+    flaechen = _komponenten(punkte)
+    schwelle = max(mindestgroesse, anteil * len(punkte))
+    kandidaten = [f for f in flaechen if len(f) >= schwelle]
+    if not kandidaten:
+        raise SystemExit("_gesichtsfeld: keine Hautflaeche erreicht %.1f Pixel "
+                          "(%.0f%% von %d) -- kein Gesicht gefunden"
+                          % (schwelle, anteil * 100, len(punkte)))
+    gesicht = min(kandidaten, key=lambda f: min(p[1] for p in f))
+    xs = [p[0] for p in gesicht]
+    ys = [p[1] for p in gesicht]
+    return min(xs), min(ys), max(xs) + 1, max(ys) + 1
+
 def close_eye(img, table):
     haut = split(img, table)["skin"].load()
     sichtbar = img.load()
     w, h = img.size
-    ## Kandidaten: sichtbar, aber keine Haut -- die Farbe des Augen-Tons
-    ## selbst spielt keine Rolle, nur seine Lage zaehlt.
-    kandidaten = [(x, y) for y in range(h) for x in range(w)
+    x0, y0, x1, y1 = _gesichtsfeld(haut, w, h)
+    ## Kandidaten: sichtbar, aber keine Haut, und nur innerhalb des
+    ## Gesichts -- die Farbe des Augen-Tons selbst spielt keine Rolle, nur
+    ## seine Lage zaehlt.
+    kandidaten = [(x, y) for y in range(y0, y1) for x in range(x0, x1)
                   if sichtbar[x, y][3] > 128 and haut[x, y][3] == 0
                   and _ist_insel(haut, sichtbar, x, y, w, h)]
     if not kandidaten:
         return img.copy()
     ## Die Figur hat ein Auge -- also nur die groesste zusammenhaengende
-    ## Insel nehmen. Falsche Einzeltreffer anderswo im Bild (Naht, Saum)
-    ## verlieren damit von selbst, ohne dass eine Bildzeile vorgegeben wird.
+    ## Insel nehmen.
     insel = max(_komponenten(kandidaten), key=len)
 
     ## Der haeufigste Hautton ringsum, nicht ein gewaehlter: das Gesicht ist

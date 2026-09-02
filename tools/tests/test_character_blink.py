@@ -72,5 +72,42 @@ class TestBlinzelnAndersfarbigesAuge(unittest.TestCase):
         self.assertNotEqual(px[5, 5][:3], AUGE_ANDERSFARBIG[:3])
 
 
+SCHOSSFLECK = (60, 140, 60, 255)  # assign() stuft das als "pants" ein
+
+
+def _gesicht_mit_ablenkung():
+    """Ein kleines Gesicht oben (Hautflaeche mit Augen-Insel), eine groessere
+    Nicht-Haut-Insel weiter unten in einer eigenen, getrennten Hautflaeche
+    (z. B. eine Straehne im Schoss). Ohne Gesichtsbeschraenkung gewinnt die
+    groessere untere Insel -- mit ihr nicht, weil die Suche gar nicht erst
+    ausserhalb des Gesichtsrechtecks nachsieht."""
+    img = Image.new("RGBA", (16, 24), (0, 0, 0, 0))
+    px = img.load()
+    for y in range(1, 10):          # Gesicht: 10x9 Haut, Auge 2x2 (4 Px)
+        for x in range(3, 13):
+            px[x, y] = HAUT
+    for x, y in ((7, 4), (8, 4), (7, 5), (8, 5)):
+        px[x, y] = DUNKEL
+    for y in range(15, 21):         # Schoss: 12x6 Haut, Fleck 4x3 (12 Px)
+        for x in range(2, 14):
+            px[x, y] = HAUT
+    for y in range(17, 20):
+        for x in range(6, 10):
+            px[x, y] = SCHOSSFLECK
+    return img
+
+
+class TestBlinzelnMitAblenkung(unittest.TestCase):
+    def test_die_groessere_insel_im_schoss_gewinnt_nicht(self):
+        zu = close_eye(_gesicht_mit_ablenkung(), None)
+        px = zu.load()
+        self.assertNotEqual(px[7, 4][:3], DUNKEL[:3], "das Auge blieb offen")
+        self.assertNotEqual(px[8, 5][:3], DUNKEL[:3], "das Auge blieb offen")
+        for x in range(6, 10):
+            for y in range(17, 20):
+                self.assertEqual(px[x, y][:3], SCHOSSFLECK[:3],
+                                 "die Ablenkung im Schoss wurde faelschlich geschlossen")
+
+
 if __name__ == "__main__":
     unittest.main()
