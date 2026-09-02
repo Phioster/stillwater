@@ -34,4 +34,22 @@ if ! grep -qE "^[0-9]+ Tests, 0 fehlgeschlagen$" "$OUT"; then
 	echo "FEHLGESCHLAGEN: Tests rot oder Zusammenfassung fehlt."
 	exit 1
 fi
-echo "Alles gruen, keine Laufzeitfehler."
+echo "Godot-Suite gruen, keine Laufzeitfehler."
+
+# Python-Tests
+echo
+echo "Python-Tests..."
+PYOUT="$(mktemp)"
+trap 'rm -f "$PYOUT"' EXIT
+python3 -m unittest discover -s tools/tests -t . 2>&1 | tee "$PYOUT"
+if grep -qE "^(FAILED|ERROR)" "$PYOUT"; then
+	echo
+	echo "FEHLGESCHLAGEN: Python-Tests rot."
+	exit 1
+fi
+if ! grep -q "^Ran [0-9]\+ test" "$PYOUT"; then
+	echo
+	echo "FEHLGESCHLAGEN: Python-Zusammenfassung fehlt oder nicht lesbar."
+	exit 1
+fi
+echo "Alles gruen, alle Suites OK."

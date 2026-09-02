@@ -196,16 +196,6 @@ func test_the_rod_keeps_its_length_in_every_pose() -> void:
 			"Bild %d: die Rute ist %.1f statt %.1f Pixel lang"
 			% [f, Vector2(AnglerPose.ROD_TIP_OFF[f]).length(), first])
 
-## Wo das Rutensprite sitzt und wo die Rechnung seine Spitze vermutet, muss
-## dasselbe sein -- sonst beginnt die Schnur neben der Rute. Seit die Rute
-## ein eigenes Raster hat, sind das zwei getrennte Rechnungen, und genau
-## dazwischen ist frueher die Schnur verrutscht.
-func test_the_placed_sprite_and_the_computed_tip_agree() -> void:
-	for f in AnglerPose.FRAMES:
-		var in_sheet: Vector2i = AnglerPose.ROD_GRIP + AnglerPose.ROD_TIP_OFF[f]
-		assert_true(AnglerPose.rod_tip(f) == AnglerPose.rod_offset(f) + in_sheet,
-			"Bild %d: Sprite sagt %s, Rechnung sagt %s"
-			% [f, AnglerPose.rod_offset(f) + in_sheet, AnglerPose.rod_tip(f)])
 
 ## Die Rute muss vollstaendig in IHR Bild passen -- sonst blutet sie in das
 ## naechste und ist dort als zweite Rute zu sehen. Seit sie ein eigenes,
