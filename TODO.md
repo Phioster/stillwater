@@ -97,19 +97,18 @@ jemandem mit Heiligenschein.
   plus Pixel im Generator — es fehlt nur die Zeichnung.
 - Eine **Rock**-Variante bei den Hosen, sobald die Figur steht.
 
-## Figur: gezeichnet statt gemalt (2026-08-31)
+## Figur: gezeichnet statt gemalt (2026-08-31, aktualisiert 2026-09-03)
 
-Die Anglerin kommt jetzt aus `assets/source/angler_base.png` — einem mit
-PixelLab erzeugten 64×64-Bild in Seitenansicht (Anime, Blick nach rechts).
-Zwei prozedurale Anläufe mit Ellipsen sahen nach zusammengesteckten Formen
-aus und sind verworfen.
+Die Anglerin kommt aus PixelLab mit 128×128 Pixeln in Seitenansicht (Anime,
+Blick nach rechts).
 
 `tools/import_character.py` zerlegt das flache Bild in unsere Ebenen (Haut,
 Haare, Oberteil, Hose+Stiefel) und färbt daraus die Farbvarianten ein — mit
 derselben Formel wie der Tönungs-Shader, damit ein umgefärbtes Oberteil
 aussieht wie umgetönte Haare. **Kosten: null Generierungen je Variante.**
 
-Bildgröße 64 Pixel je Frame, fünf Rahmen, Vergrößerung in der Welt 2 statt 4.
+Bildgröße 128 Pixel je Frame, 24 Rahmen (neun für Ruhelauf, neun für Blinzeln,
+sechs für Wurf), Vergrößerung in der Welt 2.16.
 
 **Was daran noch Platzhalter ist:**
 
@@ -118,22 +117,17 @@ Bildgröße 64 Pixel je Frame, fünf Rahmen, Vergrößerung in der Welt 2 statt 
   passen im Stil nicht.
 - **Die fünf Frisuren sind alle dieselbe.** Eine zweite Frisur ist ein
   zweites Ausgangsbild, keine Umfärbung.
-- ~~Die Rahmen zeigen dieselbe Pose~~ — erledigt: **zehn** gezeichnete Bilder,
-  vier für den Ruhelauf, eins fürs Blinzeln, fünf für den Wurf. Die vier
-  Ruhebilder kommen als **ein Streifen** aus einer Generierung — vier
-  getrennte Bilder wären vier leicht verschiedene Figuren und würden in
-  Bewegung flackern. Der Ruhelauf spielt sie als Pingpong 0‑1‑2‑3‑2‑1
-  (`AnglerPose.IDLE_ORDER`) mit drei Bildern je Sekunde: vom Umkehrpunkt
-  direkt auf den Anfang zu springen ändert dreimal so viele Umrisspixel wie
-  jeder andere Schritt, und der Zopf wird sichtbar zurückgerissen. Der Wurf
-  läuft über `FishingSim.CAST_TIME` ab, hängt also am selben Zähler wie der
-  Kern; der Ruhelauf zählt für sich weiter.
+- ~~Die Rahmen zeigen dieselbe Pose~~ — erledigt: Der Ruhelauf ist eine
+  geschlossene Schleife (0, 1, 2, 3, 4, 5, 6, 7, 8) mit drei Bildern je
+  Sekunde: ein natürlicher Atemzug dauert drei Sekunden. Der Wurf läuft über
+  `FishingSim.CAST_TIME` ab, hängt also am selben Zähler wie der Kern; der
+  Ruhelauf zählt für sich weiter.
 - ~~Die **Rute** ist die einzige Figurengrafik, die noch gerechnet wird~~ —
   erledigt: sie ist gezeichnet (`assets/source/rod_45.png`) und wird für die
   Wurfposen nicht mehr nachgemalt, sondern als **Querschnittsprofil** in deren
-  Richtung gelegt (`tools/import_rod.py::rod_profile`/`sweep_rod`). Jeder
-  Pixel bekommt zwei Zahlen — wie weit auf der Rutenachse, wie weit quer dazu
-  — und wird rückwärts abgebildet. Kork, Ringe und Rolle kommen dabei von
+  Richtung gelegt (`tools/import_rod.py::rod_profile`/`sweep_rod_at_grip`).
+  Jeder Pixel bekommt zwei Zahlen — wie weit auf der Rutenachse, wie weit quer
+  dazu — und wird rückwärts abgebildet. Kork, Ringe und Rolle kommen dabei von
   selbst mit. Ein fertiges Bild zu **drehen** geht nicht: von Hand wird es
   verwaschen oder ausgefranst (drei Anläufe), und ein Bildmodell hat die Rute
   auf Zuruf nicht gedreht, sondern über die Leinwand geschoben (13 Bilder,
