@@ -343,17 +343,20 @@ func _profile_head(img: Image, ox: int, c: Color) -> void:
 ## Die Huete sind in 64er-Geometrie gezeichnet und werden am Ende ganzzahlig
 ## vergroessert. Alle Koordinaten hier beziehen sich also auf den halben
 ## Rahmen -- billiger und sicherer, als 40 Zahlen von Hand zu verdoppeln.
-const HAT_FRAME := 64
+const HAT_FRAME := FRAME / 2
+
+## Kopfmitte je Bild (gemessen aus char_hair_0.png, geteilt durch 2 fuer
+## 64er-Geometrie). Der Kopf wandert waehrend des Atemzugs und beim Wurf.
+const HAT_CENTERS_X: Array[int] = [19, 18, 18, 19, 20, 21, 22, 21, 20, 19, 18, 18, 19, 20, 21, 22, 21, 20, 19, 18, 17, 18, 27, 28]
+## Oberste Haarzeile je Bild (geteilt durch 2).
+const HAT_TOPS: Array[int] = [4, 4, 4, 4, 5, 6, 6, 5, 5, 4, 4, 4, 4, 5, 6, 6, 5, 5, 4, 4, 4, 5, 7, 6]
 
 func _hat(index: int) -> void:
 	var img := _new_image(HAT_FRAME * FRAMES, HAT_FRAME)
-	# Der Kopf der gezeichneten Figur sitzt im Rahmen bei x 19..35, Oberkante
-	# y 2. Huete rechnen gegen diese Kante, nicht gegen die Koerpermitte --
-	# der Zopf zieht die Mitte sonst nach links.
-	var cx := HAT_CX
-	var top := 1
 	for f in FRAMES:
 		var ox := f * HAT_FRAME
+		var cx := HAT_CENTERS_X[f]
+		var top := HAT_TOPS[f]
 		match index:
 			1:  # Kappe: Schirm nach vorn
 				_limb(img, ox + cx - 8, top + 1, 16, 5, _c(&"cloth_grey"))
