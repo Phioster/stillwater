@@ -27,7 +27,6 @@ func test_die_ebenen_ueberlappen_sich_nirgends() -> void:
 	assert_eq(doppelt, 0, "%d Pixel liegen in mehr als einer Ebene" % doppelt)
 
 ## Die Grundebene traegt Umriss und Gesichtszuege -- nicht die halbe Figur.
-## Gemessen am alten Weg: 98.199 von rund 224.000 Pixeln lagen dort.
 func test_die_grundebene_ist_nicht_die_halbe_figur() -> void:
 	var gesamt := 0
 	var basis := 0
