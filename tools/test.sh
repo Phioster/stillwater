@@ -40,7 +40,8 @@ echo "Godot-Suite gruen, keine Laufzeitfehler."
 echo
 echo "Python-Tests..."
 PYOUT="$(mktemp)"
-trap 'rm -f "$PYOUT"' EXIT
+# Beide Dateien in EINEN trap: ein zweites trap ... EXIT ersetzt das erste.
+trap 'rm -f "$OUT" "$PYOUT"' EXIT
 python3 -m unittest discover -s tools/tests -t . 2>&1 | tee "$PYOUT"
 if grep -qE "^(FAILED|ERROR)" "$PYOUT"; then
 	echo

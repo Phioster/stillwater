@@ -37,8 +37,9 @@ const DECK_OVER_WATER := 16.0
 ## Wo die Anglerin auf dem Steg steht, vom linken Stegende gezaehlt. Frueher
 ## 200 -- sie stand in der Stegmitte, und die Schnur schnitt auf ihrem Weg
 ## zum Schwimmer durch die letzten Planken. Bei 290 stehen ihre Fuesse bei
-## 56,6% der Steglaenge (296 von 512 Pixeln). Die Rutenspitze liegt bei 77%
-## (396 von 512), mitten auf dem Steg.
+## 57% der Steglaenge (290 von 512 Stegpixeln). Die Figur laeuft im doppelten
+## Massstab, ein Figurenpixel zaehlt also doppelt: die Rutenspitze (106 Pixel
+## rechts vom Anker) liegt bei 502 von 512 und damit knapp vor dem Stegende.
 const ANGLER_ON_DECK := 290.0
 ## Wie weit hinter dem Stegende der Schwimmer liegt.
 const BOBBER_OFF_DOCK := 120.0

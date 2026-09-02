@@ -59,11 +59,6 @@ STUB = 5
 ## dem Kopf, und ueber den ganzen Umriss zu tasten lief durch den Zopf
 ## weiter -- dann wurde die halbe Rute abgeschnitten.
 SKIN = ["char_skin_0"]
-## Beschnitten wird dagegen am ganzen Umriss: das Griffende laeuft hinter der
-## Faust ueber den Unterarm, und dort gehoert es nach HINTEN.
-SILHOUETTE = ["char_skin_0", "char_pants_0", "char_shirt_0",
-              "char_hair_0", "char_base_0"]
-
 def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
 
