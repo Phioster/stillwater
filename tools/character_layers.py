@@ -19,6 +19,11 @@ def split(img, table):
             r, g, b, a = src[x, y]
             if a <= 128:
                 continue
-            part = (table or {}).get((r, g, b)) or assign((r, g, b))
+            eintrag = (table or {}).get((r, g, b))
+            # Geteilte Eintraege aufloesen: dict mit grenze/oben/unten
+            if isinstance(eintrag, dict):
+                part = eintrag["oben"] if y < eintrag["grenze"] else eintrag["unten"]
+            else:
+                part = eintrag or assign((r, g, b))
             dst[part][x, y] = (r, g, b, 255)
     return layers

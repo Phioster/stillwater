@@ -62,12 +62,22 @@ def measure(img):
     return table
 
 def save_table(path, table):
+    # Wandle Farben in Hex-String um, behalte Parts/geteilte Eintraege
+    json_table = {}
+    for c, v in sorted(table.items()):
+        hex_key = "%02x%02x%02x" % c
+        json_table[hex_key] = v
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump({"%02x%02x%02x" % c: p for c, p in sorted(table.items())},
-                  fh, indent=1, sort_keys=True)
+        json.dump(json_table, fh, indent=1, sort_keys=True)
 
 def load_table(path):
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
-    return {tuple(int(k[i:i + 2], 16) for i in (0, 2, 4)): v
-            for k, v in raw.items() if len(k) == 6}
+    result = {}
+    for k, v in raw.items():
+        # Nur Hex-Farbschluessel verarbeiten (Laenge 6)
+        if len(k) == 6:
+            rgb_key = tuple(int(k[i:i + 2], 16) for i in (0, 2, 4))
+            # Part ist entweder ein String oder ein geteilter Eintrag (dict)
+            result[rgb_key] = v
+    return result

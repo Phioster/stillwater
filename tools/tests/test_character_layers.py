@@ -48,6 +48,31 @@ class TestSplit(unittest.TestCase):
         self.assertEqual(layers["boots"].load()[0, 1][3], 255)
         self.assertEqual(layers["shirt"].load()[0, 1][3], 0)
 
+    def test_geteilte_eintraege_werden_aufgeloest(self):
+        ## Eine geteilte Tabelle: dieselbe Farbe oben in hair, unten in boots.
+        # Baue ein Bild mit zwei Pixeln derselben Farbe an verschiedenen y-Positionen.
+        img = Image.new("RGBA", (2, 4), (0, 0, 0, 0))
+        px = img.load()
+        color = (100, 150, 200)
+
+        # Oben, Zeile 0
+        px[0, 0] = color + (255,)
+        # Unten, Zeile 3
+        px[1, 3] = color + (255,)
+
+        # Geteilter Eintrag: Zeile 2 ist die Grenze
+        table = {color: {"grenze": 2, "oben": "hair", "unten": "boots"}}
+
+        layers = split(img, table)
+
+        # Der obere Pixel sollte in hair sein
+        self.assertEqual(layers["hair"].load()[0, 0][3], 255)
+        self.assertEqual(layers["boots"].load()[0, 0][3], 0)
+
+        # Der untere Pixel sollte in boots sein
+        self.assertEqual(layers["boots"].load()[1, 3][3], 255)
+        self.assertEqual(layers["hair"].load()[1, 3][3], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
