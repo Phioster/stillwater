@@ -15,13 +15,11 @@ def zweigeteilt(zeilen, mindestluecke=20):
     if not zeilen:
         return None
 
-    # Sortiere und entferne Duplikate
     sorted_zeilen = sorted(set(zeilen))
 
     if len(sorted_zeilen) < 2:
         return None
 
-    # Finde die groesste Luecke zwischen aufeinanderfolgenden Zeilen
     max_gap = 0
     max_gap_start = None
 
@@ -31,11 +29,9 @@ def zweigeteilt(zeilen, mindestluecke=20):
             max_gap = gap
             max_gap_start = sorted_zeilen[i]
 
-    # Ist die Luecke zu klein, gibt es nicht zwei Haufen
     if max_gap < mindestluecke:
         return None
 
-    # Die Mitte der Luecke, abgerundet
     grenze = max_gap_start + max_gap // 2
     return grenze
 
@@ -50,7 +46,6 @@ def finde_mehrdeutige(img, mindestluecke=20, mindestpixel=4):
     px = img.load()
     w, h = img.size
 
-    # Sammle alle Pixel je Farbe: Farbe -> Liste von (x, y)
     color_pixels = defaultdict(list)
     for y in range(h):
         for x in range(w):
@@ -58,42 +53,34 @@ def finde_mehrdeutige(img, mindestluecke=20, mindestpixel=4):
             if a > 128:
                 color_pixels[(r, g, b)].append((x, y))
 
-    # Finde Mehrdeutige
     result = {}
 
     for color, pixels in color_pixels.items():
-        # Ueberspringe Farben mit zu wenig Pixeln
         if len(pixels) < mindestpixel:
             continue
 
-        # Ueberspringe Umrissfarben: Farben, die assign() als "base" erkennt
+        # Umriss selbst kann nicht mehrdeutig sein — es umrandet alles.
         if assign(color) == "base":
             continue
 
-        # Sammel alle belegten Zeilen dieser Farbe
         zeilen = [y for x, y in pixels]
 
-        # Frage, ob diese Farbe geteilt ist
         grenze = zweigeteilt(zeilen, mindestluecke)
         if grenze is None:
             continue
 
-        # Teile die Pixel in zwei Haufen
         oben = [(x, y) for x, y in pixels if y < grenze]
         unten = [(x, y) for x, y in pixels if y >= grenze]
 
-        # Bestimme das umgebende Teil fuer jeden Haufen
         def find_surrounding_part(haufen):
             """Das haeufigste Teil, das diese Pixel umgibt.
 
-            Ueberspringe Umriss-Nachbarn (die als "base" erkannt werden) —
-            sie umranden jeden Teil gleichermaßen und sagen nichts über
-            die Zugehoerigkeit aus.
+            Umriss-Nachbarn werden gefiltert — sie umranden jeden Teil
+            gleichermaßen und sagen nichts über die Zugehoerigkeit aus.
             """
             part_counts = defaultdict(int)
 
             for x, y in haufen:
-                # Schaue die acht Nachbarn an
                 neighbors = [
                     (x - 1, y - 1), (x, y - 1), (x + 1, y - 1),
                     (x - 1, y),                 (x + 1, y),
@@ -101,30 +88,25 @@ def finde_mehrdeutige(img, mindestluecke=20, mindestpixel=4):
                 ]
 
                 for nx, ny in neighbors:
-                    # Grenze checken
                     if nx < 0 or nx >= w or ny < 0 or ny >= h:
                         continue
 
                     nr, ng, nb, na = px[nx, ny]
 
-                    # Ueberspringe durchsichtige Pixel
                     if na <= 128:
                         continue
 
-                    # Ueberspringe die gleiche Farbe
                     if (nr, ng, nb) == color:
                         continue
 
-                    # Ordne dieser Farbe ein Teil zu
                     part = assign((nr, ng, nb))
 
-                    # Ueberspringe Umriss-Nachbarn
+                    # Umriss-Nachbarn nicht zählen — sie sind neutral.
                     if part == "base":
                         continue
 
                     part_counts[part] += 1
 
-            # Das haeufigste Teil (wenn es noch Nachbarn gibt)
             if part_counts:
                 return max(part_counts, key=part_counts.get)
             return None
@@ -132,7 +114,7 @@ def finde_mehrdeutige(img, mindestluecke=20, mindestpixel=4):
         part_oben = find_surrounding_part(oben)
         part_unten = find_surrounding_part(unten)
 
-        # Nur aufnehmen, wenn oben und unten verschieden sind
+        # Nur mehrdeutig, wenn oben und unten verschiedene Teile sind.
         if part_oben is not None and part_unten is not None and part_oben != part_unten:
             result[color] = {
                 "grenze": grenze,

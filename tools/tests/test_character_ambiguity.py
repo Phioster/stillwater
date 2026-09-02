@@ -77,50 +77,50 @@ class TestFindeMehrdeutige(unittest.TestCase):
         self.assertLess(entry["grenze"], 50)
 
     def test_umriss_nachbarn_zaehlen_nicht(self):
-        ## Ein Haufen, dessen Nachbarn mehrheitlich Umriss sind, aber unter
-        ## den Nicht-Umriss-Nachbarn eindeutig zu einem Teil gehoeren, soll
-        ## dieses Teil bekommen, nicht "base".
+        ## Ein Haufen an der äußersten Kante eines Teils: Umriss überall,
+        ## das echte Teil nur an einer Seite. Ohne Filter würde "base"
+        ## gewinnen (7-8 Umriss-Nachbarn vs. 1-2 echte-Teil-Nachbarn).
 
-        # Baue ein Bild: oben Haare, unten Stiefel, beide vom Umriss umrandet.
-        img = Image.new("RGBA", (30, 80), (0, 0, 0, 0))
+        # Baue ein Bild mit zwei Haufen, räumlich weit getrennt (Lücke > 20).
+        img = Image.new("RGBA", (32, 100), (0, 0, 0, 0))
         px = img.load()
 
         # Farben
         hair_color = (0xDF, 0x90, 0xD2)
         shared_color = (0x20, 0xB6, 0x92)
-        boots_color_alt = (0x1A, 0x9D, 0x7F)
+        boots_color = (0x1A, 0x9D, 0x7F)
         outline_color = (0x1A, 0x1A, 0x22)  # sehr dunkel -> assign() gibt "base"
 
-        # Oben (0-25): Haarfeld
-        for y in range(25):
-            for x in range(30):
-                px[x, y] = hair_color + (255,)
+        # Oben: Umriss umrandet alles
+        for y in range(6):
+            for x in range(32):
+                px[x, y] = outline_color + (255,)
 
-        # Oben: Umriss umrandet die Haare an den Kanten
-        for x in range(30):
-            px[x, 0] = outline_color + (255,)
-            px[x, 1] = outline_color + (255,)
+        # Haarpixel nur an einer Stelle
+        px[15, 5] = hair_color + (255,)
 
-        # Oben: ein paar Pixel der gemeinsamen Farbe, umgeben von Haaren
-        # und oben viel Umriss (kante)
-        px[10, 2] = shared_color + (255,)
-        px[11, 2] = shared_color + (255,)
-        px[12, 2] = shared_color + (255,)
+        # Gemeinsame Farbe oben: einzelne Pixel an der Grenze, von Umriss
+        # umgeben. Jedes Pixel hat 7-8 Umriss-Nachbarn und nur 1 Haar-Nachbar
+        px[15, 4] = shared_color + (255,)
+        px[16, 4] = shared_color + (255,)
+        px[14, 5] = shared_color + (255,)
+        px[16, 5] = shared_color + (255,)
+        px[15, 6] = shared_color + (255,)  # mindestpixel=5
 
-        # Unten (50-79): Stiefelfeld, auch vom Umriss umrandet
-        for y in range(50, 80):
-            for x in range(30):
-                px[x, y] = boots_color_alt + (255,)
+        # Unten: Umriss umrandet alles
+        for y in range(65, 75):
+            for x in range(32):
+                px[x, y] = outline_color + (255,)
 
-        # Unten: Umriss umrandet die Stiefel
-        for x in range(30):
-            px[x, 79] = outline_color + (255,)
-            px[x, 78] = outline_color + (255,)
+        # Stiefelpixel nur an einer Stelle
+        px[15, 64] = boots_color + (255,)
 
-        # Unten: Pixel der gemeinsamen Farbe
-        px[10, 65] = shared_color + (255,)
-        px[11, 65] = shared_color + (255,)
-        px[12, 65] = shared_color + (255,)
+        # Gemeinsame Farbe unten: ähnliche Struktur
+        px[15, 63] = shared_color + (255,)
+        px[16, 63] = shared_color + (255,)
+        px[14, 64] = shared_color + (255,)
+        px[16, 64] = shared_color + (255,)
+        px[15, 65] = shared_color + (255,)
 
         result = finde_mehrdeutige(img)
 
@@ -128,10 +128,10 @@ class TestFindeMehrdeutige(unittest.TestCase):
         self.assertIn(shared_color, result)
         entry = result[shared_color]
 
-        # Oben sollte hair sein (trotz Umriss-Nachbarn)
+        # Oben sollte hair sein, nicht "base"
         self.assertEqual(entry["oben"], "hair")
 
-        # Unten sollte boots sein (trotz Umriss-Nachbarn), nicht "base"
+        # Unten sollte boots sein, nicht "base"
         self.assertEqual(entry["unten"], "boots")
 
 
