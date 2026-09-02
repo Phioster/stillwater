@@ -46,18 +46,18 @@ const ROD_ANCHOR: Array[Vector2i] = [
 	Vector2i(56, 49), Vector2i(11, 24), Vector2i(87, 60), Vector2i(87, 58),
 ]
 ## Die Spitze, relativ zum Griff. Die Rute hat ihr EIGENES Bildraster und
-## sitzt deshalb in ROD_GRIP, nicht im Figurengriff. Die Ruhe- und Blinzelposen
-## zeigen auf 1 Uhr 30, skaliert auf die gleiche Laenge wie die Wurfposen:
-## etwa 140 Pixel, siebzig Prozent der Koerperhoehe stehender Pose.
+## sitzt deshalb in ROD_GRIP, nicht im Figurengriff. Alle Posen tragen die
+## gleiche Laenge: 63 Pixel (65 Prozent der sitzenden Figurenhoehe, 97 Pixel).
+## Der Ruhelauf zeigt auf 1 Uhr 30, wie die Figur gezeichnet ist.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
-	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
-	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
-	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
-	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
-	Vector2i(79, -78), Vector2i(79, -78), Vector2i(79, -78),
-	Vector2i(81, -114), Vector2i(-69, -122), Vector2i(-115, -80),
-	Vector2i(95, -103), Vector2i(123, -66), Vector2i(121, 71),
+	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
+	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
+	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
+	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
+	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
+	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
+	Vector2i(36, -51), Vector2i(-31, -55), Vector2i(-52, -36),
+	Vector2i(43, -46), Vector2i(56, -30), Vector2i(54, 32),
 ]
 ## Wie weit sich die Rute quer zur Achse biegt. Eine gerade Rute sieht aus
 ## wie ein Stock; die Biegung macht aus dem Wurf eine Bewegung.

@@ -456,20 +456,30 @@ def sweep_rod(sheet, frame, anchor, tip_off, grid, src_len, size):
                 px[ox + x, y] = best
 
 def sweep_rod_at_grip(sheet, frame, tip_off, grid, src_len, size, grip):
-    """Zeichnet die Rute in der Richtung dieser Pose, mit Griff in der Mitte."""
+    """Zeichnet die Rute in der Richtung dieser Pose, mit Griff in der Mitte.
+
+    Nutzt sehr feine Abtastung und Streckenausfüllung, um Löcher zu vermeiden.
+    """
     ox = frame * size
     ax, ay = grip
-    length = math.hypot(tip_off[0], tip_off[1])
-    ux, uy = tip_off[0] / length, tip_off[1] / length
+    target_length = math.hypot(tip_off[0], tip_off[1])
+    ux, uy = tip_off[0] / target_length, tip_off[1] / target_length
     nx, ny = -uy, ux
+
+    # Stretch-Faktor: wie sehr wird die Vorlage gedehnt/gestaucht
+    stretch = target_length / src_len
+
     px = sheet.load()
-    reach = int(src_len * 1.0) + 26
+    reach = int(target_length * max(stretch, 1.0)) + 26
+
     for y in range(max(0, ay - reach), min(size, ay + reach + 1)):
         for x in range(max(0, ax - reach), min(size, ax + reach + 1)):
             vx, vy = x - ax, y - ay
-            t = (vx * ux + vy * uy)
+            t = (vx * ux + vy * uy) / stretch  # skaliert zu Profilkoordinaten
             sp = vx * nx + vy * ny
             best, dist = None, NEAR
+
+            # Suche im Grid (Profil-Raum)
             ti, si = int(round(t)), int(round(sp))
             for dt in (-1, 0, 1):
                 for ds in (-1, 0, 1):
@@ -477,6 +487,7 @@ def sweep_rod_at_grip(sheet, frame, tip_off, grid, src_len, size, grip):
                         d = math.hypot(pt - t, ps - sp)
                         if d < dist:
                             dist, best = d, color
+
             if best is not None:
                 px[ox + x, y] = best
 
@@ -551,20 +562,21 @@ def main():
                     if is_shaft(px[x, y]):
                         px[x, y] = tint(px[x, y], target)
 
-        # Alle Ruhelauf- und Blinzelposen (0 bis idle-1) nutzen Rutenbild 0
-        gx, gy = grip_of(art)
-        # Im Rutenraster sitzt der Griff in ROD_GRIP, nicht auf dem Ankerpunkt
-        sheet.alpha_composite(art, (0 * rod_size + rod_grip[0] - gx, rod_grip[1] - gy))
-
-        # Die Wurfposen: jede bekommt ein eigenes Rutenbild (1 bis rod_frames-1)
+        # Alle Rutenbilder nutzen sweep_rod_at_grip mit ROD_TIP_OFF
         grid, src_len = rod_profile(art)
-        for r in range(1, rod_frames):
+
+        for r in range(rod_frames):
             # Finde die erste Figurenpose, die auf Rutenbild r zeigt
-            f = idle  # Start mit der ersten Wurfpose
-            for i in range(idle, frames):
-                if rod_frame_mapping[i] == r:
-                    f = i
-                    break
+            if r == 0:
+                # Idle/Blink: nutze die erste Ruhepose (Frame 0)
+                f = 0
+            else:
+                # Wurfpose: finde die erste Pose, die auf Rutenbild r zeigt
+                f = idle
+                for i in range(idle, frames):
+                    if rod_frame_mapping[i] == r:
+                        f = i
+                        break
             # Zeichne die Rute fuer diese Pose an der richtigen Stelle
             sweep_rod_at_grip(sheet, r, tips[f], grid, src_len, rod_size, rod_grip)
 
