@@ -1,9 +1,8 @@
 """Aus einem Bilderstapel eine Abspielreihenfolge machen.
 
-Was der Generator liefert, ist ein Stapel. Der Ruhelauf laeuft hier als
-Pingpong -- und eine erzeugte Animation ist meist schon eine geschlossene
-Schleife. Wuerde man die ungekappt spiegeln, liefe die Schwingung zweimal
-und die Figur stuende an beiden Enden kurz still.
+Was der Generator liefert, ist ein Stapel. Eine erzeugte Animation ist meist
+schon eine geschlossene Schleife. Die Reihenfolge wird so gewaehlt, dass der
+Rundschluss vom letzten aufs erste Bild nicht sichtbar springt.
 """
 
 

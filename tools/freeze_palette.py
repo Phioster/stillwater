@@ -6,13 +6,12 @@ Zwischentoene mit, die in der Ruhepose nicht vorkommen. Faellt eine davon
 spaeter durch, weil sie in der Tabelle fehlt, waere das ein Loch mitten in der
 Animation.
 
-Die geteilten Eintraege stehen hier von Hand drin. Der Sucher in
-tools/character_ambiguity.py schlaegt an dieser Figur vierzehn vor, von denen
-nur drei stimmen -- er kann das tuerkise Haargummi im Haar nicht von den
-Hauttoenen im Gesicht unterscheiden, weil beides ein kleiner Fleck inmitten
-von Haar ist. Drei Trennmasse wurden dagegen gemessen (Groesse des Haufens,
-Reinheit des Einschlusses, Anteil der eigenen Familie in der Bildhaelfte);
-keines trennt sauber. Also entscheidet hier ein Mensch, einmal.
+Die geteilten Eintraege stehen hier von Hand drin. Das Modul
+tools/character_ambiguity.py ist ein Analysewerkzeug, das Mehrdeutigkeiten
+SUCHT -- Farben, die in mehr als einer Koerperteilgruppe vorkommen. Die Suche
+wird von Hand GESICHTET und die drei eindeutigen Trennungen hier eingetragen.
+Das Modul ist kein Teil des automatischen Bauprozesses, wird aber bei der
+naechsten Figur wieder gebraucht.
 
     python3 -m tools.freeze_palette
 """

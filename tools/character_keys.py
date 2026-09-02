@@ -31,7 +31,7 @@ def _distance(a, b):
     """Abstand zweier Farben, Farbton am schwersten gewichtet.
 
     Der Farbton trennt Blau von Gruen von Rot; Saettigung trennt das blasse
-    Pfirsich der Haut vom satten Rot der Stiefel. Helligkeit zaehlt am
+    Pfirsich der Haut vom satten Tuerkis der Stiefel. Helligkeit zaehlt am
     wenigsten, damit Licht und Schatten desselben Teils zusammenbleiben.
     """
     ha, sa, la = _hsl(a)
@@ -48,27 +48,6 @@ def assign(rgb):
         return "base"
     return min((p for p in ANCHORS if p != "base"),
                key=lambda p: _distance(rgb, ANCHORS[p]))
-
-def measure(img):
-    """Jede sichtbare Farbe des Bildes einem Teil zuordnen."""
-    px = img.load()
-    w, h = img.size
-    table = {}
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = px[x, y]
-            if a > 128 and (r, g, b) not in table:
-                table[(r, g, b)] = assign((r, g, b))
-    return table
-
-def save_table(path, table):
-    # Wandle Farben in Hex-String um, behalte Parts/geteilte Eintraege
-    json_table = {}
-    for c, v in sorted(table.items()):
-        hex_key = "%02x%02x%02x" % c
-        json_table[hex_key] = v
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(json_table, fh, indent=1, sort_keys=True)
 
 def load_table(path):
     with open(path, encoding="utf-8") as fh:
