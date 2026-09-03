@@ -40,7 +40,7 @@ const DECK_OVER_WATER := 16.0
 ## 57% der Steglaenge (290 von 512 Stegpixeln). Die Figur laeuft im doppelten
 ## Massstab, ein Figurenpixel zaehlt also doppelt: die Rutenspitze (106 Pixel
 ## rechts vom Anker) liegt bei 502 von 512 und damit knapp vor dem Stegende.
-const ANGLER_ON_DECK := 290.0
+const ANGLER_ON_DECK := 200.0
 ## Wie weit hinter dem Stegende der Schwimmer liegt.
 const BOBBER_OFF_DOCK := 120.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke

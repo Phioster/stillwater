@@ -50,15 +50,14 @@ const ROD_ANCHOR: Array[Vector2i] = [
 ## gleiche Laenge: 63 Pixel (65 Prozent der sitzenden Figurenhoehe, 97 Pixel).
 ## Der Ruhelauf zeigt auf 1 Uhr 30, wie die Figur gezeichnet ist.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
-	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
-	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
-	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
-	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
-	Vector2i(45, -44), Vector2i(45, -44), Vector2i(45, -44),
-	Vector2i(36, -51), Vector2i(-31, -55), Vector2i(-52, -36),
-	Vector2i(43, -46), Vector2i(56, -30), Vector2i(54, 32),
-]
+	Vector2i(139, -56), Vector2i(139, -56), Vector2i(139, -56),
+	Vector2i(139, -56), Vector2i(139, -56), Vector2i(139, -56),
+	Vector2i(139, -56), Vector2i(139, -56), Vector2i(139, -56),
+	Vector2i(139, -56), Vector2i(139, -56), Vector2i(139, -56),
+	Vector2i(139, -56), Vector2i(139, -56), Vector2i(139, -56),
+	Vector2i(139, -56), Vector2i(139, -56), Vector2i(139, -56),
+	Vector2i(87, -123), Vector2i(-74, -131), Vector2i(-123, -85),
+	Vector2i(102, -110), Vector2i(132, -71), Vector2i(129, 76)]
 ## Wie weit sich die Rute quer zur Achse biegt. Eine gerade Rute sieht aus
 ## wie ein Stock; die Biegung macht aus dem Wurf eine Bewegung.
 const ROD_BEND: Array[float] = [

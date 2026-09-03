@@ -45,14 +45,14 @@ HAND_REACH = 14
 ## Auf 0.7 verkleinert sind es sieben, und die Rute liegt IN der Hand statt
 ## neben ihr. Weiter herunter ging nicht: bei 0.6 zerfaellt die Rolle.
 SCALE = 0.7
-## Verkleinern kuerzt die Rute mit, und kurz sah sie falsch aus. Der Schaft
-## wird deshalb entlang seiner Achse wieder gestreckt -- nur der Schaft, die
-## Dicke bleibt. Fuenfundzwanzig Schritte bringen sie auf ihre alte Laenge.
-STRETCH = 25
-## Wo gestreckt wird: drei Stellen im glatten Schaft, zwischen den Ringen.
-## An einer Stelle allein klafft eine Luecke, und ueber Ring oder Rolle
-## gestreckt werden die oval.
-STRETCH_CUTS = [15, 42, 59]
+## Wie viele Stellen im glatten Schaft gestreckt werden. An einer Stelle
+## allein klafft eine Luecke; auf sechs verteilt bleiben die Abstaende
+## zwischen den Ringen gleichmaessig. Wo genau, sucht glatte_schnitte().
+STRETCH_STELLEN = 6
+## Wie weit der gestreckte Schaft vom Zielmass abweichen darf, bevor der
+## Sweep ihn zusaetzlich dehnen muesste. Jede Dehnung ueber 1 schmiert die
+## Pixel -- daran ist die Rute schon einmal grob geworden.
+STRETCH_TOLERANZ = 0.06
 ## Wie weit das Griffende hinten aus der Faust schaut.
 STUB = 5
 ## Getastet wird NUR auf der Hautebene. Beim Wurf haelt sie die Rute neben
@@ -212,6 +212,37 @@ def gild_tip(img, gold, gold_dark, span=9):
         px[x, y] = (gold if above[3] == 0 else gold_dark) + (255,)
     return img
 
+def glatte_schnitte(img, anzahl):
+    """Stellen im Schaft finden, an denen sich strecken laesst.
+
+    Eine Scheibe quer zur Rute ist die Menge der Pixel mit gleichem x-y. Wo
+    eine Scheibe duenn ist, liegt glatter Schaft; wo sie dick ist, sitzt ein
+    Ring, die Rolle oder der Kork. Verdoppelt man eine dicke Scheibe, wird das
+    Bauteil laenglich -- deshalb nur die duennen, und die gleichmaessig
+    verteilt, damit die Ringabstaende stimmen.
+    """
+    px = img.load()
+    w, h = img.size
+    dicke = {}
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3]:
+                dicke[x - y] = dicke.get(x - y, 0) + 1
+    if not dicke:
+        raise SystemExit("Die Rutenvorlage ist leer.")
+    duennste = min(dicke.values())
+    # Die Enden auslassen: an der Spitze und im Kork faellt eine Dopplung auf.
+    schluessel = sorted(dicke)
+    rand = max(2, len(schluessel) // 10)
+    kandidaten = [k for k in schluessel[rand:-rand]
+                  if dicke[k] <= duennste + 1]
+    if len(kandidaten) < anzahl:
+        raise SystemExit(
+            "Nur %d glatte Stellen im Schaft, %d gebraucht -- die Vorlage hat"
+            " zu wenig freien Schaft zum Strecken." % (len(kandidaten), anzahl))
+    schritt = len(kandidaten) / float(anzahl)
+    return [kandidaten[int(i * schritt)] for i in range(anzahl)]
+
 def lengthen(img, steps, cuts):
     """Streckt die Rute entlang ihrer Achse, ohne sie dicker zu machen.
 
@@ -359,8 +390,13 @@ def skin_run(layers, frame, anchor, step, size):
                 break
     return reach
 
-def rod_profile(art):
+def rod_profile(art, achse=None):
     """Die Rute als Querschnitt statt als Bild.
+
+    `achse` ist (gx, gy, tx, ty) und uebergeht die Suche nach Griff und
+    Spitze. Noetig, weil die eingefaerbten Varianten sonst eine andere
+    Geometrie bekommen: der braune Schaft ist genauso warm wie der Kork, und
+    die Griffsuche laeuft dann den Schaft hinauf.
 
     Jeder Pixel bekommt zwei Zahlen: wie weit er auf der Rutenachse vom Griff
     entfernt liegt (t) und wie weit quer dazu (s). In dieser Form laesst sie
@@ -375,8 +411,11 @@ def rod_profile(art):
     """
     px = art.load()
     w, h = art.size
-    gx, gy = grip_of(art)
-    tx, ty = tip_of(art)
+    if achse is None:
+        gx, gy = grip_of(art)
+        tx, ty = tip_of(art)
+    else:
+        gx, gy, tx, ty = achse
     length = math.hypot(tx - gx, ty - gy)
     ux, uy = (tx - gx) / length, (ty - gy) / length
     nx, ny = -uy, ux
@@ -407,8 +446,15 @@ def sweep_rod_at_grip(sheet, frame, tip_off, grid, src_len, size, grip):
     ux, uy = tip_off[0] / target_length, tip_off[1] / target_length
     nx, ny = -uy, ux
 
-    # Stretch-Faktor: wie sehr wird die Vorlage gedehnt/gestaucht
+    # Der Sweep dreht die Rute nur noch, er streckt sie nicht: gestreckt wird
+    # in lengthen(), wo Ringe und Rolle Pixel fuer Pixel erhalten bleiben.
     stretch = target_length / src_len
+    if abs(stretch - 1.0) > STRETCH_TOLERANZ:
+        raise SystemExit(
+            "Bild %d: der Sweep muesste die Rute um Faktor %.2f dehnen."
+            " Das schmiert die Pixel. Die Vorlage ist %.0f px lang, gebraucht"
+            " werden %.0f px -- lengthen() vorher richtig einstellen."
+            % (frame, stretch, src_len, target_length))
 
     px = sheet.load()
     reach = int(target_length * max(stretch, 1.0)) + 26
@@ -482,13 +528,25 @@ def main():
     golds = Counter(groups["brass"]).most_common()
     gold = max(g for g, _ in golds)          # der hellste Messington
     gold_dark = min(g for g, _ in golds)
-    small = lengthen(
-        gild_tip(shade_tip(shade_cork(shrink(rod), base["cork"]),
-                           thin, mid, dark), gold, gold_dark),
-        STRETCH, STRETCH_CUTS)
+    roh = gild_tip(shade_tip(shade_cork(shrink(rod), base["cork"]),
+                             thin, mid, dark), gold, gold_dark)
+    # Die Vorlage auf das Zielmass bringen, BEVOR gezeichnet wird. Jede Stufe
+    # verlaengert die Diagonale um eine Scheibenbreite (Wurzel 2). Frueher
+    # stand hier eine feste Zahl und der Sweep hat den Rest gedehnt -- bei
+    # Faktor 2,4 wurde jeder Ring zum Klotz.
+    gx, gy = grip_of(roh)
+    tx, ty = tip_of(roh)
+    ist = math.hypot(tx - gx, ty - gy)
+    ziel = math.hypot(tips[0][0], tips[0][1])
+    stufen = max(0, int(round((ziel - ist) / math.sqrt(2))))
+    small = lengthen(roh, stufen, glatte_schnitte(roh, STRETCH_STELLEN))
     gx, gy = grip_of(small)
     tx, ty = tip_of(small)
+    print("Vorlage %.0f px, Ziel %.0f px, %d Streckstufen -> %.0f px"
+          % (ist, ziel, stufen, math.hypot(tx - gx, ty - gy)))
     print("ROD_TIP_OFF Ruhelauf: Vector2i(%d, %d)" % (tx - gx, ty - gy))
+    # Einmal gemessen, fuer alle Varianten. Siehe rod_profile().
+    achse = (gx, gy, tx, ty)
 
     for variant, tone in enumerate(SHAFT_TONES):
         target = tuple(int(tone[i:i + 2], 16) for i in (0, 2, 4)) if tone else None
@@ -503,7 +561,7 @@ def main():
                         px[x, y] = tint(px[x, y], target)
 
         # Alle Rutenbilder nutzen sweep_rod_at_grip mit ROD_TIP_OFF
-        grid, src_len = rod_profile(art)
+        grid, src_len = rod_profile(art, achse)
 
         for r in range(rod_frames):
             # Finde die erste Figurenpose, die auf Rutenbild r zeigt
