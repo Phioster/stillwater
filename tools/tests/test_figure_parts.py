@@ -60,18 +60,24 @@ class TestTrennen(unittest.TestCase):
         self.ebenen = fp.split(self.pose, self.rute)
 
     def test_keine_ueberschneidung(self):
+        ## Einzige erlaubte Doppelung ist die Unterlage: dort liegt der Kopf
+        ## oben und der Rumpf muss trotzdem etwas darunter haben.
         mengen = {n: _punkte(b) for n, b in self.ebenen.items()}
         namen = sorted(mengen)
+        unterlage = set(fp.RUMPF_UNTERLAGE)
         for i, a in enumerate(namen):
             for b in namen[i + 1:]:
                 gemeinsam = mengen[a] & mengen[b]
-                self.assertEqual(gemeinsam, set(),
+                erlaubt = unterlage if {a, b} == {"head", "torso"} else set()
+                self.assertEqual(gemeinsam - erlaubt, set(),
                                  "%s und %s teilen %d Pixel" % (a, b, len(gemeinsam)))
 
     def test_rueckbau_ist_das_original(self):
+        ## In der Zeichenreihenfolge aus preview_parts -- der Kopf liegt oben,
+        ## sonst deckte die Unterlage die Haarspitze zu.
         zurueck = Image.new("RGBA", self.pose.size, (0, 0, 0, 0))
-        for ebene in self.ebenen.values():
-            zurueck.alpha_composite(ebene)
+        for name in ("ponytail", "legs", "torso", "head"):
+            zurueck.alpha_composite(self.ebenen[name])
         a, b = zurueck.load(), self.pose.load()
         anders = [(x, y) for y in range(fp.FRAME) for x in range(fp.FRAME)
                   if a[x, y] != b[x, y]]

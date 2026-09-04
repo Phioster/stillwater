@@ -103,6 +103,11 @@ ZOPF_SPITZE_Y = 37      # und hier haengt er frei
 ## Familie -- die Farbregel gibt sie dem Rumpf. Sie gehoert aber zum Kopf und
 ## muss beim Atmen mitsinken, sonst haengen schwarze Pixel am Koerper.
 KINNLINIE = {(62, 31), (63, 31), (64, 31), (65, 31), (66, 31)}
+
+## Pixel, die nur der Rumpf bekommt, obwohl oben der Kopf liegt: die Spitze
+## der Haarstraehne deckt 60,32 zu und wandert mit dem Kopf weg -- ohne
+## Unterlage klafft dort im Wurf ein Loch mitten im Kragen.
+RUMPF_UNTERLAGE = {(60, 32): (0x86, 0x99, 0xb9)}
 KOPF_SCHNITT = 32       # letzte Zeile, die noch zum Kopf gehoert
 KOPF_SCHULTER = 30      # erste Zeile, in der ueberhaupt Oberteil vorkommt
 KOPF_HALSBAND = 31      # ab hier liegen Kragen und Schulterumriss neben dem Hals
@@ -235,6 +240,7 @@ def split(img, rod=None):
             wohin = ("head" if y <= KOPF_SCHNITT and (x, y) not in rutenfeld
                      and _kopf_pixel(px, sichtbar, x, y) else "torso")
         ebenen[wohin].add((x, y))
+    ebenen["torso"] |= set(RUMPF_UNTERLAGE)
 
     bilder = {}
     for name, menge in ebenen.items():
@@ -242,6 +248,9 @@ def split(img, rod=None):
         ep = ebene.load()
         for p in menge:
             ep[p] = px[p]
+        if name == "torso":
+            for p, farbe in RUMPF_UNTERLAGE.items():
+                ep[p] = farbe + (255,)
         bilder[name] = ebene
     return bilder
 
