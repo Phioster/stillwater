@@ -26,6 +26,24 @@ ZIEL = os.path.join(W, "assets", "art")
 ## Der Koerper im erzeugten Bild. Darueber steht nur die Schnur.
 SCHWIMMER_FELD = (12, 13, 22, 26)
 
+## PixelLab hat den Schwimmer hell oben und rot unten gezeichnet. Im Wasser
+## steht aber die obere Haelfte heraus, und die soll die rote sein -- so herum
+## ist es auch die klassische Pose.
+##
+## Getauscht wird nach Zeile, nicht nach Farbe: das dunkle Rot kam oben als
+## Kante der hellen Kuppel vor und unten als Schatten des roten Koerpers. Eine
+## reine Farbtabelle haette daraus oben eine graue Kante gemacht.
+TRENNZEILE = 6
+TAUSCH_OBEN = {
+    (0xbc, 0xd9, 0xd2): (0xb4, 0x52, 0x3f),   # foam      -> cloth_red
+    (0x8c, 0x90, 0xa0): (0x85, 0x3c, 0x2e),   # rod_steel -> dunkles Rot
+}
+TAUSCH_UNTEN = {
+    (0xb4, 0x52, 0x3f): (0xbc, 0xd9, 0xd2),   # cloth_red -> foam
+    (0x85, 0x3c, 0x2e): (0x8c, 0x90, 0xa0),   # dunkles Rot -> rod_steel
+    (0xc3, 0x74, 0x65): (0xdb, 0xe9, 0xf2),   # Glanz auf Rot -> Glanz auf Weiss
+}
+
 UMRISS = (0x1a, 0x23, 0x20)     # Palette: outline
 HELL = (0xf6, 0xdd, 0xc4)       # skin_0
 MITTE = (0xe8, 0xbe, 0x9a)      # skin_1
@@ -83,7 +101,14 @@ def made_bauen():
 
 def schwimmer_bauen():
     roh = Image.open(os.path.join(ROH, "schwimmer_roh.png")).convert("RGBA")
-    return roh.crop(SCHWIMMER_FELD)
+    aus = roh.crop(SCHWIMMER_FELD)
+    px = aus.load()
+    for y in range(aus.height):
+        tabelle = TAUSCH_OBEN if y < TRENNZEILE else TAUSCH_UNTEN
+        for x in range(aus.width):
+            if px[x, y][3] > 128 and px[x, y][:3] in tabelle:
+                px[x, y] = tabelle[px[x, y][:3]] + (255,)
+    return aus
 
 
 def main():
