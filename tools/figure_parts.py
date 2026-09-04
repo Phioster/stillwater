@@ -99,6 +99,10 @@ ZOPF_GUMMI_Y = 7        # hier haengt er fest, hier ist der Ausschlag null
 ZOPF_SPITZE_Y = 37      # und hier haengt er frei
 
 ## --- Der Kopf -------------------------------------------------------------
+## Die Linie unter dem Kinn ist schwarz und faellt damit in die Umriss-
+## Familie -- die Farbregel gibt sie dem Rumpf. Sie gehoert aber zum Kopf und
+## muss beim Atmen mitsinken, sonst haengen schwarze Pixel am Koerper.
+KINNLINIE = {(62, 31), (63, 31), (64, 31), (65, 31), (66, 31)}
 KOPF_SCHNITT = 32       # letzte Zeile, die noch zum Kopf gehoert
 KOPF_SCHULTER = 30      # erste Zeile, in der ueberhaupt Oberteil vorkommt
 KOPF_HALSBAND = 31      # ab hier liegen Kragen und Schulterumriss neben dem Hals
@@ -225,7 +229,9 @@ def split(img, rod=None):
     ebenen = {"ponytail": set(), "head": set(), "legs": set(), "torso": set()}
     for x, y in sichtbar:
         wohin = layer_of(x, y)
-        if wohin is None:
+        if (x, y) in KINNLINIE and (x, y) not in rutenfeld:
+            wohin = "head"
+        elif wohin is None:
             wohin = ("head" if y <= KOPF_SCHNITT and (x, y) not in rutenfeld
                      and _kopf_pixel(px, sichtbar, x, y) else "torso")
         ebenen[wohin].add((x, y))

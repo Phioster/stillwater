@@ -103,10 +103,19 @@ class TestTrennen(unittest.TestCase):
     def test_der_kopf_traegt_kein_oberteil(self):
         px = self.ebenen["head"].load()
         for x, y in _punkte(self.ebenen["head"]):
-            if y >= fp.KOPF_HALSBAND:
+            if y >= fp.KOPF_HALSBAND and (x, y) not in fp.KINNLINIE:
                 self.assertIn(assign(px[x, y][:3]), fp.NUR_KOPF,
                               "%d,%d im Kopf, ist aber %s"
                               % (x, y, assign(px[x, y][:3])))
+
+
+    def test_die_kinnlinie_haengt_am_kopf(self):
+        """Sonst bleibt beim Atmen ein schwarzer Strich am Rumpf stehen."""
+        kopf = _punkte(self.ebenen["head"])
+        rumpf = _punkte(self.ebenen["torso"])
+        for p in fp.KINNLINIE:
+            self.assertIn(p, kopf, "%d,%d fehlt im Kopf" % p)
+            self.assertNotIn(p, rumpf, "%d,%d liegt doppelt" % p)
 
 
 class TestBlinzeln(unittest.TestCase):
