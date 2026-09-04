@@ -109,12 +109,17 @@ KINNLINIE = {(62, 31), (63, 31), (64, 31), (65, 31), (66, 31)}
 ## Unterlage klafft dort im Wurf ein Loch mitten im Kragen.
 RUMPF_UNTERLAGE = {(60, 32): (0x86, 0x99, 0xb9)}
 
-## Der Hals: die Hautzeilen unter dem Kinn, links von der Haarstraehne. Sie
-## gehoeren zum Kopf und wandern mit ihm, werden beim Zusammensetzen aber VOR
-## dem Rumpf gezeichnet -- sonst schiebt sich beim Neigen der Hals ueber den
-## Kragen statt hinter ihn. Alles andere am Kopf bleibt oben, sonst frisst der
-## Schulterumriss beim Atmen wieder die Kinnlinie.
-HALS = {(55, 30), (56, 30), (57, 30), (57, 31), (58, 31), (59, 31)}
+## Der Nacken: alles am Kopf, was links von der Haarstraehne liegt -- die
+## Hautzeilen unter dem Kinn und die Umrisskante dahinter. Sie gehoeren zum
+## Kopf und wandern mit ihm, werden beim Zusammensetzen aber VOR dem Rumpf
+## gezeichnet: hinten geht der Hals IN den Kragen hinein. Sonst frisst die
+## sinkende Kopfkante die obere Kragenecke, und die sieht aus, als wandere
+## sie mit. Vorn bleibt der Kopf oben -- dort legt sich das Kinn ueber den
+## Kragen, und ohne das frisst der Schulterumriss die Kinnlinie.
+HALS = {(54, 28), (55, 28), (56, 28), (57, 28),
+        (54, 29), (55, 29), (56, 29), (57, 29),
+        (55, 30), (56, 30), (57, 30), (58, 30),
+        (57, 31), (58, 31), (59, 31)}
 KOPF_SCHNITT = 32       # letzte Zeile, die noch zum Kopf gehoert
 KOPF_SCHULTER = 30      # erste Zeile, in der ueberhaupt Oberteil vorkommt
 KOPF_HALSBAND = 31      # ab hier liegen Kragen und Schulterumriss neben dem Hals
