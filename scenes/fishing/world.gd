@@ -85,11 +85,11 @@ const SPLASH_KICK := 7.0
 ## Wasser. Ein Scheitel auf halber Strecke ergaebe eine Diagonale.
 const CAST_ARC := 60.0
 const CAST_OVERSHOOT := 90.0
-## Die Schnur haengt durch, statt schnurgerade von der Spitze zum Schwimmer zu
-## laufen. Im Flug ist sie straffer -- da zieht der Koeder an ihr.
+## Wie weit die Schnur durchhaengt, als Anteil ihrer eigenen Laenge. Ein
+## fester Wert waere im Flug ein Klumpen und in Ruhe kaum zu sehen; so haengt
+## sie ueberall gleich, und der Bogen ist schon im Flug da.
 const LINE_POINTS := 12
-const LINE_SAG := 60.0
-const LINE_SAG_CAST := 0.35
+const LINE_SAG := 0.28
 ## Wie weit der Koeder unter dem Schwimmer haengt, in Figurpixeln. Er sitzt am
 ## Vorfach: beim Ausholen baumelt er an der Rutenspitze, im Flug zieht er
 ## hinterher, und mit dem Aufsetzen ist er unter Wasser.
@@ -200,8 +200,9 @@ func _process(delta: float) -> void:
 	# darunter weiter.
 	_line.visible = _bobber.visible
 	if _line.visible:
-		var durchhang := LINE_SAG * (LINE_SAG_CAST if casting else 1.0)
-		var punkte := _schnur(_angler.rod_tip(), _bobber_mitte, durchhang)
+		var spitze: Vector2 = _angler.rod_tip()
+		var punkte := _schnur(spitze, _bobber_mitte,
+			spitze.distance_to(_bobber_mitte) * LINE_SAG)
 		if _bait.visible:
 			punkte.append(_bait.position)
 		_line.points = punkte

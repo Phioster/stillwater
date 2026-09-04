@@ -72,9 +72,10 @@ KOEDER_HANG = 10       # wie weit der Koeder unter dem Schwimmer haengt
 BOGEN = 14             # so weit ueber der Rutenspitze
 AUSHOLEN = 22          # so weit rechts vom Ziel
 SCHNUR = (0xeb, 0xe6, 0xd1, 217)
-## Die Schnur haengt durch. Im Flug straffer -- da zieht der Koeder an ihr.
-DURCHHANG = 26
-DURCHHANG_FLUG = 0.35
+## Wie weit die Schnur durchhaengt, als Anteil ihrer eigenen Laenge. Ein
+## fester Wert waere im Flug ein Klumpen und in Ruhe kaum zu sehen; so haengt
+## sie ueberall gleich, und der Bogen ist schon im Flug da.
+DURCHHANG = 0.28
 SCHNUR_PUNKTE = 12
 ## Wo der Schwimmer aufsetzt, in Buehnenkoordinaten: rechts vom Stegende, auf
 ## der Wasserlinie. Er liegt IM Wasser -- unterhalb dieser Zeile ist er weg.
@@ -233,8 +234,7 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made):
         mitte = (ZIEL[0], ZIEL[1] + round(math.sin(wert * 0.6)))
     am_haken = art != "schwimmt"
     schnur = Image.new("RGBA", bild.size, (0, 0, 0, 0))
-    punkte = schnurzug(spitze, mitte,
-                       DURCHHANG * (DURCHHANG_FLUG if am_haken else 1.0))
+    punkte = schnurzug(spitze, mitte, DURCHHANG * math.dist(spitze, mitte))
     if am_haken:
         punkte.append((mitte[0], mitte[1] + KOEDER_HANG))
     ImageDraw.Draw(schnur).line(punkte, fill=SCHNUR, width=1)
