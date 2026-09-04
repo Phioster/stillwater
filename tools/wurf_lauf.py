@@ -22,6 +22,7 @@ from PIL import Image
 
 from tools import figure_parts as fp
 from tools import preview_parts as pp
+from tools import rute_anheften as ra
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(WURZEL, "assets", "source", "figure")
@@ -99,34 +100,35 @@ def hoch(bild):
     return out
 
 
-def wurfbild(koerper, stab, anker, griff, arm, beine, beinweite):
-    """Ein Wurfbild aus seinen Teilen, mit ausgetauschten Beinen.
+def wurfbild(ebenen, koepfe, stab, anker, griff, arm, zustand):
+    """Ein Wurfbild aus seinen Teilen.
 
     Reihenfolge: Koerper, Rute, Arm -- die Rute liegt vor dem Rumpf und hinter
     der Hand. Als eigenes Sprite in ihrem 320er Feld ist sie vollstaendig;
     zusammengerechnet im 128er Feld war ihre Spitze abgeschnitten.
 
-    Unterhalb des Knieschnitts sind alle zehn Wurfbilder gleich -- nachgemessen
-    null Unterschied. Also darf die Beinebene sie ersetzen.
+    Der Koerper wird wie im Ruhelauf aus Ebenen gebaut, nicht flach genommen.
+    Sonst steht der Zopf ausgerechnet beim Ausholen still -- da, wo der Kopf
+    am meisten mitgeht.
     """
+    atem, zopf, bein, auge = zustand
     out = Image.new("RGBA", (fp.FRAME, fp.FRAME + OBEN), (0, 0, 0, 0))
-    op, kp, bp = out.load(), koerper.load(), beine.load()
-    for y in range(fp.FRAME):
-        for x in range(fp.FRAME):
-            if fp.layer_of(x, y) != "legs" and kp[x, y][3] > 128:
-                op[x, y + OBEN] = kp[x, y]
-    for y in range(fp.FRAME):
-        for x in range(fp.FRAME):
-            if bp[x, y][3] <= 128:
-                continue
-            nx = x + fp.swing(y, beinweite, fp.BEIN_KNIE_Y, fp.BEIN_ZEH_Y)
-            if 0 <= nx < fp.FRAME:
-                op[nx, y + OBEN] = bp[x, y]
+    out.alpha_composite(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge),
+                        (0, OBEN))
     vx, vy = griff[0] - anker[0], griff[1] - anker[1]
     out.alpha_composite(stab, (0, 0),
                         (vx, vy - OBEN, vx + fp.FRAME, vy + fp.FRAME))
     out.alpha_composite(arm, (0, OBEN))
     return out
+
+
+def zopf_im_wurf(nummer):
+    """Der Zopf haengt am Kopf, und der geht beim Ausholen mit.
+
+    Gegenlaeufig zum Arm und ein Zehntel seines Winkels: beim weitesten
+    Ausholen (Schulter -30 Grad) schwingt er drei Pixel nach vorn.
+    """
+    return int(round(-ra.REIHE[nummer][0] * 0.1))
 
 
 def ablauf(saat=11):
@@ -135,11 +137,16 @@ def ablauf(saat=11):
     weite = zufall.choice(BEIN_WEITEN)
     vorzeichen = 0
     schritte = []
+    takt = [0]      # laeuft durch, damit der Atem nirgends springt
+
+    def atemzug():
+        t = (takt[0] % PRO_ZUG) / float(PRO_ZUG)
+        takt[0] += 1
+        return (1 if math.sin(2 * math.pi * t) < 0 else 0,
+                int(round(2 * math.sin(2 * math.pi * (t - 0.12)))))
 
     for i in range(SCHWUENGE * BEIN_ZUG):
-        t = (i % PRO_ZUG) / float(PRO_ZUG)
-        atem = 1 if math.sin(2 * math.pi * t) < 0 else 0
-        zopf = int(round(2 * math.sin(2 * math.pi * (t - 0.12))))
+        atem, zopf = atemzug()
         schwung = math.sin(2 * math.pi * i / float(BEIN_ZUG))
         ## Neue Weite nur im Umkehrpunkt ziehen -- mittendrin spraenge das Bein.
         richtung = 1 if schwung >= 0 else -1
@@ -155,28 +162,27 @@ def ablauf(saat=11):
             schritte[start + weiter][6] = ms
 
     def pause(anzahl):
-        for i in range(anzahl):
-            t = (i % PRO_ZUG) / float(PRO_ZUG)
-            atem = 1 if math.sin(2 * math.pi * t) < 0 else 0
-            zopf = int(round(2 * math.sin(2 * math.pi * (t - 0.12))))
+        for _ in range(anzahl):
+            atem, zopf = atemzug()
             schritte.append(["ruhe", None, atem, zopf, 0, "open", TAKT])
 
-    def beruhigen():
-        """Kopf, Zopf und Beine auf null fuehren -- der Wurf beginnt aus der
-        Ruhe, und im Wurfbild sind sie fest eingezeichnet. Ohne das springt
-        der Zopf beim ersten Wurfbild um zwei Pixel."""
-        _, _, _, zopf, bein, _, _ = schritte[-1]
-        while zopf or bein:
-            zopf -= (1 if zopf > 0 else -1) if zopf else 0
-            bein -= (1 if bein > 0 else -1) if bein else 0
-            schritte.append(["ruhe", None, 0, zopf, bein, "open", TAKT])
+    def beine_anhalten():
+        """Nur die Beine auf null fuehren -- beim Werfen haelt sie sie still.
+        Atem und Zopf laufen weiter, die kommen jetzt auch im Wurf aus den
+        Ebenen."""
+        bein = schritte[-1][4]
+        while bein:
+            bein -= 1 if bein > 0 else -1
+            atem, zopf = atemzug()
+            schritte.append(["ruhe", None, atem, zopf, bein, "open", TAKT])
 
-    for wurf in range(2):
-        beruhigen()
+    for _ in range(2):
+        beine_anhalten()
         for i in range(10):
-            schritte.append(["wurf", i, 0, 0, 0, "open", WURF_TAKT])
+            atem, zopf = atemzug()
+            schritte.append(["wurf", i, atem, zopf + zopf_im_wurf(i), 0,
+                             "open", WURF_TAKT])
         pause(PAUSE)
-    beruhigen()
     return schritte
 
 
@@ -190,9 +196,14 @@ def main(ziel):
               for i in range(10)]
     arme = [Image.open(os.path.join(SRC, "wurf_arm_%d.png" % i)).convert("RGBA")
             for i in range(10)]
+    ## Der Koerper OHNE Rute und ohne Wurfarm, in dieselben Ebenen geschnitten
+    ## wie der Ruhelauf -- damit Zopf, Kopf und Beine auch im Wurf leben.
     koerper = Image.open(os.path.join(TEILE, "sit3_rumpf.png")).convert("RGBA")
     koerper.alpha_composite(Image.open(
         os.path.join(TEILE, "sit3_arm_fern.png")).convert("RGBA"))
+    wurf_ebenen = fp.split(koerper)
+    wurf_koepfe = {s: fp.eye_state(wurf_ebenen["head"], s)
+                   for s in ("open", "half", "closed")}
 
     szene = buehne()
     bilder, zeiten = [], []
@@ -200,8 +211,9 @@ def main(ziel):
         if art == "ruhe":
             img = hoch(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge))
         else:
-            img = wurfbild(koerper, staebe[nummer], anker["anker"][nummer],
-                           anker["griff"], arme[nummer], ebenen["legs"], bein)
+            img = wurfbild(wurf_ebenen, wurf_koepfe, staebe[nummer],
+                           anker["anker"][nummer], anker["griff"],
+                           arme[nummer], (atem, zopf, bein, auge))
         ganz = szene.copy()
         ganz.alpha_composite(img, (LINKS, 0))
         unten = Image.new("RGBA", ganz.size, GRUND + (255,))
