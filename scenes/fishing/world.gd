@@ -8,6 +8,7 @@ signal visitor_tapped
 
 @onready var orb_area: Control = $CatchView.spawn_area
 @onready var _bobber: Sprite2D = $Bobber
+@onready var _bait: Sprite2D = $Bait
 @onready var _background: TextureRect = $Background
 @onready var _dock: Sprite2D = $Dock
 @onready var _angler: Node2D = $Angler
@@ -32,9 +33,10 @@ const DOCK_W := 262.0
 ## Zeilen hoeher. Die vordere Deckoberkante -- die, auf der sie sitzt --
 ## liegt deshalb nicht in Zeile 0.
 const DECK_IM_BILD := 2.0
-## Der Schwimmer wippt, also ganzzahlig. Klein genug ist er jetzt ueber seine
-## Bildgroesse (tools/gen_sprites.gd::_bobber).
-const BOBBER_SCALE := 1.0
+## Schwimmer und Koeder laufen im Massstab von Steg und Figur. Vorher stand
+## der Schwimmer auf 1.0 -- gleich gross auf dem Schirm, aber mit doppelt so
+## feinen Pixeln wie alles um ihn herum.
+const BOBBER_SCALE := 2.16
 ## Wie hoch die vordere Deckoberkante ueber der Wasserlinie liegt, in
 ## Stegpixeln. Massgeblich sind ihre Beine: vom Rocksaum (Zeile 84) bis zur
 ## Stiefelspitze (122) sind es 38 Figurpixel, und Figur und Steg haben
@@ -80,6 +82,12 @@ const CATCH_KICK := 20.0
 const SPLASH_KICK := 7.0
 ## Wie hoch der Wurf ueber die Verbindungslinie hinausgeht.
 const CAST_ARC := 200.0
+## Wie weit der Koeder unter dem Schwimmer haengt, in Figurpixeln. Er sitzt am
+## Vorfach: beim Ausholen baumelt er an der Rutenspitze, im Flug zieht er
+## hinterher, und mit dem Aufsetzen ist er unter Wasser.
+const BAIT_HANG := 12.0
+## Fallback, solange nicht jeder Koeder ein eigenes Bild hat.
+const BAIT_FALLBACK := &"pond_grub"
 const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 
 var _bob_time: float = 0.0
@@ -90,6 +98,9 @@ var _water := WaterSurface.new(WATER_POINTS)
 var _water_time: float = 0.0
 ## Verhindert, dass jedes state_changed Textur und Farben neu setzt.
 var _applied_zone: StringName = &""
+## Welches Koederbild gerade haengt -- damit der Wechsel nicht in jedem Bild
+## neu geladen wird.
+var _bait_id: StringName = &""
 
 func _ready() -> void:
 	_bobber.texture = TextureLoader.load_texture("res://assets/art/bobber.png")
@@ -97,6 +108,7 @@ func _ready() -> void:
 	_dock.scale = Vector2(DOCK_SCALE, DOCK_SCALE)
 	_angler.scale = Vector2(ANGLER_SCALE, ANGLER_SCALE)
 	_bobber.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
+	_bait.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
 	_setup_visitors()
 	_rain = Rain.new()
 	add_child(_rain)
@@ -167,11 +179,18 @@ func _process(delta: float) -> void:
 	else:
 		_bobber.position = Vector2(_bobber_home.x,
 			_bobber_home.y + sin(_bob_time * 3.0) * amplitude)
+	# Der Koeder haengt am Vorfach unter dem Schwimmer. Sichtbar nur im Flug:
+	# sobald der Schwimmer sitzt, ist er unter Wasser.
+	_update_bait(casting)
 	# Schnur von der Rutenspitze zum Schwimmer -- folgt dadurch von selbst
-	# dem Auf und Ab und dem Zappeln im Kampf.
+	# dem Auf und Ab und dem Zappeln im Kampf. Im Flug haengt das Vorfach als
+	# dritter Punkt daran.
 	_line.visible = _bobber.visible
 	if _line.visible:
-		_line.points = PackedVector2Array([_angler.rod_tip(), _bobber.position])
+		var punkte := PackedVector2Array([_angler.rod_tip(), _bobber.position])
+		if _bait.visible:
+			punkte.append(_bait.position)
+		_line.points = punkte
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
 	$CatchView.focus_point = _bobber.position
 	_update_visitors()
@@ -205,6 +224,26 @@ func _update_water_line() -> void:
 		poly[i] = pts[i]
 		poly[WATER_POINTS * 2 - 1 - i] = Vector2(pts[i].x, water_y - SHORE_OVERLAP)
 	_water_body.polygon = poly
+
+## Der Koeder folgt dem Schwimmer, haengt aber darunter. Sein Bild kommt vom
+## aktiven Koeder; wer noch keins hat, bekommt das der Teichmade.
+func _update_bait(casting: bool) -> void:
+	_bait.visible = casting
+	if not _bait.visible:
+		return
+	if _bait.texture == null or _bait_id != _active_bait_id():
+		_bait_id = _active_bait_id()
+		var tex := TextureLoader.load_texture(
+			"res://assets/art/bait_%s.png" % _bait_id)
+		if tex == null:
+			tex = TextureLoader.load_texture(
+				"res://assets/art/bait_%s.png" % BAIT_FALLBACK)
+		_bait.texture = tex
+	_bait.position = _bobber.position + Vector2(0.0, BAIT_HANG * BOBBER_SCALE)
+
+func _active_bait_id() -> StringName:
+	var bait: BaitData = Game.ctx.bait
+	return bait.id if bait != null else BAIT_FALLBACK
 
 func _bobber_fraction() -> float:
 	if size.x <= 0.0:

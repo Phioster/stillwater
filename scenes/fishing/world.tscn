@@ -46,6 +46,10 @@ visible = false
 width = 2.0
 default_color = Color(0.92, 0.9, 0.82, 0.85)
 
+[node name="Bait" type="Sprite2D" parent="."]
+position = Vector2(430, 500)
+visible = false
+
 [node name="Bobber" type="Sprite2D" parent="."]
 position = Vector2(430, 470)
 scale = Vector2(4, 4)

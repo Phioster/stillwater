@@ -27,8 +27,11 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(18, 13)
 	if filename == "orb.png":
 		return Vector2i(16, 16)
+	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).
 	if filename == "bobber.png":
-		return Vector2i(20, 20)
+		return Vector2i(10, 13)
+	if filename == "bait_pond_grub.png":
+		return Vector2i(10, 6)
 	return Vector2i(-1, -1)
 
 func _count_opaque(img: Image) -> int:

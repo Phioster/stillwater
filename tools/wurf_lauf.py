@@ -18,7 +18,7 @@ import random
 import sys
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from tools import figure_parts as fp
 from tools import preview_parts as pp
@@ -35,6 +35,9 @@ OBEN = 24
 ## ... und Platz nach links und unten fuer den Steg, auf dem sie sitzt.
 LINKS = 96
 UNTEN = 26
+## ... und offenes Wasser nach rechts, damit der Koeder irgendwo hinfliegen
+## kann. Ohne das endet das Bild eine Handbreit hinter der Rutenspitze.
+RECHTS = 64
 ## Wie in scenes/fishing/world.gd: ihr Rocksaum liegt auf der vorderen
 ## Deckoberkante, das Deck 40 Stegpixel ueber dem Wasser. Steg und Figur haben
 ## denselben Massstab, ein Pixel ist ein Pixel.
@@ -53,6 +56,21 @@ BEIN_WEITEN = (2, 3, 4, 5, 6)
 ## Schritt, an dem das Lid halb zufaellt.
 BLINZLER = (10, 42, 74)
 BLINZELN = ((0, "half", 55), (1, "closed", 90), (2, "half", 55))
+
+## --- Schwimmer und Koeder -------------------------------------------------
+##
+## Wie im Spiel (scenes/fishing/world.gd): der Koeder haengt am Vorfach unter
+## dem Schwimmer, beide haengen bis zur Freigabe an der Rutenspitze, fliegen
+## dann einen Bogen und setzen auf dem Wasser auf. Danach ist der Koeder unter
+## Wasser und nur der Schwimmer wippt noch.
+WURF_LOESUNG = 8       # ab diesem Wurfbild ist die Schnur draussen
+FLUG = 12              # Schritte, die der Flug dauert
+KOEDER_HANG = 10       # wie weit der Koeder unter dem Schwimmer haengt
+BOGEN = 26             # wie hoch der Flug ueber die Verbindungslinie geht
+SCHNUR = (0xeb, 0xe6, 0xd1, 217)
+## Wo der Schwimmer aufsetzt, in Buehnenkoordinaten. Rechts vom Stegende, und
+## zwei Zeilen ueber der Wasserlinie: er liegt IM Wasser, nicht darauf.
+ZIEL = (LINKS + fp.FRAME + 20, OBEN + CHAR_SEAT + DECK_UEBER_WASSER - 2)
 
 
 def rutenebene(bild):
@@ -80,8 +98,8 @@ def buehne():
     from tools import steg_bauen as steg
     holz = Image.open(os.path.join(WURZEL, "assets", "art",
                                    "dock.png")).convert("RGBA")
-    aus = Image.new("RGBA", (LINKS + fp.FRAME, OBEN + fp.FRAME + UNTEN),
-                    (0, 0, 0, 0))
+    aus = Image.new("RGBA", (LINKS + fp.FRAME + RECHTS,
+                             OBEN + fp.FRAME + UNTEN), (0, 0, 0, 0))
     ## Die vordere Deckoberkante unter ihren Rocksaum, das Stegende unter die
     ## Stelle, an der die Beine frei haengen.
     dx = LINKS + 68 - (steg.BREITE - 1)
@@ -148,11 +166,63 @@ def kopf_im_wurf(nummer):
     return int(round(ra.REIHE[nummer][0] * 0.05))
 
 
-def kopf_im_wurf(nummer):
-    """Der Kopf lehnt beim Ausholen zurueck -- ein Zwanzigstel des
-    Schulterwinkels, also hoechstens zwei Pixel. Mehr sieht nach Nicken aus
-    statt nach Schwungholen."""
-    return int(round(ra.REIHE[nummer][0] * 0.05))
+def rutenspitze(stab, griff, anker):
+    """Wo die Rutenspitze in Figurkoordinaten liegt.
+
+    Der am weitesten vom Griff entfernte Punkt des Rutenbilds -- die Rute ist
+    eine Linie, ihr fernstes Ende ist die Spitze. Das Rutenbild hat ein
+    eigenes, groesseres Feld; hier wird es auf das Figurfeld zurueckgerechnet.
+    """
+    gx, gy = griff
+    px = stab.load()
+    weit, spitze = -1, (0, 0)
+    for y in range(stab.height):
+        for x in range(stab.width):
+            if px[x, y][3] > 128:
+                d = (x - gx) ** 2 + (y - gy) ** 2
+                if d > weit:
+                    weit, spitze = d, (x, y)
+    return (spitze[0] - (gx - anker[0]), spitze[1] - (gy - anker[1]))
+
+
+def flugbahn(von, nach, t):
+    """Quadratische Bezierkurve mit Scheitel darueber -- wie world.gd."""
+    scheitel = ((von[0] + nach[0]) * 0.5, (von[1] + nach[1]) * 0.5 - BOGEN)
+    g = 1.0 - t
+    return (g * g * von[0] + 2 * g * t * scheitel[0] + t * t * nach[0],
+            g * g * von[1] + 2 * g * t * scheitel[1] + t * t * nach[1])
+
+
+def _setzen(bild, teil, mitte):
+    """Ein Sprite mit seiner Mitte auf diesen Punkt."""
+    bild.alpha_composite(teil, (int(round(mitte[0] - teil.width / 2.0)),
+                                int(round(mitte[1] - teil.height / 2.0))))
+
+
+def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made):
+    """Schnur, Schwimmer und Koeder in dieses Buehnenbild.
+
+    Die Schnur laeuft von der Rutenspitze ueber den Schwimmer zum Koeder und
+    wird zuerst gezeichnet -- die beiden Sprites decken sie dort zu, wo sie
+    ansetzt. Nach dem Aufsetzen ist der Koeder unter Wasser und damit weg.
+    """
+    art, wert = zustand
+    if art == "haengt":
+        mitte = (spitze[0], spitze[1] + schwimmer.height / 2.0)
+    elif art == "flug":
+        mitte = flugbahn(abwurf, ZIEL, wert)
+    else:
+        mitte = (ZIEL[0], ZIEL[1] + round(math.sin(wert * 0.6)))
+    am_haken = art != "schwimmt"
+    schnur = Image.new("RGBA", bild.size, (0, 0, 0, 0))
+    punkte = [spitze, mitte]
+    if am_haken:
+        punkte.append((mitte[0], mitte[1] + KOEDER_HANG))
+    ImageDraw.Draw(schnur).line(punkte, fill=SCHNUR, width=1)
+    bild.alpha_composite(schnur)
+    _setzen(bild, schwimmer, mitte)
+    if am_haken:
+        _setzen(bild, made, (mitte[0], mitte[1] + KOEDER_HANG))
 
 
 def ablauf(saat=11):
@@ -178,7 +248,7 @@ def ablauf(saat=11):
             weite = zufall.choice(BEIN_WEITEN)
         vorzeichen = richtung
         schritte.append(["ruhe", None, atem, zopf,
-                         int(round(weite * schwung)), "open", TAKT, 0])
+                         int(round(weite * schwung)), "open", TAKT, 0, None])
 
     for start in BLINZLER:
         for weiter, auge, ms in BLINZELN:
@@ -188,7 +258,29 @@ def ablauf(saat=11):
     def pause(anzahl):
         for _ in range(anzahl):
             atem, zopf = atemzug()
-            schritte.append(["ruhe", None, atem, zopf, 0, "open", TAKT, 0])
+            schritte.append(["ruhe", None, atem, zopf, 0, "open", TAKT, 0,
+                             koeder()])
+
+    flug = [None]       # laeuft ab der Freigabe, dann bleibt der Schwimmer
+
+    def koeder(nummer=None):
+        """Der Zustand von Schwimmer und Koeder in diesem Schritt.
+
+        Bis zur Freigabe haengen sie an der Rutenspitze des Wurfbilds, danach
+        laeuft der Flug los und mit ihm die Landung -- unabhaengig davon, ob
+        gerade noch ein Wurfbild oder schon die Pause laeuft.
+        """
+        if flug[0] is None:
+            if nummer is None:
+                return None
+            if nummer < WURF_LOESUNG:
+                return ("haengt", nummer)
+            flug[0] = 0
+        schritt = flug[0]
+        flug[0] += 1
+        if schritt < FLUG:
+            return ("flug", schritt / float(FLUG - 1))
+        return ("schwimmt", schritt - FLUG)
 
     def beine_anhalten():
         """Nur die Beine auf null fuehren -- beim Werfen haelt sie sie still.
@@ -198,15 +290,18 @@ def ablauf(saat=11):
         while bein:
             bein -= 1 if bein > 0 else -1
             atem, zopf = atemzug()
-            schritte.append(["ruhe", None, atem, zopf, bein, "open", TAKT, 0])
+            schritte.append(["ruhe", None, atem, zopf, bein, "open", TAKT, 0,
+                             None])
 
     for _ in range(2):
+        flug[0] = None
         beine_anhalten()
         for i in range(10):
             atem, zopf = atemzug()
             schritte.append(["wurf", i, atem, zopf + zopf_im_wurf(i),
                              BEIN_WURF[i], "open",
-                             WURF_HALT.get(i, WURF_TAKT), kopf_im_wurf(i)])
+                             WURF_HALT.get(i, WURF_TAKT), kopf_im_wurf(i),
+                             koeder(i)])
         pause(PAUSE)
     return schritte
 
@@ -230,9 +325,19 @@ def main(ziel):
     wurf_koepfe = {s: fp.eye_state(wurf_ebenen["head"], s)
                    for s in ("open", "half", "closed")}
 
+    ## Schwimmer und Koeder sind dieselben Sprites wie im Spiel.
+    kunst = os.path.join(WURZEL, "assets", "art")
+    schwimmer = Image.open(os.path.join(kunst, "bobber.png")).convert("RGBA")
+    made = Image.open(os.path.join(kunst, "bait_pond_grub.png")).convert("RGBA")
+    spitzen = [rutenspitze(staebe[i], anker["griff"], anker["anker"][i])
+               for i in range(10)]
+    ## Von hier laeuft der Flug: die Spitze im Moment der Freigabe.
+    abwurf = (spitzen[WURF_LOESUNG][0] + LINKS,
+              spitzen[WURF_LOESUNG][1] + OBEN + schwimmer.height / 2.0)
+
     szene = buehne()
     bilder, zeiten = [], []
-    for art, nummer, atem, zopf, bein, auge, ms, seit in ablauf():
+    for art, nummer, atem, zopf, bein, auge, ms, seit, koeder in ablauf():
         if art == "ruhe":
             img = hoch(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein,
                                          auge, seit))
@@ -242,6 +347,11 @@ def main(ziel):
                            arme[nummer], (atem, zopf, bein, auge, seit))
         ganz = szene.copy()
         ganz.alpha_composite(img, (LINKS, 0))
+        if koeder is not None:
+            ## Im Ruhelauf steht die Rute wie in Wurfbild 0.
+            sx, sy = spitzen[nummer if art == "wurf" else 0]
+            koeder_zeichnen(ganz, koeder, (sx + LINKS, sy + OBEN), abwurf,
+                            schwimmer, made)
         unten = Image.new("RGBA", ganz.size, GRUND + (255,))
         unten.alpha_composite(ganz)
         flach = unten.convert("RGB").resize(
