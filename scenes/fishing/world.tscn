@@ -19,12 +19,12 @@ anchor_bottom = 1.0
 expand_mode = 1
 stretch_mode = 6
 
+[node name="Dock" type="Sprite2D" parent="."]
+centered = false
+
 [node name="WaterBody" type="Polygon2D" parent="."]
 
 [node name="WaterLine" type="Line2D" parent="."]
-
-[node name="Dock" type="Sprite2D" parent="."]
-centered = false
 
 [node name="Angler" parent="." instance=ExtResource("2")]
 position = Vector2(120, 300)

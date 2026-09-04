@@ -10,7 +10,9 @@ func _expected_size(filename: String) -> Vector2i:
 	if filename.begins_with("bg_"):
 		return Vector2i(320, 180)
 	if filename == "dock.png":
-		return Vector2i(512, 192)
+		# 256x96 gezeichnet, plus der Versatz der hinteren Haelfte
+		# (tools/steg_bauen.py: TIEFE 6 nach rechts, HOCH 2 nach oben).
+		return Vector2i(262, 98)
 	# Die Rute hat ihr eigenes, groesseres Raster und nur ein Bild je Winkel.
 	if filename.begins_with("char_rod_"):
 		return Vector2i(AnglerPose.ROD_FRAME_SIZE * AnglerPose.ROD_FRAMES,

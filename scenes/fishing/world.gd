@@ -21,33 +21,40 @@ var _rain: Rain = null
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 ## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
 const WATERLINE := 84.0 / 180.0
-## Steg und Figur hatten dieselbe Konstante, aber die Figur wurde von 256 auf
-## 128 Pixel verkleinert und die Konstante verdoppelt, um sie wieder gleich gross
-## zu halten. Der Steg (512x192) blieb unveraendert und bekommt seinen alten
-## Wert zurueck.
-const DOCK_SCALE := 1.08
+## Steg und Figur laufen wieder im selben Massstab: der neue Steg (262x98,
+## tools/steg_bauen.py) hat Pixel in Figurengroesse. Vorher war er 512x192 bei
+## 1.08 -- gleich gross auf dem Schirm, aber mit halb so feinen Pixeln, und
+## nebeneinander sah das aus wie zwei Zeichnungen aus verschiedenen Spielen.
+const DOCK_SCALE := 2.16
 const ANGLER_SCALE := 2.16
+const DOCK_W := 262.0
+## Der Steg ist zweimal uebereinander gezeichnet, das hintere Bild um zwei
+## Zeilen hoeher. Die vordere Deckoberkante -- die, auf der sie sitzt --
+## liegt deshalb nicht in Zeile 0.
+const DECK_IM_BILD := 2.0
 ## Der Schwimmer wippt, also ganzzahlig. Klein genug ist er jetzt ueber seine
 ## Bildgroesse (tools/gen_sprites.gd::_bobber).
 const BOBBER_SCALE := 1.0
-## Wie hoch die Deckoberkante ueber der Wasserlinie liegt. Frueher 48 -- die
-## Figur stand dadurch so weit oben, dass ihr Kopf fast in der Kopfzeile
-## klebte. Weiter herunter geht kaum: der Steg wuerde im Wasser stehen.
-const DECK_OVER_WATER := 16.0
-## Wo die Anglerin auf dem Steg steht, vom linken Stegende gezaehlt. Frueher
-## 200 -- sie stand in der Stegmitte, und die Schnur schnitt auf ihrem Weg
-## zum Schwimmer durch die letzten Planken. Bei 290 stehen ihre Fuesse bei
-## 57% der Steglaenge (290 von 512 Stegpixeln). Die Figur laeuft im doppelten
-## Massstab, ein Figurenpixel zaehlt also doppelt: die Rutenspitze (106 Pixel
-## rechts vom Anker) liegt bei 502 von 512 und damit knapp vor dem Stegende.
-const ANGLER_ON_DECK := 200.0
-## Wie weit hinter dem Stegende der Schwimmer liegt.
-const BOBBER_OFF_DOCK := 120.0
+## Wie hoch die vordere Deckoberkante ueber der Wasserlinie liegt, in
+## Stegpixeln. Massgeblich sind ihre Beine: vom Rocksaum (Zeile 84) bis zur
+## Stiefelspitze (122) sind es 38 Figurpixel, und Figur und Steg haben
+## denselben Massstab. Bei 40 haengen die Stiefel knapp ueber dem Wasser
+## statt darin.
+const DECK_OVER_WATER := 40.0
+## Wo die Anglerin sitzt, vom linken Stegende in Stegpixeln. Ihr Sprite haengt
+## an der oberen linken Ecke; bei 187 liegt ihre Sitzflaeche (Figurspalten
+## 44 bis 68) genau auf den letzten Planken, und die Beine haengen ueber der
+## Kante. Steg und Figur haben denselben Massstab, ein Pixel ist ein Pixel.
+const ANGLER_ON_DECK := 187.0
+## Wie weit hinter dem Stegende der Schwimmer liegt, in Stegpixeln. Halbiert
+## mit dem Massstab: 120 alte Stegpixel sind 60 neue.
+const BOBBER_OFF_DOCK := 60.0
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
-## Die Stiefel enden im 128er-Frame bei Zeile 124. Die Zeile darunter ist leer
-## -- wer die Sprite-Unterkante aufs Deck setzt, laesst die Figur schweben.
-const CHAR_FEET := 125.0
+## Sie SITZT auf dem Steg, sie steht nicht darauf: massgeblich ist der Rocksaum
+## bei Zeile 84, nicht die Stiefelsohle bei 125. Sonst stehen die Stiefel auf
+## dem Deck und die Beine koennen nicht baumeln.
+const CHAR_SEAT := 84.0
 
 ## Stuetzpunkte der Wasserlinie -- sparsam gewaehlt, siehe Bericht fuer die
 ## gemessenen Kosten pro Frame.
@@ -114,21 +121,21 @@ func _layout() -> void:
 	if size.x <= 0.0 or size.y <= 0.0:
 		return
 	var water_y := size.y * WATERLINE
-	var dock_h := 192.0 * DOCK_SCALE
-	# Der Steg liegt mit seiner Oberkante knapp ueber der Wasserlinie, die
-	# Pfosten ragen ins Wasser.
+	# Der Steg liegt mit seiner Deckoberkante ueber der Wasserlinie, die
+	# Pfosten ragen ins Wasser. Er wird VOR dem Wasser gezeichnet (world.tscn),
+	# damit die Wasserflaeche die Pfosten abschneidet statt sie zu ueberdecken.
 	# Buendig mit dem linken Rand: ein Steg, der frei im Wasser beginnt, sieht
 	# abgeschnitten aus statt am Ufer angebaut.
-	_dock.position = Vector2(0.0, water_y - DECK_OVER_WATER * DOCK_SCALE)
+	_dock.position = Vector2(0.0,
+		water_y - (DECK_OVER_WATER + DECK_IM_BILD) * DOCK_SCALE)
 	var deck_y := _dock.position.y
-	# Fuesse auf die Deckoberkante: der Sprite haengt an seiner oberen linken
-	# Ecke, also zaehlt CHAR_FEET von dort.
+	# Sitzflaeche auf die vordere Deckoberkante.
 	_angler.position = Vector2(_dock.position.x + ANGLER_ON_DECK * DOCK_SCALE,
-		deck_y - CHAR_FEET * ANGLER_SCALE)
+		deck_y + (DECK_IM_BILD - CHAR_SEAT) * ANGLER_SCALE)
 	# Der Schwimmer haengt am ENDE des Stegs, nicht an einem Bruchteil der
 	# Bildbreite: die Schnur lief sonst je nach Seitenverhaeltnis quer ueber
 	# die Planken. So beginnt sie immer erst hinter dem Steg.
-	var dock_right := _dock.position.x + 512.0 * DOCK_SCALE
+	var dock_right := _dock.position.x + DOCK_W * DOCK_SCALE
 	_bobber_home = Vector2(min(dock_right + BOBBER_OFF_DOCK * DOCK_SCALE, size.x * 0.75),
 		water_y + size.y * 0.14)
 	_bobber.position = _bobber_home

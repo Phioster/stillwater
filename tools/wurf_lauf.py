@@ -32,10 +32,10 @@ ZOOM = 5
 ## Bild bekommt deshalb Luft nach oben; die Figur bleibt, wo sie ist.
 OBEN = 24
 
-PRO_ZUG = 16        # Schritte je Atemzug
+PRO_ZUG = 32        # Schritte je Atemzug -- 3,2 s, ein ruhiger Zug
 BEIN_ZUG = 24       # Schritte je vollem Beinschwung
 SCHWUENGE = 4
-PAUSE = 16          # Schritte zwischen den Wuerfen, ein Atemzug
+PAUSE = 20          # Schritte zwischen den Wuerfen
 TAKT = 100          # Millisekunden je Ruheschritt
 WURF_TAKT = 80      # der Wurf laeuft schneller
 BEIN_WEITEN = (2, 3, 4, 5, 6)

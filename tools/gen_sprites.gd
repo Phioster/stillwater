@@ -245,20 +245,9 @@ func _background_void() -> void:
 		img.set_pixel(x, y, _c(&"void_foam").lerp(_c(&"void_deep"), 1.0 - f))
 	_save(img, "bg_void")
 
-## Doppelt so fein wie frueher, damit er zur Figur passt: dieselbe
-## Vergroesserung gilt fuer alles in der Welt.
-func _dock() -> void:
-	var img := _new_image(512, 192)
-	_rect(img, 0, 0, 512, 48, _c(&"wood_light"))
-	# Bretterfugen -- ohne sie ist das Deck ein Farbstreifen.
-	for i in 8:
-		_rect(img, i * 64, 0, 4, 48, _c(&"wood"))
-	_rect(img, 0, 48, 512, 24, _c(&"wood"))
-	_rect(img, 0, 64, 512, 8, _c(&"wood_dark"))
-	for i in 4:
-		_rect(img, 48 + i * 128, 72, 32, 120, _c(&"wood_dark"))
-		_rect(img, 48 + i * 128, 72, 8, 120, _c(&"wood"))
-	_save(img, "dock")
+## Der Steg wird nicht mehr hier erzeugt: er kommt aus tools/steg_bauen.py,
+## das die PixelLab-Zeichnung fertig baut. Ein Rechteckstapel aus drei Farben
+## hielt neben der gezeichneten Figur nicht mehr mit.
 
 # --- Charakterebenen ------------------------------------------------------
 # Drei Frames nebeneinander: 0 ruhig, 1 Ausholen, 2 Wurf.
@@ -485,7 +474,6 @@ func _init() -> void:
 	_background_sky()
 	_background_void()
 	_visitors()
-	_dock()
 	print("Charakter")
 	# Haut, Haare, Oberteil und Hose kommen aus tools/import_character.py --
 	# sie werden aus dem gezeichneten Ausgangsbild zerlegt, nicht gemalt.
