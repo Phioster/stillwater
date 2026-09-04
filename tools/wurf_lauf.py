@@ -204,8 +204,9 @@ def ablauf(saat=11):
         beine_anhalten()
         for i in range(10):
             atem, zopf = atemzug()
-            schritte.append(["wurf", i, atem, zopf + zopf_im_wurf(i), 0,
-                             "open", WURF_TAKT, kopf_im_wurf(i)])
+            schritte.append(["wurf", i, atem, zopf + zopf_im_wurf(i),
+                             BEIN_WURF[i], "open",
+                             WURF_HALT.get(i, WURF_TAKT), kopf_im_wurf(i)])
         pause(PAUSE)
     return schritte
 
