@@ -90,6 +90,12 @@ const CAST_OVERSHOOT := 90.0
 ## sie ueberall gleich, und der Bogen ist schon im Flug da.
 const LINE_POINTS := 12
 const LINE_SAG := 0.28
+## Wohin der Bauch zeigt. In der Luft folgt die Schnur dem Wurf: der Bogen
+## steht nach aussen und faellt nur wenig. Sitzt der Schwimmer, faellt sie in
+## den senkrechten Durchhang -- ueber LINE_SETTLE Sekunden, sonst springt sie.
+const LINE_BELLY_AIR := Vector2(0.86, 0.51)
+const LINE_BELLY_WATER := Vector2(0.0, 1.0)
+const LINE_SETTLE := 0.35
 ## Wie weit der Koeder unter dem Schwimmer haengt, in Figurpixeln. Er sitzt am
 ## Vorfach: beim Ausholen baumelt er an der Rutenspitze, im Flug zieht er
 ## hinterher, und mit dem Aufsetzen ist er unter Wasser.
@@ -103,6 +109,8 @@ var _bobber_home: Vector2
 ## Wo der Schwimmer wirklich sitzt. Nicht dasselbe wie seine Sprite-Position:
 ## schwimmend ist er halb abgeschnitten und sein Sprite sitzt hoeher.
 var _bobber_mitte: Vector2
+## Wie lange der Schwimmer schon sitzt -- daran kippt der Bauch der Schnur.
+var _line_settle: float = 0.0
 var _water := WaterSurface.new(WATER_POINTS)
 ## Laeuft immer weiter, anders als _bob_time (das bei jedem Biss auf 0
 ## zurueckspringt) -- die Grundbewegung des Wassers darf davon nicht mitreissen.
@@ -180,6 +188,8 @@ func _process(delta: float) -> void:
 
 	_bob_time += delta
 	var casting := Game.sim.state == FishingSim.State.CASTING
+	## Solange geworfen wird, steht die Schnur nach aussen; danach faellt sie.
+	_line_settle = 0.0 if casting else _line_settle + delta
 	var visible_states := [FishingSim.State.CASTING, FishingSim.State.WAITING, FishingSim.State.FIGHT]
 	_bobber.visible = Game.sim.state in visible_states
 	var amplitude := 10.0 if Game.sim.state == FishingSim.State.FIGHT else 3.0
@@ -201,8 +211,9 @@ func _process(delta: float) -> void:
 	_line.visible = _bobber.visible
 	if _line.visible:
 		var spitze: Vector2 = _angler.rod_tip()
+		var gesetzt := clampf(_line_settle / LINE_SETTLE, 0.0, 1.0)
 		var punkte := _schnur(spitze, _bobber_mitte,
-			spitze.distance_to(_bobber_mitte) * LINE_SAG)
+			LINE_BELLY_AIR.lerp(LINE_BELLY_WATER, gesetzt))
 		if _bait.visible:
 			punkte.append(_bait.position)
 		_line.points = punkte
@@ -260,10 +271,10 @@ func _active_bait_id() -> StringName:
 	var bait: BaitData = Game.ctx.bait
 	return bait.id if bait != null else BAIT_FALLBACK
 
-## Die Schnur als durchhaengende Kurve. Eine Gerade sieht aus wie ein Draht;
-## eine Schnur haengt zwischen ihren Enden durch.
-func _schnur(von: Vector2, nach: Vector2, durchhang: float) -> PackedVector2Array:
-	var mitte := (von + nach) * 0.5 + Vector2(0.0, durchhang)
+## Die Schnur als Kurve. Eine Gerade sieht aus wie ein Draht; bauch ist die
+## Richtung, in die sie ausbaucht, wie weit kommt aus ihrer eigenen Laenge.
+func _schnur(von: Vector2, nach: Vector2, bauch: Vector2) -> PackedVector2Array:
+	var mitte := (von + nach) * 0.5 + bauch * (von.distance_to(nach) * LINE_SAG)
 	var punkte := PackedVector2Array()
 	punkte.resize(LINE_POINTS)
 	for i in LINE_POINTS:

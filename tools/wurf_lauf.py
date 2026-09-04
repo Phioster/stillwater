@@ -76,6 +76,12 @@ SCHNUR = (0xeb, 0xe6, 0xd1, 217)
 ## fester Wert waere im Flug ein Klumpen und in Ruhe kaum zu sehen; so haengt
 ## sie ueberall gleich, und der Bogen ist schon im Flug da.
 DURCHHANG = 0.28
+## Wohin der Bauch zeigt. In der Luft folgt die Schnur dem Wurf: der Bogen
+## steht nach aussen und faellt nur wenig. Sitzt der Schwimmer, faellt sie in
+## den senkrechten Durchhang -- ueber SETZEN Schritte, sonst springt sie.
+BAUCH_LUFT = (0.86, 0.51)
+BAUCH_WASSER = (0.0, 1.0)
+SETZEN = 5
 SCHNUR_PUNKTE = 12
 ## Wo der Schwimmer aufsetzt, in Buehnenkoordinaten: rechts vom Stegende, auf
 ## der Wasserlinie. Er liegt IM Wasser -- unterhalb dieser Zeile ist er weg.
@@ -205,9 +211,15 @@ def flugbahn(von, nach, t):
     return _bezier(von, nach, (nach[0] + AUSHOLEN, von[1] - BOGEN), t)
 
 
-def schnurzug(von, nach, durchhang):
-    """Die Schnur als durchhaengende Kurve statt als gespannter Draht."""
-    mitte = ((von[0] + nach[0]) * 0.5, (von[1] + nach[1]) * 0.5 + durchhang)
+def schnurzug(von, nach, bauch):
+    """Die Schnur als Kurve statt als gespannter Draht.
+
+    bauch ist die Richtung, in die sie ausbaucht; wie weit, kommt aus ihrer
+    eigenen Laenge.
+    """
+    weite = DURCHHANG * math.dist(von, nach)
+    mitte = ((von[0] + nach[0]) * 0.5 + bauch[0] * weite,
+             (von[1] + nach[1]) * 0.5 + bauch[1] * weite)
     return [_bezier(von, nach, mitte, i / float(SCHNUR_PUNKTE - 1))
             for i in range(SCHNUR_PUNKTE)]
 
@@ -233,8 +245,13 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made):
     else:
         mitte = (ZIEL[0], ZIEL[1] + round(math.sin(wert * 0.6)))
     am_haken = art != "schwimmt"
+    ## Nach dem Aufsetzen kippt der Bauch ueber ein paar Schritte von aussen
+    ## nach unten -- die Schnur faellt aufs Wasser, statt umzuspringen.
+    anteil = 0.0 if am_haken else min(1.0, wert / float(SETZEN))
+    bauch = tuple(a + (b - a) * anteil
+                  for a, b in zip(BAUCH_LUFT, BAUCH_WASSER))
     schnur = Image.new("RGBA", bild.size, (0, 0, 0, 0))
-    punkte = schnurzug(spitze, mitte, DURCHHANG * math.dist(spitze, mitte))
+    punkte = schnurzug(spitze, mitte, bauch)
     if am_haken:
         punkte.append((mitte[0], mitte[1] + KOEDER_HANG))
     ImageDraw.Draw(schnur).line(punkte, fill=SCHNUR, width=1)
