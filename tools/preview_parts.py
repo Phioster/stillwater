@@ -35,7 +35,8 @@ def _punkte(img):
             if px[x, y][3] > 128]
 
 
-def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge):
+def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
+                   kopf_seit=0):
     """Ein Bild. Reihenfolge: Zopf, Beine, Rumpf, Kopf.
 
     Der Kopf liegt OBEN. Lag der Rumpf oben, frass sein Schulterumriss beim
@@ -51,7 +52,10 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge):
 
     belegt = set()
     for x, y in _punkte(ebenen["ponytail"]):
-        nx = x + fp.swing(y, zopfweite, fp.ZOPF_GUMMI_Y, fp.ZOPF_SPITZE_Y)
+        ## Der Zopf haengt am Kopf: geht der zur Seite, geht der ganze Zopf
+        ## mit, und sein eigener Ausschlag kommt oben drauf.
+        nx = x + kopf_seit + fp.swing(y, zopfweite, fp.ZOPF_GUMMI_Y,
+                                      fp.ZOPF_SPITZE_Y)
         ny = y + atem
         if 0 <= nx < fp.FRAME and 0 <= ny < fp.FRAME:
             op[nx, ny] = zp[x, y]
@@ -60,13 +64,13 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge):
     ## Nur dort -- an der Aussenkante wuechse sonst ihr Umriss.
     rumpf = set(_punkte(ebenen["torso"]))
     for x, y in _punkte(ebenen["ponytail"]):
-        p = (x, y + atem)
+        p = (x + kopf_seit, y + atem)
         if p in belegt or p in rumpf or not (0 <= p[1] < fp.FRAME):
             continue
         toene = {}
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
-                q = (p[0] + dx, p[1] + dy - atem)
+                q = (p[0] + dx - kopf_seit, p[1] + dy - atem)
                 if 0 <= q[0] < fp.FRAME and 0 <= q[1] < fp.FRAME and kq[q][3] > 128:
                     toene[kq[q][:3]] = toene.get(kq[q][:3], 0) + 1
         if toene:
@@ -79,10 +83,33 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge):
     for x, y in rumpf:
         op[x, y] = rp[x, y]
     for x, y in _punkte(ebenen["head"]):
-        ny = y + atem
-        if 0 <= ny < fp.FRAME:
-            op[x, ny] = kq[x, y]
+        nx, ny = x + kopf_seit, y + atem
+        if 0 <= nx < fp.FRAME and 0 <= ny < fp.FRAME:
+            op[nx, ny] = kq[x, y]
+    _luecken_schliessen(op)
     return out
+
+
+def _luecken_schliessen(op):
+    """Einzelne eingeschlossene Luecken mit der Nachbarfarbe fuellen.
+
+    Geht der Kopf zur Seite, gibt er am Hals einen Pixel frei, unter dem der
+    Rumpf nichts hat -- ein Loch mitten in der Figur. Betroffen ist nur, was
+    ringsum zugedeckt ist; offene Flaechen bleiben offen.
+    """
+    loecher = []
+    for y in range(1, fp.FRAME - 1):
+        for x in range(1, fp.FRAME - 1):
+            if op[x, y][3] > 128:
+                continue
+            nachbarn = [op[x - 1, y], op[x + 1, y], op[x, y - 1], op[x, y + 1]]
+            if all(n[3] > 128 for n in nachbarn):
+                loecher.append(((x, y), nachbarn))
+    for feld, nachbarn in loecher:
+        toene = {}
+        for n in nachbarn:
+            toene[n[:3]] = toene.get(n[:3], 0) + 1
+        op[feld] = max(toene.items(), key=lambda t: t[1])[0] + (255,)
 
 
 def ablauf(saat=7):

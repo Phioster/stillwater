@@ -111,15 +111,25 @@ def wurfbild(ebenen, koepfe, stab, anker, griff, arm, zustand):
     Sonst steht der Zopf ausgerechnet beim Ausholen still -- da, wo der Kopf
     am meisten mitgeht.
     """
-    atem, zopf, bein, auge = zustand
+    atem, zopf, bein, auge, seit = zustand
     out = Image.new("RGBA", (fp.FRAME, fp.FRAME + OBEN), (0, 0, 0, 0))
-    out.alpha_composite(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge),
-                        (0, OBEN))
+    out.alpha_composite(
+        pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge, seit),
+        (0, OBEN))
     vx, vy = griff[0] - anker[0], griff[1] - anker[1]
     out.alpha_composite(stab, (0, 0),
                         (vx, vy - OBEN, vx + fp.FRAME, vy + fp.FRAME))
     out.alpha_composite(arm, (0, OBEN))
     return out
+
+
+## Die Beine gehen beim Ausholen nach vorn und schwingen beim Auswerfen
+## zurueck -- das Gegengewicht zum Arm. Von Hand gesetzt, ein Wert je
+## Wurfbild, positiv ist in Blickrichtung.
+BEIN_WURF = (0, 2, 4, 5, 6, 3, -1, -4, -3, -1)
+## Am weitesten Punkt haelt sie kurz -- ohne das wirkt der Wurf wie ein
+## Durchrutschen statt wie Schwungholen.
+WURF_HALT = {4: 220}
 
 
 def zopf_im_wurf(nummer):
@@ -129,6 +139,20 @@ def zopf_im_wurf(nummer):
     Ausholen (Schulter -30 Grad) schwingt er drei Pixel nach vorn.
     """
     return int(round(-ra.REIHE[nummer][0] * 0.1))
+
+
+def kopf_im_wurf(nummer):
+    """Der Kopf lehnt beim Ausholen zurueck -- ein Zwanzigstel des
+    Schulterwinkels, also hoechstens zwei Pixel. Mehr sieht nach Nicken aus
+    statt nach Schwungholen."""
+    return int(round(ra.REIHE[nummer][0] * 0.05))
+
+
+def kopf_im_wurf(nummer):
+    """Der Kopf lehnt beim Ausholen zurueck -- ein Zwanzigstel des
+    Schulterwinkels, also hoechstens zwei Pixel. Mehr sieht nach Nicken aus
+    statt nach Schwungholen."""
+    return int(round(ra.REIHE[nummer][0] * 0.05))
 
 
 def ablauf(saat=11):
@@ -154,7 +178,7 @@ def ablauf(saat=11):
             weite = zufall.choice(BEIN_WEITEN)
         vorzeichen = richtung
         schritte.append(["ruhe", None, atem, zopf,
-                         int(round(weite * schwung)), "open", TAKT])
+                         int(round(weite * schwung)), "open", TAKT, 0])
 
     for start in BLINZLER:
         for weiter, auge, ms in BLINZELN:
@@ -164,7 +188,7 @@ def ablauf(saat=11):
     def pause(anzahl):
         for _ in range(anzahl):
             atem, zopf = atemzug()
-            schritte.append(["ruhe", None, atem, zopf, 0, "open", TAKT])
+            schritte.append(["ruhe", None, atem, zopf, 0, "open", TAKT, 0])
 
     def beine_anhalten():
         """Nur die Beine auf null fuehren -- beim Werfen haelt sie sie still.
@@ -174,14 +198,14 @@ def ablauf(saat=11):
         while bein:
             bein -= 1 if bein > 0 else -1
             atem, zopf = atemzug()
-            schritte.append(["ruhe", None, atem, zopf, bein, "open", TAKT])
+            schritte.append(["ruhe", None, atem, zopf, bein, "open", TAKT, 0])
 
     for _ in range(2):
         beine_anhalten()
         for i in range(10):
             atem, zopf = atemzug()
             schritte.append(["wurf", i, atem, zopf + zopf_im_wurf(i), 0,
-                             "open", WURF_TAKT])
+                             "open", WURF_TAKT, kopf_im_wurf(i)])
         pause(PAUSE)
     return schritte
 
@@ -207,13 +231,14 @@ def main(ziel):
 
     szene = buehne()
     bilder, zeiten = [], []
-    for art, nummer, atem, zopf, bein, auge, ms in ablauf():
+    for art, nummer, atem, zopf, bein, auge, ms, seit in ablauf():
         if art == "ruhe":
-            img = hoch(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge))
+            img = hoch(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein,
+                                         auge, seit))
         else:
             img = wurfbild(wurf_ebenen, wurf_koepfe, staebe[nummer],
                            anker["anker"][nummer], anker["griff"],
-                           arme[nummer], (atem, zopf, bein, auge))
+                           arme[nummer], (atem, zopf, bein, auge, seit))
         ganz = szene.copy()
         ganz.alpha_composite(img, (LINKS, 0))
         unten = Image.new("RGBA", ganz.size, GRUND + (255,))
