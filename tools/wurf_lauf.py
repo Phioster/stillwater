@@ -23,14 +23,23 @@ from PIL import Image
 from tools import figure_parts as fp
 from tools import preview_parts as pp
 
-SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "assets", "source", "figure")
+WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC = os.path.join(WURZEL, "assets", "source", "figure")
 TEILE = os.path.join(SRC, "parts")
 GRUND = (24, 28, 34)
-ZOOM = 5
+ZOOM = 4
 ## Beim Ausholen steht die Rute bis zu 21 Zeilen ueber dem Figurenfeld. Das
 ## Bild bekommt deshalb Luft nach oben; die Figur bleibt, wo sie ist.
 OBEN = 24
+## ... und Platz nach links und unten fuer den Steg, auf dem sie sitzt.
+LINKS = 96
+UNTEN = 26
+## Wie in scenes/fishing/world.gd: ihr Rocksaum liegt auf der vorderen
+## Deckoberkante, das Deck 40 Stegpixel ueber dem Wasser. Steg und Figur haben
+## denselben Massstab, ein Pixel ist ein Pixel.
+CHAR_SEAT = 84
+DECK_UEBER_WASSER = 40
+WASSER = (0x2f, 0x4a, 0x34)
 
 PRO_ZUG = 32        # Schritte je Atemzug -- 3,2 s, ein ruhiger Zug
 BEIN_ZUG = 24       # Schritte je vollem Beinschwung
@@ -60,6 +69,27 @@ def rutenebene(bild):
             if anders[y, x]:
                 op[x, y] = bp[x, y]
     return out
+
+
+def buehne():
+    """Der Steg hinter ihr, davor das Wasser -- die Pfosten enden darin.
+
+    Dieselbe Anordnung wie im Spiel: Steg, dann Wasserflaeche, dann Figur.
+    """
+    from tools import steg_bauen as steg
+    holz = Image.open(os.path.join(WURZEL, "assets", "art",
+                                   "dock.png")).convert("RGBA")
+    aus = Image.new("RGBA", (LINKS + fp.FRAME, OBEN + fp.FRAME + UNTEN),
+                    (0, 0, 0, 0))
+    ## Die vordere Deckoberkante unter ihren Rocksaum, das Stegende unter die
+    ## Stelle, an der die Beine frei haengen.
+    dx = LINKS + 68 - (steg.BREITE - 1)
+    dy = OBEN + CHAR_SEAT - steg.HOCH
+    aus.alpha_composite(holz, (0, dy), (-dx, 0, holz.width, holz.height))
+    wasser_y = OBEN + CHAR_SEAT + DECK_UEBER_WASSER
+    aus.alpha_composite(Image.new("RGBA", (aus.width, aus.height - wasser_y),
+                                  WASSER + (255,)), (0, wasser_y))
+    return aus
 
 
 def hoch(bild):
@@ -164,6 +194,7 @@ def main(ziel):
     koerper.alpha_composite(Image.open(
         os.path.join(TEILE, "sit3_arm_fern.png")).convert("RGBA"))
 
+    szene = buehne()
     bilder, zeiten = [], []
     for art, nummer, atem, zopf, bein, auge, ms in ablauf():
         if art == "ruhe":
@@ -171,10 +202,12 @@ def main(ziel):
         else:
             img = wurfbild(koerper, staebe[nummer], anker["anker"][nummer],
                            anker["griff"], arme[nummer], ebenen["legs"], bein)
-        unten = Image.new("RGBA", img.size, GRUND + (255,))
-        unten.alpha_composite(img)
+        ganz = szene.copy()
+        ganz.alpha_composite(img, (LINKS, 0))
+        unten = Image.new("RGBA", ganz.size, GRUND + (255,))
+        unten.alpha_composite(ganz)
         flach = unten.convert("RGB").resize(
-            (img.width * ZOOM, img.height * ZOOM), Image.NEAREST)
+            (ganz.width * ZOOM, ganz.height * ZOOM), Image.NEAREST)
         ## Gleiche Bilder zusammenfassen: der GIF-Schreiber wirft
         ## Wiederholungen weg, behaelt aber die Einzeldauern.
         if bilder and flach.tobytes() == bilder[-1].tobytes():
