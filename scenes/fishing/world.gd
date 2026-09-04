@@ -85,6 +85,10 @@ const SPLASH_KICK := 7.0
 ## Wasser. Ein Scheitel auf halber Strecke ergaebe eine Diagonale.
 const CAST_ARC := 60.0
 const CAST_OVERSHOOT := 90.0
+## Der Koeder faellt, er schwebt nicht: die Kurve wird beschleunigt abgefahren,
+## also oben langsam und unten schnell. Die Wurfdauer selbst bleibt, die
+## gehoert der Simulation.
+const CAST_FALL := 1.45
 ## Wie weit die Schnur durchhaengt, als Anteil ihrer eigenen Laenge. Ein
 ## fester Wert waere im Flug ein Klumpen und in Ruhe kaum zu sehen; so haengt
 ## sie ueberall gleich, und der Bogen ist schon im Flug da.
@@ -95,7 +99,7 @@ const LINE_SAG := 0.28
 ## den senkrechten Durchhang -- ueber LINE_SETTLE Sekunden, sonst springt sie.
 const LINE_BELLY_AIR := Vector2(0.86, 0.51)
 const LINE_BELLY_WATER := Vector2(0.0, 1.0)
-const LINE_SETTLE := 0.35
+const LINE_SETTLE := 0.14
 ## Wie weit der Koeder unter dem Schwimmer haengt, in Figurpixeln. Er sitzt am
 ## Vorfach: beim Ausholen baumelt er an der Rutenspitze, im Flug zieht er
 ## hinterher, und mit dem Aufsetzen ist er unter Wasser.
@@ -338,6 +342,7 @@ func _cast_position() -> Vector2:
 	var from: Vector2 = _angler.rod_tip()
 	var to := _bobber_home
 	var peak := Vector2(to.x + CAST_OVERSHOOT, from.y - CAST_ARC)
+	t = pow(t, CAST_FALL)
 	var inv := 1.0 - t
 	return inv * inv * from + 2.0 * inv * t * peak + t * t * to
 

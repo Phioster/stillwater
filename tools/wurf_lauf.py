@@ -64,7 +64,10 @@ BLINZELN = ((0, "half", 55), (1, "closed", 90), (2, "half", 55))
 ## dann einen Bogen und setzen auf dem Wasser auf. Danach ist der Koeder unter
 ## Wasser und nur der Schwimmer wippt noch.
 WURF_LOESUNG = 8       # ab diesem Wurfbild ist die Schnur draussen
-FLUG = 12              # Schritte, die der Flug dauert
+FLUG = 8               # Schritte, die der Flug dauert
+## Der Koeder faellt, er schwebt nicht: die Kurve wird beschleunigt abgefahren,
+## also oben langsam und unten schnell.
+FALL = 1.45
 KOEDER_HANG = 10       # wie weit der Koeder unter dem Schwimmer haengt
 ## Der Scheitel der Wurfkurve liegt RECHTS des Ziels und ueber der Spitze: der
 ## Koeder fliegt erst hinaus und faellt dann steil ins Wasser. Ein Scheitel auf
@@ -81,7 +84,7 @@ DURCHHANG = 0.28
 ## den senkrechten Durchhang -- ueber SETZEN Schritte, sonst springt sie.
 BAUCH_LUFT = (0.86, 0.51)
 BAUCH_WASSER = (0.0, 1.0)
-SETZEN = 5
+SETZEN = 2
 SCHNUR_PUNKTE = 12
 ## Wo der Schwimmer aufsetzt, in Buehnenkoordinaten: rechts vom Stegende, auf
 ## der Wasserlinie. Er liegt IM Wasser -- unterhalb dieser Zeile ist er weg.
@@ -208,7 +211,7 @@ def _bezier(von, nach, scheitel, t):
 
 def flugbahn(von, nach, t):
     """Die Wurfkurve -- wie world.gd."""
-    return _bezier(von, nach, (nach[0] + AUSHOLEN, von[1] - BOGEN), t)
+    return _bezier(von, nach, (nach[0] + AUSHOLEN, von[1] - BOGEN), t ** FALL)
 
 
 def schnurzug(von, nach, bauch):
