@@ -66,11 +66,19 @@ BLINZELN = ((0, "half", 55), (1, "closed", 90), (2, "half", 55))
 WURF_LOESUNG = 8       # ab diesem Wurfbild ist die Schnur draussen
 FLUG = 12              # Schritte, die der Flug dauert
 KOEDER_HANG = 10       # wie weit der Koeder unter dem Schwimmer haengt
-BOGEN = 26             # wie hoch der Flug ueber die Verbindungslinie geht
+## Der Scheitel der Wurfkurve liegt RECHTS des Ziels und ueber der Spitze: der
+## Koeder fliegt erst hinaus und faellt dann steil ins Wasser. Ein Scheitel auf
+## halber Strecke ergaebe eine Diagonale, keinen Wurf.
+BOGEN = 14             # so weit ueber der Rutenspitze
+AUSHOLEN = 22          # so weit rechts vom Ziel
 SCHNUR = (0xeb, 0xe6, 0xd1, 217)
-## Wo der Schwimmer aufsetzt, in Buehnenkoordinaten. Rechts vom Stegende, und
-## zwei Zeilen ueber der Wasserlinie: er liegt IM Wasser, nicht darauf.
-ZIEL = (LINKS + fp.FRAME + 20, OBEN + CHAR_SEAT + DECK_UEBER_WASSER - 2)
+## Die Schnur haengt durch. Im Flug straffer -- da zieht der Koeder an ihr.
+DURCHHANG = 26
+DURCHHANG_FLUG = 0.35
+SCHNUR_PUNKTE = 12
+## Wo der Schwimmer aufsetzt, in Buehnenkoordinaten: rechts vom Stegende, auf
+## der Wasserlinie. Er liegt IM Wasser -- unterhalb dieser Zeile ist er weg.
+ZIEL = (LINKS + fp.FRAME + 20, OBEN + CHAR_SEAT + DECK_UEBER_WASSER + 1)
 
 
 def rutenebene(bild):
@@ -185,12 +193,22 @@ def rutenspitze(stab, griff, anker):
     return (spitze[0] - (gx - anker[0]), spitze[1] - (gy - anker[1]))
 
 
-def flugbahn(von, nach, t):
-    """Quadratische Bezierkurve mit Scheitel darueber -- wie world.gd."""
-    scheitel = ((von[0] + nach[0]) * 0.5, (von[1] + nach[1]) * 0.5 - BOGEN)
+def _bezier(von, nach, scheitel, t):
     g = 1.0 - t
     return (g * g * von[0] + 2 * g * t * scheitel[0] + t * t * nach[0],
             g * g * von[1] + 2 * g * t * scheitel[1] + t * t * nach[1])
+
+
+def flugbahn(von, nach, t):
+    """Die Wurfkurve -- wie world.gd."""
+    return _bezier(von, nach, (nach[0] + AUSHOLEN, von[1] - BOGEN), t)
+
+
+def schnurzug(von, nach, durchhang):
+    """Die Schnur als durchhaengende Kurve statt als gespannter Draht."""
+    mitte = ((von[0] + nach[0]) * 0.5, (von[1] + nach[1]) * 0.5 + durchhang)
+    return [_bezier(von, nach, mitte, i / float(SCHNUR_PUNKTE - 1))
+            for i in range(SCHNUR_PUNKTE)]
 
 
 def _setzen(bild, teil, mitte):
@@ -215,14 +233,20 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made):
         mitte = (ZIEL[0], ZIEL[1] + round(math.sin(wert * 0.6)))
     am_haken = art != "schwimmt"
     schnur = Image.new("RGBA", bild.size, (0, 0, 0, 0))
-    punkte = [spitze, mitte]
+    punkte = schnurzug(spitze, mitte,
+                       DURCHHANG * (DURCHHANG_FLUG if am_haken else 1.0))
     if am_haken:
         punkte.append((mitte[0], mitte[1] + KOEDER_HANG))
     ImageDraw.Draw(schnur).line(punkte, fill=SCHNUR, width=1)
     bild.alpha_composite(schnur)
-    _setzen(bild, schwimmer, mitte)
     if am_haken:
+        _setzen(bild, schwimmer, mitte)
         _setzen(bild, made, (mitte[0], mitte[1] + KOEDER_HANG))
+    else:
+        ## Schwimmend nur die obere Haelfte, und die endet auf der Wasserlinie.
+        sichtbar = schwimmer.height // 2
+        oben = schwimmer.crop((0, 0, schwimmer.width, sichtbar))
+        _setzen(bild, oben, (mitte[0], mitte[1] - sichtbar / 2.0))
 
 
 def ablauf(saat=11):

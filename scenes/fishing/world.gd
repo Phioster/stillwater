@@ -80,8 +80,16 @@ const CATCH_KICK := 20.0
 ## Der Spritzer beim Aufsetzen. Kleiner als ein Biss -- der Wurf soll das
 ## Wasser anstossen, nicht aufschrecken.
 const SPLASH_KICK := 7.0
-## Wie hoch der Wurf ueber die Verbindungslinie hinausgeht.
-const CAST_ARC := 200.0
+## Der Scheitel der Wurfkurve liegt RECHTS des Ziels und ueber der
+## Rutenspitze: der Koeder fliegt erst hinaus und faellt dann steil ins
+## Wasser. Ein Scheitel auf halber Strecke ergaebe eine Diagonale.
+const CAST_ARC := 60.0
+const CAST_OVERSHOOT := 90.0
+## Die Schnur haengt durch, statt schnurgerade von der Spitze zum Schwimmer zu
+## laufen. Im Flug ist sie straffer -- da zieht der Koeder an ihr.
+const LINE_POINTS := 12
+const LINE_SAG := 60.0
+const LINE_SAG_CAST := 0.35
 ## Wie weit der Koeder unter dem Schwimmer haengt, in Figurpixeln. Er sitzt am
 ## Vorfach: beim Ausholen baumelt er an der Rutenspitze, im Flug zieht er
 ## hinterher, und mit dem Aufsetzen ist er unter Wasser.
@@ -92,6 +100,9 @@ const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
+## Wo der Schwimmer wirklich sitzt. Nicht dasselbe wie seine Sprite-Position:
+## schwimmend ist er halb abgeschnitten und sein Sprite sitzt hoeher.
+var _bobber_mitte: Vector2
 var _water := WaterSurface.new(WATER_POINTS)
 ## Laeuft immer weiter, anders als _bob_time (das bei jedem Biss auf 0
 ## zurueckspringt) -- die Grundbewegung des Wassers darf davon nicht mitreissen.
@@ -150,6 +161,7 @@ func _layout() -> void:
 	var dock_right := _dock.position.x + DOCK_W * DOCK_SCALE
 	_bobber_home = Vector2(min(dock_right + BOBBER_OFF_DOCK * DOCK_SCALE, size.x * 0.75),
 		water_y + size.y * 0.14)
+	_bobber_mitte = _bobber_home
 	_bobber.position = _bobber_home
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
@@ -175,24 +187,26 @@ func _process(delta: float) -> void:
 		# Der Schwimmer war waehrend des Wurfs unsichtbar und tauchte am Ende
 		# an seiner Endstelle auf -- er teleportierte. Jetzt fliegt er einen
 		# Bogen, und die Schnur folgt ihm von selbst.
-		_bobber.position = _cast_position()
+		_bobber_mitte = _cast_position()
 	else:
-		_bobber.position = Vector2(_bobber_home.x,
+		_bobber_mitte = Vector2(_bobber_home.x,
 			_bobber_home.y + sin(_bob_time * 3.0) * amplitude)
+	_setze_schwimmer(not casting)
 	# Der Koeder haengt am Vorfach unter dem Schwimmer. Sichtbar nur im Flug:
 	# sobald der Schwimmer sitzt, ist er unter Wasser.
 	_update_bait(casting)
 	# Schnur von der Rutenspitze zum Schwimmer -- folgt dadurch von selbst
-	# dem Auf und Ab und dem Zappeln im Kampf. Im Flug haengt das Vorfach als
-	# dritter Punkt daran.
+	# dem Auf und Ab und dem Zappeln im Kampf. Im Flug haengt das Vorfach
+	# darunter weiter.
 	_line.visible = _bobber.visible
 	if _line.visible:
-		var punkte := PackedVector2Array([_angler.rod_tip(), _bobber.position])
+		var durchhang := LINE_SAG * (LINE_SAG_CAST if casting else 1.0)
+		var punkte := _schnur(_angler.rod_tip(), _bobber_mitte, durchhang)
 		if _bait.visible:
 			punkte.append(_bait.position)
 		_line.points = punkte
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
-	$CatchView.focus_point = _bobber.position
+	$CatchView.focus_point = _bobber_mitte
 	_update_visitors()
 	if _rain != null:
 		_rain.visible = Game.ctx.raining
@@ -239,16 +253,44 @@ func _update_bait(casting: bool) -> void:
 			tex = TextureLoader.load_texture(
 				"res://assets/art/bait_%s.png" % BAIT_FALLBACK)
 		_bait.texture = tex
-	_bait.position = _bobber.position + Vector2(0.0, BAIT_HANG * BOBBER_SCALE)
+	_bait.position = _bobber_mitte + Vector2(0.0, BAIT_HANG * BOBBER_SCALE)
 
 func _active_bait_id() -> StringName:
 	var bait: BaitData = Game.ctx.bait
 	return bait.id if bait != null else BAIT_FALLBACK
 
+## Die Schnur als durchhaengende Kurve. Eine Gerade sieht aus wie ein Draht;
+## eine Schnur haengt zwischen ihren Enden durch.
+func _schnur(von: Vector2, nach: Vector2, durchhang: float) -> PackedVector2Array:
+	var mitte := (von + nach) * 0.5 + Vector2(0.0, durchhang)
+	var punkte := PackedVector2Array()
+	punkte.resize(LINE_POINTS)
+	for i in LINE_POINTS:
+		var t := float(i) / float(LINE_POINTS - 1)
+		var g := 1.0 - t
+		punkte[i] = g * g * von + 2.0 * g * t * mitte + t * t * nach
+	return punkte
+
+## Der Schwimmer liegt IM Wasser, nicht darauf: schwimmend wird nur seine obere
+## Haelfte gezeichnet, und die endet auf der Wasserlinie. Im Flug ist er ganz
+## zu sehen. Geschnitten wird ueber region_rect -- so bleibt es ein Sprite.
+func _setze_schwimmer(getaucht: bool) -> void:
+	if _bobber.texture == null:
+		return
+	var groesse := _bobber.texture.get_size()
+	_bobber.region_enabled = getaucht
+	if getaucht:
+		var sichtbar := floorf(groesse.y * 0.5)
+		_bobber.region_rect = Rect2(0.0, 0.0, groesse.x, sichtbar)
+		_bobber.position = Vector2(_bobber_mitte.x,
+			_bobber_mitte.y - sichtbar * 0.5 * BOBBER_SCALE)
+	else:
+		_bobber.position = _bobber_mitte
+
 func _bobber_fraction() -> float:
 	if size.x <= 0.0:
 		return 0.5
-	return clampf(_bobber.position.x / size.x, 0.0, 1.0)
+	return clampf(_bobber_mitte.x / size.x, 0.0, 1.0)
 
 func _on_bite(_fish: FishData) -> void:
 	_bob_time = 0.0
@@ -283,7 +325,7 @@ func _cast_position() -> Vector2:
 	var t := 1.0 - clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
 	var from: Vector2 = _angler.rod_tip()
 	var to := _bobber_home
-	var peak: Vector2 = (from + to) * 0.5 - Vector2(0.0, CAST_ARC)
+	var peak := Vector2(to.x + CAST_OVERSHOOT, from.y - CAST_ARC)
 	var inv := 1.0 - t
 	return inv * inv * from + 2.0 * inv * t * peak + t * t * to
 
