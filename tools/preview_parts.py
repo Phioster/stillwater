@@ -37,11 +37,12 @@ def _punkte(img):
 
 def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
                    kopf_seit=0):
-    """Ein Bild. Reihenfolge: Zopf, Beine, Rumpf, Kopf.
+    """Ein Bild. Reihenfolge: Zopf, Beine, Hals, Rumpf, restlicher Kopf.
 
     Der Kopf liegt OBEN. Lag der Rumpf oben, frass sein Schulterumriss beim
-    Absenken die Kinnzeile. In Ruhe sind beide Reihenfolgen gleich, weil die
-    Ebenen sich nicht ueberschneiden.
+    Absenken die Kinnzeile. Ausgenommen ist der Hals: der gehoert hinter den
+    Kragen, sonst schiebt er sich beim Neigen darueber. In Ruhe sind alle
+    Reihenfolgen gleich, weil die Ebenen sich nicht ueberschneiden.
     """
     out = Image.new("RGBA", (fp.FRAME, fp.FRAME), (0, 0, 0, 0))
     op = out.load()
@@ -80,12 +81,18 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
         nx = x + fp.swing(y, beinweite, fp.BEIN_KNIE_Y, fp.BEIN_ZEH_Y)
         if 0 <= nx < fp.FRAME:
             op[nx, y] = bp[x, y]
+    kopf = _punkte(ebenen["head"])
+
+    def kopf_setzen(felder):
+        for x, y in felder:
+            nx, ny = x + kopf_seit, y + atem
+            if 0 <= nx < fp.FRAME and 0 <= ny < fp.FRAME:
+                op[nx, ny] = kq[x, y]
+
+    kopf_setzen([p for p in kopf if p in fp.HALS])
     for x, y in rumpf:
         op[x, y] = rp[x, y]
-    for x, y in _punkte(ebenen["head"]):
-        nx, ny = x + kopf_seit, y + atem
-        if 0 <= nx < fp.FRAME and 0 <= ny < fp.FRAME:
-            op[nx, ny] = kq[x, y]
+    kopf_setzen([p for p in kopf if p not in fp.HALS])
     _luecken_schliessen(op)
     return out
 
