@@ -11,6 +11,7 @@ Beim Wurf haengen die Beine still. Sie schwingen genau vier Mal, weil der
 Ruhelauf auf 4 x BEIN_ZUG Schritte gelegt ist und der Schwung bei null
 anfaengt und aufhoert -- so ist der Uebergang in den Wurf kein Sprung.
 """
+import json
 import math
 import os
 import random
@@ -27,6 +28,9 @@ SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 TEILE = os.path.join(SRC, "parts")
 GRUND = (24, 28, 34)
 ZOOM = 5
+## Beim Ausholen steht die Rute bis zu 21 Zeilen ueber dem Figurenfeld. Das
+## Bild bekommt deshalb Luft nach oben; die Figur bleibt, wo sie ist.
+OBEN = 24
 
 PRO_ZUG = 16        # Schritte je Atemzug
 BEIN_ZUG = 24       # Schritte je vollem Beinschwung
@@ -58,29 +62,40 @@ def rutenebene(bild):
     return out
 
 
-def wurfbild(voll, beine, beinweite):
-    """Ein Wurfbild mit ausgetauschten Beinen.
+def hoch(bild):
+    """Ein 128er Bild auf das hohe Feld setzen, die Figur bleibt an ihrem Platz."""
+    out = Image.new("RGBA", (fp.FRAME, fp.FRAME + OBEN), (0, 0, 0, 0))
+    out.alpha_composite(bild, (0, OBEN))
+    return out
+
+
+def wurfbild(koerper, stab, anker, griff, arm, beine, beinweite):
+    """Ein Wurfbild aus seinen Teilen, mit ausgetauschten Beinen.
+
+    Reihenfolge: Koerper, Rute, Arm -- die Rute liegt vor dem Rumpf und hinter
+    der Hand. Als eigenes Sprite in ihrem 320er Feld ist sie vollstaendig;
+    zusammengerechnet im 128er Feld war ihre Spitze abgeschnitten.
 
     Unterhalb des Knieschnitts sind alle zehn Wurfbilder gleich -- nachgemessen
-    null Unterschied. Also darf die Beinebene sie ersetzen, ohne dass vom Wurf
-    etwas verloren geht.
+    null Unterschied. Also darf die Beinebene sie ersetzen.
     """
-    out = Image.new("RGBA", voll.size, (0, 0, 0, 0))
-    op, vp = out.load(), voll.load()
-    bp = beine.load()
+    out = Image.new("RGBA", (fp.FRAME, fp.FRAME + OBEN), (0, 0, 0, 0))
+    op, kp, bp = out.load(), koerper.load(), beine.load()
     for y in range(fp.FRAME):
         for x in range(fp.FRAME):
-            if fp.layer_of(x, y) == "legs":
-                continue
-            if vp[x, y][3] > 128:
-                op[x, y] = vp[x, y]
+            if fp.layer_of(x, y) != "legs" and kp[x, y][3] > 128:
+                op[x, y + OBEN] = kp[x, y]
     for y in range(fp.FRAME):
         for x in range(fp.FRAME):
             if bp[x, y][3] <= 128:
                 continue
             nx = x + fp.swing(y, beinweite, fp.BEIN_KNIE_Y, fp.BEIN_ZEH_Y)
             if 0 <= nx < fp.FRAME:
-                op[nx, y] = bp[x, y]
+                op[nx, y + OBEN] = bp[x, y]
+    vx, vy = griff[0] - anker[0], griff[1] - anker[1]
+    out.alpha_composite(stab, (0, 0),
+                        (vx, vy - OBEN, vx + fp.FRAME, vy + fp.FRAME))
+    out.alpha_composite(arm, (0, OBEN))
     return out
 
 
@@ -140,19 +155,26 @@ def main(ziel):
     ebenen = fp.split(ruhe, rutenebene(ruhe))
     koepfe = {s: fp.eye_state(ebenen["head"], s)
               for s in ("open", "half", "closed")}
-    wuerfe = [Image.open(os.path.join(SRC, "wurf_rute_%d.png" % i)).convert("RGBA")
+    anker = json.load(open(os.path.join(SRC, "wurf_anker.json")))
+    staebe = [Image.open(os.path.join(SRC, "wurf_stab_%d.png" % i)).convert("RGBA")
               for i in range(10)]
+    arme = [Image.open(os.path.join(SRC, "wurf_arm_%d.png" % i)).convert("RGBA")
+            for i in range(10)]
+    koerper = Image.open(os.path.join(TEILE, "sit3_rumpf.png")).convert("RGBA")
+    koerper.alpha_composite(Image.open(
+        os.path.join(TEILE, "sit3_arm_fern.png")).convert("RGBA"))
 
     bilder, zeiten = [], []
     for art, nummer, atem, zopf, bein, auge, ms in ablauf():
         if art == "ruhe":
-            img = pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge)
+            img = hoch(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge))
         else:
-            img = wurfbild(wuerfe[nummer], ebenen["legs"], bein)
+            img = wurfbild(koerper, staebe[nummer], anker["anker"][nummer],
+                           anker["griff"], arme[nummer], ebenen["legs"], bein)
         unten = Image.new("RGBA", img.size, GRUND + (255,))
         unten.alpha_composite(img)
         flach = unten.convert("RGB").resize(
-            (fp.FRAME * ZOOM, fp.FRAME * ZOOM), Image.NEAREST)
+            (img.width * ZOOM, img.height * ZOOM), Image.NEAREST)
         ## Gleiche Bilder zusammenfassen: der GIF-Schreiber wirft
         ## Wiederholungen weg, behaelt aber die Einzeldauern.
         if bilder and flach.tobytes() == bilder[-1].tobytes():

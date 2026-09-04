@@ -8,6 +8,7 @@ Ortsaenderung mit und behaelt ihr Bild -- dieselbe Regel wie bei der Hand.
 Gezeichnet wird die Rute vor den Rumpf, aber hinter den vorderen Arm: so
 liegt der Griff in der Faust und nicht darueber.
 """
+import json
 import math
 import os
 import sys
@@ -248,45 +249,67 @@ def main():
     grund = math.degrees(math.atan2(sp[1] - GRIFF[1], sp[0] - GRIFF[0]))
     print("Rute zeigt von Haus aus auf %.1f Grad" % grund)
 
-    bilder = []
+    bilder, staebe, arme, anker = [], [], [], []
     for i, (((ga, gb), soll)) in enumerate(zip(REIHE, WINKEL)):
         a, b = math.radians(ga), math.radians(gb)
         nach, VERSATZ = KORREKTUR[i]
         soll = soll + nach
         dreh_rute = math.radians(soll - grund)
         achse = (math.cos(math.radians(soll)), math.sin(math.radians(soll)))
-        ganz = rumpf.copy()
-        ganz.alpha_composite(fern)
-        untergrund = ganz.copy()   # fuer DAHINTER: Rumpf und hinterer Arm ohne Rute
-        hinten = untergrund.load()
+        hintergrund = rumpf.copy()
+        hintergrund.alpha_composite(fern)
 
         faust = drehen(drehen(FAUST, b, ELLBOGEN), a, SCHULTER)
         # Der Griff steckt ein Stueck in der Faust, sonst klebt die Rute daneben.
         sitz = (faust[0] - achse[0] * KORK, faust[1] - achse[1] * KORK)
         vx = int(round(GRIFF[0] - sitz[0] - VERSATZ[0]))
         vy = int(round(GRIFF[1] - sitz[1] - VERSATZ[1]))
-        gedreht = Image.fromarray(rotsprite._entpacken(rotsprite.verkleinern(
-            rotsprite.drehen_kette(schaft_gross, [(dreh_rute, GRIFF)], N), N)), "RGBA")
-        rutenebene = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-        rutenebene.alpha_composite(gedreht, (0, 0), (vx, vy, vx + 128, vy + 128))
-        ganz.alpha_composite(rutenebene)
+        stab = Image.fromarray(rotsprite._entpacken(rotsprite.verkleinern(
+            rotsprite.drehen_kette(schaft_gross, [(dreh_rute, GRIFF)], N), N)),
+            "RGBA").copy()
 
+        arm = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
         for feld, kette in ((unten, [(b, ELLBOGEN), (a, SCHULTER)]), (oben, [(a, SCHULTER)])):
-            ganz.alpha_composite(Image.fromarray(rotsprite._entpacken(
+            arm.alpha_composite(Image.fromarray(rotsprite._entpacken(
                 rotsprite.verkleinern(rotsprite.drehen_kette(feld, kette, N), N)), "RGBA"))
 
-        # Zuletzt, damit die Handpixel den Griff nicht wieder ueberdecken.
-        gp = ganz.load()
-        for feld, ton in GRIFF_FLICKEN[i]:
-            if ton is DAHINTER:
-                gp[feld] = hinten[feld]
-            else:
-                gp[feld] = (0, 0, 0, 0) if ton is None else ton + (255,)
-        bilder.append(ganz)
+        ## Die abgenommenen Pixel auf die Ebenen verteilen, in die sie gehoeren:
+        ## was auf dem Arm liegt, muss VOR ihm bleiben; alles andere gehoert in
+        ## die Rute, die ohnehin vor dem Rumpf und hinter dem Arm liegt.
+        ## DAHINTER und None loeschen dort einfach den Rutenpixel -- dann kommt
+        ## von selbst zum Vorschein, was die Rute verdeckt hat.
+        ap, sp2 = arm.load(), stab.load()
+        for (px, py), ton in GRIFF_FLICKEN[i]:
+            leeren = ton is None or ton is DAHINTER
+            if ap[px, py][3] > 128:
+                ## Liegt der Pixel auf dem Arm, muss er VOR ihm entschieden
+                ## werden: faerben, oder den Arm dort aufmachen.
+                ap[px, py] = (0, 0, 0, 0) if leeren else ton + (255,)
+                if not leeren:
+                    continue
+            sp2[px + vx, py + vy] = (0, 0, 0, 0) if leeren else ton + (255,)
 
-    # Die fertigen Bilder gehoeren ins Projekt, nicht nur in die Vorschau.
+        ganz = hintergrund.copy()
+        ebene = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+        ebene.alpha_composite(stab, (0, 0), (vx, vy, vx + 128, vy + 128))
+        ganz.alpha_composite(ebene)
+        ganz.alpha_composite(arm)
+
+        bilder.append(ganz)
+        staebe.append(stab)
+        arme.append(arm)
+        anker.append((GRIFF[0] - vx, GRIFF[1] - vy))
+
+    ## Die fertigen Bilder gehoeren ins Projekt, nicht nur in die Vorschau.
+    ## Dazu die Teile: im 128er-Feld ist die Rute beim Ausholen oben
+    ## abgeschnitten, als eigenes Sprite in ihrem 320er-Feld ist sie ganz.
     for i, bild in enumerate(bilder):
         bild.save(os.path.join(SRC, "wurf_rute_%d.png" % i))
+        staebe[i].save(os.path.join(SRC, "wurf_stab_%d.png" % i))
+        arme[i].save(os.path.join(SRC, "wurf_arm_%d.png" % i))
+    with open(os.path.join(SRC, "wurf_anker.json"), "w") as f:
+        json.dump({"griff": list(GRIFF), "feld": 320,
+                   "anker": [[int(x), int(y)] for x, y in anker]}, f, indent=1)
 
     Z = 4
     folge = [b.resize((128 * Z, 128 * Z), Image.NEAREST).convert("RGB") for b in bilder]
