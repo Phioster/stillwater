@@ -41,9 +41,10 @@ const BOBBER_SCALE := 2.16
 ## Wie hoch die vordere Deckoberkante ueber der Wasserlinie liegt, in
 ## Stegpixeln. Massgeblich sind ihre Beine: vom Rocksaum (Zeile 84) bis zur
 ## Stiefelspitze (122) sind es 38 Figurpixel, und Figur und Steg haben
-## denselben Massstab. Bei 40 haengen die Stiefel knapp ueber dem Wasser
-## statt darin.
-const DECK_OVER_WATER := 40.0
+## denselben Massstab. Bei 40 lagen sie knapp ueber der RUHENDEN Wasserlinie
+## -- seit das Wasser sichtbar wellt, griff der Kamm darueber. 46 laesst rund
+## acht Figurpixel Luft, auch ueber dem Stoss eines Bisses.
+const DECK_OVER_WATER := 46.0
 ## Wo die Anglerin sitzt, vom linken Stegende in Stegpixeln. Ihr Sprite haengt
 ## an der oberen linken Ecke; bei 187 liegt ihre Sitzflaeche (Figurspalten
 ## 44 bis 68) genau auf den letzten Planken, und die Beine haengen ueber der
@@ -121,6 +122,9 @@ var _bobber_home: Vector2
 var _bobber_mitte: Vector2
 ## Wie lange der Schwimmer schon sitzt -- daran kippt der Bauch der Schnur.
 var _line_settle: float = 0.0
+## Gehoert der Schwimmer gerade zur Szene? Nicht dasselbe wie _bobber.visible
+## -- das schaltet der Schnitt an der Wasserlinie ab, wenn er untergeht.
+var _bobber_sichtbar: bool = false
 var _water := WaterSurface.new(WATER_POINTS)
 ## Laeuft immer weiter, anders als _bob_time (das bei jedem Biss auf 0
 ## zurueckspringt) -- die Grundbewegung des Wassers darf davon nicht mitreissen.
@@ -201,7 +205,10 @@ func _process(delta: float) -> void:
 	## Solange geworfen wird, steht die Schnur nach aussen; danach faellt sie.
 	_line_settle = 0.0 if casting else _line_settle + delta
 	var visible_states := [FishingSim.State.CASTING, FishingSim.State.WAITING, FishingSim.State.FIGHT]
-	_bobber.visible = Game.sim.state in visible_states
+	## Der Schnitt darf ihn spaeter noch verstecken, also merken wir uns
+	## getrennt, ob er ueberhaupt dazugehoert.
+	_bobber_sichtbar = Game.sim.state in visible_states
+	_bobber.visible = _bobber_sichtbar
 	var kaempft := Game.sim.state == FishingSim.State.FIGHT
 	if casting:
 		# Der Schwimmer war waehrend des Wurfs unsichtbar und tauchte am Ende
@@ -219,21 +226,29 @@ func _process(delta: float) -> void:
 		var anteil := clampf(_bobber_home.x / maxf(size.x, 1.0), 0.0, 1.0)
 		_bobber_mitte = Vector2(_bobber_home.x,
 			_bobber_home.y + _wellenhoehe(anteil) + zupfen)
-	_setze_schwimmer(not casting)
-	# Der Koeder haengt am Vorfach unter dem Schwimmer. Sichtbar nur im Flug:
-	# sobald der Schwimmer sitzt, ist er unter Wasser.
-	_update_bait(casting)
+	## Seine eigene Wasserlinie: die Welle an seiner Stelle. Nicht die
+	## gezeichnete Wellenlinie am Ufer -- er liegt weiter draussen.
+	var wasserlinie := _bobber_home.y + _wellenhoehe(
+		clampf(_bobber_home.x / maxf(size.x, 1.0), 0.0, 1.0))
+	_schneide(_bobber, _bobber_mitte, wasserlinie)
+	# Der Koeder haengt am Vorfach unter dem Schwimmer. Er taucht vor ihm ein
+	# und verschwindet dabei von selbst -- derselbe Schnitt.
+	_update_bait(wasserlinie)
 	# Schnur von der Rutenspitze zum Schwimmer -- folgt dadurch von selbst
 	# dem Auf und Ab und dem Zappeln im Kampf. Im Flug haengt das Vorfach
 	# darunter weiter.
-	_line.visible = _bobber.visible
+	_line.visible = _bobber_sichtbar
 	if _line.visible:
 		var spitze: Vector2 = _angler.rod_tip()
 		var gesetzt := clampf(_line_settle / LINE_SETTLE, 0.0, 1.0)
 		var punkte := _schnur(spitze, _bobber_mitte,
 			LINE_BELLY_AIR.lerp(LINE_BELLY_WATER, gesetzt))
 		if _bait.visible:
-			punkte.append(_bait.position)
+			## Das Vorfach endet an der Wasserlinie -- darunter sieht man es
+			## nicht, und der Koeder ist dort ohnehin schon weggeschnitten.
+			punkte.append(Vector2(_bobber_mitte.x,
+				minf(_bobber_mitte.y + BAIT_HANG * BOBBER_SCALE,
+					wasserlinie)))
 		_line.points = punkte
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
 	$CatchView.focus_point = _bobber_mitte
@@ -242,7 +257,7 @@ func _process(delta: float) -> void:
 		_rain.visible = Game.ctx.raining
 	_water_time += delta
 	_water.step(delta)
-	if _bobber.visible and kaempft:
+	if _bobber_sichtbar and kaempft:
 		# Nur im Kampf stoesst er das Wasser an -- da wird er gezogen. Beim
 		# Warten waere es eine Rueckkopplung: er schoebe das Wasser, das ihn
 		# schiebt, ohne dass Kraft von aussen dazukaeme.
@@ -275,9 +290,9 @@ func _update_water_line() -> void:
 
 ## Der Koeder folgt dem Schwimmer, haengt aber darunter. Sein Bild kommt vom
 ## aktiven Koeder; wer noch keins hat, bekommt das der Teichmade.
-func _update_bait(casting: bool) -> void:
-	_bait.visible = casting
-	if not _bait.visible:
+func _update_bait(wasserlinie: float) -> void:
+	if not _bobber_sichtbar:
+		_bait.visible = false
 		return
 	if _bait.texture == null or _bait_id != _active_bait_id():
 		_bait_id = _active_bait_id()
@@ -287,7 +302,8 @@ func _update_bait(casting: bool) -> void:
 			tex = TextureLoader.load_texture(
 				"res://assets/art/bait_%s.png" % BAIT_FALLBACK)
 		_bait.texture = tex
-	_bait.position = _bobber_mitte + Vector2(0.0, BAIT_HANG * BOBBER_SCALE)
+	_schneide(_bait, _bobber_mitte + Vector2(0.0, BAIT_HANG * BOBBER_SCALE),
+		wasserlinie)
 
 func _active_bait_id() -> StringName:
 	var bait: BaitData = Game.ctx.bait
@@ -305,21 +321,29 @@ func _schnur(von: Vector2, nach: Vector2, bauch: Vector2) -> PackedVector2Array:
 		punkte[i] = g * g * von + 2.0 * g * t * mitte + t * t * nach
 	return punkte
 
-## Der Schwimmer liegt IM Wasser, nicht darauf: schwimmend wird nur seine obere
-## Haelfte gezeichnet, und die endet auf der Wasserlinie. Im Flug ist er ganz
-## zu sehen. Geschnitten wird ueber region_rect -- so bleibt es ein Sprite.
-func _setze_schwimmer(getaucht: bool) -> void:
-	if _bobber.texture == null:
+## Ein Sprite an der Wasserlinie abschneiden -- immer, nicht erst beim
+## Aufsetzen. Vorher war es ein Umschalten: ganz im Flug, halb im Wasser, und
+## im Bild dazwischen sprang es. Jetzt wird beim Eintauchen Zeile fuer Zeile
+## geschluckt, und was ganz unten ist, verschwindet.
+##
+## Geschnitten wird ueber region_rect, es bleibt also ein Sprite. Das Sprite
+## haengt an seiner Mitte, deshalb wandert die Position um die halbe
+## weggeschnittene Hoehe mit.
+func _schneide(sprite: Sprite2D, mitte: Vector2, wasserlinie: float) -> void:
+	if sprite.texture == null:
 		return
-	var groesse := _bobber.texture.get_size()
-	_bobber.region_enabled = getaucht
-	if getaucht:
-		var sichtbar := floorf(groesse.y * 0.5)
-		_bobber.region_rect = Rect2(0.0, 0.0, groesse.x, sichtbar)
-		_bobber.position = Vector2(_bobber_mitte.x,
-			_bobber_mitte.y - sichtbar * 0.5 * BOBBER_SCALE)
-	else:
-		_bobber.position = _bobber_mitte
+	var groesse := sprite.texture.get_size()
+	var oben := mitte.y - groesse.y * 0.5 * BOBBER_SCALE
+	var sichtbar := floorf(clampf((wasserlinie - oben) / BOBBER_SCALE,
+		0.0, groesse.y))
+	if sichtbar < 1.0:
+		sprite.visible = false
+		return
+	sprite.visible = true
+	sprite.region_enabled = sichtbar < groesse.y
+	if sprite.region_enabled:
+		sprite.region_rect = Rect2(0.0, 0.0, groesse.x, sichtbar)
+	sprite.position = Vector2(mitte.x, oben + sichtbar * 0.5 * BOBBER_SCALE)
 
 ## Der Ausschlag der Welle an dieser Stelle, in Bildschirmpixeln -- dieselbe
 ## Rechnung wie in _update_water_line(), nur an einem einzelnen Punkt.

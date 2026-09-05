@@ -42,7 +42,9 @@ RECHTS = 64
 ## Deckoberkante, das Deck 40 Stegpixel ueber dem Wasser. Steg und Figur haben
 ## denselben Massstab, ein Pixel ist ein Pixel.
 CHAR_SEAT = 84
-DECK_UEBER_WASSER = 40
+## Bei 40 lagen die Stiefel knapp ueber der ruhenden Wasserlinie -- seit das
+## Wasser wellt, griff der Kamm darueber. 46 laesst acht Pixel Luft.
+DECK_UEBER_WASSER = 46
 
 ## --- Das Wasser -----------------------------------------------------------
 ##
@@ -56,6 +58,9 @@ KRONE = 1
 HELL = 4
 ## Die Grunddüenung aus core/water_surface.gd.
 DUENUNG = 1.2 * (7.0 / 2.16)    # AMBIENT_AMPLITUDE * WAVE_SCALE, in Pixeln
+## Die Welle schwingt komplett UNTERHALB der Ruhelinie -- wie WAVE_BIAS in
+## world.gd. Sonst greift ihr Kamm ueber die Stiefel.
+WELLE_BIAS = 9.5 / 2.16
 WELLENLAENGE = 0.6              # Anteil der Wasserbreite je Welle
 WELLENTEMPO = 0.5               # Wellen je Sekunde
 STRICHE = 64
@@ -148,7 +153,8 @@ def buehne():
 def wellenhoehe(x, breite, zeit):
     """Die Wasserlinie an dieser Stelle -- wie WaterSurface.ambient_offset."""
     phase = x / float(breite) / WELLENLAENGE - zeit * WELLENTEMPO
-    return WASSER_Y + round(math.sin(phase * math.tau) * DUENUNG)
+    return round(WASSER_Y + WELLE_BIAS
+                 + math.sin(phase * math.tau) * DUENUNG)
 
 
 def wasser_malen(bild, zeit):
@@ -281,6 +287,16 @@ def schnurzug(von, nach, bauch):
             for i in range(SCHNUR_PUNKTE)]
 
 
+def _tauchen(bild, teil, mitte, wasserlinie):
+    """Ein Sprite nur bis zur Wasserlinie zeichnen."""
+    oben = mitte[1] - teil.height / 2.0
+    sichtbar = int(max(0, min(teil.height, round(wasserlinie - oben))))
+    if sichtbar < 1:
+        return
+    _setzen(bild, teil.crop((0, 0, teil.width, sichtbar)),
+            (mitte[0], oben + sichtbar / 2.0))
+
+
 def _setzen(bild, teil, mitte):
     """Ein Sprite mit seiner Mitte auf diesen Punkt."""
     bild.alpha_composite(teil, (int(round(mitte[0] - teil.width / 2.0)),
@@ -308,20 +324,19 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made, ziel):
     anteil = 0.0 if am_haken else min(1.0, wert / float(SETZEN))
     bauch = tuple(a + (b - a) * anteil
                   for a, b in zip(BAUCH_LUFT, BAUCH_WASSER))
+    koeder_mitte = (mitte[0], mitte[1] + KOEDER_HANG)
     schnur = Image.new("RGBA", bild.size, (0, 0, 0, 0))
     punkte = schnurzug(spitze, mitte, bauch)
     if am_haken:
-        punkte.append((mitte[0], mitte[1] + KOEDER_HANG))
+        ## Das Vorfach endet an der Wasserlinie -- darunter sieht man es nicht.
+        punkte.append((koeder_mitte[0], min(koeder_mitte[1], ziel[1])))
     ImageDraw.Draw(schnur).line(punkte, fill=SCHNUR, width=1)
     bild.alpha_composite(schnur)
+    ## Beide werden an der Wasserlinie abgeschnitten -- immer, nicht erst beim
+    ## Aufsetzen. Beim Eintauchen werden sie Zeile fuer Zeile geschluckt.
     if am_haken:
-        _setzen(bild, schwimmer, mitte)
-        _setzen(bild, made, (mitte[0], mitte[1] + KOEDER_HANG))
-    else:
-        ## Schwimmend nur die obere Haelfte, und die endet auf der Wasserlinie.
-        sichtbar = schwimmer.height // 2
-        oben = schwimmer.crop((0, 0, schwimmer.width, sichtbar))
-        _setzen(bild, oben, (mitte[0], mitte[1] - sichtbar / 2.0))
+        _tauchen(bild, made, koeder_mitte, ziel[1])
+    _tauchen(bild, schwimmer, mitte, ziel[1])
 
 
 def ablauf(saat=11):
