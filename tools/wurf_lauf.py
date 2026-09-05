@@ -72,13 +72,19 @@ WASSER_Y = OBEN + CHAR_SEAT + DECK_UEBER_WASSER
 PRO_ZUG = 32        # Schritte je Atemzug -- 3,2 s, ein ruhiger Zug
 BEIN_ZUG = 24       # Schritte je vollem Beinschwung
 SCHWUENGE = 4
-PAUSE = 20          # Schritte zwischen den Wuerfen
+## Schritte zwischen den Wuerfen. Lang genug, dass der Schwimmer mehrere volle
+## Wellenzuege abliegt: die Duenung braucht zwei Sekunden je Zug, bei zwanzig
+## Schritten sah man nicht einmal einen ganzen.
+PAUSE = 62
 TAKT = 100          # Millisekunden je Ruheschritt
 WURF_TAKT = 80      # der Wurf laeuft schneller
 BEIN_WEITEN = (2, 3, 4, 5, 6)
 ## Drei Blinzler, verteilt ueber die vier Schwuenge. Die Zahl ist der
 ## Schritt, an dem das Lid halb zufaellt.
 BLINZLER = (10, 42, 74)
+## In der Wartezeit: wie weit die Beine schwingen und wann sie blinzelt.
+PAUSE_WEITE = 4
+PAUSE_BLINZLER = 30
 BLINZELN = ((0, "half", 55), (1, "closed", 90), (2, "half", 55))
 
 ## --- Schwimmer und Koeder -------------------------------------------------
@@ -396,10 +402,23 @@ def ablauf(saat=11):
             schritte[start + weiter][6] = ms
 
     def pause(anzahl):
-        for _ in range(anzahl):
+        """Warten, bis der naechste Wurf kommt.
+
+        Die Beine schwingen wieder mit -- der Sinus faengt bei null an, also
+        gehen sie aus dem Stillstand des Wurfs weich wieder los. Und einmal
+        blinzeln: sechs Sekunden regloses Gesicht sehen aus wie ein Standbild,
+        nicht wie Warten.
+        """
+        beginn = len(schritte)
+        for i in range(anzahl):
             atem, zopf = atemzug()
-            schritte.append(["ruhe", None, atem, zopf, 0, "open", TAKT, 0,
-                             koeder()])
+            schwung = math.sin(2 * math.pi * i / float(BEIN_ZUG))
+            schritte.append(["ruhe", None, atem, zopf,
+                             int(round(PAUSE_WEITE * schwung)), "open", TAKT,
+                             0, koeder()])
+        for weiter, auge, ms in BLINZELN:
+            schritte[beginn + PAUSE_BLINZLER + weiter][5] = auge
+            schritte[beginn + PAUSE_BLINZLER + weiter][6] = ms
 
     flug = [None]       # laeuft ab der Freigabe, dann bleibt der Schwimmer
 
