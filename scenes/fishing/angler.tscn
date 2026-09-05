@@ -30,5 +30,5 @@ hframes = 23
 centered = false
 
 [node name="Rod" type="Sprite2D" parent="."]
-hframes = 23
+hframes = 6
 centered = false

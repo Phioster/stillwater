@@ -4,7 +4,9 @@ extends Node2D
 
 ## Reihenfolge = Zeichenreihenfolge. "Base" traegt Umriss und Schatten und
 ## wird nie umgefaerbt -- deshalb liegt es ueber der Kleidung.
-const LAYERS := ["Skin", "Pants", "Shirt", "Hair", "Base", "Hat", "Rod"]
+## Die Rute steht NICHT in dieser Liste: sie hat ein eigenes, groesseres
+## Bildraster und wird an den Griff der Pose geschoben (siehe _place_rod).
+const LAYERS := ["Skin", "Pants", "Shirt", "Hair", "Base", "Hat"]
 const TEX_PREFIX := {
 	"Skin": "char_skin",
 	"Pants": "char_pants",
@@ -48,7 +50,10 @@ func _set_layer(name: String, index: int) -> void:
 	var tex := TextureLoader.load_texture(path)
 	if tex != null:
 		sprite.texture = tex
-	sprite.frame = _frame
+	if name == "Rod":
+		_place_rod()
+	else:
+		sprite.frame = _frame
 
 func _tint_hair(color_index: int) -> void:
 	var sprite: Sprite2D = $Hair
@@ -81,6 +86,15 @@ func play_state(frame: int) -> void:
 	_frame = AnglerPose.frame_of(frame)
 	for name in LAYERS:
 		(get_node(name) as Sprite2D).frame = _frame
+	_place_rod()
+
+## Die Rute an den Griff dieser Pose schieben. Sie hat ein eigenes Raster --
+## groesser als das der Figur, weil sie beim Ausholen weit hinausragt -- und
+## nur ein Bild je Winkel: die achtzehn Ruheposen teilen sich eines.
+func _place_rod() -> void:
+	var rod: Sprite2D = $Rod
+	rod.frame = AnglerPose.ROD_FRAME[_frame]
+	rod.position = Vector2(AnglerPose.rod_offset(_frame))
 
 func _process(delta: float) -> void:
 	match Game.sim.state:

@@ -11,6 +11,10 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(320, 180)
 	if filename == "dock.png":
 		return Vector2i(512, 192)
+	# Die Rute hat ihr eigenes, groesseres Raster und nur ein Bild je Winkel.
+	if filename.begins_with("char_rod_"):
+		return Vector2i(AnglerPose.ROD_FRAME_SIZE * AnglerPose.ROD_FRAMES,
+			AnglerPose.ROD_FRAME_SIZE)
 	if filename.begins_with("char_"):
 		return Vector2i(AnglerPose.FRAME_SIZE * AnglerPose.FRAMES, AnglerPose.FRAME_SIZE)
 	if filename.begins_with("fish_"):
@@ -99,8 +103,11 @@ func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 		return
 	var img := tex.get_image()
 	for f in AnglerPose.FRAMES:
-		var tip := AnglerPose.rod_tip(f)
-		var px := Vector2i(f * AnglerPose.FRAME_SIZE + tip.x, tip.y)
+		# Im eigenen Rutenbild liegt der Griff IMMER auf ROD_GRIP -- die
+		# Spitze also dort plus dem Versatz dieser Pose.
+		var r: int = AnglerPose.ROD_FRAME[f]
+		var tip: Vector2i = AnglerPose.ROD_GRIP + AnglerPose.ROD_TIP_OFF[f]
+		var px := Vector2i(r * AnglerPose.ROD_FRAME_SIZE + tip.x, tip.y)
 		assert_true(px.x >= 0 and px.x < img.get_width() and px.y >= 0 and px.y < img.get_height(),
 			"Bild %d: die Spitze %s liegt ausserhalb" % [f, tip])
 		assert_true(img.get_pixel(px.x, px.y).a > 0.0,
@@ -108,29 +115,82 @@ func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 		# Am Griff selbst steht absichtlich nichts: dort ist die Faust, und
 		# die Rute wird darunter weggenommen (tools/import_rod.py::cut_hand).
 		# Rundherum muss sie aber liegen, sonst haelt die Hand nichts.
-		var grip := AnglerPose.rod_grip(f)
 		var around := 0
 		for dy in range(-14, 15):
 			for dx in range(-14, 15):
-				var q := Vector2i(f * AnglerPose.FRAME_SIZE + grip.x + dx, grip.y + dy)
-				if q.x < 0 or q.x >= img.get_width() or q.y < 0 or q.y >= img.get_height():
-					continue
+				var q := Vector2i(r * AnglerPose.ROD_FRAME_SIZE + AnglerPose.ROD_GRIP.x + dx,
+					AnglerPose.ROD_GRIP.y + dy)
 				if img.get_pixel(q.x, q.y).a > 0.0:
 					around += 1
 		assert_true(around > 40,
-			"Bild %d: um die Hand %s liegt kaum Rute (%d Pixel)" % [f, grip, around])
+			"Bild %d: um die Hand liegt kaum Rute (%d Pixel)" % [f, around])
 
-## Die Rute muss in jedem Bild vollstaendig in ihren Rahmen passen -- sonst
-## blutet sie in den naechsten und ist dort als zweite Rute zu sehen.
-func test_the_rod_fits_inside_its_frame_in_every_frame() -> void:
-	var limit := float(AnglerPose.FRAME_SIZE - 1)
+## Die Rute muss eine durchgehende Linie sein, kein Punktmuster. Vorne ist
+## der Schaft nur noch einen Pixel dick, und eine Ein-Pixel-Linie zerfaellt
+## beim Drehen: gemessen drei bis vier Loecher in den letzten zwanzig Pixeln
+## jeder gedrehten Rute (tools/import_rod.py::close_gaps schliesst sie).
+func test_the_rod_is_an_unbroken_line() -> void:
+	var tex := TextureLoader.load_texture("%s/char_rod_0.png" % ART_DIR)
+	assert_true(tex != null)
+	if tex == null:
+		return
+	var img := tex.get_image()
+	for f in AnglerPose.FRAMES:
+		var r: int = AnglerPose.ROD_FRAME[f]
+		var off := Vector2(AnglerPose.ROD_TIP_OFF[f])
+		var length := off.length()
+		var dir := off / length
+		var holes := 0
+		# Ab acht Pixel: davor liegt die Faust, dort ist absichtlich nichts.
+		for k in range(8, int(length) + 1):
+			var p := Vector2(AnglerPose.ROD_GRIP) + dir * float(k)
+			var hit := false
+			for dy in [-1, 0, 1]:
+				for dx in [-1, 0, 1]:
+					var q := Vector2i(r * AnglerPose.ROD_FRAME_SIZE + int(round(p.x)) + dx,
+						int(round(p.y)) + dy)
+					if q.x >= 0 and q.x < img.get_width() and q.y >= 0 and q.y < img.get_height() \
+						and img.get_pixel(q.x, q.y).a > 0.0:
+						hit = true
+			if not hit:
+				holes += 1
+		assert_eq(holes, 0, "Bild %d: die Rute hat %d Loecher auf ihrer Achse" % [f, holes])
+
+## Es ist EINE Rute, nur anders gehalten: alle Posen tragen dieselbe Laenge.
+## Frueher streckte jede Wurfpose sie auf ihren eigenen Versatz, und sie wurde
+## waehrend des Wurfs sichtbar laenger und wieder kuerzer (79 bis 104 Pixel).
+func test_the_rod_keeps_its_length_in_every_pose() -> void:
+	var first := Vector2(AnglerPose.ROD_TIP_OFF[0]).length()
+	for f in AnglerPose.FRAMES:
+		assert_between(Vector2(AnglerPose.ROD_TIP_OFF[f]).length(), first - 1.5, first + 1.5,
+			"Bild %d: die Rute ist %.1f statt %.1f Pixel lang"
+			% [f, Vector2(AnglerPose.ROD_TIP_OFF[f]).length(), first])
+
+## Wo das Rutensprite sitzt und wo die Rechnung seine Spitze vermutet, muss
+## dasselbe sein -- sonst beginnt die Schnur neben der Rute. Seit die Rute
+## ein eigenes Raster hat, sind das zwei getrennte Rechnungen, und genau
+## dazwischen ist frueher die Schnur verrutscht.
+func test_the_placed_sprite_and_the_computed_tip_agree() -> void:
+	for f in AnglerPose.FRAMES:
+		var in_sheet: Vector2i = AnglerPose.ROD_GRIP + AnglerPose.ROD_TIP_OFF[f]
+		assert_true(AnglerPose.rod_tip(f) == AnglerPose.rod_offset(f) + in_sheet,
+			"Bild %d: Sprite sagt %s, Rechnung sagt %s"
+			% [f, AnglerPose.rod_offset(f) + in_sheet, AnglerPose.rod_tip(f)])
+
+## Die Rute muss vollstaendig in IHR Bild passen -- sonst blutet sie in das
+## naechste und ist dort als zweite Rute zu sehen. Seit sie ein eigenes,
+## groesseres Raster hat, ist das nicht mehr der Rahmen der Figur: im Feld
+## der Figur waere beim Ausholen nur Platz fuer 61 Pixel Rute.
+func test_the_rod_fits_inside_its_own_frame() -> void:
+	var limit := float(AnglerPose.ROD_FRAME_SIZE - 1)
 	for f in AnglerPose.FRAMES:
 		for i in 33:
-			var p := AnglerPose.rod_point(f, float(i) / 32.0)
+			var p := AnglerPose.rod_point(f, float(i) / 32.0) \
+				- Vector2(AnglerPose.rod_offset(f))
 			assert_between(p.x, 2.0, limit - 2.0,
-				"Bild %d: die Rute laeuft waagerecht aus dem Rahmen (%s)" % [f, p])
+				"Bild %d: die Rute laeuft waagerecht aus ihrem Rahmen (%s)" % [f, p])
 			assert_between(p.y, 2.0, limit - 2.0,
-				"Bild %d: die Rute laeuft senkrecht aus dem Rahmen (%s)" % [f, p])
+				"Bild %d: die Rute laeuft senkrecht aus ihrem Rahmen (%s)" % [f, p])
 
 ## Der Griff muss in der HAND der gezeichneten Figur liegen, nicht nur dort,
 ## wo das Rutenblatt Pixel hat -- das Blatt wird ja aus denselben Ankern
