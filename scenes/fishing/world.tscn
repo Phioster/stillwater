@@ -1,10 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/fishing/world.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/angler.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/catch_view.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/catch_toast.tscn" id="4"]
 [ext_resource type="Script" path="res://scenes/effects/effects.gd" id="5"]
+[ext_resource type="Script" path="res://scenes/fishing/water_view.gd" id="6"]
 
 [node name="World" type="Control"]
 anchors_preset = 15
@@ -21,6 +22,9 @@ stretch_mode = 6
 
 [node name="Dock" type="Sprite2D" parent="."]
 centered = false
+
+[node name="Water" type="Node2D" parent="."]
+script = ExtResource("6")
 
 [node name="WaterBody" type="Polygon2D" parent="."]
 

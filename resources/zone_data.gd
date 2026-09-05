@@ -12,6 +12,11 @@ extends Resource
 ## Wahrheit ueber Farben, die Zone waehlt nur aus.
 @export var shore_key: StringName = &"reed_dark"
 @export var foam_key: StringName = &"foam"
+## Die zwei Toene der Wasserflaeche selbst -- hell direkt unter der Krone,
+## tief darunter. Mehr braucht es nicht: Tiefe entsteht ueber die Dichte der
+## Glitzerstriche, nicht ueber einen Verlauf (scenes/fishing/water_view.gd).
+@export var water_light_key: StringName = &"water_light"
+@export var water_deep_key: StringName = &"water_deep"
 @export var music: AudioStream
 @export var bite_time_min: float = 25.0
 @export var bite_time_max: float = 45.0

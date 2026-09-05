@@ -15,6 +15,7 @@ signal visitor_tapped
 @onready var _line: Line2D = $Line
 @onready var _water_line: Line2D = $WaterLine
 @onready var _water_body: Polygon2D = $WaterBody
+@onready var _water_view: WaterView = $Water
 @onready var _raven: TextureButton = $Visitors/Raven
 @onready var _trader: TextureButton = $Visitors/Trader
 var _rain: Rain = null
@@ -72,9 +73,14 @@ const WAVE_BIAS := 9.5
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
 ## ein zwei Pixel duenner Streifen Wasser durch (am Screenshot ausgemessen).
 const SHORE_OVERLAP := 10.0
-## Kleiner, laufender Antrieb durchs Wippen des Schwimmers -- daraus entsteht
-## die Stoerung, die von seiner Position nach aussen laeuft.
+## Kleiner, laufender Antrieb durchs Zappeln im Kampf -- daraus entsteht die
+## Stoerung, die von seiner Position nach aussen laeuft. Beim Warten treibt er
+## nichts an: dort traegt IHN das Wasser, nicht umgekehrt.
 const BOBBER_DRIVE := 0.05
+## Wie weit der Fisch im Kampf am Schwimmer zieht. Das ist eine Kraft von
+## aussen und deshalb ein eigener Ausschlag -- die Duenung allein reicht
+## dafuer nicht.
+const FIGHT_TUG := 10.0
 const BITE_KICK := 12.0
 const CATCH_KICK := 20.0
 ## Der Spritzer beim Aufsetzen. Kleiner als ein Biss -- der Wurf soll das
@@ -196,15 +202,23 @@ func _process(delta: float) -> void:
 	_line_settle = 0.0 if casting else _line_settle + delta
 	var visible_states := [FishingSim.State.CASTING, FishingSim.State.WAITING, FishingSim.State.FIGHT]
 	_bobber.visible = Game.sim.state in visible_states
-	var amplitude := 10.0 if Game.sim.state == FishingSim.State.FIGHT else 3.0
+	var kaempft := Game.sim.state == FishingSim.State.FIGHT
 	if casting:
 		# Der Schwimmer war waehrend des Wurfs unsichtbar und tauchte am Ende
 		# an seiner Endstelle auf -- er teleportierte. Jetzt fliegt er einen
 		# Bogen, und die Schnur folgt ihm von selbst.
 		_bobber_mitte = _cast_position()
 	else:
+		# Er wippt nicht nach eigenem Takt, er LIEGT auf dem Wasser: seine
+		# Hoehe ist die Welle an seiner Stelle. Damit hebt ihn die Duenung,
+		# und der Stoss eines Bisses reisst ihn nach unten, statt neben ihm
+		# vorbeizulaufen. Im Kampf kommt der Zug des Fisches obendrauf.
+		var zupfen := sin(_bob_time * 3.0) * FIGHT_TUG if kaempft else 0.0
+		## Die Stelle kommt aus der Ruhelage, nicht aus _bobber_mitte -- das
+		## traegt im ersten Bild nach dem Wurf noch die Flugposition.
+		var anteil := clampf(_bobber_home.x / maxf(size.x, 1.0), 0.0, 1.0)
 		_bobber_mitte = Vector2(_bobber_home.x,
-			_bobber_home.y + sin(_bob_time * 3.0) * amplitude)
+			_bobber_home.y + _wellenhoehe(anteil) + zupfen)
 	_setze_schwimmer(not casting)
 	# Der Koeder haengt am Vorfach unter dem Schwimmer. Sichtbar nur im Flug:
 	# sobald der Schwimmer sitzt, ist er unter Wasser.
@@ -228,11 +242,12 @@ func _process(delta: float) -> void:
 		_rain.visible = Game.ctx.raining
 	_water_time += delta
 	_water.step(delta)
-	if _bobber.visible and not casting:
-		# Ableitung der Bob-Sinuskurve: das Wippen selbst stoesst das Wasser an,
-		# nicht ein fester Takt -- schneller im Kampf, ruhiger beim Warten.
-		var bob_velocity := amplitude * 3.0 * cos(_bob_time * 3.0)
-		_water.disturb_at(_bobber_fraction(), bob_velocity * BOBBER_DRIVE * delta)
+	if _bobber.visible and kaempft:
+		# Nur im Kampf stoesst er das Wasser an -- da wird er gezogen. Beim
+		# Warten waere es eine Rueckkopplung: er schoebe das Wasser, das ihn
+		# schiebt, ohne dass Kraft von aussen dazukaeme.
+		var zug := FIGHT_TUG * 3.0 * cos(_bob_time * 3.0)
+		_water.disturb_at(_bobber_fraction(), zug * BOBBER_DRIVE * delta)
 	_update_water_line()
 
 func _update_water_line() -> void:
@@ -246,6 +261,9 @@ func _update_water_line() -> void:
 		var wave := WaterSurface.ambient_offset(fraction, _water_time) + _water.heights[i]
 		pts[i] = Vector2(size.x * fraction, water_y + WAVE_BIAS + wave * WAVE_SCALE)
 	_water_line.points = pts
+	## Dieselbe Punktfolge malt die Flaeche darunter -- Linie und Wasser
+	## koennen dadurch nicht auseinanderlaufen.
+	_water_view.setze(pts, size.x, size.y, _water_time)
 	# Ufer bis zur Welle herunterziehen: hin entlang der Welle, zurueck entlang
 	# der geraden Uferlinie.
 	var poly := PackedVector2Array()
@@ -303,6 +321,13 @@ func _setze_schwimmer(getaucht: bool) -> void:
 	else:
 		_bobber.position = _bobber_mitte
 
+## Der Ausschlag der Welle an dieser Stelle, in Bildschirmpixeln -- dieselbe
+## Rechnung wie in _update_water_line(), nur an einem einzelnen Punkt.
+func _wellenhoehe(anteil: float) -> float:
+	var i := int(round(clampf(anteil, 0.0, 1.0) * float(WATER_POINTS - 1)))
+	return (WaterSurface.ambient_offset(anteil, _water_time)
+		+ _water.heights[i]) * WAVE_SCALE
+
 func _bobber_fraction() -> float:
 	if size.x <= 0.0:
 		return 0.5
@@ -328,10 +353,13 @@ func _apply_zone() -> void:
 	_applied_zone = zone.id
 	_background.texture = TextureLoader.load_texture(
 		"res://assets/art/bg_%s.png" % zone.background_id)
-	var crest := Palette.get_color(zone.foam_key)
+	var schaum := Palette.get_color(zone.foam_key)
+	var crest := schaum
 	crest.a = 0.85
 	_water_line.default_color = crest
 	_water_body.color = Palette.get_color(zone.shore_key)
+	_water_view.faerbe(schaum, Palette.get_color(zone.water_light_key),
+		Palette.get_color(zone.water_deep_key))
 
 ## Der Schwimmer auf seinem Flug: eine quadratische Bezierkurve von der
 ## Rutenspitze zur Ruhelage, mit einem Scheitel darueber. Der Fortschritt

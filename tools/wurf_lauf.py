@@ -43,7 +43,26 @@ RECHTS = 64
 ## denselben Massstab, ein Pixel ist ein Pixel.
 CHAR_SEAT = 84
 DECK_UEBER_WASSER = 40
-WASSER = (0x2f, 0x4a, 0x34)
+
+## --- Das Wasser -----------------------------------------------------------
+##
+## Dieselben Toene und dieselben Baender wie scenes/fishing/water_view.gd, nur
+## in Figurpixeln statt in Bildschirmpixeln: dort ist ein Pixel 2.16 gross,
+## hier ist er einer. Die Zahlen des Spiels werden deshalb durch 2.16 geteilt.
+SCHAUM = (0xbc, 0xd9, 0xd2)     # Palette: foam
+WASSER_HELL = (0x47, 0x8a, 0x8f)  # water_light
+WASSER_TIEF = (0x1f, 0x3b, 0x47)  # water_deep
+KRONE = 1
+HELL = 4
+## Die Grunddüenung aus core/water_surface.gd.
+DUENUNG = 1.2 * (7.0 / 2.16)    # AMBIENT_AMPLITUDE * WAVE_SCALE, in Pixeln
+WELLENLAENGE = 0.6              # Anteil der Wasserbreite je Welle
+WELLENTEMPO = 0.5               # Wellen je Sekunde
+STRICHE = 64
+STRICH_TIEFE = 20               # flacher als im Spiel: hier ist wenig Wasser
+STRICH_DRIFT = 5.0
+## Die Ruhelage der Wasserlinie im Buehnenbild.
+WASSER_Y = OBEN + CHAR_SEAT + DECK_UEBER_WASSER
 
 PRO_ZUG = 32        # Schritte je Atemzug -- 3,2 s, ein ruhiger Zug
 BEIN_ZUG = 24       # Schritte je vollem Beinschwung
@@ -86,9 +105,9 @@ BAUCH_LUFT = (0.86, 0.51)
 BAUCH_WASSER = (0.0, 1.0)
 SETZEN = 2
 SCHNUR_PUNKTE = 12
-## Wo der Schwimmer aufsetzt, in Buehnenkoordinaten: rechts vom Stegende, auf
-## der Wasserlinie. Er liegt IM Wasser -- unterhalb dieser Zeile ist er weg.
-ZIEL = (LINKS + fp.FRAME + 20, OBEN + CHAR_SEAT + DECK_UEBER_WASSER + 1)
+## Wo der Schwimmer aufsetzt: rechts vom Stegende. Die Hoehe kommt aus der
+## Welle an dieser Stelle -- er liegt IM Wasser und geht mit ihr auf und ab.
+ZIEL_X = LINKS + fp.FRAME + 20
 
 
 def rutenebene(bild):
@@ -123,10 +142,44 @@ def buehne():
     dx = LINKS + 68 - (steg.BREITE - 1)
     dy = OBEN + CHAR_SEAT - steg.HOCH
     aus.alpha_composite(holz, (0, dy), (-dx, 0, holz.width, holz.height))
-    wasser_y = OBEN + CHAR_SEAT + DECK_UEBER_WASSER
-    aus.alpha_composite(Image.new("RGBA", (aus.width, aus.height - wasser_y),
-                                  WASSER + (255,)), (0, wasser_y))
     return aus
+
+
+def wellenhoehe(x, breite, zeit):
+    """Die Wasserlinie an dieser Stelle -- wie WaterSurface.ambient_offset."""
+    phase = x / float(breite) / WELLENLAENGE - zeit * WELLENTEMPO
+    return WASSER_Y + round(math.sin(phase * math.tau) * DUENUNG)
+
+
+def wasser_malen(bild, zeit):
+    """Die Flaeche unter der Welle in Baendern, wie water_view.gd."""
+    px = bild.load()
+    for x in range(bild.width):
+        y = int(wellenhoehe(x, bild.width, zeit))
+        for i in range(y, bild.height):
+            if i < y + KRONE:
+                px[x, i] = SCHAUM + (255,)
+            elif i < y + KRONE + HELL:
+                px[x, i] = WASSER_HELL + (255,)
+            else:
+                px[x, i] = WASSER_TIEF + (255,)
+    ## Glitzerstriche: die Zeile zaehlt ab der Oberflaeche, also gehen sie mit
+    ## der Welle mit. Tiefere treiben schneller -- was naeher liegt, zieht
+    ## schneller vorbei.
+    for i in range(STRICHE):
+        anteil = ((i * 13) % STRICHE) / float(STRICHE)
+        reihe = KRONE + 1 + int(anteil * anteil * STRICH_TIEFE)
+        laenge = 2 + (i % 3) + reihe // 8
+        tempo = STRICH_DRIFT * (0.4 + 0.06 * reihe)
+        x0 = int(((i * 197) % 1009) / 1009.0 * bild.width
+                 + zeit * tempo) % bild.width
+        y = int(wellenhoehe(x0, bild.width, zeit)) + reihe
+        if y >= bild.height:
+            continue
+        ton = SCHAUM if reihe <= KRONE + HELL else WASSER_HELL
+        for dx in range(laenge):
+            if x0 + dx < bild.width:
+                px[x0 + dx, y] = ton + (255,)
 
 
 def hoch(bild):
@@ -211,6 +264,7 @@ def _bezier(von, nach, scheitel, t):
 
 def flugbahn(von, nach, t):
     """Die Wurfkurve -- wie world.gd."""
+
     return _bezier(von, nach, (nach[0] + AUSHOLEN, von[1] - BOGEN), t ** FALL)
 
 
@@ -233,7 +287,7 @@ def _setzen(bild, teil, mitte):
                                 int(round(mitte[1] - teil.height / 2.0))))
 
 
-def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made):
+def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made, ziel):
     """Schnur, Schwimmer und Koeder in dieses Buehnenbild.
 
     Die Schnur laeuft von der Rutenspitze ueber den Schwimmer zum Koeder und
@@ -244,9 +298,10 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made):
     if art == "haengt":
         mitte = (spitze[0], spitze[1] + schwimmer.height / 2.0)
     elif art == "flug":
-        mitte = flugbahn(abwurf, ZIEL, wert)
+        mitte = flugbahn(abwurf, ziel, wert)
     else:
-        mitte = (ZIEL[0], ZIEL[1] + round(math.sin(wert * 0.6)))
+        ## Kein eigener Takt mehr: er liegt auf der Welle und geht mit ihr.
+        mitte = ziel
     am_haken = art != "schwimmt"
     ## Nach dem Aufsetzen kippt der Bauch ueber ein paar Schritte von aussen
     ## nach unten -- die Schnur faellt aufs Wasser, statt umzuspringen.
@@ -381,6 +436,7 @@ def main(ziel):
 
     szene = buehne()
     bilder, zeiten = [], []
+    zeit = 0.0      # laufende Sekunden, fuer Welle und Drift
     for art, nummer, atem, zopf, bein, auge, ms, seit, koeder in ablauf():
         if art == "ruhe":
             img = hoch(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein,
@@ -390,12 +446,14 @@ def main(ziel):
                            anker["anker"][nummer], anker["griff"],
                            arme[nummer], (atem, zopf, bein, auge, seit))
         ganz = szene.copy()
+        wasser_malen(ganz, zeit)
         ganz.alpha_composite(img, (LINKS, 0))
         if koeder is not None:
             ## Im Ruhelauf steht die Rute wie in Wurfbild 0.
             sx, sy = spitzen[nummer if art == "wurf" else 0]
+            liegeplatz = (ZIEL_X, wellenhoehe(ZIEL_X, ganz.width, zeit))
             koeder_zeichnen(ganz, koeder, (sx + LINKS, sy + OBEN), abwurf,
-                            schwimmer, made)
+                            schwimmer, made, liegeplatz)
         unten = Image.new("RGBA", ganz.size, GRUND + (255,))
         unten.alpha_composite(ganz)
         flach = unten.convert("RGB").resize(
@@ -407,6 +465,7 @@ def main(ziel):
         else:
             bilder.append(flach)
             zeiten.append(ms)
+        zeit += ms / 1000.0
 
     bilder[0].save(ziel, save_all=True, append_images=bilder[1:],
                    duration=zeiten, loop=0, optimize=True)
