@@ -287,29 +287,39 @@ def schnurzug(von, nach, bauch):
             for i in range(SCHNUR_PUNKTE)]
 
 
-def _tauchen(bild, teil, mitte, wasserlinie, saum=None):
-    """Ein Sprite nur bis zur Wasserlinie zeichnen.
+def _tauchen(bild, teil, mitte, linie_bei, saum=None):
+    """Ein Sprite an der Wasserlinie abschneiden -- SPALTE FUER SPALTE.
 
-    saum faerbt die unterste sichtbare Zeile um -- den Umriss behaelt sie.
-    Ohne den endet der Schwimmer an einer harten Kante, und die faellt beim
-    Auf und Ab der Welle staerker auf als die Bewegung selbst.
+    Eine gerade Schnittkante passt nur zu waagerechtem Wasser. Auf der
+    abfallenden Flanke einer Welle steht sie ueber dem Wasser, und darunter
+    klafft der Hintergrund. Deshalb bekommt jede Spalte ihre eigene Grenze --
+    die Wasserlinie an genau dieser Stelle.
+
+    saum faerbt die unterste sichtbare Zeile je Spalte um; den Umriss behaelt
+    sie. Ohne den endet der Schwimmer an einer harten Kante, und die faellt
+    beim Auf und Ab der Welle staerker auf als die Bewegung selbst.
+
+    Gerechnet wird in ganzen Pixeln: der Schwimmer ist 13 Zeilen hoch, seine
+    Mitte liegt also immer auf einer halben Zeile. Wer erst rundet und dann
+    schneidet, laesst ihn zwei Zeilen ueber dem Wasser schweben.
     """
-    ## In ganzen Pixeln rechnen, nicht in halben: der Schwimmer ist 13 Zeilen
-    ## hoch, seine Mitte liegt also immer auf einer halben Zeile. Wer erst
-    ## rundet und dann schneidet, laesst ihn zwei Zeilen ueber dem Wasser
-    ## schweben.
     y0 = int(round(mitte[1] - teil.height / 2.0))
     x0 = int(round(mitte[0] - teil.width / 2.0))
-    sichtbar = max(0, min(teil.height, int(round(wasserlinie)) - y0))
-    if sichtbar < 1:
-        return
-    stueck = teil.crop((0, 0, teil.width, sichtbar))
-    if saum is not None and sichtbar < teil.height:
-        px = stueck.load()
-        for x in range(stueck.width):
-            if px[x, sichtbar - 1][3] > 128:
-                px[x, sichtbar - 1] = saum + (255,)
-    bild.alpha_composite(stueck, (x0, y0))
+    tp = teil.load()
+    bp = bild.load()
+    for dx in range(teil.width):
+        x = x0 + dx
+        if not 0 <= x < bild.width:
+            continue
+        grenze = int(round(linie_bei(x)))
+        sichtbar = max(0, min(teil.height, grenze - y0))
+        for dy in range(sichtbar):
+            y = y0 + dy
+            if not 0 <= y < bild.height or tp[dx, dy][3] <= 128:
+                continue
+            am_rand = saum is not None and dy == sichtbar - 1 \
+                and sichtbar < teil.height
+            bp[x, y] = (saum if am_rand else tp[dx, dy][:3]) + (255,)
 
 
 def _setzen(bild, teil, mitte):
@@ -318,7 +328,8 @@ def _setzen(bild, teil, mitte):
                                 int(round(mitte[1] - teil.height / 2.0))))
 
 
-def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made, ziel):
+def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made, ziel,
+                    linie_bei):
     """Schnur, Schwimmer und Koeder in dieses Buehnenbild.
 
     Die Schnur laeuft von der Rutenspitze ueber den Schwimmer zum Koeder und
@@ -350,8 +361,8 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made, ziel):
     ## Beide werden an der Wasserlinie abgeschnitten -- immer, nicht erst beim
     ## Aufsetzen. Beim Eintauchen werden sie Zeile fuer Zeile geschluckt.
     if am_haken:
-        _tauchen(bild, made, koeder_mitte, ziel[1])
-    _tauchen(bild, schwimmer, mitte, ziel[1], SCHAUM)
+        _tauchen(bild, made, koeder_mitte, linie_bei)
+    _tauchen(bild, schwimmer, mitte, linie_bei, SCHAUM)
 
 
 def ablauf(saat=11):
@@ -481,9 +492,11 @@ def main(ziel):
         if koeder is not None:
             ## Im Ruhelauf steht die Rute wie in Wurfbild 0.
             sx, sy = spitzen[nummer if art == "wurf" else 0]
-            liegeplatz = (ZIEL_X, wellenhoehe(ZIEL_X, ganz.width, zeit))
+            def linie_bei(x, _b=ganz.width, _z=zeit):
+                return wellenhoehe(x, _b, _z)
+            liegeplatz = (ZIEL_X, linie_bei(ZIEL_X))
             koeder_zeichnen(ganz, koeder, (sx + LINKS, sy + OBEN), abwurf,
-                            schwimmer, made, liegeplatz)
+                            schwimmer, made, liegeplatz, linie_bei)
         unten = Image.new("RGBA", ganz.size, GRUND + (255,))
         unten.alpha_composite(ganz)
         flach = unten.convert("RGB").resize(
