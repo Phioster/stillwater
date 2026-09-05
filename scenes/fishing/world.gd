@@ -16,6 +16,7 @@ signal visitor_tapped
 @onready var _water_line: Line2D = $WaterLine
 @onready var _water_body: Polygon2D = $WaterBody
 @onready var _water_view: WaterView = $Water
+@onready var _seam: Sprite2D = $Seam
 @onready var _raven: TextureButton = $Visitors/Raven
 @onready var _trader: TextureButton = $Visitors/Trader
 var _rain: Rain = null
@@ -142,6 +143,11 @@ func _ready() -> void:
 	_angler.scale = Vector2(ANGLER_SCALE, ANGLER_SCALE)
 	_bobber.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
 	_bait.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
+	## Der Saum zeigt EINE Zeile desselben Bildes, flach in der Randfarbe --
+	## dadurch hat er genau den Umriss, den der Schwimmer dort hat.
+	_seam.texture = _bobber.texture
+	_seam.region_enabled = true
+	_seam.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
 	_setup_visitors()
 	_rain = Rain.new()
 	add_child(_rain)
@@ -230,7 +236,8 @@ func _process(delta: float) -> void:
 	## gezeichnete Wellenlinie am Ufer -- er liegt weiter draussen.
 	var wasserlinie := _bobber_home.y + _wellenhoehe(
 		clampf(_bobber_home.x / maxf(size.x, 1.0), 0.0, 1.0))
-	_schneide(_bobber, _bobber_mitte, wasserlinie)
+	var zeilen := _schneide(_bobber, _bobber_mitte, wasserlinie, true)
+	_setze_saum(zeilen, wasserlinie)
 	# Der Koeder haengt am Vorfach unter dem Schwimmer. Er taucht vor ihm ein
 	# und verschwindet dabei von selbst -- derselbe Schnitt.
 	_update_bait(wasserlinie)
@@ -329,21 +336,51 @@ func _schnur(von: Vector2, nach: Vector2, bauch: Vector2) -> PackedVector2Array:
 ## Geschnitten wird ueber region_rect, es bleibt also ein Sprite. Das Sprite
 ## haengt an seiner Mitte, deshalb wandert die Position um die halbe
 ## weggeschnittene Hoehe mit.
-func _schneide(sprite: Sprite2D, mitte: Vector2, wasserlinie: float) -> void:
+## Gibt zurueck, wie viele Pixelzeilen ueber Wasser stehen -- daran haengt der
+## Saum. mit_saum laesst die unterste davon frei: die malt _setze_saum().
+func _schneide(sprite: Sprite2D, mitte: Vector2, wasserlinie: float,
+		mit_saum: bool = false) -> float:
 	if sprite.texture == null:
-		return
+		return 0.0
 	var groesse := sprite.texture.get_size()
 	var oben := mitte.y - groesse.y * 0.5 * BOBBER_SCALE
 	var sichtbar := floorf(clampf((wasserlinie - oben) / BOBBER_SCALE,
 		0.0, groesse.y))
 	if sichtbar < 1.0:
 		sprite.visible = false
-		return
+		return 0.0
+	var gemalt := sichtbar
+	if mit_saum and sichtbar < groesse.y:
+		gemalt -= 1.0
+	if gemalt < 1.0:
+		sprite.visible = false
+		return sichtbar
 	sprite.visible = true
-	sprite.region_enabled = sichtbar < groesse.y
-	if sprite.region_enabled:
-		sprite.region_rect = Rect2(0.0, 0.0, groesse.x, sichtbar)
-	sprite.position = Vector2(mitte.x, oben + sichtbar * 0.5 * BOBBER_SCALE)
+	sprite.region_enabled = gemalt < groesse.y
+	if not sprite.region_enabled:
+		sprite.position = mitte
+		return sichtbar
+	sprite.region_rect = Rect2(0.0, 0.0, groesse.x, gemalt)
+	## Unten ausrichten, nicht oben: die Kante muss GENAU auf der Wasserlinie
+	## liegen. Wer den Kopf festhaelt und unten abschneidet, laesst je nach
+	## Rundung eine Pixelzeile Luft dazwischen. Der Saum belegt die letzte.
+	var unterkante := wasserlinie - (BOBBER_SCALE if mit_saum else 0.0)
+	sprite.position = Vector2(mitte.x,
+		unterkante - gemalt * 0.5 * BOBBER_SCALE)
+	return sichtbar
+
+## Die unterste Zeile ueber Wasser in der Farbe des Wasserrandes. Ohne sie
+## endet der Schwimmer an einer harten Kante, und die faellt beim Auf und Ab
+## der Welle staerker auf als die Bewegung selbst.
+func _setze_saum(zeilen: float, wasserlinie: float) -> void:
+	var groesse: Vector2 = _seam.texture.get_size() if _seam.texture != null 		else Vector2.ZERO
+	if not _bobber_sichtbar or zeilen < 1.0 or zeilen >= groesse.y:
+		_seam.visible = false
+		return
+	_seam.visible = true
+	_seam.region_rect = Rect2(0.0, zeilen - 1.0, groesse.x, 1.0)
+	_seam.position = Vector2(_bobber_mitte.x, wasserlinie
+		- 0.5 * BOBBER_SCALE)
 
 ## Der Ausschlag der Welle an dieser Stelle, in Bildschirmpixeln -- dieselbe
 ## Rechnung wie in _update_water_line(), nur an einem einzelnen Punkt.
@@ -384,6 +421,9 @@ func _apply_zone() -> void:
 	_water_body.color = Palette.get_color(zone.shore_key)
 	_water_view.faerbe(schaum, Palette.get_color(zone.water_light_key),
 		Palette.get_color(zone.water_deep_key))
+	var stoff := _seam.material as ShaderMaterial
+	if stoff != null:
+		stoff.set_shader_parameter("saum", schaum)
 
 ## Der Schwimmer auf seinem Flug: eine quadratische Bezierkurve von der
 ## Rutenspitze zur Ruhelage, mit einem Scheitel darueber. Der Fortschritt

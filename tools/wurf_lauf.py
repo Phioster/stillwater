@@ -287,14 +287,29 @@ def schnurzug(von, nach, bauch):
             for i in range(SCHNUR_PUNKTE)]
 
 
-def _tauchen(bild, teil, mitte, wasserlinie):
-    """Ein Sprite nur bis zur Wasserlinie zeichnen."""
-    oben = mitte[1] - teil.height / 2.0
-    sichtbar = int(max(0, min(teil.height, round(wasserlinie - oben))))
+def _tauchen(bild, teil, mitte, wasserlinie, saum=None):
+    """Ein Sprite nur bis zur Wasserlinie zeichnen.
+
+    saum faerbt die unterste sichtbare Zeile um -- den Umriss behaelt sie.
+    Ohne den endet der Schwimmer an einer harten Kante, und die faellt beim
+    Auf und Ab der Welle staerker auf als die Bewegung selbst.
+    """
+    ## In ganzen Pixeln rechnen, nicht in halben: der Schwimmer ist 13 Zeilen
+    ## hoch, seine Mitte liegt also immer auf einer halben Zeile. Wer erst
+    ## rundet und dann schneidet, laesst ihn zwei Zeilen ueber dem Wasser
+    ## schweben.
+    y0 = int(round(mitte[1] - teil.height / 2.0))
+    x0 = int(round(mitte[0] - teil.width / 2.0))
+    sichtbar = max(0, min(teil.height, int(round(wasserlinie)) - y0))
     if sichtbar < 1:
         return
-    _setzen(bild, teil.crop((0, 0, teil.width, sichtbar)),
-            (mitte[0], oben + sichtbar / 2.0))
+    stueck = teil.crop((0, 0, teil.width, sichtbar))
+    if saum is not None and sichtbar < teil.height:
+        px = stueck.load()
+        for x in range(stueck.width):
+            if px[x, sichtbar - 1][3] > 128:
+                px[x, sichtbar - 1] = saum + (255,)
+    bild.alpha_composite(stueck, (x0, y0))
 
 
 def _setzen(bild, teil, mitte):
@@ -336,7 +351,7 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made, ziel):
     ## Aufsetzen. Beim Eintauchen werden sie Zeile fuer Zeile geschluckt.
     if am_haken:
         _tauchen(bild, made, koeder_mitte, ziel[1])
-    _tauchen(bild, schwimmer, mitte, ziel[1])
+    _tauchen(bild, schwimmer, mitte, ziel[1], SCHAUM)
 
 
 def ablauf(saat=11):

@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scenes/fishing/world.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/angler.tscn" id="2"]
@@ -6,6 +6,10 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/catch_toast.tscn" id="4"]
 [ext_resource type="Script" path="res://scenes/effects/effects.gd" id="5"]
 [ext_resource type="Script" path="res://scenes/fishing/water_view.gd" id="6"]
+[ext_resource type="Shader" path="res://assets/art/foam_seam.gdshader" id="7"]
+
+[sub_resource type="ShaderMaterial" id="SaumMat"]
+shader = ExtResource("7")
 
 [node name="World" type="Control"]
 anchors_preset = 15
@@ -57,6 +61,10 @@ visible = false
 [node name="Bobber" type="Sprite2D" parent="."]
 position = Vector2(430, 470)
 scale = Vector2(4, 4)
+
+[node name="Seam" type="Sprite2D" parent="."]
+material = SubResource("SaumMat")
+visible = false
 
 [node name="CatchView" parent="." instance=ExtResource("3")]
 anchors_preset = 15
