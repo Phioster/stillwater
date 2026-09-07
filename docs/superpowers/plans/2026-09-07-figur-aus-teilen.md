@@ -51,7 +51,6 @@ Neue Datei `tools/tests/test_preview_parts.py`:
 
 ```python
 """Das Zusammensetzen der Teile -- was es darf und was nicht."""
-import itertools
 import os
 import unittest
 
@@ -74,6 +73,23 @@ AUGEN = ("open", "half", "closed")
 
 def _laden():
     return Image.open(os.path.join(TEILE, "sit3_rumpf.png")).convert("RGBA")
+
+
+def faelle():
+    """Die Zustaende, die geprueft werden.
+
+    NICHT das volle Kreuzprodukt. Die Beine beruehren Kopf und Zopf nie -- der
+    Beinschnitt liegt bei Zeile 89, der Kopf endet bei 32 --, ihre dreizehn
+    Stellungen waeren mit jedem Kopfzustand zwoelfmal dasselbe. Deshalb zwei
+    Faecher: einmal die Beine allein durch, einmal Kopf und Zopf allein durch.
+    Das sind 63 Faelle statt 650 und derselbe Befund in einem Zehntel der Zeit.
+    """
+    for bein in BEIN_WEITEN:
+        yield 0, 0, bein, 0
+    for atem in ATEM:
+        for zopf in ZOPF_WEITEN:
+            for seit in KOPF_SEIT:
+                yield atem, zopf, 0, seit
 
 
 def _sichtbar(bild):
@@ -111,8 +127,7 @@ class TestZusammensetzen(unittest.TestCase):
         Hinterkopf wurde also breiter gemalt, als er gezeichnet ist.
         """
         erfunden = []
-        for atem, zopf, bein, seit in itertools.product(
-                ATEM, ZOPF_WEITEN, BEIN_WEITEN, KOPF_SEIT):
+        for atem, zopf, bein, seit in faelle():
             bild = pp.zusammensetzen(self.ebenen, self.koepfe, atem, zopf,
                                      bein, "open", seit)
             fremd = _sichtbar(bild) - self._erlaubt(atem, zopf, bein, seit)
@@ -244,8 +259,7 @@ In `tools/tests/test_preview_parts.py` in die Klasse `TestZusammensetzen` einfü
         gewollt und faellt hier nicht auf, weil sie zum Rand hin offen ist.
         """
         loecher = []
-        for atem, zopf, bein, seit in itertools.product(
-                ATEM, ZOPF_WEITEN, BEIN_WEITEN, KOPF_SEIT):
+        for atem, zopf, bein, seit in faelle():
             bild = pp.zusammensetzen(self.ebenen, self.koepfe, atem, zopf,
                                      bein, "open", seit)
             px = bild.load()

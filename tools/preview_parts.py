@@ -43,6 +43,15 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
     Absenken die Kinnzeile. Ausgenommen ist der Hals: der gehoert hinter den
     Kragen, sonst schiebt er sich beim Neigen darueber. In Ruhe sind alle
     Reihenfolgen gleich, weil die Ebenen sich nicht ueberschneiden.
+
+    Gemalt wird NICHTS -- jeder Pixel stammt aus einem Teil. Frueher fuellte
+    diese Funktion zweierlei nach: Haar dort, wo der Zopf wegschwang, und
+    Farbe in eingeschlossenen Luecken. Das erste erfand Haar am Hinterkopf --
+    von 17 gefuellten Stellen liegen 16 gar nicht auf Kopfpixeln, der Kopf
+    schliesst nur rechts an, und die Figur wurde dort breiter als gezeichnet.
+    Was der Zopf freigibt, ist Hintergrund und soll Luecke bleiben. Das
+    zweite deckte drei Loecher am Hals zu; die traegt jetzt
+    figure_parts.RUMPF_UNTERLAGE.
     """
     out = Image.new("RGBA", (fp.FRAME, fp.FRAME), (0, 0, 0, 0))
     op = out.load()
@@ -51,7 +60,6 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
     rp = ebenen["torso"].load()
     kq = koepfe[auge].load()
 
-    belegt = set()
     for x, y in _punkte(ebenen["ponytail"]):
         ## Der Zopf haengt am Kopf: geht der zur Seite, geht der ganze Zopf
         ## mit, und sein eigener Ausschlag kommt oben drauf.
@@ -60,27 +68,12 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
         ny = y + atem
         if 0 <= nx < fp.FRAME and 0 <= ny < fp.FRAME:
             op[nx, ny] = zp[x, y]
-            belegt.add((nx, ny))
-    ## Wo der Zopf wegwandert und Kopfhaar anschliesst, mit dessen Ton fuellen.
-    ## Nur dort -- an der Aussenkante wuechse sonst ihr Umriss.
-    rumpf = set(_punkte(ebenen["torso"]))
-    for x, y in _punkte(ebenen["ponytail"]):
-        p = (x + kopf_seit, y + atem)
-        if p in belegt or p in rumpf or not (0 <= p[1] < fp.FRAME):
-            continue
-        toene = {}
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                q = (p[0] + dx - kopf_seit, p[1] + dy - atem)
-                if 0 <= q[0] < fp.FRAME and 0 <= q[1] < fp.FRAME and kq[q][3] > 128:
-                    toene[kq[q][:3]] = toene.get(kq[q][:3], 0) + 1
-        if toene:
-            op[p] = max(toene.items(), key=lambda t: t[1])[0] + (255,)
 
     for x, y in _punkte(ebenen["legs"]):
         nx = x + fp.swing(y, beinweite, fp.BEIN_KNIE_Y, fp.BEIN_ZEH_Y)
         if 0 <= nx < fp.FRAME:
             op[nx, y] = bp[x, y]
+
     kopf = _punkte(ebenen["head"])
 
     def kopf_setzen(felder):
@@ -90,33 +83,10 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
                 op[nx, ny] = kq[x, y]
 
     kopf_setzen([p for p in kopf if p in fp.HALS])
-    for x, y in rumpf:
+    for x, y in _punkte(ebenen["torso"]):
         op[x, y] = rp[x, y]
     kopf_setzen([p for p in kopf if p not in fp.HALS])
-    _luecken_schliessen(op)
     return out
-
-
-def _luecken_schliessen(op):
-    """Einzelne eingeschlossene Luecken mit der Nachbarfarbe fuellen.
-
-    Geht der Kopf zur Seite, gibt er am Hals einen Pixel frei, unter dem der
-    Rumpf nichts hat -- ein Loch mitten in der Figur. Betroffen ist nur, was
-    ringsum zugedeckt ist; offene Flaechen bleiben offen.
-    """
-    loecher = []
-    for y in range(1, fp.FRAME - 1):
-        for x in range(1, fp.FRAME - 1):
-            if op[x, y][3] > 128:
-                continue
-            nachbarn = [op[x - 1, y], op[x + 1, y], op[x, y - 1], op[x, y + 1]]
-            if all(n[3] > 128 for n in nachbarn):
-                loecher.append(((x, y), nachbarn))
-    for feld, nachbarn in loecher:
-        toene = {}
-        for n in nachbarn:
-            toene[n[:3]] = toene.get(n[:3], 0) + 1
-        op[feld] = max(toene.items(), key=lambda t: t[1])[0] + (255,)
 
 
 def ablauf(saat=7):
