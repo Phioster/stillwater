@@ -35,23 +35,49 @@ def _punkte(img):
             if px[x, y][3] > 128]
 
 
-def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
-                   kopf_seit=0):
-    """Ein Bild. Reihenfolge: Zopf, Beine, Hals, Rumpf, restlicher Kopf.
+def naht(bild):
+    """Die eingeschlossenen Luecken eines Bildes und ihr Fuellton.
 
-    Der Kopf liegt OBEN. Lag der Rumpf oben, frass sein Schulterumriss beim
-    Absenken die Kinnzeile. Ausgenommen ist der Hals: der gehoert hinter den
-    Kragen, sonst schiebt er sich beim Neigen darueber. In Ruhe sind alle
-    Reihenfolgen gleich, weil die Ebenen sich nicht ueberschneiden.
+    Eingeschlossen heisst: alle vier Nachbarn sind belegt. Beim Schwenken
+    bleibt zwischen Zopf und Kopf stellenweise eine Zeile leer -- links der
+    Kopf, rechts der Zopf, dazwischen nichts. Auf dem dunklen Vorschaugrund
+    faellt das nicht auf; im Spiel liegt dort der See, und es blitzt hell
+    durch die Naht.
 
-    Gemalt wird NICHTS -- jeder Pixel stammt aus einem Teil. Frueher fuellte
-    diese Funktion zweierlei nach: Haar dort, wo der Zopf wegschwang, und
-    Farbe in eingeschlossenen Luecken. Das erste erfand Haar am Hinterkopf --
-    von 17 gefuellten Stellen liegen 16 gar nicht auf Kopfpixeln, der Kopf
-    schliesst nur rechts an, und die Figur wurde dort breiter als gezeichnet.
-    Was der Zopf freigibt, ist Hintergrund und soll Luecke bleiben. Das
-    zweite deckte drei Loecher am Hals zu; die traegt jetzt
-    figure_parts.RUMPF_UNTERLAGE.
+    Der Zopf allein reisst nie, gemessen ueber alle acht Weiten. Es ist also
+    keine Frage der Zeichnung, sondern der Naht zwischen zwei Teilen -- und
+    deshalb wird sie hier geschlossen und nicht in der Vorlage.
+
+    Was zum Rand hin OFFEN ist, bleibt offen: die Luecke, die der schwingende
+    Zopf am Hinterkopf freigibt, gehoert zum Bild.
+    """
+    px = bild.load()
+    gefunden = {}
+    for y in range(1, fp.FRAME - 1):
+        for x in range(1, fp.FRAME - 1):
+            if px[x, y][3] > 128:
+                continue
+            nachbarn = [px[x - 1, y], px[x + 1, y], px[x, y - 1], px[x, y + 1]]
+            if not all(n[3] > 128 for n in nachbarn):
+                continue
+            toene = {}
+            for n in nachbarn:
+                toene[n[:3]] = toene.get(n[:3], 0) + 1
+            gefunden[(x, y)] = max(toene.items(), key=lambda t: t[1])[0]
+    return gefunden
+
+
+def roh_zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
+                       kopf_seit=0):
+    """Die Teile uebereinander, ohne jede Naht.
+
+    Reihenfolge: Zopf, Beine, Hals, Rumpf, restlicher Kopf. Der Kopf liegt
+    OBEN -- lag der Rumpf oben, frass sein Schulterumriss beim Absenken die
+    Kinnzeile. Ausgenommen ist der Hals: der gehoert hinter den Kragen, sonst
+    schiebt er sich beim Neigen darueber.
+
+    Gemalt wird hier nichts. Was diese Funktion zeigt, stammt Pixel fuer
+    Pixel aus einem Teil.
     """
     out = Image.new("RGBA", (fp.FRAME, fp.FRAME), (0, 0, 0, 0))
     op = out.load()
@@ -86,6 +112,25 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
     for x, y in _punkte(ebenen["torso"]):
         op[x, y] = rp[x, y]
     kopf_setzen([p for p in kopf if p not in fp.HALS])
+    return out
+
+
+def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
+                   kopf_seit=0):
+    """Die Teile uebereinander, Naht geschlossen.
+
+    Frueher fuellte diese Funktion auch OFFENE Stellen: Haar dort, wo der
+    Zopf wegschwang. Von den 17 gefuellten Stellen lagen 16 gar nicht auf
+    Kopfpixeln -- der Hinterkopf wurde breiter gemalt, als er gezeichnet ist.
+    Was der Zopf freigibt, ist Hintergrund und bleibt Luecke; dort faellt in
+    der Seitenansicht Licht durch. Geschlossen wird nur, was ringsum
+    zugedeckt ist (siehe naht()).
+    """
+    out = roh_zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite,
+                             auge, kopf_seit)
+    op = out.load()
+    for feld, ton in naht(out).items():
+        op[feld] = ton + (255,)
     return out
 
 

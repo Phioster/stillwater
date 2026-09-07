@@ -67,22 +67,59 @@ class TestZusammensetzen(unittest.TestCase):
         return {p for p in felder
                 if 0 <= p[0] < fp.FRAME and 0 <= p[1] < fp.FRAME}
 
-    def test_jeder_pixel_stammt_aus_einem_teil(self):
-        """Nichts wird nachgemalt.
+    def test_die_rohe_lage_erfindet_keinen_pixel(self):
+        """Uebereinanderlegen malt nichts dazu.
 
         Vorher fuellte das Zusammensetzen Haar nach, wo der Zopf wegschwang.
-        Von den 17 gefuellten Stellen liegen 16 gar nicht auf Kopfpixeln -- der
-        Hinterkopf wurde also breiter gemalt, als er gezeichnet ist.
+        Von den 17 gefuellten Stellen liegen 16 gar nicht auf Kopfpixeln --
+        der Hinterkopf wurde also breiter gemalt, als er gezeichnet ist.
         """
         erfunden = []
         for atem, zopf, bein, seit in faelle():
-            bild = pp.zusammensetzen(self.ebenen, self.koepfe, atem, zopf,
-                                     bein, "open", seit)
+            bild = pp.roh_zusammensetzen(self.ebenen, self.koepfe, atem, zopf,
+                                         bein, "open", seit)
             fremd = _sichtbar(bild) - self._erlaubt(atem, zopf, bein, seit)
             if fremd:
                 erfunden.append("Atem %d Zopf %+d Bein %+d Kopf %+d: %s"
                                 % (atem, zopf, bein, seit, sorted(fremd)[:6]))
         self.assertEqual([], erfunden[:3])
+
+    def test_nur_eingeschlossene_luecken_werden_geschlossen(self):
+        """Der Schlitz am Hinterkopf bleibt offen.
+
+        Er ist zum Rand hin offen, dort faellt Licht durch. Geschlossen wird
+        nur, was ringsum zugedeckt ist -- sonst waere man wieder beim
+        Nachmalen von Haar.
+        """
+        zuviel = []
+        for atem, zopf, bein, seit in faelle():
+            roh = pp.roh_zusammensetzen(self.ebenen, self.koepfe, atem, zopf,
+                                        bein, "open", seit)
+            fertig = pp.zusammensetzen(self.ebenen, self.koepfe, atem, zopf,
+                                       bein, "open", seit)
+            erlaubt = set(pp.naht(roh))
+            dazu = _sichtbar(fertig) - _sichtbar(roh)
+            if dazu - erlaubt:
+                zuviel.append("Atem %d Zopf %+d Bein %+d Kopf %+d: %s"
+                              % (atem, zopf, bein, seit,
+                                 sorted(dazu - erlaubt)[:6]))
+        self.assertEqual([], zuviel[:3])
+
+    def test_kein_eingeschlossenes_loch(self):
+        """Eine Stelle, die ringsum zugedeckt ist, darf nicht frei sein.
+
+        Zwischen Zopf und Kopf bleibt beim Schwenken stellenweise eine Zeile
+        leer. Auf dem dunklen Vorschaugrund sieht man das nicht; im Spiel
+        liegt dort der See, und es blitzt hell durch die Naht.
+        """
+        loecher = []
+        for atem, zopf, bein, seit in faelle():
+            bild = pp.zusammensetzen(self.ebenen, self.koepfe, atem, zopf,
+                                     bein, "open", seit)
+            for feld in pp.naht(bild):
+                loecher.append("Atem %d Zopf %+d Bein %+d Kopf %+d: %d,%d"
+                               % (atem, zopf, bein, seit, feld[0], feld[1]))
+        self.assertEqual([], sorted(set(loecher))[:5])
 
 
 if __name__ == "__main__":
