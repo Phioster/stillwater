@@ -1213,36 +1213,41 @@ git commit -m "Der Hut haengt am Kopf und wird einmal gemalt"
 
 ---
 
-## Aufgabe 5: Die Rute an die elf Armzustände
+## Aufgabe 5: Die gezeichnete Rute an die elf Armzustände
 
-Der Griff sitzt an der Hand, und die Hand ist jetzt der Arm mit elf Zuständen. `ROD_ANCHOR` und Geschwister schrumpfen von 24 auf 11, `import_rod.py` baut entsprechend viele Bilder, und die Rute geht mit dem Atem mit.
+Der Griff sitzt an der Hand, und die Hand ist jetzt der Arm mit elf Zuständen. Dazu wechselt die Rute: das Spiel zeigt bis heute eine andere Zeichnung als die Vorschau.
 
-> **Vor dieser Aufgabe eine Entscheidung einholen.** Die Anker sind gemessen und nicht strittig: `assets/source/figure/wurf_anker.json` sagt, wo der Griff in jedem Armbild liegt, und `sit3_arm_nah.png` ist byteweise gleich `wurf_arm_0.png` — der Ruhearm **ist** das erste Wurfbild, sein Griff also derselbe.
+> **Entschieden am 2026-09-07.** Es lagen zwei Ruten vor:
 >
-> Strittig ist die Rute selbst. Sie liegt zweimal vor:
+> | | Quelle | Länge | Ruhewinkel | Stil |
+> |---|---|---|---|---|
+> | Vorschau | `parts/rute_mit_griff.png` → `wurf_stab_0..9.png` | 76 px | 55,6° | Kupfer/Holz, Korkgriff, 19 Farben |
+> | Spiel | `assets/source/rod_45.png` → `import_rod.py` | 150 px | 21,9° | grauer Schaft, große Rolle |
 >
-> | | Länge | Ruhewinkel |
-> |---|---|---|
-> | im Spiel (`char_rod_*.png`, aus `rod_45.png` gerechnet) | 150 px | (139, −56), rund 22° über waagerecht |
-> | gezeichnet (`assets/source/figure/wurf_stab_*.png`) | 76 px | (85, −124), rund 55° |
+> **Die gezeichnete gilt** — sie ist die Rute der Figur, und die Vorschau zeigt sie seit je. `rute_mit_griff.png` ist bereits in die zehn Wurfwinkel gedreht (`tools/rute_anheften.py` schreibt `wurf_stab_0..9.png`); es gibt also nichts zu rechnen, nur einzusammeln.
 >
-> Dieselbe Art Abweichung wie `pose_raw.png` gegen `sit3_rumpf.png`, nur mit einem Unterschied: die gezeichnete Rute gibt es **einmal**, die gerechnete in drei Kosmetikvarianten (`SHAFT_TONES`). Ein Umstieg auf die gezeichnete kostet die Varianten.
+> Die drei Kosmetikvarianten überleben: `rod_0` heißt **Bambusrute**, und die gezeichnete Rute ist braun in 19 Tönen — sie IST die Bambusrute. `rod_1` (Eichenrute) und `rod_2` (Silberrute) entstehen wie bisher durch Umfärben des Schafts. Eine frühere Notiz in diesem Plan behauptete, ein Umstieg koste die Varianten; das war falsch.
 >
-> **Empfehlung, und so ist der Plan geschrieben:** die **Richtung** je Zustand kommt aus der gezeichneten Rute — sie folgt dem Arm, und genau darum geht es hier —, die **Länge** bleibt bei den heutigen 150 als eigene Konstante `ROD_LENGTH`. Dann schwenkt die Rute richtig mit und wird nicht auf die Hälfte kurz. Der Ruhewinkel ändert sich allerdings sichtbar: sie wird steiler gehalten, so wie die Figur gezeichnet ist. Eine andere Länge ist eine Zahl.
+> `tools/import_rod.py` und `assets/source/rod_45.png` werden damit überflüssig und fallen in Aufgabe 6.
+
+Nebenbei schrumpft das Rutenraster: vom Griff aus reicht die Rute höchstens 75 Pixel nach oben, 58 nach rechts, 47 nach links und 15 nach unten. Ein Feld von **160** fasst das mit Rand; heute sind es 320.
 
 **Dateien:**
+- Erstellen: `tools/rute_bauen.py`
+- Löschen: `tools/tests/…` (nichts) — die Probe steht in `tests/test_sprite_assets.gd`
 - Ändern: `core/angler_pose.gd`
-- Ändern: `tools/import_rod.py`
 - Ändern: `scenes/fishing/angler.gd` (`_place_rod`, `rod_tip`)
 - Ändern: `scenes/fishing/angler.tscn` (`Rod.hframes`)
 - Ändern: `tests/test_sprite_assets.gd`
 
 **Schnittstellen:**
-- Nutzt: `assets/source/figure/wurf_anker.json` — `{"griff": [160.0, 160.0], "feld": 320, "anker": [[70,68], …]}`, zehn Anker im 320er Feld
+- Nutzt: `assets/source/figure/wurf_anker.json` — `{"griff": [160.0, 160.0], "feld": 320, "anker": [[70,68], …]}`, zehn Anker im 320er Feld; `assets/source/figure/wurf_stab_0..9.png`
 - Liefert:
-  - `AnglerPose.ROD_STATES: int = 11`
-  - `AnglerPose.ROD_ANCHOR/ROD_TIP_OFF/ROD_BEND/ROD_FRAME` mit elf Einträgen, Index 0 = Ruhe, 1..10 = Wurfbilder
+  - `AnglerPose.ROD_STATES: int = 11` (Ruhe plus zehn Wurfbilder)
+  - `AnglerPose.ROD_FRAMES: int = 10`, `ROD_FRAME_SIZE: int = 160`, `ROD_GRIP := Vector2i(80, 80)`
+  - `AnglerPose.ROD_ANCHOR/ROD_TIP_OFF/ROD_FRAME` mit elf Einträgen
   - `Angler.ROD_BREATH: int = 1`
+  - `tools/rute_bauen.py`: `main()` schreibt `assets/art/char_rod_<v>.png`, 1600×160 je Variante
 
 - [ ] **Schritt 1: Den fehlschlagenden Test schreiben**
 
@@ -1269,7 +1274,7 @@ func test_der_griff_sitzt_in_der_hand_jedes_armzustands() -> void:
 		if p.x < 0 or p.x >= img.get_width() or p.y < 0 or p.y >= img.get_height():
 			continue
 		# Um den Griff herum, nicht auf ihm: dort ist die Faust, und die Rute
-		# wird darunter weggenommen (tools/import_rod.py::cut_at_hand_rod).
+		# wird darunter weggenommen.
 		var herum := 0
 		for dy in range(-3, 4):
 			for dx in range(-3, 4):
@@ -1285,8 +1290,18 @@ func test_der_griff_sitzt_in_der_hand_jedes_armzustands() -> void:
 func test_die_rute_hat_elf_zustaende() -> void:
 	assert_eq(AnglerPose.ROD_ANCHOR.size(), AnglerPose.ROD_STATES)
 	assert_eq(AnglerPose.ROD_TIP_OFF.size(), AnglerPose.ROD_STATES)
-	assert_eq(AnglerPose.ROD_BEND.size(), AnglerPose.ROD_STATES)
 	assert_eq(AnglerPose.ROD_FRAME.size(), AnglerPose.ROD_STATES)
+
+## Es ist EINE gezeichnete Rute, nur anders gehalten -- alle Zustaende tragen
+## dieselbe Laenge. Frueher streckte jede Wurfpose sie auf ihren eigenen
+## Versatz, und sie wurde waehrend des Wurfs sichtbar laenger und kuerzer.
+func test_die_rute_behaelt_ihre_laenge() -> void:
+	var erste := Vector2(AnglerPose.ROD_TIP_OFF[0]).length()
+	for f in AnglerPose.ROD_STATES:
+		assert_between(Vector2(AnglerPose.ROD_TIP_OFF[f]).length(),
+			erste - 1.5, erste + 1.5,
+			"Zustand %d: die Rute ist %.1f statt %.1f Pixel lang"
+			% [f, Vector2(AnglerPose.ROD_TIP_OFF[f]).length(), erste])
 ```
 
 - [ ] **Schritt 2: Test laufen lassen, Fehlschlag bestätigen**
@@ -1297,7 +1312,7 @@ bash tools/test.sh
 
 Erwartet: rot mit „Invalid access to constant 'ROD_STATES'".
 
-- [ ] **Schritt 3: Die Ankerzahlen nachmessen**
+- [ ] **Schritt 3: Die Zahlen nachmessen**
 
 Die Zahlen unten sind schon gemessen. Dieser Schritt rechnet sie nach — läuft etwas anderes heraus, hat sich die Quellkunst geändert, und dann gilt die neue Messung:
 
@@ -1307,7 +1322,6 @@ import json, math, os
 from PIL import Image
 from tools import wurf_lauf as wl
 SRC = "assets/source/figure"
-LAENGE = 150.0          # ROD_LENGTH -- die Laenge bleibt, die Richtung kommt aus der Zeichnung
 d = json.load(open(os.path.join(SRC, "wurf_anker.json")))
 griff = tuple(int(v) for v in d["griff"])
 werte = [d["anker"][0]] + d["anker"]      # Ruhe = Wurfbild 0
@@ -1318,12 +1332,16 @@ for i, anker in enumerate(werte):
     stab = Image.open(os.path.join(SRC, "wurf_stab_%d.png"
                                    % (0 if i == 0 else i - 1))).convert("RGBA")
     sx, sy = wl.rutenspitze(stab, griff, anker)
-    dx, dy = sx - anker[0], sy - anker[1]
-    n = math.hypot(dx, dy)
-    spitzen.append((int(round(dx / n * LAENGE)), int(round(dy / n * LAENGE))))
+    spitzen.append((sx - anker[0], sy - anker[1]))
 print("ROD_TIP_OFF:")
 print("\t" + ", ".join("Vector2i(%d, %d)" % p for p in spitzen))
 print("Laengen:", [round(math.hypot(*p)) for p in spitzen])
+li = re = ob = un = 0
+for i in range(10):
+    k = Image.open(os.path.join(SRC, "wurf_stab_%d.png" % i)).convert("RGBA").getbbox()
+    li = max(li, griff[0]-k[0]); re = max(re, k[2]-griff[0])
+    ob = max(ob, griff[1]-k[1]); un = max(un, k[3]-griff[1])
+print("vom Griff: links %d rechts %d oben %d unten %d" % (li, re, ob, un))
 ENDE
 ```
 
@@ -1333,89 +1351,184 @@ Erwartete Ausgabe (am 2026-09-07 gemessen):
 ROD_ANCHOR:
 	Vector2i(70, 68), Vector2i(70, 68), Vector2i(74, 63), Vector2i(76, 54), Vector2i(76, 47), Vector2i(75, 42), Vector2i(77, 48), Vector2i(76, 57), Vector2i(72, 66), Vector2i(67, 71), Vector2i(68, 70)
 ROD_TIP_OFF:
-	Vector2i(85, -124), Vector2i(85, -124), Vector2i(47, -142), Vector2i(-24, -148), Vector2i(-79, -128), Vector2i(-92, -118), Vector2i(-67, -134), Vector2i(28, -147), Vector2i(79, -128), Vector2i(111, -101), Vector2i(89, -121)
-Laengen: [150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150]
+	Vector2i(43, -63), Vector2i(43, -63), Vector2i(24, -72), Vector2i(-12, -75), Vector2i(-40, -65), Vector2i(-47, -60), Vector2i(-34, -68), Vector2i(14, -75), Vector2i(40, -65), Vector2i(56, -51), Vector2i(45, -61)
+Laengen: [76, 76, 76, 76, 76, 76, 76, 76, 76, 76, 76]
+vom Griff: links 47 rechts 58 oben 75 unten 15
 ```
 
-Alle elf Längen sind gleich — `test_the_rod_keeps_its_length_in_every_pose` ist damit von selbst grün.
+Alle elf Längen sind gleich — `test_die_rute_behaelt_ihre_laenge` ist damit von selbst grün. Und 75 Pixel nach oben ist der weiteste Ausschlag: ein Feld von 160 mit dem Griff bei (80, 80) lässt an jeder Seite Rand.
 
 - [ ] **Schritt 4: `angler_pose.gd` umstellen**
 
-In `core/angler_pose.gd` ersetzen: `FRAMES`, `IDLE_FRAMES`, `BLINK_START`, `CAST_START` und `IDLE_ORDER` fallen weg — es gibt keine Posenreihe mehr. `ROD_*` bekommt elf Einträge (die Zahlen aus Schritt 3):
+`core/angler_pose.gd` ganz ersetzen. Alles, was die 24er-Posenreihe beschrieb — `FRAMES`, `IDLE_FRAMES`, `BLINK_START`, `CAST_START`, `IDLE_ORDER` — fällt weg; es gibt keine Posenreihe mehr. `ROD_BEND` und `rod_point()` fallen ebenfalls: sie bogen eine gerechnete Rute nach, und die gezeichnete bringt ihre Biegung mit.
 
 ```gdscript
-## Die Rute hat elf Zustaende: Ruhe plus zehn Wurfbilder. Sie folgt dem ARM,
-## denn dort ist die Faust. Frueher waren es vierundzwanzig -- so viele hatte
-## die gebackene Posenreihe, und die gibt es nicht mehr.
-const ROD_STATES: int = 11
-## Wo der Griff im 128er Figurenfeld liegt, je Zustand. Gemessen an
-## assets/source/figure/wurf_anker.json, nachgerechnet in Schritt 3.
-## Zustand 0 ist die Ruhe und teilt sich den Griff mit Wurfbild 0:
+## Die Geometrie der Rute -- an EINER Stelle.
+##
+## Sie stand doppelt: der Bilderzeuger zeichnete die Rute, und die Welt hatte
+## eine Konstante fuer deren Spitze. Beim Verschieben der Rute wurde die
+## Konstante nicht mitgezogen, und die Schnur begann daneben.
+##
+## Die Rute ist gezeichnet (assets/source/figure/parts/rute_mit_griff.png) und
+## von tools/rute_anheften.py in die zehn Wurfwinkel gedreht. Jeder Zustand
+## hat seinen EIGENEN Griff und seine eigene Richtung: beim Ausholen zeigt sie
+## nach hinten, beim Wurf nach vorn.
+class_name AnglerPose
+extends RefCounted
+
+## 128 ist die Arbeitsgroesse des Figurenfelds.
+const FRAME_SIZE: int = 128
+
+## Elf Zustaende: Ruhe plus zehn Wurfbilder. Die Rute folgt dem ARM, denn dort
+## ist die Faust. Zustand 0 teilt sich Bild und Griff mit Wurfbild 0 --
 ## sit3_arm_nah.png und wurf_arm_0.png sind byteweise dasselbe Bild.
+const ROD_STATES: int = 11
+
+## Wo der Griff im 128er Figurenfeld liegt, je Zustand. Gemessen an
+## assets/source/figure/wurf_anker.json.
 const ROD_ANCHOR: Array[Vector2i] = [
 	Vector2i(70, 68), Vector2i(70, 68), Vector2i(74, 63), Vector2i(76, 54),
 	Vector2i(76, 47), Vector2i(75, 42), Vector2i(77, 48), Vector2i(76, 57),
 	Vector2i(72, 66), Vector2i(67, 71), Vector2i(68, 70)]
-## Wie lang die Rute ist. Die RICHTUNG je Zustand kommt aus den gezeichneten
-## wurf_stab_*.png -- die Rute folgt dem Arm, und darum geht es hier. Die
-## LAENGE steht getrennt daneben, weil die gezeichnete Rute mit 76 Pixeln nur
-## halb so lang ist wie die, die das Spiel heute zeigt. Wer sie aendern will,
-## aendert diese eine Zahl und laesst Schritt 3 neu rechnen.
-const ROD_LENGTH: float = 150.0
-## Die Spitze, relativ zum Griff -- Richtung gemessen, Laenge auf ROD_LENGTH
-## gebracht. Alle elf Zustaende tragen dieselbe Laenge.
+
+## Die Spitze, relativ zum Griff -- am gezeichneten Rutenbild abgenommen.
+## Alle elf Zustaende tragen dieselbe Laenge: 76 Pixel.
 const ROD_TIP_OFF: Array[Vector2i] = [
-	Vector2i(85, -124), Vector2i(85, -124), Vector2i(47, -142),
-	Vector2i(-24, -148), Vector2i(-79, -128), Vector2i(-92, -118),
-	Vector2i(-67, -134), Vector2i(28, -147), Vector2i(79, -128),
-	Vector2i(111, -101), Vector2i(89, -121)]
-## Wie weit sich die Rute quer zur Achse biegt. Beim Ausholen staerker als in
-## Ruhe: eine gerade Rute sieht aus wie ein Stock.
-const ROD_BEND: Array[float] = [
-	3.0, 3.0, 6.0, 8.0, 8.0, 8.0, 6.0, -7.0, -4.0, -4.0, -4.0]
-## Welches Rutenbild dieser Zustand zeigt. Ruhe und Wurfbild 0 teilen sich
-## eines -- im Ruhelauf steht die Rute wie im ersten Wurfbild.
+	Vector2i(43, -63), Vector2i(43, -63), Vector2i(24, -72),
+	Vector2i(-12, -75), Vector2i(-40, -65), Vector2i(-47, -60),
+	Vector2i(-34, -68), Vector2i(14, -75), Vector2i(40, -65),
+	Vector2i(56, -51), Vector2i(45, -61)]
+
+## --- Die Rute hat ihr EIGENES Bildraster ------------------------------------
+##
+## Beim Ausholen sitzt die Faust neben dem Kopf, und die Rute zeigt von dort
+## nach hinten oben. Im 128er Feld der Figur ist an dieser Stelle wenig Platz.
+## Vom Griff aus reicht sie hoechstens 75 Pixel nach oben, 58 nach rechts, 47
+## nach links und 15 nach unten -- 160 fasst das mit Rand. Frueher standen
+## hier 320, gerechnet fuer eine doppelt so lange Rute.
+const ROD_FRAME_SIZE: int = 160
+const ROD_GRIP: Vector2i = Vector2i(80, 80)
+## Zehn gezeichnete Winkel; Ruhe und Wurfbild 0 teilen sich einen.
 const ROD_FRAMES: int = 10
 const ROD_FRAME: Array[int] = [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 static func frame_of(frame: int) -> int:
 	return clampi(frame, 0, ROD_STATES - 1)
+
+## Die Spitze fuer diesen Zustand -- dort setzt die Schnur an.
+static func rod_tip(frame: int) -> Vector2i:
+	var f := frame_of(frame)
+	return ROD_ANCHOR[f] + ROD_TIP_OFF[f]
+
+## Der Griff fuer diesen Zustand.
+static func rod_grip(frame: int) -> Vector2i:
+	return ROD_ANCHOR[frame_of(frame)]
+
+## Wohin das Rutensprite muss, damit sein Griff auf dem Anker dieses Zustands
+## liegt. Das Sprite ist groesser als das Figurenfeld und haengt deshalb an
+## einer eigenen Position, nicht am gemeinsamen Bildindex.
+static func rod_offset(frame: int) -> Vector2i:
+	return ROD_ANCHOR[frame_of(frame)] - ROD_GRIP
 ```
 
-- [ ] **Schritt 5: `import_rod.py` auf die neue Zahl bringen**
+- [ ] **Schritt 5: Das Bauwerkzeug schreiben**
 
-In `tools/import_rod.py`:
+`tools/rute_bauen.py` anlegen. Es sammelt nur ein und färbt um — gedreht ist schon:
 
 ```python
-SKIN = ["teil_arm_skin"]
+#!/usr/bin/env python3
+"""Baut die Rutenblaetter aus der gezeichneten Rute.
+
+    python3 -m tools.rute_bauen
+
+Die Rute ist gezeichnet (parts/rute_mit_griff.png) und von
+tools/rute_anheften.py in die zehn Wurfwinkel gedreht (wurf_stab_0..9.png).
+Hier wird sie nur noch auf das Rutenraster geschnitten und fuer die drei
+Kosmetikvarianten umgefaerbt.
+
+Frueher stand hier tools/import_rod.py: es rechnete eine ANDERE Rute aus
+assets/source/rod_45.png -- grauer Schaft, grosse Rolle, doppelt so lang.
+Das Spiel zeigte damit eine andere Rute als die Vorschau.
+"""
+import os
+import re
+
+from PIL import Image
+
+WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC = os.path.join(WURZEL, "assets", "source", "figure")
+OUT = os.path.join(WURZEL, "assets", "art")
+POSE = os.path.join(WURZEL, "core", "angler_pose.gd")
+
+## Die gezeichnete Rute IST die Bambusrute (rod_0) -- braun in neunzehn
+## Toenen. Eiche ist dunkler und roter, Silber ist entfaerbt und hell.
+## Umgefaerbt wird wie in assets/art/palette_swap.gdshader: der Zielton mal
+## der Helligkeit des Pixels, damit Maserung und Umriss erhalten bleiben.
+VARIANTEN = [None, (0x6b, 0x4a, 0x2c), (0xb9, 0xc3, 0xc8)]
+
+
+def _zahl(name):
+    text = open(POSE, encoding="utf-8").read()
+    return int(re.search(r"const %s: int = (\d+)" % name, text).group(1))
+
+
+def _vektor(name):
+    text = open(POSE, encoding="utf-8").read()
+    m = re.search(r"const %s: Vector2i = Vector2i\((-?\d+),\s*(-?\d+)\)"
+                  % name, text)
+    return (int(m.group(1)), int(m.group(2)))
+
+
+def faerben(bild, ton):
+    """Den Schaft auf diesen Ton bringen, Helligkeit behalten."""
+    if ton is None:
+        return bild.copy()
+    aus = bild.copy()
+    px = aus.load()
+    for y in range(aus.size[1]):
+        for x in range(aus.size[0]):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            ## Dieselbe Kurve wie der Shader: 0.55 + 0.9 * Helligkeit.
+            luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+            k = 0.55 + 0.9 * luma
+            px[x, y] = (min(255, int(ton[0] * k)), min(255, int(ton[1] * k)),
+                        min(255, int(ton[2] * k)), a)
+    return aus
+
+
+def main():
+    feld = _zahl("ROD_FRAME_SIZE")
+    bilder = _zahl("ROD_FRAMES")
+    gx, gy = _vektor("ROD_GRIP")
+    ## Im Quellbild liegt der Griff in der Mitte des 320er Felds.
+    qx = qy = 160
+    for v, ton in enumerate(VARIANTEN):
+        blatt = Image.new("RGBA", (feld * bilder, feld), (0, 0, 0, 0))
+        for i in range(bilder):
+            stab = Image.open(os.path.join(SRC, "wurf_stab_%d.png" % i)) \
+                .convert("RGBA")
+            ## Den Griff des Quellbilds auf den Griff des Zielrasters legen.
+            aus = stab.crop((qx - gx, qy - gy, qx - gx + feld,
+                             qy - gy + feld))
+            blatt.alpha_composite(faerben(aus, ton), (i * feld, 0))
+        blatt.save(os.path.join(OUT, "char_rod_%d.png" % v))
+        print("char_rod_%d.png  %dx%d" % (v, blatt.size[0], blatt.size[1]))
+    print("%d Rutenblaetter geschrieben" % len(VARIANTEN))
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-und in `main()` die drei Zeilen, die die alten Konstanten lesen:
-
-```python
-    size = read_int("FRAME_SIZE")
-    frames = read_int("ROD_STATES")
-    idle = 1                # Zustand 0 ist die Ruhe, ab 1 laeuft der Wurf
-```
-
-`figure_layers()` liest jetzt das Armblatt statt der 24er-Reihe; es hat seinen eigenen Rahmen, der Griff muss also um den Anker verschoben werden. In `skin_run()` den Zugriff um den Ankerversatz ergänzen — der Rahmen steht in `core/angler_parts.gd`:
-
-```python
-def arm_kasten():
-    """Rahmen und Anker des Armblatts, aus der erzeugten Datei."""
-    text = open(os.path.join(ROOT, "core", "angler_parts.gd"),
-                encoding="utf-8").read()
-    m = re.search(r'&"arm": Rect2i\((-?\d+), (-?\d+), (-?\d+), (-?\d+)\)', text)
-    return tuple(int(g) for g in m.groups())
-```
-
-- [ ] **Schritt 6: Die Rutenblätter neu bauen**
+- [ ] **Schritt 6: Die Rutenblätter bauen und ansehen**
 
 ```
-python3 -m tools.import_rod
+python3 -m tools.rute_bauen
 ```
 
-Erwartet: `3 Rutenblaetter geschrieben`, jedes 3200×320 (zehn Bilder à 320). **Dem Menschen vorlegen.**
+Erwartet: drei Blätter 1600×160. Ein Bild aller drei Varianten nebeneinander erzeugen und **dem Menschen vorlegen** — Bambus, Eiche, Silber müssen unterscheidbar sein und alle drei wie dieselbe Rute aussehen.
 
 - [ ] **Schritt 7: Die Szene und `angler.gd` nachziehen**
 
@@ -1426,8 +1539,8 @@ In `scenes/fishing/angler.gd` `_place_rod` und `rod_tip` ersetzen:
 ```gdscript
 ## Ein Pixel Atem. Im Ruhelauf hat der Arm nur einen Zustand, die Faust steht
 ## also still -- ohne diesen Versatz haengt die Rute reglos an einer atmenden
-## Figur. Weil die Spitze 63 Pixel entfernt liegt, wird aus dem einen Pixel am
-## Griff eine deutlich sichtbare Bewegung am Ende.
+## Figur. Weil die Spitze 76 Pixel entfernt liegt, wird aus dem einen Pixel am
+## Griff eine sichtbare Bewegung am Ende.
 const ROD_BREATH: int = 1
 
 func _place_rod() -> void:
@@ -1443,7 +1556,12 @@ func rod_tip() -> Vector2:
 
 - [ ] **Schritt 8: Die alten Rutentests anpassen**
 
-In `tests/test_sprite_assets.gd` in `test_no_rod_frame_bleeds_into_the_next`, `test_the_rod_tip_is_where_the_pixels_are_in_every_frame`, `test_the_rod_is_an_unbroken_line`, `test_the_rod_keeps_its_length_in_every_pose` und `test_the_rod_fits_inside_its_own_frame` jedes `AnglerPose.FRAMES` durch `AnglerPose.ROD_STATES` ersetzen. `test_the_grip_sits_in_the_hand_in_every_frame` fällt weg — Schritt 1 hat es ersetzt.
+In `tests/test_sprite_assets.gd`:
+
+- `test_the_rod_keeps_its_length_in_every_pose` löschen — Schritt 1 hat es als `test_die_rute_behaelt_ihre_laenge` ersetzt.
+- `test_the_grip_sits_in_the_hand_in_every_frame` löschen — Schritt 1 hat es ersetzt.
+- `test_the_rod_fits_inside_its_own_frame` löschen: es lief über `rod_point()`, das mit `ROD_BEND` weggefallen ist. Der Rahmen wird stattdessen von `test_no_rod_frame_bleeds_into_the_next` geprüft, das den Rand selbst ansieht.
+- In `test_no_rod_frame_bleeds_into_the_next`, `test_the_rod_tip_is_where_the_pixels_are_in_every_frame` und `test_the_rod_is_an_unbroken_line` jedes `AnglerPose.FRAMES` durch `AnglerPose.ROD_STATES` ersetzen und `AnglerPose.ROD_FRAME[f]` als Bildindex nehmen.
 
 - [ ] **Schritt 9: Ganze Suite**
 
@@ -1454,9 +1572,9 @@ bash tools/test.sh
 - [ ] **Schritt 10: Commit**
 
 ```bash
-git add core/angler_pose.gd tools/import_rod.py scenes/fishing/angler.gd \
+git add core/angler_pose.gd tools/rute_bauen.py scenes/fishing/angler.gd \
         scenes/fishing/angler.tscn tests/test_sprite_assets.gd assets/art/char_rod_*.png
-git commit -m "Die Rute folgt dem Arm und atmet mit"
+git commit -m "Die gezeichnete Rute im Spiel, an den elf Armzustaenden"
 ```
 
 ---
@@ -1467,7 +1585,7 @@ Die gebackenen `char_*`-Reihen lädt niemand mehr. Sie fallen, und mit ihnen das
 
 **Dateien:**
 - Löschen: `assets/art/char_skin_*.png`, `char_shirt_*.png`, `char_pants_*.png`, `char_hair_*.png`, `char_base_*.png`
-- Löschen: `tools/import_character.py`
+- Löschen: `tools/import_character.py`, `tools/import_rod.py`, `assets/source/rod_45.png`
 - Ändern: `tests/test_character_layers.gd`
 - Ändern: `tests/test_sprite_assets.gd`
 
@@ -1551,8 +1669,10 @@ Erwartet: grün, denn die Blätter liegen schon. Bleibt `test_die_grundebene_ist
 git rm assets/art/char_skin_*.png assets/art/char_shirt_*.png \
        assets/art/char_pants_*.png assets/art/char_hair_*.png \
        assets/art/char_base_*.png
-git rm tools/import_character.py
+git rm tools/import_character.py tools/import_rod.py assets/source/rod_45.png
 ```
+
+`import_rod.py` rechnete die Rute aus `rod_45.png` — eine andere Zeichnung als die der Figur. Seit Aufgabe 5 kommt die Rute aus `tools/rute_bauen.py`.
 
 `char_rod_*.png` und `char_hat_*.png` **bleiben** — die Rute und der Hut sind eigene Sprites.
 
@@ -1631,5 +1751,5 @@ git commit -m "Die gebackenen Posenreihen fallen weg"
 **Nicht in diesem Plan, ausdrücklich:**
 
 - **Stufe 4 (Varianten als Tönung).** `char_skin_1..8` und Geschwister fallen in Aufgabe 6 weg; die Tönung der Haut-, Pullover- und Hosenebene ist eine eigene Stufe, weil sie die Kosmetikdaten berührt.
-- **Welche Rute gilt.** Das Spiel zeigt `char_rod_*.png`, von `import_rod.py` aus `assets/source/rod_45.png` gerechnet — 150 Pixel lang, im Ruhelauf rund 22° über waagerecht. Die Vorschau zeigt die gezeichneten `assets/source/figure/wurf_stab_*.png` — 76 Pixel, rund 55°. Aufgabe 5 nimmt die **Richtung** aus der Zeichnung und behält die **Länge** des Spiels; der Ruhewinkel ändert sich dabei sichtbar. Das ist eine Entscheidung und steht als solche im Kopf der Aufgabe. Ein vollständiger Umstieg auf die gezeichnete Rute kostet die drei Kosmetikvarianten und ist deshalb nicht vorgeschlagen.
+- **Welche Rute gilt — entschieden am 2026-09-07:** die gezeichnete. Sie steht in Aufgabe 5. `tools/import_rod.py` und `assets/source/rod_45.png` fallen damit in Aufgabe 6.
 - **Die Blinzelfarben.** `figure_parts.AUGE_HALB` und `AUGE_ZU` malen `#e88474` und `#030201` — Töne, die in `sit3_rumpf.png` vorkommen (23- bzw. 121-mal), dort aber die selteneren sind; die Nachbarn des Auges tragen `#e48c79` und `#05000a`. Fünf Pixel, eine Aussehensfrage.
