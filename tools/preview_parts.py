@@ -160,9 +160,22 @@ def ablauf(saat=7):
 
 
 def main(ziel):
-    roh = Image.open(os.path.join(TEILE, "pose_raw.png")).convert("RGBA")
-    rute = Image.open(os.path.join(TEILE, "rod.png")).convert("RGBA")
-    ebenen = fp.split(fp.repair(roh), rute)
+    ## Die Vorschau zeigt, was das Spiel baut -- also dieselbe Zeichnung, aus
+    ## der tools/teile_bauen.py die Blaetter schneidet.
+    ##
+    ## Vorher stand hier pose_raw.png. Das ist eine ANDERE Zeichnung derselben
+    ## Pose, kein anderer Farbauszug: von 3100 gemeinsam belegten Pixeln
+    ## unterscheiden sich 1685, und keine ihrer Farben hat eine eindeutige
+    ## Entsprechung -- #030201 trifft auf sieben verschiedene Toene. Dazu 402
+    ## Pixel, die es nur dort gibt: die alte Rute mit der Rolle. Die Vorschau
+    ## log damit ueber das Ergebnis.
+    ##
+    ## Kein fp.repair und keine Rutenebene mehr: repair arbeitet mit
+    ## Koordinatenlisten, die an pose_raw abgemessen sind, und die Rute
+    ## brauchte split nur, um ihre Pixel aus dem Kopf zu halten. In
+    ## sit3_rumpf liegt keine.
+    roh = Image.open(os.path.join(TEILE, "sit3_rumpf.png")).convert("RGBA")
+    ebenen = fp.split(roh)
     koepfe = {s: fp.eye_state(ebenen["head"], s)
               for s in ("open", "half", "closed")}
 
