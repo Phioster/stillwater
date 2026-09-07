@@ -4,17 +4,20 @@
 Die Figur wird im Spiel nicht als fertige Bilderreihe gezeigt, sondern aus
 beweglichen Teilen zusammengesetzt -- nur so kann die Weite des Beinschwungs
 je Schwung neu gezogen werden. Gebacken wird deshalb je TEIL, auf seinen
-eigenen Rahmen zugeschnitten: der Zopf ist 19 mal 34 Pixel gross, ihn als
+eigenen Rahmen zugeschnitten: der Zopf ist 21 mal 33 Pixel gross, ihn als
 volles 128er Bild abzulegen verschenkt das Sechzehnfache.
 
     python3 -m tools.teile_bauen
 """
+import json
 import os
 
 from PIL import Image
 
 from tools import figure_parts as fp
 from tools import preview_parts as pp
+from tools.character_keys import load_table
+from tools.character_layers import PARTS, split as farben_schneiden
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(WURZEL, "assets", "source", "figure")
@@ -28,16 +31,19 @@ BEIN_WEITEN = tuple(range(-6, 7))
 AUGEN = ("open", "half", "closed")
 
 
-## Der Zopf haengt nicht nur an seiner eigenen Weite, sondern auch am
-## Kopfversatz: die Naht zwischen ihm und dem Kopf liegt je nach beidem
-## woanders, und sie muss ins Blatt gebacken werden -- im Spiel schliesst sie
-## niemand zur Laufzeit. Sein Zustand ist deshalb das PAAR. Gemessen wird es
-## am Ablauf selbst, nicht getippt: er erreicht elf davon, und der Zopf
-## schwingt im Wurf bis +5, nicht nur bis +2 wie im Ruhelauf.
-def zopf_paare():
+## Der Zopf haengt nicht nur an seiner eigenen Weite, sondern auch an Atem
+## und Kopfversatz: die Naht zwischen ihm und dem Kopf liegt je nach allen
+## dreien woanders, und sie muss ins Blatt gebacken werden -- im Spiel
+## schliesst sie niemand zur Laufzeit. Sein Zustand ist deshalb das TRIPEL.
+##
+## Atem und Versatz werden trotzdem als Sprite-Versatz gesetzt, nicht ins
+## Bild gerechnet; sie stehen hier nur, weil die Naht sie braucht. Gemessen
+## wird am Ablauf selbst, nicht getippt: er erreicht vierzehn Tripel, und der
+## Zopf schwingt im Wurf bis +5, nicht nur bis +2 wie im Ruhelauf.
+def zopf_zustaende():
     from tools import wurf_lauf as wl
-    return sorted({(zopf, seit)
-                   for _, _, _, zopf, _, _, _, seit, _ in wl.ablauf()})
+    return sorted({(atem, zopf, seit)
+                   for _, _, atem, zopf, _, _, _, seit, _ in wl.ablauf()})
 
 
 def _leer():
@@ -55,27 +61,25 @@ def _verschoben(ebene, versatz):
     return aus
 
 
-def _zopf_mit_naht(ebenen, koepfe, zopfweite, kopf_seit):
+def _zopf_mit_naht(ebenen, koepfe, atem, zopfweite, kopf_seit):
     """Der geschorene Zopf, und die Naht zum Kopf gleich mit im Bild.
 
-    Der Kopfversatz steckt NICHT im Bild -- er wird beim Zusammensetzen als
-    Versatz des Sprites gesetzt, wie der Atem. Fuer die Naht braucht es ihn
-    trotzdem: sie liegt je nach Versatz woanders.
+    Atem und Kopfversatz stecken NICHT im Bild -- sie werden beim
+    Zusammensetzen als Versatz des Sprites gesetzt. Fuer die Naht braucht es
+    sie trotzdem: sie liegt je nach beidem woanders. Deshalb wird sie hier
+    zurueckgerechnet, in die Koordinaten des Zopfblatts.
     """
     aus = _verschoben(ebenen["ponytail"],
                       lambda x, y: (x + fp.swing(y, zopfweite,
                                                  fp.ZOPF_GUMMI_Y,
                                                  fp.ZOPF_SPITZE_Y), y))
     ap = aus.load()
-    for atem in ATEM:
-        roh = pp.roh_zusammensetzen(ebenen, koepfe, atem, zopfweite, 0,
-                                    "open", kopf_seit)
-        for (x, y), ton in pp.naht(roh).items():
-            ## Zurueck in die Koordinaten des Zopfblatts: ohne Kopfversatz,
-            ## ohne Atem.
-            fx, fy = x - kopf_seit, y - atem
-            if 0 <= fx < fp.FRAME and 0 <= fy < fp.FRAME:
-                ap[fx, fy] = ton + (255,)
+    roh = pp.roh_zusammensetzen(ebenen, koepfe, atem, zopfweite, 0,
+                                "open", kopf_seit)
+    for (x, y), ton in pp.naht(roh).items():
+        fx, fy = x - kopf_seit, y - atem
+        if 0 <= fx < fp.FRAME and 0 <= fy < fp.FRAME:
+            ap[fx, fy] = ton + (255,)
     return aus
 
 
@@ -124,8 +128,8 @@ def zustaende(ebenen, koepfe):
         return aus
 
     aus = {
-        "zopf": [_zopf_mit_naht(ebenen, koepfe, w, seit)
-                 for w, seit in zopf_paare()],
+        "zopf": [_zopf_mit_naht(ebenen, koepfe, atem, w, seit)
+                 for atem, w, seit in zopf_zustaende()],
         ## Zwei Kopfbilder, obwohl der Atem als Versatz gesetzt wird: der
         ## Kopf ist im gesenkten Zustand nicht derselbe wie im gehobenen --
         ## eye_state() sitzt an festen Zeilen, und die Kinnlinie gehoert dem
@@ -161,3 +165,110 @@ def rahmen(bilder):
     return (x, y,
             max(k[2] for k in kaesten) - x,
             max(k[3] for k in kaesten) - y)
+
+OUT = os.path.join(WURZEL, "assets", "art")
+
+## Die Reihenfolge aus preview_parts.zusammensetzen, die Arme obenauf. Der
+## Kopf liegt ueber dem Rumpf -- lag es umgekehrt, frass sein Schulterumriss
+## beim Absenken die Kinnzeile. Der Hals gehoert dahinter, sonst schiebt er
+## sich beim Neigen ueber den Kragen.
+ZEICHENFOLGE = ("zopf", "beine", "hals", "rumpf", "kopf", "auge",
+                "armfern", "arm")
+
+## Diese Teile haengen am Kopf und gehen mit seinem Versatz mit.
+AM_KOPF = ("zopf", "kopf", "hals", "auge")
+
+
+def _index(name, zopf_zustand, beinweite, auge, arm):
+    """Welcher Zustand eines Teils bei welchem Bewegungswert gilt."""
+    if name == "zopf":
+        return zopf_zustaende().index(zopf_zustand)
+    if name in ("kopf", "hals"):
+        return 0        # der Atem ist Versatz, nicht Bild
+    if name == "auge":
+        return AUGEN.index(auge)
+    if name == "beine":
+        return BEIN_WEITEN.index(beinweite)
+    if name == "arm":
+        return arm
+    return 0
+
+
+def blatt(bilder, kasten, tabelle, ebene):
+    """Ein Blatt: alle Zustaende eines Teils, nur die Pixel EINER Ebene.
+
+    Geschnitten wird das GANZE 128er Feld, zugeschnitten erst danach. Die
+    Baender der Farbtabelle gelten je Bildzeile -- in einem Ausschnitt haette
+    Zeile 0 eine andere Bedeutung, und die Beine bekaemen Haar und Pullover.
+    """
+    x, y, w, h = kasten
+    aus = Image.new("RGBA", (w * len(bilder), h), (0, 0, 0, 0))
+    for i, bild in enumerate(bilder):
+        geschnitten = farben_schneiden(bild, tabelle)[ebene]
+        aus.alpha_composite(geschnitten.crop((x, y, x + w, y + h)), (i * w, 0))
+    return aus
+
+
+def aufbauen(blaetter, kaesten, zopf_zustand, beinweite, auge="open",
+             arm=None):
+    """Die Blaetter wieder zu einem 128er Bild -- die Gegenprobe zur Vorschau.
+
+    Atem und Kopfversatz stecken nicht in den Bildern, sondern kommen hier als
+    Versatz obendrauf. Im Spiel tut das die Szene.
+
+    arm=None laesst die Arme weg. Die Vorschau kennt sie nicht: ihr Rumpf
+    kommt aus sit3_rumpf, und der ist ohne Arme gezeichnet.
+    """
+    atem, _, kopf_seit = zopf_zustand
+    aus = _leer()
+    for name in ZEICHENFOLGE:
+        if arm is None and name in ("arm", "armfern"):
+            continue
+        x, y, w, h = kaesten[name]
+        i = _index(name, zopf_zustand, beinweite, auge, arm or 0)
+        versatz = (x + kopf_seit, y + atem) if name in AM_KOPF else (x, y)
+        for ebene in PARTS:
+            teil = blaetter[(name, ebene)].crop((i * w, 0, (i + 1) * w, h))
+            aus.alpha_composite(teil, versatz)
+    return aus
+
+
+def main():
+    ebenen = fp.split(Image.open(os.path.join(TEILE, "sit3_rumpf.png"))
+                      .convert("RGBA"))
+    koepfe = {s: fp.eye_state(ebenen["head"], s) for s in AUGEN}
+    tabelle = load_table(os.path.join(SRC, "key_palette.json"))
+    zust = zustaende(ebenen, koepfe)
+    geschrieben = 0
+    verzeichnis = {}
+    for name in ZEICHENFOLGE:
+        bilder = zust[name]
+        kasten = rahmen(bilder)
+        ebenen_hier = []
+        for ebene in PARTS:
+            bild = blatt(bilder, kasten, tabelle, ebene)
+            if bild.getbbox() is None:
+                continue        # diese Ebene kommt in diesem Teil nicht vor
+            bild.save(os.path.join(OUT, "teil_%s_%s.png" % (name, ebene)))
+            ebenen_hier.append(ebene)
+            geschrieben += 1
+        verzeichnis[name] = {
+            "x": kasten[0], "y": kasten[1], "w": kasten[2], "h": kasten[3],
+            "zustaende": len(bilder), "ebenen": ebenen_hier,
+        }
+        print("%-8s %2dx%-3d bei %2d,%-3d  %2d Zustaende, Ebenen: %s"
+              % (name, kasten[2], kasten[3], kasten[0], kasten[1], len(bilder),
+                 " ".join(ebenen_hier)))
+    ## Jedes Teil hat seinen eigenen Rahmen -- das ist der ganze Sinn der
+    ## Uebung, und es heisst, dass die Masse niemand raten kann. Sie stehen
+    ## deshalb hier neben den Blaettern: der Sprite-Test prueft gegen sie,
+    ## und Stufe 3 setzt die Teile mit x,y wieder an ihren Platz im Feld.
+    with open(os.path.join(OUT, "teile.json"), "w") as f:
+        json.dump({"rahmen": fp.FRAME, "zeichenfolge": list(ZEICHENFOLGE),
+                   "teile": verzeichnis}, f, indent="\t", sort_keys=True)
+        f.write("\n")
+    print("%d Blaetter und teile.json geschrieben" % geschrieben)
+
+
+if __name__ == "__main__":
+    main()

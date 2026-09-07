@@ -144,29 +144,32 @@ Palette, wo die Haartöne schon liegen.
 
 Ein Blatt je **Teil und Kosmetikebene**, Bildgröße gleich dem Rahmen des Teils:
 
+Sie heißen `teil_<teil>_<ebene>.png` und nicht `char_…`: die `char_*` sind die
+alten Bilderreihen im festen 128er Raster, und `tests/test_sprite_assets.gd`
+prüft sie als solche. Zwei verschiedene Dinge, zwei Namen.
+
+Gemessen vom Bauwerkzeug, nicht getippt — Rahmen, Anker im Figurenfeld und
+Zahl der Zustände:
+
 ```
-char_zopf_hair.png     19x33,  5 Bilder
-char_zopf_base.png     19x33,  5
-char_kopf_skin.png     25x28,  2
-char_kopf_hair.png     25x28,  2
-char_kopf_base.png     25x28,  2
-char_rumpf_skin.png    45x59,  1
-char_rumpf_shirt.png   45x59,  1
-char_rumpf_pants.png   45x59,  1
-char_rumpf_base.png    45x59,  1
-char_beine_skin.png    39x36, 13
-char_beine_pants.png   39x36, 13    (Stiefel liegen in der Hosenebene)
-char_beine_base.png    39x36, 13
-char_arm_skin.png      32x36, 11
-char_arm_shirt.png     32x36, 11
-char_arm_base.png      32x36, 11
-char_armfern_*.png      7x19,  1
-char_auge_base.png      4x3,   3    (offen, halb, zu)
+Teil      Rahmen   Anker   Zustände   Ebenen
+zopf      21x33    34,5      14       hair base
+beine     37x36    64,87     13       skin boots base
+hals       6x4     54,28      2       skin base
+rumpf     45x59    44,30      1       skin shirt pants base
+kopf      25x28    47,5       2       skin hair base
+auge       4x3     63,20      3       skin hair base    (offen, halb, zu)
+armfern    7x19    67,51      1       skin shirt base
+arm       38x42    45,36     11       skin shirt base
 ```
 
-Jedes Blatt trägt seinen **Ankerpunkt** im Figurenfeld — die Stelle, an der es
-im 128er Raster sitzt. Die Anker gehören zu `AnglerPose`, gemessen vom
-Bauwerkzeug, nicht getippt.
+Die Stiefel liegen in ihrer **eigenen** Ebene `boots`, nicht in der Hose — die
+Farbtabelle trennt sie am unteren Bandrand.
+
+Das Bauwerkzeug schreibt diese Tabelle als `assets/art/teile.json` neben die
+Blätter. Der Sprite-Test prüft die Bildgrößen gegen sie, und Stufe 3 setzt die
+Teile mit `x,y` wieder an ihren Platz im 128er Feld. Damit steht der Anker an
+genau einer Stelle statt zweimal abgetippt.
 
 ## Die Szene
 

@@ -6,6 +6,28 @@ const ART_DIR := "res://assets/art"
 # und deshalb absichtlich komplett transparent.
 const EXPECTED_EMPTY := [&"char_hat_0.png"]
 
+## Die Teileblaetter haben je Teil ihren eigenen Rahmen -- das ist der Sinn
+## der Uebung: der Zopf ist 21x33 Pixel gross, ihn als volles 128er Bild
+## abzulegen verschenkt das Sechzehnfache. Die Masse kann dieser Test also
+## nicht raten. tools/teile_bauen.py schreibt sie neben die Blaetter.
+var _teile_cache: Dictionary = {}
+
+func _teile() -> Dictionary:
+	if _teile_cache.is_empty():
+		var f := FileAccess.open("%s/teile.json" % ART_DIR, FileAccess.READ)
+		if f != null:
+			var d: Variant = JSON.parse_string(f.get_as_text())
+			if d is Dictionary:
+				_teile_cache = (d as Dictionary).get("teile", {})
+	return _teile_cache
+
+func _teil_eintrag(filename: String) -> Dictionary:
+	var rest := filename.trim_prefix("teil_").trim_suffix(".png")
+	for name in _teile():
+		if rest.begins_with("%s_" % name):
+			return _teile()[name]
+	return {}
+
 func _expected_size(filename: String) -> Vector2i:
 	if filename.begins_with("bg_"):
 		return Vector2i(320, 180)
@@ -19,6 +41,11 @@ func _expected_size(filename: String) -> Vector2i:
 			AnglerPose.ROD_FRAME_SIZE)
 	if filename.begins_with("char_"):
 		return Vector2i(AnglerPose.FRAME_SIZE * AnglerPose.FRAMES, AnglerPose.FRAME_SIZE)
+	if filename.begins_with("teil_"):
+		var t := _teil_eintrag(filename)
+		if t.is_empty():
+			return Vector2i(-1, -1)
+		return Vector2i(int(t["w"]) * int(t["zustaende"]), int(t["h"]))
 	if filename.begins_with("fish_"):
 		return Vector2i(32, 16)
 	if filename == "raven.png":
@@ -61,6 +88,21 @@ func test_all_sprites_have_correct_size_and_are_not_empty() -> void:
 			continue
 		assert_eq(img.get_width(), expected.x, "%s Breite" % file)
 		assert_eq(img.get_height(), expected.y, "%s Hoehe" % file)
+		if file.begins_with("teil_"):
+			# Ein Teileblatt kann winzig sein: teil_auge_hair.png traegt drei
+			# Pixel, eine Wimper je Augenzustand. Eine feste Untergrenze passt
+			# darauf nicht. Geprueft wird deshalb, was gemeint ist -- kein
+			# Zustand darf leer sein, sonst fehlt der Figur dort ein Bild.
+			var t := _teil_eintrag(file)
+			var w: int = t["w"]
+			for i in int(t["zustaende"]):
+				var n := 0
+				for y in img.get_height():
+					for x in w:
+						if img.get_pixel(i * w + x, y).a > 0.0:
+							n += 1
+				assert_true(n > 0, "%s: Zustand %d ist leer" % [file, i])
+			continue
 		var opaque := _count_opaque(img)
 		if file in EXPECTED_EMPTY:
 			assert_eq(opaque, 0, "%s sollte die leere Platzhalter-Variante sein" % file)

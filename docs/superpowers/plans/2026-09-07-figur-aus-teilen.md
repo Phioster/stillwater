@@ -766,7 +766,7 @@ def main():
             bild = blatt(bilder, kasten, tabelle, ebene)
             if bild.getbbox() is None:
                 continue        # diese Ebene kommt in diesem Teil nicht vor
-            pfad = os.path.join(OUT, "char_%s_%s.png" % (name, ebene))
+            pfad = os.path.join(OUT, "teil_%s_%s.png" % (name, ebene))
             bild.save(pfad)
             geschrieben += 1
     print("%d Blaetter geschrieben" % geschrieben)
@@ -790,16 +790,18 @@ Erwartet: PASS. Schlägt der Rückbau fehl, ist die Meldung eine Bildnummer und 
 
 ```
 python3 -m tools.teile_bauen
-ls -la assets/art/char_*_*.png
+ls -la assets/art/teil_*.png
 ```
 
-Die Ausgabe nennt je Teil Rahmen und Anker. Diese Zahlen wandern in Stufe 3 nach `AnglerPose` — sie hier mitschreiben und dem Menschen vorlegen.
+Die Ausgabe nennt je Teil Rahmen und Anker; dieselben Zahlen landen als `assets/art/teile.json` neben den Blättern. Stufe 3 liest sie dort, statt sie abzutippen.
+
+Die Blätter heißen `teil_…` und nicht `char_…`: `tests/test_sprite_assets.gd` läuft über **jedes** PNG in `assets/art` und verlangt ein bekanntes Größenmuster. Die `char_*` sind das feste 128er Raster; die Teile haben je ihren eigenen Rahmen, das ist der Sinn des Umbaus. Der Test bekommt deshalb einen `teil_`-Zweig, der die Maße aus `teile.json` liest, und für die winzigen Blätter eine passendere Regel als „mindestens acht sichtbare Pixel“: **kein Zustand darf leer sein**. `teil_auge_hair.png` trägt drei Pixel — eine Wimper je Augenzustand — und ist trotzdem richtig.
 
 - [ ] **Schritt 6: Ganze Suite und Commit**
 
 ```bash
 bash tools/test.sh
-git add tools/teile_bauen.py tools/tests/test_teile_bauen.py assets/art/char_*_*.png
+git add tools/teile_bauen.py tools/tests/test_teile_bauen.py tests/test_sprite_assets.gd assets/art/teil_*.png assets/art/teile.json
 git commit -m "Blaetter je Teil, mit Rueckbauprobe gegen die Vorschau"
 ```
 

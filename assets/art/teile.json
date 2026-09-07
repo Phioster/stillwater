@@ -1,0 +1,110 @@
+{
+	"rahmen": 128,
+	"teile": {
+		"arm": {
+			"ebenen": [
+				"skin",
+				"shirt",
+				"base"
+			],
+			"h": 42,
+			"w": 38,
+			"x": 45,
+			"y": 36,
+			"zustaende": 11
+		},
+		"armfern": {
+			"ebenen": [
+				"skin",
+				"shirt",
+				"base"
+			],
+			"h": 19,
+			"w": 7,
+			"x": 67,
+			"y": 51,
+			"zustaende": 1
+		},
+		"auge": {
+			"ebenen": [
+				"skin",
+				"hair",
+				"base"
+			],
+			"h": 3,
+			"w": 4,
+			"x": 63,
+			"y": 20,
+			"zustaende": 3
+		},
+		"beine": {
+			"ebenen": [
+				"skin",
+				"boots",
+				"base"
+			],
+			"h": 36,
+			"w": 37,
+			"x": 64,
+			"y": 87,
+			"zustaende": 13
+		},
+		"hals": {
+			"ebenen": [
+				"skin",
+				"base"
+			],
+			"h": 4,
+			"w": 6,
+			"x": 54,
+			"y": 28,
+			"zustaende": 2
+		},
+		"kopf": {
+			"ebenen": [
+				"skin",
+				"hair",
+				"base"
+			],
+			"h": 28,
+			"w": 25,
+			"x": 47,
+			"y": 5,
+			"zustaende": 2
+		},
+		"rumpf": {
+			"ebenen": [
+				"skin",
+				"shirt",
+				"pants",
+				"base"
+			],
+			"h": 59,
+			"w": 45,
+			"x": 44,
+			"y": 30,
+			"zustaende": 1
+		},
+		"zopf": {
+			"ebenen": [
+				"hair",
+				"base"
+			],
+			"h": 33,
+			"w": 21,
+			"x": 34,
+			"y": 5,
+			"zustaende": 14
+		}
+	},
+	"zeichenfolge": [
+		"zopf",
+		"beine",
+		"hals",
+		"rumpf",
+		"kopf",
+		"auge",
+		"armfern",
+		"arm"
+	]
+}

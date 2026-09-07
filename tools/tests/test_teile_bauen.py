@@ -27,7 +27,7 @@ class TestRahmen(unittest.TestCase):
         ## Die Zahlen stehen in der Spec und sind am Bild gemessen. Der Zopf
         ## haengt am PAAR aus Weite und Kopfversatz, weil seine Naht zum Kopf
         ## von beidem abhaengt und mitgebacken werden muss.
-        self.assertEqual(11, len(self.zustaende["zopf"]))
+        self.assertEqual(14, len(self.zustaende["zopf"]))
         self.assertEqual(2, len(self.zustaende["kopf"]))
         self.assertEqual(2, len(self.zustaende["hals"]))
         self.assertEqual(1, len(self.zustaende["rumpf"]))
@@ -66,6 +66,74 @@ class TestRahmen(unittest.TestCase):
             self.assertEqual([True] * 4, kanten,
                              "%s: der Rahmen hat Luft an einer Kante" % name)
 
+
+
+class TestRueckbau(unittest.TestCase):
+    """Aus den Blaettern muss wieder genau das Bild der Vorschau werden.
+
+    Das ist die eigentliche Zusicherung dieses Umbaus: solange der Rueckbau
+    stimmt, ist der Weg ueber die Teile nur eine andere Ablage derselben
+    Figur -- kein neues Aussehen, das man nachpflegen muesste.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from tools.character_keys import load_table
+        from tools.character_layers import PARTS
+        cls.ebenen = fp.split(_laden("sit3_rumpf.png"))
+        cls.koepfe = {s: fp.eye_state(cls.ebenen["head"], s)
+                      for s in ("open", "half", "closed")}
+        tabelle = load_table(os.path.join(os.path.dirname(TEILE),
+                                          "key_palette.json"))
+        cls.zust = tb.zustaende(cls.ebenen, cls.koepfe)
+        cls.kaesten = {n: tb.rahmen(b) for n, b in cls.zust.items()}
+        cls.blaetter = {(n, e): tb.blatt(cls.zust[n], cls.kaesten[n], tabelle, e)
+                        for n in cls.zust for e in PARTS}
+
+    def test_die_ebenen_stimmen_mit_dem_ganzen_feld_ueberein(self):
+        """Ein Blatt traegt genau die Pixel, die die Farbtabelle dem Teil gibt.
+
+        Die Baender der Tabelle gelten je Bildzeile. Wer erst den Rahmen
+        ausschneidet und dann die Farben trennt, fragt sie nach der falschen
+        Zeile -- die Beine bekamen so Haar und Pullover. Der Rueckbautest
+        sieht das nicht: er legt alle Ebenen wieder uebereinander, und der
+        Fehler hebt sich auf.
+        """
+        from tools.character_keys import load_table
+        from tools.character_layers import PARTS, split as farben_schneiden
+        tabelle = load_table(os.path.join(os.path.dirname(TEILE),
+                                          "key_palette.json"))
+        falsch = []
+        for name, bilder in self.zust.items():
+            x, y, w, h = self.kaesten[name]
+            for i, bild in enumerate(bilder):
+                erwartet = farben_schneiden(bild, tabelle)
+                for ebene in PARTS:
+                    soll = erwartet[ebene].crop((x, y, x + w, y + h))
+                    ist = self.blaetter[(name, ebene)].crop(
+                        (i * w, 0, (i + 1) * w, h))
+                    if (list(soll.get_flattened_data())
+                            != list(ist.get_flattened_data())):
+                        falsch.append("%s Bild %d Ebene %s" % (name, i, ebene))
+        self.assertEqual([], falsch[:5])
+
+    def test_zusammengesetzt_ergibt_sich_die_vorschau(self):
+        from tools import preview_parts as pp
+        abweichungen = []
+        for zustand in tb.zopf_zustaende():
+            atem, zopf, seit = zustand
+            for bein in (-6, 0, 6):
+                for auge in ("open", "half", "closed"):
+                    erwartet = pp.zusammensetzen(self.ebenen, self.koepfe,
+                                                 atem, zopf, bein, auge, seit)
+                    gebaut = tb.aufbauen(self.blaetter, self.kaesten, zustand,
+                                         bein, auge)
+                    if (list(erwartet.get_flattened_data())
+                            != list(gebaut.get_flattened_data())):
+                        abweichungen.append(
+                            "Atem %d Zopf %+d Kopf %+d Bein %+d Auge %s"
+                            % (atem, zopf, seit, bein, auge))
+        self.assertEqual([], abweichungen[:5])
 
 if __name__ == "__main__":
     unittest.main()
