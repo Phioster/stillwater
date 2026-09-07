@@ -7,6 +7,10 @@ on:
 
 env:
   GODOT_VERSION: 4.7.2
+  ## Die Python-Tests unter tools/tests/ schneiden Bilder und brauchen dafuer
+  ## Pillow. Festgenagelt wie die Godot-Version: sonst entscheidet der Tag,
+  ## an dem die CI laeuft, mit welcher Fassung geprueft wird.
+  PILLOW_VERSION: 12.3.0
 
 jobs:
   test:
@@ -24,6 +28,11 @@ jobs:
 
       - name: Ressourcen importieren
         run: godot --headless --import --quit-after 2000 || true
+
+      - name: Pillow holen
+        run: |
+          pip install --quiet "pillow==${PILLOW_VERSION}"
+          python3 -c "import PIL; print('Pillow', PIL.__version__)"
 
       - name: Inhalte prüfen und Tests laufen lassen
         run: bash tools/test.sh
