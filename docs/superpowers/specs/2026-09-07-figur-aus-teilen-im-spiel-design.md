@@ -173,6 +173,13 @@ Wurf aus `Game.sim.timer`). Neu ist nur, **was** gesetzt wird:
   bleibt stehen.
 - **Wurf**: die zehn Armbilder über `FishingSim.CAST_TIME`, Kopf bis zu zwei
   Pixel zurück (`kopf_im_wurf`), Beine nach `BEIN_WURF`, Halt bei Bild 4.
+- **Die Rute atmet mit** (entschieden 2026-09-07). Der Arm hat im Ruhelauf nur
+  einen Zustand, die Faust steht also still; die Rute bekommt deshalb einen
+  eigenen kleinen Versatz aus derselben Atemphase, nicht aus der Hand. Ein
+  Pixel ist der Startwert — bei mehr rutscht sie sichtbar aus der Faust, bei
+  weniger sieht man nichts. Der endgültige Wert wird in der Vorschau
+  abgenommen, nicht hier festgelegt. Weil die Spitze 63 Pixel entfernt liegt,
+  wird aus einem Pixel am Griff eine deutlich sichtbare Bewegung am Ende.
 
 Die Formeln stehen dann an zwei Stellen — Python für die Vorschau, GDScript
 fürs Spiel. Das ist bewusst in Kauf genommen: es sind fünf Zeilen Arithmetik
@@ -201,15 +208,16 @@ ohne Pixelzugriff, und ein Test vergleicht beide Reihen gegeneinander.
   in der Vorschau.
 - `tests/test_sprite_assets.gd` prüft feste Maße und muss mitwachsen.
 
-## Offene Punkte
+## Ausdrücklich später
 
-- **Die Rute im Ruhelauf** hängt heute an einem festen Winkel für alle achtzehn
-  Ruheposen. Ob sie mit der Hand mitatmen soll, ist nicht entschieden.
-- **Der Hut** ist weiter ein gemalter Klotz aus `gen_sprites.gd` auf einer
-  gezeichneten Figur. Der Umbau ändert nur, woran er hängt, nicht wie er
-  aussieht.
-- **Die fünf Frisuren sind dieselbe Zeichnung.** Solange das so ist, genügt ein
-  Zopf- und ein Kopfhaarblatt.
+Entschieden am 2026-09-07: das hier gehört nicht in diesen Umbau.
+
+- **Hüte und Kopfschmuck** bleiben die gemalten Klötze aus `gen_sprites.gd`.
+  Der Umbau ändert nur, woran sie hängen — an der Kopfgruppe, damit sie
+  mitatmen —, nicht wie sie aussehen.
+- **Die fünf Frisuren** bleiben dieselbe Zeichnung. Solange das so ist, genügt
+  je ein Zopf- und ein Kopfhaarblatt. Eine zweite Frisur ist eine zweite
+  Zeichnung, keine Umfärbung.
 
 ## Reihenfolge der Umsetzung
 
