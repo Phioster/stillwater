@@ -31,7 +31,7 @@ läuft**: das Spiel ist nicht fertig, weitere Pixelart kommt dazu.
 | heute, 24 volle 128er Bilder | 393 216 | 1,57 MB |
 | **A** — alles in GDScript rechnen | 0 | (dafür Rechenzeit je Bild) |
 | **B** — Zustände als volle 128er Bilder backen | 671 744 | 2,69 MB |
-| **C** — je Teil ein zugeschnittenes Blatt | **42 254** | **0,17 MB** |
+| **C** — je Teil ein zugeschnittenes Blatt | **46 767** | **0,19 MB** |
 
 **Gewählt: C.** Der Zopf ist 19×33 Pixel groß; ihn als volles 128×128-Bild zu
 backen verschenkt das Sechzehnfache. Zur Laufzeit tun B und C beide fast
@@ -47,13 +47,20 @@ wurde die Konstante nicht mitgezogen.
 
 | Teil | Rahmen | Zustände | woher |
 |---|---|---|---|
-| Zopf | 19×34 | 11 | Paare aus Scherung und Kopfversatz, die der Ablauf erreicht |
+| Zopf | 21×33 | 11 | Paare aus Scherung und Kopfversatz, die der Ablauf erreicht |
 | Kopf | 25×28 | 2 | Atem: 0 oder 1 Pixel tiefer |
+| Hals | 6×4 | 2 | gehört zum Kopf, wird aber hinter dem Kragen gezeichnet |
 | Rumpf | 45×59 | 1 | steht still |
-| Beine | 39×36 | 13 | Scherung −6…+6 am Knie |
-| Arm nah | 32×36 | 11 | Ruhe + zehn Wurfbilder |
+| Beine | 37×36 | 13 | Scherung −6…+6 am Knie |
+| Arm nah | 38×42 | 11 | Ruhe + zehn Wurfbilder |
 | Arm fern | 7×19 | 1 | steht still |
 | Auge | 4×3 | 3 | offen, halb, zu |
+
+Die Rahmen sind am 2026-09-07 von `tools/teile_bauen.py` gemessen worden und
+weichen von der ersten Schätzung ab. Der Wurfarm greift weiter aus als der
+ruhende — geschätzt war nur `sit3_arm_nah` —, der Zopf reicht durch den
+Schwung bis +5 weiter nach rechts, und die Beine brauchen weniger Luft als
+angenommen. Die Summe steigt dadurch von 42 254 auf 46 767 Pixel je Ebene.
 
 Der Atemzug hat 32 Schritte, aber nur **acht verschiedene** Atem/Zopf-Zustände
 — Atem und Zopf hängen an derselben Phase. Die dreizehn Beinausschläge decken
