@@ -266,7 +266,6 @@ func _background_void() -> void:
 # Kopfplatz: die Huete werden weiter gezeichnet.
 
 const FRAME := AnglerPose.FRAME_SIZE
-const FRAMES := AnglerPose.FRAMES
 
 ## Licht und Schatten werden aus der Grundfarbe gerechnet, statt fuer jede
 ## Flaeche drei Palettenwerte zu fuehren: die Palette bleibt die Quelle, die
@@ -300,59 +299,65 @@ func _erase(img: Image, cx: float, cy: float, rx: float, ry: float) -> void:
 ## Die Huete sind in 64er-Geometrie gezeichnet und werden am Ende ganzzahlig
 ## vergroessert. Alle Koordinaten hier beziehen sich also auf den halben
 ## Rahmen -- billiger und sicherer, als 40 Zahlen von Hand zu verdoppeln.
-const HAT_FRAME := FRAME / 2
 
-## Kopfmitte je Bild (gemessen aus char_hair_0.png, geteilt durch 2 fuer
-## 64er-Geometrie). Der Kopf wandert waehrend des Atemzugs und beim Wurf.
-const HAT_CENTERS_X: Array[int] = [19, 18, 18, 19, 20, 21, 22, 21, 20, 19, 18, 18, 19, 20, 21, 22, 21, 20, 19, 18, 17, 18, 27, 28]
-## Oberste Haarzeile je Bild (geteilt durch 2).
-const HAT_TOPS: Array[int] = [4, 4, 4, 4, 5, 6, 6, 5, 5, 4, 4, 4, 4, 5, 6, 6, 5, 5, 4, 4, 4, 5, 7, 6]
+## Der Hut wird EINMAL gemalt, nicht je Bild. Er haengt am Kopf, und der Kopf
+## ist im Spiel eine Gruppe mit einer Position -- er geht also von selbst mit
+## Atem und Wurf mit. Hier standen 24 gemessene Kopfmitten und 24 Haarzeilen;
+## sie waren nur noetig, solange jede Pose ein eigenes Bild war.
+##
+## Gemalt wird jetzt DIREKT im 128er Raster. Vorher entstand der Hut im halben
+## Raster und wurde verdoppelt -- das passte zum Kopf der alten Zeichnung, der
+## 35 Pixel breit war. Der gezeichnete Kopf ist 25 breit (AnglerParts.BOX),
+## und ein verdoppelter Hut stand doppelt so breit daneben.
+##
+## Kopfmitte und Scheitel der neuen Zeichnung: der Kopf sitzt bei 47,5 und ist
+## 25 breit, seine Mitte also bei 59. Rueckt ein Hut daneben, ist
+## scenes/fishing/angler.gd::HAT_OFFSET die eine Zahl, die alle nachfuehrt.
+const HAT_CENTER_X: int = 59
+const HAT_TOP: int = 5
 
 func _hat(index: int) -> void:
-	var img := _new_image(HAT_FRAME * FRAMES, HAT_FRAME)
-	for f in FRAMES:
-		var ox := f * HAT_FRAME
-		var cx := HAT_CENTERS_X[f]
-		var top := HAT_TOPS[f]
-		match index:
-			1:  # Kappe: Schirm nach vorn
-				_limb(img, ox + cx - 8, top + 1, 16, 5, _c(&"cloth_grey"))
-				_limb(img, ox + cx + 6, top + 5, 9, 2, _c(&"cloth_grey"))
-			2:  # Strohhut: breite Krempe
-				_limb(img, ox + cx - 13, top + 6, 27, 2, _c(&"accent"))
-				_limb(img, ox + cx - 7, top + 1, 14, 5, _c(&"accent"))
-			3:  # Suedwester: Krempe hinten lang
-				_limb(img, ox + cx - 11, top + 5, 23, 3, _c(&"cloth_ochre"))
-				_limb(img, ox + cx - 7, top + 1, 14, 4, _c(&"cloth_ochre"))
-				_limb(img, ox + cx - 15, top + 8, 6, 3, _c(&"cloth_ochre"))
-			4:  # Wollmuetze: keine Krempe, Bommel
-				_limb(img, ox + cx - 8, top, 16, 7, _c(&"cloth_red"))
-				_bulb(img, ox + cx, top - 1, 3.0, 2.0, _c(&"foam"))
-			5:  # Filzhut: breite Krempe, hoher Kopf
-				_limb(img, ox + cx - 13, top + 6, 26, 3, _c(&"wood_dark"))
-				_limb(img, ox + cx - 7, top, 14, 6, _c(&"wood_dark"))
-			6:  # Teufelshoerner: kurz, spitz, nach aussen
-				_limb(img, ox + cx - 9, top + 1, 3, 6, _c(&"cloth_red"))
-				_limb(img, ox + cx + 6, top + 1, 3, 6, _c(&"cloth_red"))
-				_rect(img, ox + cx - 11, top - 1, 2, 4, _c(&"cloth_red"))
-				_rect(img, ox + cx + 9, top - 1, 2, 4, _c(&"cloth_red"))
-			7:  # Ziegenhoerner: dicker, nach hinten gebogen
-				_limb(img, ox + cx - 9, top, 4, 5, _c(&"bone"))
-				_limb(img, ox + cx + 5, top, 4, 5, _c(&"bone"))
-				_limb(img, ox + cx - 13, top + 1, 4, 4, _c(&"bone"))
-				_limb(img, ox + cx + 9, top + 1, 4, 4, _c(&"bone"))
-				_rect(img, ox + cx - 15, top + 5, 3, 4, _c(&"bone"))
-			8:  # Heiligenschein: schwebt frei ueber dem Kopf
-				_ellipse(img, ox + cx, top, 8.5, 2.5, _c(&"accent"))
-				_erase(img, ox + cx, top, 6.0, 1.2)
-			9:  # Kopfhoerer: Buegel oben, Muschel am Ohr
-				_limb(img, ox + cx - 8, top, 16, 3, _c(&"outline"))
-				_limb(img, ox + cx + 4, top + 10, 5, 7, _c(&"outline"))
-				_rect(img, ox + cx + 5, top + 12, 3, 3, _c(&"cloth_blue"))
-			10:  # Eimerhut: gerade Krempe, hoher Topf
-				_limb(img, ox + cx - 12, top + 6, 24, 3, _c(&"reed"))
-				_limb(img, ox + cx - 7, top + 1, 14, 5, _c(&"reed"))
-	img.resize(FRAME * FRAMES, FRAME, Image.INTERPOLATE_NEAREST)
+	var img := _new_image(FRAME, FRAME)
+	var cx := HAT_CENTER_X
+	var top := HAT_TOP
+	match index:
+		1:  # Kappe: Schirm nach vorn
+			_limb(img, cx - 8, top + 1, 16, 5, _c(&"cloth_grey"))
+			_limb(img, cx + 6, top + 5, 9, 2, _c(&"cloth_grey"))
+		2:  # Strohhut: breite Krempe
+			_limb(img, cx - 13, top + 6, 27, 2, _c(&"accent"))
+			_limb(img, cx - 7, top + 1, 14, 5, _c(&"accent"))
+		3:  # Suedwester: Krempe hinten lang
+			_limb(img, cx - 11, top + 5, 23, 3, _c(&"cloth_ochre"))
+			_limb(img, cx - 7, top + 1, 14, 4, _c(&"cloth_ochre"))
+			_limb(img, cx - 15, top + 8, 6, 3, _c(&"cloth_ochre"))
+		4:  # Wollmuetze: keine Krempe, Bommel
+			_limb(img, cx - 8, top, 16, 7, _c(&"cloth_red"))
+			_bulb(img, cx, top - 1, 3.0, 2.0, _c(&"foam"))
+		5:  # Filzhut: breite Krempe, hoher Kopf
+			_limb(img, cx - 13, top + 6, 26, 3, _c(&"wood_dark"))
+			_limb(img, cx - 7, top, 14, 6, _c(&"wood_dark"))
+		6:  # Teufelshoerner: kurz, spitz, nach aussen
+			_limb(img, cx - 9, top + 1, 3, 6, _c(&"cloth_red"))
+			_limb(img, cx + 6, top + 1, 3, 6, _c(&"cloth_red"))
+			_rect(img, cx - 11, top - 1, 2, 4, _c(&"cloth_red"))
+			_rect(img, cx + 9, top - 1, 2, 4, _c(&"cloth_red"))
+		7:  # Ziegenhoerner: dicker, nach hinten gebogen
+			_limb(img, cx - 9, top, 4, 5, _c(&"bone"))
+			_limb(img, cx + 5, top, 4, 5, _c(&"bone"))
+			_limb(img, cx - 13, top + 1, 4, 4, _c(&"bone"))
+			_limb(img, cx + 9, top + 1, 4, 4, _c(&"bone"))
+			_rect(img, cx - 15, top + 5, 3, 4, _c(&"bone"))
+		8:  # Heiligenschein: schwebt frei ueber dem Kopf
+			_ellipse(img, cx, top, 8.5, 2.5, _c(&"accent"))
+			_erase(img, cx, top, 6.0, 1.2)
+		9:  # Kopfhoerer: Buegel oben, Muschel am Ohr
+			_limb(img, cx - 8, top, 16, 3, _c(&"outline"))
+			_limb(img, cx + 4, top + 10, 5, 7, _c(&"outline"))
+			_rect(img, cx + 5, top + 12, 3, 3, _c(&"cloth_blue"))
+		10:  # Eimerhut: gerade Krempe, hoher Topf
+			_limb(img, cx - 12, top + 6, 24, 3, _c(&"reed"))
+			_limb(img, cx - 7, top + 1, 14, 5, _c(&"reed"))
 	_save(img, "char_hat_%d" % index)
 
 ## Geometrie aus AnglerPose, nicht hier: sie stand doppelt, und beim

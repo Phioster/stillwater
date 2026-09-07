@@ -78,3 +78,33 @@ func test_die_zeichenreihenfolge_stimmt() -> void:
 			gesehen.append(n)
 	assert_eq(gesehen, AnglerParts.ORDER, "die Teile stehen falsch im Baum")
 	a.free()
+
+## Der Hut sitzt auf dem Kopf und geht mit dem Atem mit. Er ist trotzdem kein
+## Kind der Kopfgruppe: gezeichnet wird er NACH den Armen, die Gruppe aber
+## davor. Also folgt er ihr rechnerisch.
+func test_der_hut_folgt_dem_kopf() -> void:
+	var a := _angler()
+	var kopf: Node2D = a.get_node("kopf")
+	var hut: Sprite2D = a.get_node("Hat")
+	a.set_pose(0, 0, 0, 0, &"open", 0)
+	var ruhe := hut.position - kopf.position
+	a.set_pose(1, 1, -2, 0, &"open", 0)
+	assert_eq(hut.position - kopf.position, ruhe,
+		"der Hut haelt seinen Abstand zum Kopf nicht")
+	## In Ruhe sitzt er da, wo er gemalt ist; bewegt sich der Kopf um
+	## (seit, atem), geht er genau so weit mit.
+	assert_eq(hut.position, Vector2(-2, 1) + Vector2(a.HAT_OFFSET),
+		"der Hut geht nicht mit Atem und Kopfversatz mit")
+	a.free()
+
+## Ein Bild, kein Bilderstreifen: der Hut haengt am Kopf, und der Kopf ist
+## eine Gruppe mit einer Position. Die 24 gemessenen Kopfmitten in
+## gen_sprites.gd waren nur noetig, solange jede Pose ein eigenes Bild war.
+func test_der_hut_ist_ein_einzelnes_bild() -> void:
+	var a := _angler()
+	var hut: Sprite2D = a.get_node("Hat")
+	assert_eq(hut.hframes, 1, "der Hut hat noch einen Bilderstreifen")
+	if hut.texture != null:
+		assert_eq(hut.texture.get_width(), AnglerParts.FRAME,
+			"das Hutbild ist keine 128 breit")
+	a.free()

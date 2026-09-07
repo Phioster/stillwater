@@ -29,6 +29,9 @@ func _expected_size(filename: String) -> Vector2i:
 	if filename.begins_with("char_rod_"):
 		return Vector2i(AnglerPose.ROD_FRAME_SIZE * AnglerPose.ROD_FRAMES,
 			AnglerPose.ROD_FRAME_SIZE)
+	# Der Hut wird einmal gemalt und haengt am Kopf -- kein Bilderstreifen.
+	if filename.begins_with("char_hat_"):
+		return Vector2i(AnglerPose.FRAME_SIZE, AnglerPose.FRAME_SIZE)
 	if filename.begins_with("char_"):
 		return Vector2i(AnglerPose.FRAME_SIZE * AnglerPose.FRAMES, AnglerPose.FRAME_SIZE)
 	if filename.begins_with("teil_"):

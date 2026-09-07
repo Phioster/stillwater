@@ -107,6 +107,7 @@ func set_pose(atem: int, zopf: int, seit: int, bein: int, auge: StringName,
 			&"arm": i = clampi(arm, 0, int(AnglerParts.STATES[name]) - 1)
 		for ebene in AnglerParts.LAYERS[name]:
 			(gruppe.get_node(NodePath(String(ebene))) as Sprite2D).frame = i
+	_place_hat()
 	_place_rod()
 
 ## Der Ruhelauf zaehlt in sich selbst weiter, der Wurf haengt am Zaehler des
@@ -185,6 +186,21 @@ func _blink(delta: float) -> StringName:
 		_blink_left = ganz
 		_blink_in = randf_range(BLINK_MIN, BLINK_MAX)
 	return &"open"
+
+## Wie weit der Hut von dem Platz abweicht, an dem er gemalt ist. Null
+## heisst: genau dort. Rutscht ein Hut, ist das die eine Zahl, die ihn
+## nachfuehrt -- fuer alle gemeinsam, denn ihre Krempen sitzen verschieden
+## tief, aber alle am selben Kopf.
+const HAT_OFFSET: Vector2i = Vector2i(0, 0)
+
+## Der Hut folgt dem Kopf, ist aber kein Kind von ihm: gezeichnet wird er
+## NACH den Armen, die Kopfgruppe aber davor. Sein Bild traegt ihn schon an
+## der richtigen Stelle im 128er Feld; hier kommt nur die Bewegung des Kopfes
+## dazu, also (Kopfversatz, Atem).
+func _place_hat() -> void:
+	var kopf: Node2D = get_node("kopf")
+	var ruhe := Vector2(AnglerParts.BOX[&"kopf"].position)
+	($Hat as Sprite2D).position = kopf.position - ruhe + Vector2(HAT_OFFSET)
 
 ## Die Rute an den Griff dieser Pose schieben. Sie hat ein eigenes Raster --
 ## groesser als das der Figur, weil sie beim Ausholen weit hinausragt.

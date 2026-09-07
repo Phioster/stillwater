@@ -91,7 +91,7 @@ centered = false
 centered = false
 
 [node name="Hat" type="Sprite2D" parent="."]
-hframes = 24
+hframes = 1
 centered = false
 
 [node name="Rod" type="Sprite2D" parent="."]
