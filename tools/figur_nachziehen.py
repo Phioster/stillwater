@@ -19,9 +19,11 @@ from PIL import Image
 
 W = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEILE = os.path.join(W, "assets", "source", "figure", "parts")
-## pose_raw traegt den Ruhelauf im Spiel, sit3_rumpf die Wurfreihe. Der Zopf
-## ist in beiden gleich abgeschnitten, also bekommen beide dieselben Pixel.
-VORLAGEN = ("pose_raw.png", "sit3_rumpf.png")
+## sit3_rumpf ist die Vorlage: aus ihr schneidet tools/teile_bauen.py die
+## Blaetter, und tools/preview_parts.py zeigt sie. Frueher stand hier auch
+## pose_raw.png -- eine zweite Zeichnung derselben Pose, aus der der Ruhelauf
+## kam. Sie ist raus, und die Teilung der Listen unten mit ihr.
+VORLAGE = "sit3_rumpf.png"
 
 NORMAL = (0xab, 0x3b, 0x8f)     # beschattete Seite des Zopfs
 UNTEN = (0x58, 0x11, 0x53)      # dunkles Lila, wie die Kante bei 38,19
@@ -46,15 +48,12 @@ SCHATTEN = (0x86, 0x99, 0xb9)
 KRAGEN = [((57, 32), HELL), ((58, 32), MITTE), ((59, 32), SCHATTEN),
           ((61, 32), MITTE), ((60, 33), MITTE)]
 
-## --- Erzeugungsreste, nur im Rumpfbild ------------------------------------
+## --- Erzeugungsreste ---------------------------------------------------
 ##
 ## Zwei einzelne Pixel in einer fremden Farbfamilie. Beim Trennen fallen sie
 ## in die falsche Ebene, und keine Regel der Farbtabelle bekommt sie: dieselbe
 ## Farbe liegt in DERSELBEN Zeile auch dort, wo sie hingehoert. Also wird
 ## nicht die Zuordnung ausgenommen, sondern der Pixel berichtigt.
-##
-## pose_raw braucht das nicht -- dort tragen beide Stellen schon den
-## passenden Ton. Deshalb stehen sie hier getrennt und nicht bei ZOPF.
 UMRISS = (0x05, 0x00, 0x0a)         # der Umrisston der Figur
 BEINSCHATTEN = (0x89, 0x31, 0x54)   # wie 80,81 gleich daneben
 
@@ -101,13 +100,11 @@ KRAGEN_HELL = HELL          # #a7cce8
 KRAGEN_MITTE = MITTE        # #8cb2d8
 KRAGEN_SCHATTEN = SCHATTEN  # #8699b9
 
-## Die hintere Ecke steht in BEIDEN Vorlagen gleich: der Kragen endet in
-## Zeile 32 mit dem mittleren Ton und bricht darunter hart ab. Sie geht
-## deshalb in beide Bilder.
+## Die hintere Ecke: der Kragen endet in Zeile 32 mit dem mittleren Ton und
+## bricht darunter hart ab.
 KRAGEN_ECKE = [((53, 33), KRAGEN_SCHATTEN), ((54, 33), KRAGEN_MITTE)]
 
-## Die Spitze vorn ist in pose_raw anders gezeichnet -- dort liegt gar kein
-## Tuerkis am Kragen. Das Problem gibt es nur im Rumpfbild.
+## Die Spitze vorn:
 KRAGEN_SPITZE = [((63, 34), KRAGEN_HELL), ((63, 35), KRAGEN_HELL),
                  ((60, 36), KRAGEN_HELL), ((62, 36), KRAGEN_HELL),
                  ((63, 36), KRAGEN_MITTE), ((62, 37), KRAGEN_HELL),
@@ -120,9 +117,6 @@ KRAGEN_SPITZE = [((63, 34), KRAGEN_HELL), ((63, 35), KRAGEN_HELL),
 ## dort graulila statt schwarz. Er bekommt durchgehend #05000a -- den Ton,
 ## den 33 der 48 Umrisspixel des Zopfs schon tragen und der direkt darueber
 ## bei 47,11 steht.
-##
-## In pose_raw gibt es das nicht: dort liegt an allen Stellen einheitlich
-## #270628. Der Fehler stammt aus dem nachgezogenen Rumpfbild.
 ZOPF_UMRISS = [((47, y), UMRISS) for y in range(12, 16)]
 
 ## Und ein Umrisspixel, das INNEN im Zopf sitzt statt auf seiner Kante: bei
@@ -133,22 +127,20 @@ ZOPF_UMRISS = [((47, y), UMRISS) for y in range(12, 16)]
 ## Nachbarn tragen #581153.
 ZOPF_INNEN = [((48, 24), (0x58, 0x11, 0x53))]
 
-NUR_RUMPF = ([((37, 28), UMRISS),          # Zopfspitze: Umriss, nicht Pullover
-              ((79, 81), BEINSCHATTEN)]
-             + SAUM + KRAGEN_SPITZE + ZOPF_UMRISS + ZOPF_INNEN)
+ALLE = (ZOPF + KRAGEN + KRAGEN_ECKE
+        + [((37, 28), UMRISS),          # Zopfspitze: Umriss, nicht Pullover
+           ((79, 81), BEINSCHATTEN)]
+        + SAUM + KRAGEN_SPITZE + ZOPF_UMRISS + ZOPF_INNEN)
 
 
 def main():
-    for name in VORLAGEN:
-        pfad = os.path.join(TEILE, name)
-        bild = Image.open(pfad).convert("RGBA")
-        px = bild.load()
-        felder = (ZOPF + KRAGEN + KRAGEN_ECKE
-                  + (NUR_RUMPF if name == "sit3_rumpf.png" else []))
-        for feld, ton in felder:
-            px[feld] = ton + (255,)
-        bild.save(pfad)
-        print("%s: %d Pixel gesetzt" % (name, len(felder)))
+    pfad = os.path.join(TEILE, VORLAGE)
+    bild = Image.open(pfad).convert("RGBA")
+    px = bild.load()
+    for feld, ton in ALLE:
+        px[feld] = ton + (255,)
+    bild.save(pfad)
+    print("%s: %d Pixel gesetzt" % (VORLAGE, len(ALLE)))
 
 
 if __name__ == "__main__":

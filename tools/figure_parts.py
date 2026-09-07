@@ -10,6 +10,11 @@ Alle Zahlen hier sind am Bild abgenommen und von Hand bestaetigt, keine ist
 geschaetzt. Die Grenzen liegen als Konstanten offen, damit eine Korrektur eine
 Zahl ist und keine neue Suchheuristik.
 
+Die Vorlage ist assets/source/figure/parts/sit3_rumpf.png. Was an ihr
+nachzuziehen ist, tut tools/figur_nachziehen.py -- mit Koordinaten, die an
+IHR abgemessen sind. Frueher stand hier ein zweiter Weg (repair) fuer die
+alte Zeichnung pose_raw.png; die ist raus, und mit ihr er.
+
 Ebenen und ihre Bewegung:
     Zopf     schwingt am Haargummi -- oben null, an der Spitze voller Ausschlag
     Kopf     sinkt beim Atmen um ein Pixel, traegt die drei Augenstellungen
@@ -23,43 +28,6 @@ from PIL import Image
 from tools.character_keys import assign
 
 FRAME = 128
-
-## --- Ausbesserungen an der Vorlage ---------------------------------------
-##
-## Erzeugungsreste: einzelne Pixel in einer fremden Farbfamilie, die beim
-## Trennen in der falschen Ebene landen und beim Umfaerben als Fleck auffallen.
-## Ersetzt wird nie durch eine gemischte Farbe, sondern durch die haeufigste
-## Farbe der Nachbarschaft aus deren vorherrschender Familie -- so bleibt die
-## Palette geschlossen, und daran haengt die ganze Ebenentrennung.
-
-SPRENKEL = [
-    (43, 5), (41, 6), (40, 7), (43, 7), (42, 8), (42, 12),
-    (71, 12), (37, 28), (68, 22),
-] + [(49, y) for y in range(25, 32)]
-
-## Stellen im Stiefel, die haut- oder haarfarben sind. Die Ersatzfarbe kommt
-## wie sonst aus der Nachbarschaft, aber nur aus dieser Familie.
-## 79,100 und 79,101 lagen zwischen 78 und 80 und fielen durch jede Pruefung,
-## solange deren Nachbarn selbst falsch waren -- erst danach zeigen sie 88
-## Prozent Stiefelnachbarschaft.
-FAMILIE = {
-    (86, 98): "boots", (87, 98): "boots", (87, 99): "boots",
-    (78, 100): "boots", (79, 100): "boots", (80, 100): "boots",
-    (78, 101): "boots", (79, 101): "boots", (80, 101): "boots",
-    (70, 102): "boots", (80, 102): "boots",
-}
-
-## Ausdruecklich gesetzte Farben statt Nachbarschaftsmehrheit.
-FEST = {
-    (69, 26): (0x03, 0x02, 0x01),    # Gesichtsumriss, nicht weiss
-    (66, 20): (0x03, 0x02, 0x01),    # setzt die Umrisslinie 64,20-65,20 fort
-    (95, 113): (0x03, 0x02, 0x01),   # Schuhspitze: schliesst den Umriss 93,112-95,114
-}
-
-## Ausdruecklich BEHALTEN, obwohl ein Suchlauf sie meldet: 47-49/7-10 ist das
-## Haargummi, 65-67/21-23 das Auge, 63,22 sein Glanzpunkt, 61,36 der hellste
-## Kragenton -- und 66,21 der hintere Augenwinkel. Ohne ihn ist das Auge ein
-## Schlitz statt einer Form.
 
 ## --- Ebenen, deren Farbe in die falsche Richtung zeigt ---------------------
 ##
@@ -161,39 +129,6 @@ AUGE_ZU = {
 def _sichtbar(px):
     return {(x, y) for y in range(FRAME) for x in range(FRAME)
             if px[x, y][3] > 128}
-
-
-def repair(img):
-    """Die Erzeugungsreste ausbessern. Bringt keine neue Farbe ins Bild."""
-    px = img.load()
-    out = img.copy()
-    qx = out.load()
-    verboten = set(SPRENKEL) | set(FEST) | set(FAMILIE)
-
-    for x, y in SPRENKEL + list(FEST) + list(FAMILIE):
-        if (x, y) in FEST:
-            qx[x, y] = FEST[(x, y)] + (255,)
-            continue
-        nachbarn, familien = {}, {}
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                p = (x + dx, y + dy)
-                if (dx, dy) == (0, 0) or p in verboten or px[p][3] <= 128:
-                    continue
-                farbe = px[p][:3]
-                nachbarn[farbe] = nachbarn.get(farbe, 0) + 1
-                fam = assign(farbe)
-                familien[fam] = familien.get(fam, 0) + 1
-        if not nachbarn:
-            continue
-        haupt = FAMILIE.get((x, y)) or max(familien.items(),
-                                           key=lambda t: t[1])[0]
-        passend = [(n, c) for c, n in nachbarn.items() if assign(c) == haupt]
-        if not passend:
-            raise ValueError("%d,%d: keine %s-Farbe in der Nachbarschaft"
-                             % (x, y, haupt))
-        qx[x, y] = max(passend)[1] + (255,)
-    return out
 
 
 def layer_of(x, y):

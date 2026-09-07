@@ -5,7 +5,8 @@
 Der Ruhelauf kommt aus den Ebenen (Atem, Zopf, Beine, Blinzeln), der Wurf
 aus den zehn fertigen Bildern. Damit beides dieselbe Figur zeigt, werden die
 Ebenen aus wurf_rute_0 geschnitten -- dem Ruhebild der Wurfreihe -- und nicht
-aus pose_raw: dort steckt noch die alte Rute mit der Rolle.
+aus der alten Zeichnung pose_raw: dort steckte noch die Rute mit
+der Rolle. Sie ist entfernt.
 
 Beim Wurf haengen die Beine still. Sie schwingen genau vier Mal, weil der
 Ruhelauf auf 4 x BEIN_ZUG Schritte gelegt ist und der Schwung bei null

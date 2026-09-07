@@ -26,38 +26,10 @@ def _punkte(img):
             if px[x, y][3] > 128}
 
 
-class TestAusbessern(unittest.TestCase):
-    def setUp(self):
-        self.roh = _laden("pose_raw.png")
-        self.heil = fp.repair(self.roh)
-
-    def test_keine_neue_farbe(self):
-        ## Daran haengt alles: die Ebenentrennung liest die Farbe, und eine
-        ## gemischte Ersatzfarbe waere in keiner Familie zu Hause.
-        neu = _farben(self.heil) - _farben(self.roh)
-        self.assertEqual(neu, set(), "neue Farben: %s" % sorted(neu))
-
-    def test_die_silhouette_bleibt(self):
-        self.assertEqual(_punkte(self.heil), _punkte(self.roh))
-
-    def test_die_gemeldeten_stellen_sind_geaendert(self):
-        alt, neu = self.roh.load(), self.heil.load()
-        ungeaendert = [p for p in fp.FEST if alt[p][:3] == neu[p][:3]]
-        self.assertEqual(ungeaendert, [], "unveraendert geblieben: %s" % ungeaendert)
-
-    def test_das_auge_bleibt_stehen(self):
-        ## 66,21 ist der hintere Augenwinkel und faellt in die Pullover-
-        ## Familie. Wird er als Sprenkel behandelt, ist das Auge ein Schlitz
-        ## und die Blinzelerkennung verliert ihre Insel.
-        px = self.heil.load()
-        self.assertEqual(px[66, 21][:3], (0x86, 0x99, 0xb9))
-
-
 class TestTrennen(unittest.TestCase):
     def setUp(self):
-        self.pose = fp.repair(_laden("pose_raw.png"))
-        self.rute = _laden("rod.png")
-        self.ebenen = fp.split(self.pose, self.rute)
+        self.pose = _laden("sit3_rumpf.png")
+        self.ebenen = fp.split(self.pose)
 
     def test_keine_ueberschneidung(self):
         ## Einzige erlaubte Doppelung ist die Unterlage: dort liegt der Kopf
@@ -82,15 +54,6 @@ class TestTrennen(unittest.TestCase):
         anders = [(x, y) for y in range(fp.FRAME) for x in range(fp.FRAME)
                   if a[x, y] != b[x, y]]
         self.assertEqual(anders, [], "%d Pixel weichen ab" % len(anders))
-
-    def test_die_rute_bleibt_im_rumpf(self):
-        ## Sie ist im Spiel ein eigenes Sprite und darf weder mit dem Kopf
-        ## noch mit den Beinen wandern.
-        rutenfeld = _punkte(self.rute)
-        for name in ("head", "legs", "ponytail"):
-            drin = _punkte(self.ebenen[name]) & rutenfeld
-            self.assertEqual(drin, set(), "%s enthaelt %d Rutenpixel"
-                             % (name, len(drin)))
 
     def test_der_zopf_endet_vor_dem_hinterkopf(self):
         ## Der erste Versuch nahm den halben Hinterkopf mit -- das faellt an
@@ -126,8 +89,7 @@ class TestTrennen(unittest.TestCase):
 
 class TestBlinzeln(unittest.TestCase):
     def setUp(self):
-        pose = fp.repair(_laden("pose_raw.png"))
-        self.kopf = fp.split(pose, _laden("rod.png"))["head"]
+        self.kopf = fp.split(_laden("sit3_rumpf.png"))["head"]
 
     def test_offen_ist_unveraendert(self):
         offen = fp.eye_state(self.kopf, "open")

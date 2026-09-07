@@ -12,8 +12,8 @@ genau auf das Raten, das die Tabelle abschaffen soll.
 
 Die Rute ist nicht dabei. Sie ist ein eigenes Sprite und wird nie
 umgefaerbt; ihre Korktoene stuenden sonst als HAUT in der Tabelle. Deshalb
-taugen pose_raw und wurf_rute_* hier nicht als Quelle: in beiden ist die
-Rute mitten in die Figur gezeichnet.
+taugen die wurf_rute_* hier nicht als Quelle: in ihnen ist die Rute mitten
+in die Figur gezeichnet.
 
     python3 -m tools.freeze_palette
 """
