@@ -24,12 +24,13 @@ class TestRahmen(unittest.TestCase):
         cls.zustaende = tb.zustaende(cls.ebenen, cls.koepfe)
 
     def test_jedes_teil_hat_seine_zustaende(self):
-        ## Die Zahlen stehen in der Spec und sind am Bild gemessen. Der Zopf
-        ## haengt am PAAR aus Weite und Kopfversatz, weil seine Naht zum Kopf
-        ## von beidem abhaengt und mitgebacken werden muss.
-        self.assertEqual(14, len(self.zustaende["zopf"]))
-        self.assertEqual(2, len(self.zustaende["kopf"]))
-        self.assertEqual(2, len(self.zustaende["hals"]))
+        ## Die Zahlen sind am Bild gemessen. Der Zopf haengt am TRIPEL aus
+        ## Atem, Weite und Kopfversatz, weil seine Naht zum Kopf von allen
+        ## dreien abhaengt und mitgebacken werden muss -- 28 erreichbare.
+        ## Kopf und Hals haben EINEN Zustand: der Atem ist ein Versatz.
+        self.assertEqual(28, len(self.zustaende["zopf"]))
+        self.assertEqual(1, len(self.zustaende["kopf"]))
+        self.assertEqual(1, len(self.zustaende["hals"]))
         self.assertEqual(1, len(self.zustaende["rumpf"]))
         self.assertEqual(13, len(self.zustaende["beine"]))
         self.assertEqual(11, len(self.zustaende["arm"]))
@@ -137,3 +138,60 @@ class TestRueckbau(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestZopfZustaende(unittest.TestCase):
+    """Jeder Zustand, den das Spiel erreichen kann, muss gebacken sein.
+
+    Die alte Fassung sammelte die Tripel aus EINEM Durchlauf von
+    wurf_lauf.ablauf(). Dort fiel der Wurf zufaellig auf bestimmte
+    Atemphasen. Im Spiel faengt er bei jeder an -- die Haelfte der
+    erreichbaren Zustaende fehlte, und die Szene faende sie nicht.
+    """
+
+    @staticmethod
+    def _erreichbar():
+        from tools import wurf_lauf as wl
+        aus = set()
+        for schritt in range(wl.PRO_ZUG):
+            atem, zopf = wl.atem_und_zopf(schritt)
+            aus.add((atem, zopf, 0))                # Ruhelauf
+            for i in range(len(wl.BEIN_WURF)):      # Wurf, jede Phase
+                aus.add((atem, zopf + wl.zopf_im_wurf(i), wl.kopf_im_wurf(i)))
+        return aus
+
+    def test_jeder_erreichbare_zustand_ist_gebacken(self):
+        fehlt = self._erreichbar() - set(tb.zopf_zustaende())
+        self.assertEqual(set(), fehlt, "nicht gebacken: %s" % sorted(fehlt))
+
+    def test_kein_zustand_zuviel(self):
+        """Jedes ueberzaehlige Bild ist verschenkter Speicher."""
+        zuviel = set(tb.zopf_zustaende()) - self._erreichbar()
+        self.assertEqual(set(), zuviel, "unerreichbar: %s" % sorted(zuviel))
+
+    def test_kopf_und_hals_haben_einen_zustand(self):
+        """Der Atem ist ein Versatz, kein Bild. Zwei gleiche Bilder abzulegen
+        war toter Speicher -- _index() gab fuer beide immer 0 zurueck."""
+        ebenen = fp.split(_laden("sit3_rumpf.png"))
+        koepfe = {s: fp.eye_state(ebenen["head"], s)
+                  for s in ("open", "half", "closed")}
+        z = tb.zustaende(ebenen, koepfe)
+        self.assertEqual(1, len(z["kopf"]))
+        self.assertEqual(1, len(z["hals"]))
+
+
+class TestErzeugteDatei(unittest.TestCase):
+    """core/angler_parts.gd wird erzeugt und darf nicht veralten.
+
+    Godot kann das Bauwerkzeug nicht aufrufen; die Zahlen muessen also als
+    Konstanten dort liegen. Damit sie nicht auseinanderlaufen, prueft dieser
+    Test, dass ein Neuerzeugen die Datei unveraendert laesst.
+    """
+
+    def test_die_datei_ist_auf_dem_stand_des_werkzeugs(self):
+        pfad = os.path.join(WURZEL, "core", "angler_parts.gd")
+        with open(pfad, encoding="utf-8") as f:
+            auf_platte = f.read()
+        self.assertEqual(auf_platte, tb.gdscript_text(),
+                         "core/angler_parts.gd ist veraltet -- "
+                         "python3 -m tools.teile_bauen laufen lassen")

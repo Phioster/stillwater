@@ -9,7 +9,7 @@ volles 128er Bild abzulegen verschenkt das Sechzehnfache.
 
     python3 -m tools.teile_bauen
 """
-import json
+import math
 import os
 
 from PIL import Image
@@ -37,13 +37,22 @@ AUGEN = ("open", "half", "closed")
 ## schliesst sie niemand zur Laufzeit. Sein Zustand ist deshalb das TRIPEL.
 ##
 ## Atem und Versatz werden trotzdem als Sprite-Versatz gesetzt, nicht ins
-## Bild gerechnet; sie stehen hier nur, weil die Naht sie braucht. Gemessen
-## wird am Ablauf selbst, nicht getippt: er erreicht vierzehn Tripel, und der
-## Zopf schwingt im Wurf bis +5, nicht nur bis +2 wie im Ruhelauf.
+## Bild gerechnet; sie stehen hier nur, weil die Naht sie braucht.
+##
+## AUFGEZAEHLT, nicht abgetastet: frueher stand hier ein Durchlauf von
+## wurf_lauf.ablauf(). In dem faellt der Wurf auf die Atemphasen, die sich
+## zufaellig ergeben -- vierzehn Tripel. Im Spiel faengt der Wurf bei jeder
+## Phase an, und dann sind es achtundzwanzig. Die Haelfte fehlte, und die
+## Szene haette sie nicht gefunden.
 def zopf_zustaende():
     from tools import wurf_lauf as wl
-    return sorted({(atem, zopf, seit)
-                   for _, _, atem, zopf, _, _, _, seit, _ in wl.ablauf()})
+    aus = set()
+    for schritt in range(wl.PRO_ZUG):
+        atem, zopf = wl.atem_und_zopf(schritt)
+        aus.add((atem, zopf, 0))                    # Ruhelauf: Kopf gerade
+        for i in range(len(wl.BEIN_WURF)):          # Wurf: Kopf lehnt zurueck
+            aus.add((atem, zopf + wl.zopf_im_wurf(i), wl.kopf_im_wurf(i)))
+    return sorted(aus)
 
 
 def _leer():
@@ -130,12 +139,11 @@ def zustaende(ebenen, koepfe):
     aus = {
         "zopf": [_zopf_mit_naht(ebenen, koepfe, atem, w, seit)
                  for atem, w, seit in zopf_zustaende()],
-        ## Zwei Kopfbilder, obwohl der Atem als Versatz gesetzt wird: der
-        ## Kopf ist im gesenkten Zustand nicht derselbe wie im gehobenen --
-        ## eye_state() sitzt an festen Zeilen, und die Kinnlinie gehoert dem
-        ## Kopf, nicht dem Rumpf.
-        "kopf": [kopfteil(rest, koepfe["open"]) for _ in ATEM],
-        "hals": [kopfteil(hals, koepfe["open"]) for _ in ATEM],
+        ## Ein Bild je Teil: der Atem ist ein Versatz des Sprites, kein
+        ## anderes Bild, und das Auge ist ein eigenes Teil. Hier standen zwei
+        ## byteweise gleiche Bilder, und _index() gab immer 0 zurueck.
+        "kopf": [kopfteil(rest, koepfe["open"])],
+        "hals": [kopfteil(hals, koepfe["open"])],
         "rumpf": [_verschoben(ebenen["torso"], lambda x, y: (x, y))],
         "beine": [_verschoben(ebenen["legs"],
                               lambda x, y, w=w: (x + fp.swing(y, w,
@@ -233,41 +241,144 @@ def aufbauen(blaetter, kaesten, zopf_zustand, beinweite, auge="open",
     return aus
 
 
-def main():
+def _messen():
+    """Rahmen, Zustandszahl und Ebenen je Teil -- einmal gerechnet."""
     ebenen = fp.split(Image.open(os.path.join(TEILE, "sit3_rumpf.png"))
                       .convert("RGBA"))
     koepfe = {s: fp.eye_state(ebenen["head"], s) for s in AUGEN}
     tabelle = load_table(os.path.join(SRC, "key_palette.json"))
     zust = zustaende(ebenen, koepfe)
-    geschrieben = 0
-    verzeichnis = {}
+    aus = {}
     for name in ZEICHENFOLGE:
-        bilder = zust[name]
-        kasten = rahmen(bilder)
-        ebenen_hier = []
-        for ebene in PARTS:
-            bild = blatt(bilder, kasten, tabelle, ebene)
-            if bild.getbbox() is None:
-                continue        # diese Ebene kommt in diesem Teil nicht vor
+        kasten = rahmen(zust[name])
+        ebenen_hier = [e for e in PARTS
+                       if blatt(zust[name], kasten, tabelle, e).getbbox()]
+        aus[name] = (kasten, len(zust[name]), ebenen_hier)
+    return zust, tabelle, aus
+
+
+def gdscript_text(gemessen=None):
+    """Der Inhalt von core/angler_parts.gd.
+
+    Als Text und nicht direkt geschrieben, damit ein Test ihn mit der Datei
+    auf der Platte vergleichen kann, ohne sie zu ueberschreiben.
+    """
+    from tools import wurf_lauf as wl
+    if gemessen is None:
+        _, _, gemessen = _messen()
+
+    z = ["## ERZEUGT von tools/teile_bauen.py -- nicht von Hand aendern.",
+         "##",
+         "## Die Geometrie der Teileblaetter. Jedes Teil ist auf seinen eigenen",
+         "## Rahmen zugeschnitten -- das ist der Sinn des Umbaus, und es heisst,",
+         "## dass niemand die Masse raten kann. Sie werden am Bild gemessen und",
+         "## hier abgelegt, weil Godot das Bauwerkzeug nicht aufrufen kann.",
+         "class_name AnglerParts",
+         "extends RefCounted",
+         "",
+         "const FRAME: int = %d" % fp.FRAME,
+         "",
+         "## Zeichenreihenfolge der Teile. Der Kopf liegt ueber dem Rumpf: lag",
+         "## es umgekehrt, frass sein Schulterumriss beim Absenken die",
+         "## Kinnzeile. Der Hals gehoert dahinter, sonst schiebt er sich beim",
+         "## Neigen ueber den Kragen.",
+         "const ORDER: Array[StringName] = [%s]"
+         % ", ".join('&"%s"' % n for n in ZEICHENFOLGE),
+         "",
+         "## Diese Teile haengen am Kopf und gehen mit seinem Versatz mit.",
+         "const AT_HEAD: Array[StringName] = [%s]"
+         % ", ".join('&"%s"' % n for n in AM_KOPF),
+         "",
+         "## Rahmen und Anker im 128er Feld, je Teil.",
+         "const BOX := {"]
+    for name in ZEICHENFOLGE:
+        (x, y, w, h), _, _ = gemessen[name]
+        z.append('\t&"%s": Rect2i(%d, %d, %d, %d),' % (name, x, y, w, h))
+    z += ["}", "",
+          "## Wieviele Bilder ein Blatt traegt.",
+          "const STATES := {"]
+    for name in ZEICHENFOLGE:
+        _, n, _ = gemessen[name]
+        z.append('\t&"%s": %d,' % (name, n))
+    z += ["}", "",
+          "## Welche Kosmetikebenen in diesem Teil ueberhaupt vorkommen. Eine",
+          "## Ebene ohne Pixel bekommt kein Blatt und braucht kein Sprite.",
+          "const LAYERS := {"]
+    for name in ZEICHENFOLGE:
+        _, _, ebs = gemessen[name]
+        z.append('\t&"%s": [%s],'
+                 % (name, ", ".join('&"%s"' % e for e in ebs)))
+    z += ["}", "",
+          "## Der Zustand des Zopfs ist das Tripel aus Atem, Zopfweite und",
+          "## Kopfversatz: seine Naht zum Kopf liegt je nach allen dreien",
+          "## woanders und ist ins Blatt gebacken.",
+          "const ZOPF_INDEX := {"]
+    for i, (atem, weite, seit) in enumerate(zopf_zustaende()):
+        z.append("\tVector3i(%d, %d, %d): %d," % (atem, weite, seit, i))
+    z += ["}", "",
+          "const LEG_SPREADS: Array[int] = [%s]"
+          % ", ".join(str(w) for w in BEIN_WEITEN),
+          "const EYES: Array[StringName] = [%s]"
+          % ", ".join('&"%s"' % s for s in AUGEN),
+          "",
+          "## --- Vergleichsreihen fuer den Bewegungstest ---------------------",
+          "##",
+          "## Die Formeln stehen zweimal: in Python fuer die Vorschau, in",
+          "## GDScript fuers Spiel. Das ist bewusst in Kauf genommen -- es sind",
+          "## fuenf Zeilen Arithmetik ohne Pixelzugriff. Damit sie nicht",
+          "## auseinanderlaufen, liegen die Zahlen der Vorschau hier, und",
+          "## tests/test_angler_motion.gd rechnet sie nach.",
+          "const BREATH_STEPS: int = %d" % wl.PRO_ZUG,
+          "const LEG_STEPS: int = %d" % wl.BEIN_ZUG,
+          "## (Atem, Zopfweite) je Schritt des Atemzugs.",
+          "const BREATH_REF: Array[Vector2i] = [%s]"
+          % ", ".join("Vector2i(%d, %d)" % wl.atem_und_zopf(s)
+                      for s in range(wl.PRO_ZUG)),
+          "## Der Beinschwung bei Weite 4, je Schritt -- die Weite selbst wird",
+          "## im Umkehrpunkt neu gezogen und ist deshalb nicht vergleichbar.",
+          "const LEG_REF: Array[int] = [%s]"
+          % ", ".join(str(int(round(4 * math.sin(2 * math.pi * i
+                                                 / float(wl.BEIN_ZUG)))))
+                      for i in range(wl.BEIN_ZUG)),
+          "## Was der Wurf je Bild an Zopf, Kopf und Beinen setzt.",
+          "const CAST_ZOPF: Array[int] = [%s]"
+          % ", ".join(str(wl.zopf_im_wurf(i))
+                      for i in range(len(wl.BEIN_WURF))),
+          "const CAST_HEAD: Array[int] = [%s]"
+          % ", ".join(str(wl.kopf_im_wurf(i))
+                      for i in range(len(wl.BEIN_WURF))),
+          "const CAST_LEGS: Array[int] = [%s]"
+          % ", ".join(str(v) for v in wl.BEIN_WURF),
+          "",
+          "static func zopf_index(atem: int, weite: int, seit: int) -> int:",
+          "\treturn int(ZOPF_INDEX.get(Vector3i(atem, weite, seit), -1))",
+          "",
+          "static func leg_index(spread: int) -> int:",
+          "\treturn LEG_SPREADS.find(clampi(spread, LEG_SPREADS[0],",
+          "\t\tLEG_SPREADS[LEG_SPREADS.size() - 1]))",
+          "",
+          "static func eye_index(name: StringName) -> int:",
+          "\treturn maxi(0, EYES.find(name))",
+          ""]
+    return "\n".join(z)
+
+
+def main():
+    zust, tabelle, gemessen = _messen()
+    geschrieben = 0
+    for name in ZEICHENFOLGE:
+        kasten, anzahl, ebenen_hier = gemessen[name]
+        for ebene in ebenen_hier:
+            bild = blatt(zust[name], kasten, tabelle, ebene)
             bild.save(os.path.join(OUT, "teil_%s_%s.png" % (name, ebene)))
-            ebenen_hier.append(ebene)
             geschrieben += 1
-        verzeichnis[name] = {
-            "x": kasten[0], "y": kasten[1], "w": kasten[2], "h": kasten[3],
-            "zustaende": len(bilder), "ebenen": ebenen_hier,
-        }
         print("%-8s %2dx%-3d bei %2d,%-3d  %2d Zustaende, Ebenen: %s"
-              % (name, kasten[2], kasten[3], kasten[0], kasten[1], len(bilder),
+              % (name, kasten[2], kasten[3], kasten[0], kasten[1], anzahl,
                  " ".join(ebenen_hier)))
-    ## Jedes Teil hat seinen eigenen Rahmen -- das ist der ganze Sinn der
-    ## Uebung, und es heisst, dass die Masse niemand raten kann. Sie stehen
-    ## deshalb hier neben den Blaettern: der Sprite-Test prueft gegen sie,
-    ## und Stufe 3 setzt die Teile mit x,y wieder an ihren Platz im Feld.
-    with open(os.path.join(OUT, "teile.json"), "w") as f:
-        json.dump({"rahmen": fp.FRAME, "zeichenfolge": list(ZEICHENFOLGE),
-                   "teile": verzeichnis}, f, indent="\t", sort_keys=True)
-        f.write("\n")
-    print("%d Blaetter und teile.json geschrieben" % geschrieben)
+    with open(os.path.join(WURZEL, "core", "angler_parts.gd"), "w",
+              encoding="utf-8") as f:
+        f.write(gdscript_text(gemessen))
+    print("%d Blaetter und core/angler_parts.gd geschrieben" % geschrieben)
 
 
 if __name__ == "__main__":

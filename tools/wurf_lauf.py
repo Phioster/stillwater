@@ -372,6 +372,18 @@ def koeder_zeichnen(bild, zustand, spitze, abwurf, schwimmer, made, ziel,
     _tauchen(bild, schwimmer, mitte, linie_bei, SCHAUM)
 
 
+def atem_und_zopf(schritt):
+    """Atem und Zopfweite in diesem Schritt des Atemzugs.
+
+    Stand als Closure in ablauf() und war damit nur dort zu haben. Das
+    Bauwerkzeug braucht sie aber auch: es muss aufzaehlen, welche Zustaende
+    ueberhaupt vorkommen koennen, und darf sie dafuer nicht abtippen.
+    """
+    t = (schritt % PRO_ZUG) / float(PRO_ZUG)
+    return (1 if math.sin(2 * math.pi * t) < 0 else 0,
+            int(round(2 * math.sin(2 * math.pi * (t - 0.12)))))
+
+
 def ablauf(saat=11):
     """Die Schrittfolge: erst der Ruhelauf, dann zwei Wuerfe."""
     zufall = random.Random(saat)
@@ -381,10 +393,9 @@ def ablauf(saat=11):
     takt = [0]      # laeuft durch, damit der Atem nirgends springt
 
     def atemzug():
-        t = (takt[0] % PRO_ZUG) / float(PRO_ZUG)
+        wert = atem_und_zopf(takt[0])
         takt[0] += 1
-        return (1 if math.sin(2 * math.pi * t) < 0 else 0,
-                int(round(2 * math.sin(2 * math.pi * (t - 0.12)))))
+        return wert
 
     for i in range(SCHWUENGE * BEIN_ZUG):
         atem, zopf = atemzug()

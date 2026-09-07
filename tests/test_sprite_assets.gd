@@ -9,24 +9,14 @@ const EXPECTED_EMPTY := [&"char_hat_0.png"]
 ## Die Teileblaetter haben je Teil ihren eigenen Rahmen -- das ist der Sinn
 ## der Uebung: der Zopf ist 21x33 Pixel gross, ihn als volles 128er Bild
 ## abzulegen verschenkt das Sechzehnfache. Die Masse kann dieser Test also
-## nicht raten. tools/teile_bauen.py schreibt sie neben die Blaetter.
-var _teile_cache: Dictionary = {}
-
-func _teile() -> Dictionary:
-	if _teile_cache.is_empty():
-		var f := FileAccess.open("%s/teile.json" % ART_DIR, FileAccess.READ)
-		if f != null:
-			var d: Variant = JSON.parse_string(f.get_as_text())
-			if d is Dictionary:
-				_teile_cache = (d as Dictionary).get("teile", {})
-	return _teile_cache
-
-func _teil_eintrag(filename: String) -> Dictionary:
+## nicht raten; sie stehen gemessen in AnglerParts, das
+## tools/teile_bauen.py erzeugt.
+func _teil_name(filename: String) -> StringName:
 	var rest := filename.trim_prefix("teil_").trim_suffix(".png")
-	for name in _teile():
+	for name in AnglerParts.ORDER:
 		if rest.begins_with("%s_" % name):
-			return _teile()[name]
-	return {}
+			return name
+	return &""
 
 func _expected_size(filename: String) -> Vector2i:
 	if filename.begins_with("bg_"):
@@ -42,10 +32,11 @@ func _expected_size(filename: String) -> Vector2i:
 	if filename.begins_with("char_"):
 		return Vector2i(AnglerPose.FRAME_SIZE * AnglerPose.FRAMES, AnglerPose.FRAME_SIZE)
 	if filename.begins_with("teil_"):
-		var t := _teil_eintrag(filename)
-		if t.is_empty():
+		var name := _teil_name(filename)
+		if name == &"":
 			return Vector2i(-1, -1)
-		return Vector2i(int(t["w"]) * int(t["zustaende"]), int(t["h"]))
+		var box: Rect2i = AnglerParts.BOX[name]
+		return Vector2i(box.size.x * int(AnglerParts.STATES[name]), box.size.y)
 	if filename.begins_with("fish_"):
 		return Vector2i(32, 16)
 	if filename == "raven.png":
@@ -93,9 +84,9 @@ func test_all_sprites_have_correct_size_and_are_not_empty() -> void:
 			# Pixel, eine Wimper je Augenzustand. Eine feste Untergrenze passt
 			# darauf nicht. Geprueft wird deshalb, was gemeint ist -- kein
 			# Zustand darf leer sein, sonst fehlt der Figur dort ein Bild.
-			var t := _teil_eintrag(file)
-			var w: int = t["w"]
-			for i in int(t["zustaende"]):
+			var name := _teil_name(file)
+			var w: int = AnglerParts.BOX[name].size.x
+			for i in int(AnglerParts.STATES[name]):
 				var n := 0
 				for y in img.get_height():
 					for x in w:
