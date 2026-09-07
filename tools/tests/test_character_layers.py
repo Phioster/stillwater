@@ -48,30 +48,32 @@ class TestSplit(unittest.TestCase):
         self.assertEqual(layers["boots"].load()[0, 1][3], 255)
         self.assertEqual(layers["shirt"].load()[0, 1][3], 0)
 
-    def test_geteilte_eintraege_werden_aufgeloest(self):
-        ## Eine geteilte Tabelle: dieselbe Farbe oben in hair, unten in boots.
-        # Baue ein Bild mit zwei Pixeln derselben Farbe an verschiedenen y-Positionen.
+    def test_baender_gelten_zeilenweise(self):
+        ## Dieselbe Farbe dient an zwei Stellen: oben im Haar, unten am
+        ## Stiefel. Ueber die Farbe allein waere das nicht zu trennen.
+        farbe = (100, 150, 200)
         img = Image.new("RGBA", (2, 4), (0, 0, 0, 0))
         px = img.load()
-        color = (100, 150, 200)
-
-        # Oben, Zeile 0
-        px[0, 0] = color + (255,)
-        # Unten, Zeile 3
-        px[1, 3] = color + (255,)
-
-        # Geteilter Eintrag: Zeile 2 ist die Grenze
-        table = {color: {"grenze": 2, "oben": "hair", "unten": "boots"}}
+        px[0, 0] = farbe + (255,)
+        px[1, 3] = farbe + (255,)
+        table = {farbe: [(2, "hair"), (4, "boots")]}
 
         layers = split(img, table)
 
-        # Der obere Pixel sollte in hair sein
         self.assertEqual(layers["hair"].load()[0, 0][3], 255)
         self.assertEqual(layers["boots"].load()[0, 0][3], 0)
-
-        # Der untere Pixel sollte in boots sein
         self.assertEqual(layers["boots"].load()[1, 3][3], 255)
         self.assertEqual(layers["hair"].load()[1, 3][3], 0)
+
+    def test_baender_muessen_bis_zum_unteren_rand_reichen(self):
+        ## Ein Pixel, den kein Band abdeckt, soll auffallen und nicht still
+        ## in irgendeiner Ebene landen.
+        farbe = (100, 150, 200)
+        img = Image.new("RGBA", (1, 4), (0, 0, 0, 0))
+        img.load()[0, 3] = farbe + (255,)
+
+        with self.assertRaises(ValueError):
+            split(img, {farbe: [(2, "hair")]})
 
 
 if __name__ == "__main__":

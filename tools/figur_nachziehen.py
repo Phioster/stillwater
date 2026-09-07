@@ -1,4 +1,4 @@
-"""Zwei Stellen der Vorlage nachziehen, die der Generator liegengelassen hat.
+"""Stellen der Vorlage nachziehen, die der Generator liegengelassen hat.
 
     python3 -m tools.figur_nachziehen
 
@@ -46,16 +46,88 @@ SCHATTEN = (0x86, 0x99, 0xb9)
 KRAGEN = [((57, 32), HELL), ((58, 32), MITTE), ((59, 32), SCHATTEN),
           ((61, 32), MITTE), ((60, 33), MITTE)]
 
+## --- Erzeugungsreste, nur im Rumpfbild ------------------------------------
+##
+## Zwei einzelne Pixel in einer fremden Farbfamilie. Beim Trennen fallen sie
+## in die falsche Ebene, und keine Regel der Farbtabelle bekommt sie: dieselbe
+## Farbe liegt in DERSELBEN Zeile auch dort, wo sie hingehoert. Also wird
+## nicht die Zuordnung ausgenommen, sondern der Pixel berichtigt.
+##
+## pose_raw braucht das nicht -- dort tragen beide Stellen schon den
+## passenden Ton. Deshalb stehen sie hier getrennt und nicht bei ZOPF.
+UMRISS = (0x05, 0x00, 0x0a)         # der Umrisston der Figur
+BEINSCHATTEN = (0x89, 0x31, 0x54)   # wie 80,81 gleich daneben
+
+## --- Der Rocksaum ---------------------------------------------------------
+##
+## Am unteren Rand des Rocks stehen siebzehn Pixel in Pullover- und
+## Umrisstoenen. Sie liegen im Rock, tragen aber die Farbe des Oberteils --
+## beim Umfaerben des Pullovers waere sein Ton auf den Saum gewandert, und
+## drei davon (81-83/77) lagen sogar in der Pulloverebene.
+##
+## Ersetzt wird je Pixel durch den haeufigsten der vier Rocktoene aus seinen
+## acht Nachbarn, wie tools/figure_parts.py::repair es tut. Nur 78,79 hat
+## dort ueberhaupt kein Gruen; bei ihm entscheidet der zweite Ring.
+GRUEN_HELL = (0xc0, 0xda, 0x31)
+GRUEN_MITTE = (0x83, 0x97, 0x44)
+GRUEN_DUNKEL = (0x6f, 0x9d, 0x32)
+
+SAUM = [((64, 86), GRUEN_HELL), ((64, 87), GRUEN_HELL),
+        ((65, 85), GRUEN_HELL), ((65, 86), GRUEN_HELL),
+        ((67, 81), GRUEN_MITTE), ((67, 83), GRUEN_HELL),
+        ((68, 82), GRUEN_MITTE), ((69, 81), GRUEN_HELL),
+        ((70, 80), GRUEN_HELL), ((77, 78), GRUEN_HELL),
+        ((78, 78), GRUEN_HELL), ((78, 79), GRUEN_HELL),
+        ((79, 78), GRUEN_DUNKEL), ((80, 77), GRUEN_MITTE),
+        ((81, 77), GRUEN_MITTE), ((82, 77), GRUEN_MITTE),
+        ((83, 77), GRUEN_MITTE)]
+
+## --- Der Kragen ausformen -------------------------------------------------
+##
+## Der Kragen ist das Hemd unter dem Pullover und liegt deshalb in der
+## Grundebene (siehe tools/freeze_palette.py). Zwei Stellen stoerten daran:
+##
+## Hinten brach er bei 53-54/33 in einer geraden Kante ab. Die zwei Pixel
+## trugen Pullovertoene; als Kragentoene laeuft die Ecke treppenfoermig aus.
+##
+## Vorn lag der Abschluss in Tuerkis (#2f95a5, #284e59) -- neben dem Weiss
+## las sich das gruenlich. Jetzt tragen auch diese Pixel Kragentoene, dazu
+## die zwei Umrisspixel bei 63/34-35, damit die Spitze durchgeht. Der Umriss
+## bleibt: Spalte 64 ist in beiden Zeilen schwarz.
+##
+## Kein Pixel kommt hinzu, alle zehn waren belegt -- der Umriss der Figur
+## aendert sich nicht.
+KRAGEN_HELL = HELL          # #a7cce8
+KRAGEN_MITTE = MITTE        # #8cb2d8
+KRAGEN_SCHATTEN = SCHATTEN  # #8699b9
+
+## Die hintere Ecke steht in BEIDEN Vorlagen gleich: der Kragen endet in
+## Zeile 32 mit dem mittleren Ton und bricht darunter hart ab. Sie geht
+## deshalb in beide Bilder.
+KRAGEN_ECKE = [((53, 33), KRAGEN_SCHATTEN), ((54, 33), KRAGEN_MITTE)]
+
+## Die Spitze vorn ist in pose_raw anders gezeichnet -- dort liegt gar kein
+## Tuerkis am Kragen. Das Problem gibt es nur im Rumpfbild.
+KRAGEN_SPITZE = [((63, 34), KRAGEN_HELL), ((63, 35), KRAGEN_HELL),
+                 ((60, 36), KRAGEN_HELL), ((62, 36), KRAGEN_HELL),
+                 ((63, 36), KRAGEN_MITTE), ((62, 37), KRAGEN_HELL),
+                 ((63, 37), KRAGEN_MITTE), ((63, 38), KRAGEN_MITTE)]
+
+NUR_RUMPF = [((37, 28), UMRISS),          # Zopfspitze: Umriss, nicht Pullover
+             ((79, 81), BEINSCHATTEN)] + SAUM + KRAGEN_SPITZE
+
 
 def main():
     for name in VORLAGEN:
         pfad = os.path.join(TEILE, name)
         bild = Image.open(pfad).convert("RGBA")
         px = bild.load()
-        for feld, ton in ZOPF + KRAGEN:
+        felder = (ZOPF + KRAGEN + KRAGEN_ECKE
+                  + (NUR_RUMPF if name == "sit3_rumpf.png" else []))
+        for feld, ton in felder:
             px[feld] = ton + (255,)
         bild.save(pfad)
-        print("%s: %d Pixel gesetzt" % (name, len(ZOPF) + len(KRAGEN)))
+        print("%s: %d Pixel gesetzt" % (name, len(felder)))
 
 
 if __name__ == "__main__":

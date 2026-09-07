@@ -50,13 +50,17 @@ def assign(rgb):
                key=lambda p: _distance(rgb, ANCHORS[p]))
 
 def load_table(path):
+    """Die eingefrorene Zuordnung Farbe -> Koerperteil.
+
+    Farben und Herkunft stehen in getrennten Aesten. Vorher lagen sie flach
+    nebeneinander und wurden an der Schluessellaenge auseinandergehalten --
+    ein sechsstelliger Herkunftsschluessel waere als Farbe gelesen worden.
+    """
     with open(path, encoding="utf-8") as fh:
-        raw = json.load(fh)
-    result = {}
-    for k, v in raw.items():
-        # Nur Hex-Farbschluessel verarbeiten (Laenge 6)
-        if len(k) == 6:
-            rgb_key = tuple(int(k[i:i + 2], 16) for i in (0, 2, 4))
-            # Part ist entweder ein String oder ein geteilter Eintrag (dict)
-            result[rgb_key] = v
-    return result
+        roh = json.load(fh)
+    tabelle = {}
+    for schluessel, eintrag in roh["farben"].items():
+        rgb = tuple(int(schluessel[i:i + 2], 16) for i in (0, 2, 4))
+        tabelle[rgb] = ([(int(bis), teil) for bis, teil in eintrag]
+                        if isinstance(eintrag, list) else eintrag)
+    return tabelle
