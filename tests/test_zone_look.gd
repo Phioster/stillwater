@@ -105,10 +105,19 @@ func test_the_line_follows_the_bobber_during_the_cast() -> void:
 	Game.sim.timer = FishingSim.CAST_TIME * 0.5
 	w._process(0.0)
 	var line: Line2D = w.get_node("Line")
+	var punkte: int = w.LINE_POINTS
 	assert_true(line.visible, "die Schnur muss beim Wurf zu sehen sein")
-	assert_eq(line.points.size(), 2)
-	assert_true(line.points[1].is_equal_approx(w.get_node("Bobber").position),
+	## Seit dem Wurfbogen ist die Schnur eine Kurve und keine Gerade mehr:
+	## LINE_POINTS Punkte, und wenn das Vorfach zu sehen ist, haengt darunter
+	## noch einer. Das Ende der SCHNUR ist deshalb Punkt LINE_POINTS - 1.
+	assert_true(line.points.size() == punkte or line.points.size() == punkte + 1,
+		"die Schnur hat %d Punkte, erwartet %d oder %d mit Vorfach"
+		% [line.points.size(), punkte, punkte + 1])
+	assert_true(line.points[punkte - 1].is_equal_approx(w.get_node("Bobber").position),
 		"die Schnur endet nicht am Schwimmer")
+	if line.points.size() > punkte:
+		assert_true(line.points[punkte].y > line.points[punkte - 1].y,
+			"das Vorfach muss unter dem Schwimmer haengen")
 
 ## Beim Wurf zeigt der Angler Bild 2, dessen Rutenspitze tiefer liegt. Die
 ## Schnur muss trotzdem AN der Rute beginnen -- mit einer festen Konstante
