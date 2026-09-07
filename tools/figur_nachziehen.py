@@ -113,8 +113,29 @@ KRAGEN_SPITZE = [((63, 34), KRAGEN_HELL), ((63, 35), KRAGEN_HELL),
                  ((63, 36), KRAGEN_MITTE), ((62, 37), KRAGEN_HELL),
                  ((63, 37), KRAGEN_MITTE), ((63, 38), KRAGEN_MITTE)]
 
-NUR_RUMPF = [((37, 28), UMRISS),          # Zopfspitze: Umriss, nicht Pullover
-             ((79, 81), BEINSCHATTEN)] + SAUM + KRAGEN_SPITZE
+## --- Der Zopfumriss ------------------------------------------------------
+##
+## Der innere Umriss des Zopfs laeuft Spalte 47 hinunter, wechselt aber
+## mittendrin auf zwei hellere Toene (#170e10 und #221d4e) und liest sich
+## dort graulila statt schwarz. Er bekommt durchgehend #05000a -- den Ton,
+## den 33 der 48 Umrisspixel des Zopfs schon tragen und der direkt darueber
+## bei 47,11 steht.
+##
+## In pose_raw gibt es das nicht: dort liegt an allen Stellen einheitlich
+## #270628. Der Fehler stammt aus dem nachgezogenen Rumpfbild.
+ZOPF_UMRISS = [((47, y), UMRISS) for y in range(12, 16)]
+
+## Und ein Umrisspixel, das INNEN im Zopf sitzt statt auf seiner Kante: bei
+## 48,24 ist der rechte Umriss zwei Pixel breit, wo er sonst einer ist.
+## Schwingt der Zopf zum Kopf hin, fuellt dessen Haar dahinter, und der
+## Doppelpixel steht als dunkler Fleck mitten im Haar. Ohne ihn bleibt der
+## Umriss ueber 48,23 -> 49,24 -> 49,25 diagonal verbunden. Vier seiner acht
+## Nachbarn tragen #581153.
+ZOPF_INNEN = [((48, 24), (0x58, 0x11, 0x53))]
+
+NUR_RUMPF = ([((37, 28), UMRISS),          # Zopfspitze: Umriss, nicht Pullover
+              ((79, 81), BEINSCHATTEN)]
+             + SAUM + KRAGEN_SPITZE + ZOPF_UMRISS + ZOPF_INNEN)
 
 
 def main():

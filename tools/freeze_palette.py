@@ -79,9 +79,8 @@ GESICHTET = {
 
     ## Dunkles Blau: oben ein paar Straehnen im Zopf, in der Mitte der
     ## Pullover, unter dem Saum sein Schatten, ganz unten ein Pixel Stiefel.
-    (0x22, 0x1d, 0x4e): [(20, "hair"), (76, "shirt"), (100, "pants"),
-                         (128, "boots")],
-    (0x44, 0x4f, 0x7a): [(20, "hair"), (80, "shirt"), (128, "pants")],
+    (0x22, 0x1d, 0x4e): [(20, "hair"), (100, "shirt"), (128, "boots")],
+    (0x44, 0x4f, 0x7a): [(20, "hair"), (128, "shirt")],
     ## Der Kragenschatten aus tools/figur_nachziehen.py -- zwei Pixel davon
     ## liegen im Zopf, der Rest gehoert zum Kragen.
     (0x86, 0x99, 0xb9): [(20, "hair"), (128, "base")],
