@@ -202,16 +202,21 @@ func _place_hat() -> void:
 	var ruhe := Vector2(AnglerParts.BOX[&"kopf"].position)
 	($Hat as Sprite2D).position = kopf.position - ruhe + Vector2(HAT_OFFSET)
 
-## Die Rute an den Griff dieser Pose schieben. Sie hat ein eigenes Raster --
-## groesser als das der Figur, weil sie beim Ausholen weit hinausragt.
+## Die Rute an den Griff dieses Armzustands schieben. Sie hat ein eigenes
+## Raster -- groesser als das der Figur, weil sie beim Ausholen weit
+## hinausragt -- und zehn Bilder: die Ruhe teilt sich eines mit Wurfbild 0.
 ##
-## Vorlaeufig: sie haengt noch an der alten 24er-Posengeometrie. Aufgabe 5
-## stellt sie auf die elf Armzustaende um.
+## Ein Pixel Atem: im Ruhelauf hat der Arm nur einen Zustand, die Faust steht
+## also still, und ohne diesen Versatz haengt die Rute reglos an einer
+## atmenden Figur. Weil die Spitze 76 Pixel entfernt liegt, wird aus dem einen
+## Pixel am Griff eine sichtbare Bewegung am Ende.
+const ROD_BREATH: int = 1
+
 func _place_rod() -> void:
 	var rod: Sprite2D = $Rod
-	var pose := 0 if _arm == 0 else AnglerPose.CAST_START
-	rod.frame = AnglerPose.ROD_FRAME[pose]
-	rod.position = Vector2(AnglerPose.rod_offset(pose))
+	rod.frame = AnglerPose.ROD_FRAME[AnglerPose.frame_of(_arm)]
+	rod.position = Vector2(AnglerPose.rod_offset(_arm)) \
+		+ Vector2(0, float(_atem * ROD_BREATH))
 
 func _process(delta: float) -> void:
 	_idle_time += delta
@@ -252,5 +257,5 @@ func _on_escaped(_f: FishData) -> void:
 ## liegt sie tiefer als im Ruhebild; eine Konstante in der Welt konnte das
 ## nicht abbilden, und die Schnur begann daneben.
 func rod_tip() -> Vector2:
-	var pose := 0 if _arm == 0 else AnglerPose.CAST_START
-	return position + Vector2(AnglerPose.rod_tip(pose)) * scale
+	return position + (Vector2(AnglerPose.rod_tip(_arm))
+		+ Vector2(0, float(_atem * ROD_BREATH))) * scale

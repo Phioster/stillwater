@@ -32,8 +32,12 @@ func _expected_size(filename: String) -> Vector2i:
 	# Der Hut wird einmal gemalt und haengt am Kopf -- kein Bilderstreifen.
 	if filename.begins_with("char_hat_"):
 		return Vector2i(AnglerPose.FRAME_SIZE, AnglerPose.FRAME_SIZE)
+	# Die alten gebackenen Posenreihen: 24 Bilder im 128er Raster. Sie laedt
+	# niemand mehr -- die Figur kommt aus teil_*.png -- und sie fallen in der
+	# naechsten Aufgabe. Bis dahin die feste Zahl: die Konstante, die sie
+	# beschrieb (AnglerPose.FRAMES), gibt es schon nicht mehr.
 	if filename.begins_with("char_"):
-		return Vector2i(AnglerPose.FRAME_SIZE * AnglerPose.FRAMES, AnglerPose.FRAME_SIZE)
+		return Vector2i(AnglerPose.FRAME_SIZE * 24, AnglerPose.FRAME_SIZE)
 	if filename.begins_with("teil_"):
 		var name := _teil_name(filename)
 		if name == &"":
@@ -173,7 +177,7 @@ func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 	if tex == null:
 		return
 	var img := tex.get_image()
-	for f in AnglerPose.FRAMES:
+	for f in AnglerPose.ROD_STATES:
 		# Im eigenen Rutenbild liegt der Griff IMMER auf ROD_GRIP -- die
 		# Spitze also dort plus dem Versatz dieser Pose.
 		var r: int = AnglerPose.ROD_FRAME[f]
@@ -195,6 +199,51 @@ func test_the_rod_tip_is_where_the_pixels_are_in_every_frame() -> void:
 					around += 1
 		assert_true(around > 40,
 			"Bild %d: um die Hand liegt kaum Rute (%d Pixel)" % [f, around])
+func test_der_griff_sitzt_in_der_hand_jedes_armzustands() -> void:
+	var tex := TextureLoader.load_texture("%s/teil_arm_skin.png" % ART_DIR)
+	assert_true(tex != null, "teil_arm_skin.png nicht ladbar")
+	if tex == null:
+		return
+	var img := tex.get_image()
+	var box: Rect2i = AnglerParts.BOX[&"arm"]
+	for f in AnglerPose.ROD_STATES:
+		var grip: Vector2i = AnglerPose.rod_grip(f)
+		var p := Vector2i(f * box.size.x + grip.x - box.position.x,
+			grip.y - box.position.y)
+		assert_true(p.x >= 0 and p.x < img.get_width()
+			and p.y >= 0 and p.y < img.get_height(),
+			"Zustand %d: der Griff %s liegt ausserhalb des Armblatts" % [f, grip])
+		if p.x < 0 or p.x >= img.get_width() or p.y < 0 or p.y >= img.get_height():
+			continue
+		# Um den Griff herum, nicht auf ihm: dort ist die Faust, und die Rute
+		# wird darunter weggenommen.
+		var herum := 0
+		for dy in range(-3, 4):
+			for dx in range(-3, 4):
+				var q := Vector2i(p.x + dx, p.y + dy)
+				if q.x < 0 or q.x >= img.get_width() \
+					or q.y < 0 or q.y >= img.get_height():
+					continue
+				if img.get_pixel(q.x, q.y).a > 0.0:
+					herum += 1
+		assert_true(herum > 8,
+			"Zustand %d: um den Griff liegt kaum Hand (%d Pixel)" % [f, herum])
+
+func test_die_rute_hat_elf_zustaende() -> void:
+	assert_eq(AnglerPose.ROD_ANCHOR.size(), AnglerPose.ROD_STATES)
+	assert_eq(AnglerPose.ROD_TIP_OFF.size(), AnglerPose.ROD_STATES)
+	assert_eq(AnglerPose.ROD_FRAME.size(), AnglerPose.ROD_STATES)
+
+## Es ist EINE gezeichnete Rute, nur anders gehalten -- alle Zustaende tragen
+## dieselbe Laenge. Frueher streckte jede Wurfpose sie auf ihren eigenen
+## Versatz, und sie wurde waehrend des Wurfs sichtbar laenger und kuerzer.
+func test_die_rute_behaelt_ihre_laenge() -> void:
+	var erste := Vector2(AnglerPose.ROD_TIP_OFF[0]).length()
+	for f in AnglerPose.ROD_STATES:
+		assert_between(Vector2(AnglerPose.ROD_TIP_OFF[f]).length(),
+			erste - 1.5, erste + 1.5,
+			"Zustand %d: die Rute ist %.1f statt %.1f Pixel lang"
+			% [f, Vector2(AnglerPose.ROD_TIP_OFF[f]).length(), erste])
 
 ## Die Rute muss eine durchgehende Linie sein, kein Punktmuster. Vorne ist
 ## der Schaft nur noch einen Pixel dick, und eine Ein-Pixel-Linie zerfaellt
@@ -206,7 +255,7 @@ func test_the_rod_is_an_unbroken_line() -> void:
 	if tex == null:
 		return
 	var img := tex.get_image()
-	for f in AnglerPose.FRAMES:
+	for f in AnglerPose.ROD_STATES:
 		var r: int = AnglerPose.ROD_FRAME[f]
 		var off := Vector2(AnglerPose.ROD_TIP_OFF[f])
 		var length := off.length()
@@ -226,98 +275,3 @@ func test_the_rod_is_an_unbroken_line() -> void:
 			if not hit:
 				holes += 1
 		assert_eq(holes, 0, "Bild %d: die Rute hat %d Loecher auf ihrer Achse" % [f, holes])
-
-## Es ist EINE Rute, nur anders gehalten: alle Posen tragen dieselbe Laenge.
-## Frueher streckte jede Wurfpose sie auf ihren eigenen Versatz, und sie wurde
-## waehrend des Wurfs sichtbar laenger und wieder kuerzer (79 bis 104 Pixel).
-func test_the_rod_keeps_its_length_in_every_pose() -> void:
-	var first := Vector2(AnglerPose.ROD_TIP_OFF[0]).length()
-	for f in AnglerPose.FRAMES:
-		assert_between(Vector2(AnglerPose.ROD_TIP_OFF[f]).length(), first - 1.5, first + 1.5,
-			"Bild %d: die Rute ist %.1f statt %.1f Pixel lang"
-			% [f, Vector2(AnglerPose.ROD_TIP_OFF[f]).length(), first])
-
-
-## Die Rute muss vollstaendig in IHR Bild passen -- sonst blutet sie in das
-## naechste und ist dort als zweite Rute zu sehen. Seit sie ein eigenes,
-## groesseres Raster hat, ist das nicht mehr der Rahmen der Figur: im Feld
-## der Figur waere beim Ausholen nur Platz fuer 61 Pixel Rute.
-func test_the_rod_fits_inside_its_own_frame() -> void:
-	var limit := float(AnglerPose.ROD_FRAME_SIZE - 1)
-	for f in AnglerPose.FRAMES:
-		for i in 33:
-			var p := AnglerPose.rod_point(f, float(i) / 32.0) \
-				- Vector2(AnglerPose.rod_offset(f))
-			assert_between(p.x, 2.0, limit - 2.0,
-				"Bild %d: die Rute laeuft waagerecht aus ihrem Rahmen (%s)" % [f, p])
-			assert_between(p.y, 2.0, limit - 2.0,
-				"Bild %d: die Rute laeuft senkrecht aus ihrem Rahmen (%s)" % [f, p])
-
-## Der Griff muss in der HAND der gezeichneten Figur liegen, nicht nur dort,
-## wo das Rutenblatt Pixel hat -- das Blatt wird ja aus denselben Ankern
-## erzeugt und bestaetigt sich sonst selbst. Die Hand wandert von Pose zu
-## Pose, im Ruhelauf um bis zu zehn Pixel.
-func test_the_grip_sits_in_the_hand_in_every_frame() -> void:
-	var tex := TextureLoader.load_texture("%s/char_skin_0.png" % ART_DIR)
-	assert_true(tex != null)
-	if tex == null:
-		return
-	var img := tex.get_image()
-	for f in AnglerPose.FRAMES:
-		var grip := AnglerPose.rod_grip(f)
-		var p := Vector2i(f * AnglerPose.FRAME_SIZE + grip.x, grip.y)
-		assert_true(img.get_pixel(p.x, p.y).a > 0.0,
-			"Bild %d: der Griff %s liegt neben der Hand" % [f, grip])
-
-func _schritt(img: Image, a: int, b: int, frame_size: int) -> int:
-	## Zahl der Pixel, die in genau einem der beiden Bilder sichtbar sind.
-	var count := 0
-	var ax := a * frame_size
-	var bx := b * frame_size
-	for y in frame_size:
-		for x in frame_size:
-			var px_a := img.get_pixel(ax + x, y).a > 0.0
-			var px_b := img.get_pixel(bx + x, y).a > 0.0
-			if px_a != px_b:
-				count += 1
-	return count
-
-## Der Ruhelauf darf nicht sichtbar springen. Frueher stand hier "jeder Schritt
-## geht um genau ein Bild weiter" -- das setzte einen Pingpong voraus und war
-## rot, sobald die Reihenfolge eine geschlossene Schleife ist. Gemessen wird
-## jetzt, was gemeint war.
-func test_the_idle_loop_does_not_jump() -> void:
-	var tex := TextureLoader.load_texture("%s/char_base_0.png" % ART_DIR)
-	assert_true(tex != null, "char_base_0.png nicht ladbar")
-	if tex == null:
-		return
-	var img := tex.get_image()
-	var frame_size := AnglerPose.FRAME_SIZE
-
-	# groesster_nachbar: Maximum der Schritte 0→1, 1→2, ..., 7→8
-	var groesster_nachbar := 0
-	for i in range(AnglerPose.IDLE_FRAMES - 1):
-		groesster_nachbar = maxi(groesster_nachbar, _schritt(img, i, i + 1, frame_size))
-
-	# Reihenfolge-Prüfungen
-	var order := AnglerPose.IDLE_ORDER
-	assert_true(order.size() >= AnglerPose.IDLE_FRAMES,
-		"der Ruhelauf laesst gezeichnete Bilder ungenutzt: %s" % [order])
-	for f in AnglerPose.IDLE_FRAMES:
-		assert_true(order.has(f), "Bild %d kommt im Ruhelauf nicht vor" % f)
-	for frame_idx in order.size():
-		var a: int = order[frame_idx]
-		assert_true(a >= 0 and a < AnglerPose.IDLE_FRAMES,
-			"der Ruhelauf zeigt Bild %d, das kein Ruhebild ist" % a)
-
-	# groesster_schritt: Maximum über die ganze Reihenfolge, inkl. Rundschluss
-	var groesster_schritt := 0
-	for i in order.size():
-		var a: int = order[i]
-		var b: int = order[(i + 1) % order.size()]
-		groesster_schritt = maxi(groesster_schritt, _schritt(img, a, b, frame_size))
-
-	# Zusicherung: 1.25-Faktor
-	var schwelle := float(groesster_nachbar) * 1.25
-	assert_true(float(groesster_schritt) <= schwelle,
-		"Ruhelauf springt: %d Pixel vs %.0f (Faktor: %.2f)" % [groesster_schritt, schwelle, float(groesster_schritt) / float(groesster_nachbar)])

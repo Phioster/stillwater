@@ -141,10 +141,13 @@ func test_the_line_starts_at_the_rod_in_every_pose() -> void:
 func test_the_rod_tip_moves_between_poses() -> void:
 	var w := _cast_world()
 	var angler = w.get_node("Angler")
-	## Armzustand 0 ist die Ruhe, ab 1 laeuft der Wurf.
+	## Armzustand 0 ist die Ruhe, ab 1 laeuft der Wurf. Zustand 1 taugt hier
+	## NICHT: er ist dasselbe Bild wie die Ruhe (sit3_arm_nah.png und
+	## wurf_arm_0.png sind byteweise gleich), die Spitze steht also still.
+	## Zustand 5 ist das weiteste Ausholen.
 	angler.set_pose(0, 0, 0, 0, &"open", 0)
 	var idle: Vector2 = angler.rod_tip()
-	angler.set_pose(0, 0, 0, 0, &"open", 1)
+	angler.set_pose(0, 0, 0, 0, &"open", 5)
 	var cast: Vector2 = angler.rod_tip()
 	assert_true(not idle.is_equal_approx(cast),
 		"die Rutenspitze steht in jeder Pose gleich: %s" % idle)
