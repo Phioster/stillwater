@@ -113,24 +113,78 @@ func set_pose(atem: int, zopf: int, seit: int, bein: int, auge: StringName,
 ## Kerns: eine zweite Uhr fuer den Wurf koennte davon abdriften, und dann
 ## stuende die Figur noch beim Ausholen, waehrend der Koeder schon im Wasser
 ## liegt.
-## Drei Bilder je Sekunde: der Ruhelauf hat neun Schritte (Index 0-8), das macht
-## drei Sekunden je Atemzug. Der Zopf schwingt rund zwanzig Pixel aus, und ein
-## Ausschlag dieser Groesse braucht Zeit -- schneller schlug er wie eine Peitsche.
-const IDLE_FPS: float = 3.0
+##
+## Ein Atemzug dauert so lange wie in der Vorschau: 32 Schritte zu 100 ms.
+## Frueher standen hier neun Bilder zu drei je Sekunde -- die Zahl kam aus der
+## Bilderreihe, nicht aus der Figur. Der Zopf schwingt rund zwanzig Pixel aus,
+## und ein Ausschlag dieser Groesse braucht Zeit; schneller schlug er wie eine
+## Peitsche.
+const BREATH_TIME: float = 3.2
+## Ein voller Beinschwung: 24 Schritte zu 100 ms.
+const LEG_TIME: float = 2.4
+## Wie weit die Beine schwingen. Im Umkehrpunkt neu gezogen -- DAS ist der
+## Grund, warum im Spiel gerechnet und nicht gebacken wird. Ein fester Wert
+## sieht nach Uhrwerk aus.
+const LEG_SPREAD_MIN: int = 2
+const LEG_SPREAD_MAX: int = 6
+
 ## Wie lange ein Blinzeln dauert und wie oft es kommt. Nicht im Atemtakt:
-## ein Atemzug dauert drei Sekunden, so oft blinzelt niemand.
-const BLINK_TIME: float = 0.12
+## ein Atemzug dauert gut drei Sekunden, so oft blinzelt niemand.
 const BLINK_MIN: float = 2.5
 const BLINK_MAX: float = 6.0
+## Halb, zu, halb -- dieselben Zeiten wie tools/wurf_lauf.BLINZELN.
+const BLINK_PHASES: Array[float] = [0.055, 0.090, 0.055]
+const BLINK_EYES: Array[StringName] = [&"half", &"closed", &"half"]
 
 var _idle_time: float = 0.0
+var _leg_time: float = 0.0
+var _leg_spread: int = 4
+var _leg_sign: int = 0
 var _blink_in: float = 3.0
 var _blink_left: float = 0.0
 
-func play_state(frame: int) -> void:
-	## Bleibt bis Aufgabe 3, damit die alten Aufrufer nicht brechen.
-	set_pose(0, 0, 0, 0, &"open",
-		0 if frame < AnglerPose.CAST_START else 1)
+## Atem und Zopfweite aus der Phase des Atemzugs. Dieselben Formeln wie
+## tools/wurf_lauf.atem_und_zopf() -- tests/test_angler_motion.gd haelt beide
+## Reihen gegeneinander.
+func breath_at(t: float) -> Vector2i:
+	var p := fposmod(t, 1.0)
+	return Vector2i(1 if sin(TAU * p) < 0.0 else 0,
+		int(round(2.0 * sin(TAU * (p - 0.12)))))
+
+func leg_at(spread: int, t: float) -> int:
+	return int(round(float(spread) * sin(TAU * fposmod(t, 1.0))))
+
+## Der Beinschwung, und die Weite im Umkehrpunkt neu gezogen. Mittendrin
+## gezogen spraenge das Bein sichtbar.
+func _legs(delta: float) -> int:
+	_leg_time += delta
+	var t := fposmod(_leg_time / LEG_TIME, 1.0)
+	var schwung := sin(TAU * t)
+	var richtung := 1 if schwung >= 0.0 else -1
+	if _leg_sign != 0 and richtung != _leg_sign:
+		_leg_spread = randi_range(LEG_SPREAD_MIN, LEG_SPREAD_MAX)
+	_leg_sign = richtung
+	return leg_at(_leg_spread, t)
+
+## Welches Auge gerade dran ist. Gibt &"open" zurueck, wenn gerade nicht
+## geblinzelt wird.
+func _blink(delta: float) -> StringName:
+	if _blink_left > 0.0:
+		_blink_left -= delta
+		var rest := _blink_left
+		for i in range(BLINK_PHASES.size() - 1, -1, -1):
+			if rest <= BLINK_PHASES[i]:
+				return BLINK_EYES[i]
+			rest -= BLINK_PHASES[i]
+		return BLINK_EYES[0]
+	_blink_in -= delta
+	if _blink_in <= 0.0:
+		var ganz := 0.0
+		for ph in BLINK_PHASES:
+			ganz += ph
+		_blink_left = ganz
+		_blink_in = randf_range(BLINK_MIN, BLINK_MAX)
+	return &"open"
 
 ## Die Rute an den Griff dieser Pose schieben. Sie hat ein eigenes Raster --
 ## groesser als das der Figur, weil sie beim Ausholen weit hinausragt.
@@ -144,40 +198,39 @@ func _place_rod() -> void:
 	rod.position = Vector2(AnglerPose.rod_offset(pose))
 
 func _process(delta: float) -> void:
+	_idle_time += delta
+	var atem := breath_at(_idle_time / BREATH_TIME)
 	match Game.sim.state:
 		FishingSim.State.CASTING:
-			var left: float = clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
-			var span := AnglerPose.FRAMES - AnglerPose.CAST_START
-			play_state(AnglerPose.CAST_START + int((1.0 - left) * float(span)))
+			var left: float = clampf(Game.sim.timer / FishingSim.CAST_TIME,
+				0.0, 1.0)
+			var n := AnglerParts.CAST_ZOPF.size()
+			var f: int = clampi(int((1.0 - left) * float(n)), 0, n - 1)
+			_cast_pose(atem, f)
 		FishingSim.State.FIGHT:
 			# Arm vorn, Rute unter Zug -- das letzte Wurfbild.
-			play_state(AnglerPose.FRAMES - 1)
+			_cast_pose(atem, AnglerParts.CAST_ZOPF.size() - 1)
 		_:
-			# Stillstehen sieht tot aus: ein Atemzug hin und zurueck, und
-			# hin und wieder ein Blinzeln dazwischen.
-			_idle_time += delta
-			var step := int(_idle_time * IDLE_FPS) % AnglerPose.IDLE_ORDER.size()
-			var pose: int = AnglerPose.IDLE_ORDER[step]
-			if _blink_left > 0.0:
-				_blink_left -= delta
-				# Der Blinzelzwilling DIESES Ruhebildes, nicht ein fester:
-				# sonst spraenge der Kopf fuer den Augenblick zurueck.
-				play_state(AnglerPose.BLINK_START + pose)
-				return
-			_blink_in -= delta
-			if _blink_in <= 0.0:
-				_blink_left = BLINK_TIME
-				_blink_in = randf_range(BLINK_MIN, BLINK_MAX)
-			play_state(pose)
+			# Stillstehen sieht tot aus: ein Atemzug hin und zurueck, die
+			# Beine baumeln, und hin und wieder ein Blinzeln dazwischen.
+			set_pose(atem.x, atem.y, 0, _legs(delta), _blink(delta), 0)
+
+## Beim Werfen schwingen die Beine nach dem gemessenen Muster; Atem und Zopf
+## laufen weiter, und der Kopf lehnt zurueck.
+func _cast_pose(atem: Vector2i, f: int) -> void:
+	set_pose(atem.x, atem.y + int(AnglerParts.CAST_ZOPF[f]),
+		int(AnglerParts.CAST_HEAD[f]), int(AnglerParts.CAST_LEGS[f]),
+		&"open", f + 1)
 
 func _on_bite(_fish: FishData) -> void:
-	play_state(AnglerPose.FRAMES - 1)
+	_cast_pose(breath_at(_idle_time / BREATH_TIME),
+		AnglerParts.CAST_ZOPF.size() - 1)
 
 func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
-	play_state(0)
+	set_pose(0, 0, 0, 0, &"open", 0)
 
 func _on_escaped(_f: FishData) -> void:
-	play_state(0)
+	set_pose(0, 0, 0, 0, &"open", 0)
 
 ## Die Rutenspitze in Weltkoordinaten -- fuer das aktuelle Bild. Beim Wurf
 ## liegt sie tiefer als im Ruhebild; eine Konstante in der Welt konnte das

@@ -29,6 +29,7 @@ const SUITES := [
 	"res://tests/test_export_anchors.gd",
 	"res://tests/test_sprite_assets.gd",
 	"res://tests/test_angler_parts.gd",
+	"res://tests/test_angler_motion.gd",
 	"res://tests/test_effects.gd",
 	"res://tests/test_water_surface.gd",
 	"res://tests/test_zone_look.gd",
