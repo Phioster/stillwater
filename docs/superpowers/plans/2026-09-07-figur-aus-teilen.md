@@ -33,6 +33,8 @@
 
 ## Stufe 1 — Die Teile stapeln sich
 
+> **Erledigt am 2026-09-07.** `e68d795` (Zeichnung), `ef437fb` (Aufgabe 1), `b775c3b` (Aufgabe 2).
+
 ### Aufgabe 1: Das Zusammensetzen erfindet keinen Pixel
 
 `zusammensetzen()` malt heute zweierlei nach: Haar dort, wo der Zopf wegschwingt, und Füllfarbe in eingeschlossenen Lücken. Beides muss weg — nachgemessen liegen 16 der 17 gefüllten Stellen gar nicht auf Kopfpixeln, die Füllung verbreitert also den Hinterkopf über das Gezeichnete hinaus.
@@ -45,7 +47,7 @@
 - Nutzt: `figure_parts.split()`, `figure_parts.eye_state()`, `figure_parts.swing()`, `preview_parts._punkte()`
 - Liefert: `zusammensetzen()` mit unveränderter Signatur, aber ohne jede Füllung. Aufgabe 2 und Stufe 2 bauen darauf auf.
 
-- [ ] **Schritt 1: Den fehlschlagenden Test schreiben**
+- [x] **Schritt 1: Den fehlschlagenden Test schreiben**
 
 Neue Datei `tools/tests/test_preview_parts.py`:
 
@@ -141,7 +143,7 @@ if __name__ == "__main__":
     unittest.main()
 ```
 
-- [ ] **Schritt 2: Test laufen lassen, Fehlschlag bestätigen**
+- [x] **Schritt 2: Test laufen lassen, Fehlschlag bestätigen**
 
 ```
 python3 -m unittest tools.tests.test_preview_parts -v
@@ -149,7 +151,7 @@ python3 -m unittest tools.tests.test_preview_parts -v
 
 Erwartet: FAIL in `test_jeder_pixel_stammt_aus_einem_teil`, mit Stellen um x 46–49 / y 15–27 — dort füllt die Zopfregel.
 
-- [ ] **Schritt 3: Die Füllungen entfernen**
+- [x] **Schritt 3: Die Füllungen entfernen**
 
 In `tools/preview_parts.py` `zusammensetzen()` ganz durch diese Fassung ersetzen und `_luecken_schliessen()` samt Aufruf löschen:
 
@@ -205,7 +207,7 @@ def zusammensetzen(ebenen, koepfe, atem, zopfweite, beinweite, auge,
     return out
 ```
 
-- [ ] **Schritt 4: Test laufen lassen, Erfolg bestätigen**
+- [x] **Schritt 4: Test laufen lassen, Erfolg bestätigen**
 
 ```
 python3 -m unittest tools.tests.test_preview_parts -v
@@ -213,7 +215,7 @@ python3 -m unittest tools.tests.test_preview_parts -v
 
 Erwartet: PASS.
 
-- [ ] **Schritt 5: Nachsehen, was sich am Bild geändert hat**
+- [x] **Schritt 5: Nachsehen, was sich am Bild geändert hat**
 
 ```
 python3 -m tools.preview_parts
@@ -221,7 +223,7 @@ python3 -m tools.preview_parts
 
 Der Hinterkopf wird an der Zopfkante um bis zu vier Pixel schmaler, und bei Kopf +1 / Atem 0 stehen drei Löcher offen. Beides ist erwartet; die Löcher schließt Aufgabe 2. Das GIF dem Menschen vorlegen.
 
-- [ ] **Schritt 6: Ganze Suite und Commit**
+- [x] **Schritt 6: Ganze Suite und Commit**
 
 ```bash
 bash tools/test.sh
@@ -235,6 +237,18 @@ Commit-Body: warum die Zopffüllung falsch war (16 von 17 Stellen ohne Kopf dahi
 
 ### Aufgabe 2: Kein eingeschlossenes Loch
 
+> **Erledigt am 2026-09-07 (`b775c3b`), aber anders als hier geplant.** Die
+> Schritte unten stehen als Beleg dafür, was versucht wurde. Beim Ausführen
+> waren es **acht** Löcher statt drei, und keines war mit festen
+> Unterlagepixeln zu schließen: an fünf Stellen liegt im Ruhezustand gar
+> nichts, ein Unterlagepixel machte die Figur dort im Stand größer. Gemessen
+> wurde außerdem, dass der Zopf allein bei keiner seiner Weiten reißt — es
+> ist eine Naht zwischen zwei Teilen. Gebaut ist deshalb die Unterscheidung
+> *offen bleibt offen, eingeschlossen wird geschlossen*:
+> `roh_zusammensetzen()` legt übereinander, `naht()` findet die
+> eingeschlossenen Lücken, `zusammensetzen()` setzt beides zusammen.
+> `RUMPF_UNTERLAGE` blieb bei einem Eintrag.
+
 Die drei Löcher am Hals bekommen eine Unterlage im Rumpf — dieselbe Bauart wie das schon vorhandene `(60, 32)`.
 
 **Dateien:**
@@ -245,7 +259,7 @@ Die drei Löcher am Hals bekommen eine Unterlage im Rumpf — dieselbe Bauart wi
 - Nutzt: `figure_parts.RUMPF_UNTERLAGE`, von `figure_parts.split()` in die Rumpfebene gelegt
 - Liefert: eine Figur ohne eingeschlossene Löcher in jedem Zustand
 
-- [ ] **Schritt 1: Den fehlschlagenden Test schreiben**
+- [x] **Schritt 1: Den fehlschlagenden Test schreiben**
 
 In `tools/tests/test_preview_parts.py` in die Klasse `TestZusammensetzen` einfügen:
 
@@ -274,7 +288,7 @@ In `tools/tests/test_preview_parts.py` in die Klasse `TestZusammensetzen` einfü
         self.assertEqual([], sorted(set(loecher))[:5])
 ```
 
-- [ ] **Schritt 2: Test laufen lassen, Fehlschlag bestätigen**
+- [x] **Schritt 2: Test laufen lassen, Fehlschlag bestätigen**
 
 ```
 python3 -m unittest tools.tests.test_preview_parts.TestZusammensetzen.test_kein_eingeschlossenes_loch -v
@@ -282,7 +296,7 @@ python3 -m unittest tools.tests.test_preview_parts.TestZusammensetzen.test_kein_
 
 Erwartet: FAIL mit genau drei verschiedenen Stellen — `49,23`, `55,30` und `57,31`, alle bei Kopf +1 / Atem 0.
 
-- [ ] **Schritt 3: Die Unterlage eintragen**
+- [x] **Schritt 3: Die Unterlage eintragen**
 
 In `tools/figure_parts.py` `RUMPF_UNTERLAGE` ersetzen:
 
@@ -304,7 +318,7 @@ RUMPF_UNTERLAGE = {
 }
 ```
 
-- [ ] **Schritt 4: Test laufen lassen, Erfolg bestätigen**
+- [x] **Schritt 4: Test laufen lassen, Erfolg bestätigen**
 
 ```
 python3 -m unittest tools.tests.test_preview_parts -v
@@ -312,7 +326,7 @@ python3 -m unittest tools.tests.test_preview_parts -v
 
 Erwartet: beide Tests PASS. Der Test aus Aufgabe 1 muss **mitgrün bleiben** — die Unterlage liegt in der Rumpfebene und zählt damit als Teil, nicht als Erfindung.
 
-- [ ] **Schritt 5: Nachsehen und ganze Suite**
+- [x] **Schritt 5: Nachsehen und ganze Suite**
 
 ```
 python3 -m tools.preview_parts
@@ -321,7 +335,7 @@ bash tools/test.sh
 
 Die Löcher sind zu, der schmalere Hinterkopf bleibt. GIF vorlegen.
 
-- [ ] **Schritt 6: Commit**
+- [x] **Schritt 6: Commit**
 
 ```bash
 git add tools/figure_parts.py tools/tests/test_preview_parts.py
@@ -379,7 +393,7 @@ class TestRahmen(unittest.TestCase):
 
     def test_jedes_teil_hat_seine_zustaende(self):
         ## Die Zahlen stehen in der Spec und sind am Bild gemessen.
-        self.assertEqual(5, len(self.zustaende["zopf"]))
+        self.assertEqual(11, len(self.zustaende["zopf"]))
         self.assertEqual(2, len(self.zustaende["kopf"]))
         self.assertEqual(1, len(self.zustaende["rumpf"]))
         self.assertEqual(13, len(self.zustaende["beine"]))
@@ -460,7 +474,18 @@ TEILE = os.path.join(SRC, "parts")
 ## Die Zustaende je Teil, alle am Bild gemessen (siehe die Spec vom
 ## 2026-09-07). Der Atemzug hat zwar 32 Schritte, aber nur acht verschiedene
 ## Atem/Zopf-Zustaende -- beide haengen an derselben Phase.
-ZOPF_WEITEN = (-2, -1, 0, 1, 2)
+## Der Zopf haengt nicht nur an seiner eigenen Weite, sondern auch am
+## Kopfversatz: die Naht zwischen ihm und dem Kopf liegt je nach beidem
+## woanders, und sie muss ins Blatt gebacken werden -- im Spiel schliesst sie
+## niemand zur Laufzeit. Sein Zustand ist deshalb das PAAR. Gemessen wird es
+## am Ablauf selbst, nicht getippt: er erreicht elf davon, und der Zopf
+## schwingt im Wurf bis +5, nicht nur bis +2 wie im Ruhelauf.
+def zopf_paare():
+    from tools import wurf_lauf as wl
+    return sorted({(zopf, seit)
+                   for _, _, _, zopf, _, _, _, seit, _ in wl.ablauf()})
+
+
 ATEM = (0, 1)
 BEIN_WEITEN = tuple(range(-6, 7))
 AUGEN = ("open", "half", "closed")
@@ -502,6 +527,30 @@ def _augenauflage(kopf):
     return aus
 
 
+def _zopf_mit_naht(ebenen, koepfe, zopfweite, kopf_seit):
+    """Der geschorene Zopf, und die Naht zum Kopf gleich mit im Bild.
+
+    Der Kopfversatz steckt NICHT im Bild -- er wird beim Zusammensetzen als
+    Versatz des Sprites gesetzt, wie der Atem. Fuer die Naht braucht es ihn
+    trotzdem: sie liegt je nach Versatz woanders.
+    """
+    aus = _verschoben(ebenen["ponytail"],
+                      lambda x, y: (x + fp.swing(y, zopfweite,
+                                                 fp.ZOPF_GUMMI_Y,
+                                                 fp.ZOPF_SPITZE_Y), y))
+    ap = aus.load()
+    for atem in ATEM:
+        roh = pp.roh_zusammensetzen(ebenen, koepfe, atem, zopfweite, 0,
+                                    "open", kopf_seit)
+        for (x, y), ton in pp.naht(roh).items():
+            ## Zurueck in die Koordinaten des Zopfblatts: ohne Kopfversatz,
+            ## ohne Atem.
+            fx, fy = x - kopf_seit, y - atem
+            if 0 <= fx < fp.FRAME and 0 <= fy < fp.FRAME:
+                ap[fx, fy] = ton + (255,)
+    return aus
+
+
 def zustaende(ebenen, koepfe):
     """Je Teil die Bilder aller seiner Zustaende, im 128er Feld.
 
@@ -522,12 +571,8 @@ def zustaende(ebenen, koepfe):
         return aus
 
     aus = {
-        "zopf": [_verschoben(ebenen["ponytail"],
-                             lambda x, y, w=w: (x + fp.swing(y, w,
-                                                             fp.ZOPF_GUMMI_Y,
-                                                             fp.ZOPF_SPITZE_Y),
-                                                y))
-                 for w in ZOPF_WEITEN],
+        "zopf": [_zopf_mit_naht(ebenen, koepfe, w, seit)
+                 for w, seit in zopf_paare()],
         "kopf": [kopfteil(rest, koepfe["open"], a) for a in ATEM],
         "hals": [kopfteil(hals, koepfe["open"], a) for a in ATEM],
         "rumpf": [_verschoben(ebenen["torso"], lambda x, y: (x, y))],
@@ -570,7 +615,7 @@ Hinweis für den Umsetzer: die Zustände des Zopfs und der Beine tragen den Atem
 python3 -m unittest tools.tests.test_teile_bauen -v
 ```
 
-Erwartet: PASS. Die Rahmen müssen den Zahlen der Spec entsprechen — Zopf 19×33, Kopf 25×28, Rumpf 45×59, Beine 39×36, Arm 32×36, Arm fern 7×19. Weicht einer ab, **nicht den Test anpassen**, sondern melden: dann stimmt eine Annahme der Spec nicht mehr.
+Erwartet: PASS. Die Rahmen müssen den Zahlen der Spec entsprechen — Zopf 19×34, Kopf 25×28, Rumpf 45×59, Beine 39×36, Arm 32×36, Arm fern 7×19. Weicht einer ab, **nicht den Test anpassen**, sondern melden: dann stimmt eine Annahme der Spec nicht mehr.
 
 - [ ] **Schritt 5: Commit**
 

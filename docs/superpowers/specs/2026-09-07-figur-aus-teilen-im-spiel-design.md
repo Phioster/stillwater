@@ -31,7 +31,7 @@ läuft**: das Spiel ist nicht fertig, weitere Pixelart kommt dazu.
 | heute, 24 volle 128er Bilder | 393 216 | 1,57 MB |
 | **A** — alles in GDScript rechnen | 0 | (dafür Rechenzeit je Bild) |
 | **B** — Zustände als volle 128er Bilder backen | 671 744 | 2,69 MB |
-| **C** — je Teil ein zugeschnittenes Blatt | **41 047** | **0,16 MB** |
+| **C** — je Teil ein zugeschnittenes Blatt | **42 254** | **0,17 MB** |
 
 **Gewählt: C.** Der Zopf ist 19×33 Pixel groß; ihn als volles 128×128-Bild zu
 backen verschenkt das Sechzehnfache. Zur Laufzeit tun B und C beide fast
@@ -47,16 +47,23 @@ wurde die Konstante nicht mitgezogen.
 
 | Teil | Rahmen | Zustände | woher |
 |---|---|---|---|
-| Zopf | 19×33 | 5 | Scherung −2…+2 am Haargummi |
+| Zopf | 19×34 | 11 | Paare aus Scherung und Kopfversatz, die der Ablauf erreicht |
 | Kopf | 25×28 | 2 | Atem: 0 oder 1 Pixel tiefer |
 | Rumpf | 45×59 | 1 | steht still |
 | Beine | 39×36 | 13 | Scherung −6…+6 am Knie |
 | Arm nah | 32×36 | 11 | Ruhe + zehn Wurfbilder |
 | Arm fern | 7×19 | 1 | steht still |
+| Auge | 4×3 | 3 | offen, halb, zu |
 
 Der Atemzug hat 32 Schritte, aber nur **acht verschiedene** Atem/Zopf-Zustände
 — Atem und Zopf hängen an derselben Phase. Die dreizehn Beinausschläge decken
 auch den Wurf ab (`BEIN_WURF` bringt keinen neuen Wert).
+
+**Korrektur vom 2026-09-07, beim Umsetzen gemessen:** der Zopf schwingt im
+Ruhelauf ±2, im **Wurf aber bis +5** (`wurf_lauf.zopf_im_wurf`). Und er hängt
+nicht nur an seiner eigenen Weite, sondern auch am Kopfversatz — siehe den
+nächsten Abschnitt. Der Ablauf erreicht davon elf Paare; die sind die
+Zustände des Zopfblatts.
 
 Das **Auge** ist kein eigener Zustand des Kopfes, sondern eine Auflage von neun
 bzw. sieben Pixeln (`figure_parts.AUGE_HALB`, `AUGE_ZU`). Es liegt seit
@@ -65,30 +72,50 @@ Varianten: **ein** Blatt mit drei Bildern, das mit dem Kopfversatz mitgeht.
 
 ## Was sich stapelt und was nicht
 
-Die Vorschau setzt heute nicht einfach übereinander, sie füllt zweimal Lücken.
-Nachgemessen über alle acht Atem/Zopf-Zustände:
+Die Vorschau setzte die Teile nicht einfach übereinander, sie füllte zweimal
+Lücken. Beim Umsetzen ist beides gemessen worden, und der Befund fiel anders
+aus als hier zuerst angenommen.
 
-**Der Zopf braucht keine Unterlage.** 73 Stellen gibt er frei, an denen er frei
-hängt — dort ist Hintergrund, und die Lücke ist richtig. Die übrigen 17 füllt
-die Vorschau mit dem Ton des Kopfhaars; von ihnen liegen aber **16 gar nicht
-auf Kopfpixeln**, der Kopf schließt nur rechts an. Die Füllung erfindet dort
-Haar und macht den Hinterkopf breiter, als er gezeichnet ist. Die eine Ausnahme
-(47/16) übermalt der Kopf ohnehin.
+**Der Zopf braucht keine Unterlage.** 73 Stellen gibt er frei, an denen er
+frei hängt — dort ist Hintergrund, und die Lücke ist richtig. Die übrigen 17
+füllte die Vorschau mit dem Ton des Kopfhaars; von ihnen liegen aber **16 gar
+nicht auf Kopfpixeln**, der Kopf schließt nur rechts an. Die Füllung erfand
+dort Haar und machte den Hinterkopf breiter, als er gezeichnet ist. Sie ist
+mit `ef437fb` entfallen.
 
-→ Die Füllung entfällt. Der Zopf stapelt sich sauber.
+**Aber die Naht muss zu.** Zwischen Zopf und Kopf bleibt beim Schwenken
+stellenweise eine Zeile leer: links der Kopf, rechts der Zopf, dazwischen
+nichts. Über die Zustände, die der Ablauf wirklich erreicht, sind das **acht
+Stellen**. Auf dem dunklen Vorschaugrund sieht man sie nicht; im Spiel liegt
+dort der See, und es blitzt hell durch.
 
-**Der Hals braucht vier Unterlagepixel.** Über alle Kopfversätze (−2…+2, mehr
-macht `kopf_im_wurf` nicht) bleiben genau drei Stellen, die ringsum zugedeckt
-sind und trotzdem frei würden: **49/23**, **55/30**, **57/31**, alle bei Kopf
-+1 / Atem 0. Dazu die schon bekannte **60/32**.
+Feste Unterlagepixel lösen das **nicht**: an fünf der acht Stellen liegt im
+Ruhezustand gar nichts, ein Unterlagepixel machte die Figur dort im Stand
+einen Pixel größer. Und der Zopf allein reißt bei keiner seiner Weiten —
+gemessen über alle acht. Es ist eine Naht zwischen zwei Teilen, keine Lücke
+in einem.
 
-→ `figure_parts.RUMPF_UNTERLAGE` wächst von einem auf vier Einträge.
-→ `preview_parts._luecken_schliessen()` entfällt — ein Suchlauf über 16 000
-Pixel je Bild wird zu vier benannten Konstanten.
+Deshalb die Unterscheidung (`b775c3b`): **was zum Rand hin offen ist, bleibt
+offen; was ringsum zugedeckt ist, wird geschlossen.** Alle acht Stellen
+bekommen `#05000a`, den Umrisston — nicht gesetzt, sondern aus ihren vier
+Nachbarn gemessen. Die Naht zwischen Zopf und Kopf ist Umriss.
 
-**Folge für die Optik:** ohne die Zopffüllung wird der Hinterkopf an dieser
-Kante um bis zu vier Pixel schmaler. Vorher/Nachher wird vorgelegt; gefällt es
-nicht, ist die Füllung eine Zeile.
+`preview_parts` trennt dafür in `roh_zusammensetzen()` (legt übereinander,
+malt nichts dazu), `naht()` (findet die eingeschlossenen Lücken) und
+`zusammensetzen()` (beides). Das Bauwerkzeug braucht die Trennung, weil es
+die Naht **in die Zopfbilder backen** muss: im Spiel gibt es niemanden, der
+sie zur Laufzeit schließt.
+
+**Daraus folgt der Zuschnitt des Zopfblatts.** Weil die Naht vom Kopfversatz
+abhängt, ist der Zustand des Zopfs das Paar aus Weite und Versatz. Der Ablauf
+erreicht elf davon.
+
+**`RUMPF_UNTERLAGE` bleibt bei einem Eintrag.** Die drei zusätzlichen, die
+hier zuerst vorgesehen waren, wurden nie gebraucht — sie waren die Antwort
+auf die falsche Frage.
+
+**Folge für die Optik:** ohne die Zopffüllung ist der Hinterkopf an dieser
+Kante um bis zu vier Pixel schmaler. Am 2026-09-07 vorgelegt und angenommen.
 
 ## Varianten als Tönung statt als Blätter
 
