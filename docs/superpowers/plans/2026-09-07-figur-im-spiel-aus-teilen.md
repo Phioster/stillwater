@@ -1748,7 +1748,18 @@ git commit -m "Die gebackenen Posenreihen fallen weg"
 | Anker sitzen, wo gemessen | 2 (`test_jedes_teil_sitzt_auf_seinem_anker`) |
 | `test_sprite_assets.gd` wächst mit | 1, 4, 5, 6 |
 
+**Reihenfolge, entschieden am 2026-09-07:** erst die Figur und ihre Bewegung
+vollständig, Kosmetik danach. Die Rute bleibt in diesem Plan — sie hängt an der
+Hand, und die Schnur hängt an ihrer Spitze, also ist sie Bewegung und nicht
+Schmuck. Ihre drei Varianten, die Hutgrößen und Stufe 4 sind Kosmetik.
+
 **Nicht in diesem Plan, ausdrücklich:**
+
+- **Die Hutgrößen.** Aufgabe 4 hat sie vom doppelten auf das einfache Raster
+  gebracht, weil sie sonst doppelt so breit wie der Kopf standen. Die Höhe
+  stimmt; abgenommen am 2026-09-07 mit dem Vermerk „eventuell etwas größer".
+  Das hieße, die Zahlen in `gen_sprites.gd::_hat` einzeln um rund 1,4
+  hochzuziehen — eine Kosmetikarbeit, und die kommt später.
 
 - **Stufe 4 (Varianten als Tönung).** `char_skin_1..8` und Geschwister fallen in Aufgabe 6 weg; die Tönung der Haut-, Pullover- und Hosenebene ist eine eigene Stufe, weil sie die Kosmetikdaten berührt.
 - **Welche Rute gilt — entschieden am 2026-09-07:** die gezeichnete. Sie steht in Aufgabe 5. `tools/import_rod.py` und `assets/source/rod_45.png` fallen damit in Aufgabe 6.
