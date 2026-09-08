@@ -137,8 +137,11 @@ gezeichnet") ist `strength = 0`.
 
 Das senkt die Zahl der Dateien von rund hundert auf etwa achtzehn und den
 Texturspeicher noch einmal um den Faktor der Variantenzahl. Die Farbwerte
-(`SKIN_TONES`, `SHIRT_TONES`, `PANTS_TONES`) wandern aus dem Bauwerkzeug in die
-Palette, wo die Haartöne schon liegen.
+(`SKIN_TONES`, `SHIRT_TONES`, `PANTS_TONES`) mussten gar nicht in die Palette
+wandern — nachgeschlagen am 2026-09-08 steht **jeder einzelne Ton dort schon
+unter einem Namen**: `skin_0..4`, `skin_moss`, `skin_ice`, `skin_ash`,
+`skin_white` und die Stoffnamen `cloth_*`, `leather`, `oilskin`, `denim`,
+`wood_dark`. Nachgeschlagen statt wiederholt.
 
 ## Die Blätter
 
@@ -170,6 +173,36 @@ Das Bauwerkzeug schreibt diese Tabelle als `assets/art/teile.json` neben die
 Blätter. Der Sprite-Test prüft die Bildgrößen gegen sie, und Stufe 3 setzt die
 Teile mit `x,y` wieder an ihren Platz im 128er Feld. Damit steht der Anker an
 genau einer Stelle statt zweimal abgetippt.
+
+## Kosmetik als Tönung
+
+Haut, Pullover, Hose und Haarfarbe haben kein eigenes Bild je Variante: sie
+färben eine Ebene der Teileblätter mit `assets/art/palette_swap.gdshader` ein.
+Die Töne stehen als Namen in `core/palette.gd`, die Zuordnung Kategorie → Töne
+in `scenes/fishing/angler.gd::TINTS`, die Zuordnung Kategorie → Ebene in
+`TINT_LAYER`.
+
+**Variante 0 wird bei Haut, Pullover und Hose nicht getönt** — sie ist die
+gezeichnete Farbe. Die Haarfarbe kennt diese Ausnahme nicht: es gibt keine
+gezeichnete Haarfarbe, die man behalten wollte.
+
+**Die Stiefel bleiben außen vor.** Sie sind eine eigene Ebene. Im alten
+Backweg kopierte `import_character.py` sie ungetönt über die gefärbte Hose;
+jetzt ergibt sich dasselbe von selbst.
+
+**Nachgerechnet gegen die gebackenen Blätter** (2026-09-08, gegen `f0cae5e~1`):
+der Shader rechnet `Ton · (0,55 + 0,9 · Helligkeit)` — genau die Formel, mit
+der die Blätter entstanden sind.
+
+| | Pixel gleich | daneben |
+|---|---|---|
+| `skin` Variante 3 | 11 315 | 0 |
+| `skin` Variante 8 | 11 315 | 0 |
+| `shirt` Variante 1 | 20 017 | 0 |
+| `pants` Variante 4 | 8 069 | 11 157 (die Stiefel) |
+
+Die Rechnung muss abschneiden, nicht runden; mit `round()` weichen die Werte
+um bis zu eins je Kanal ab. Die Grafikkarte rundet — ein 255stel, unsichtbar.
 
 ## Die Szene
 
