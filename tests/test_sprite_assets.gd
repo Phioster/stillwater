@@ -32,12 +32,6 @@ func _expected_size(filename: String) -> Vector2i:
 	# Der Hut wird einmal gemalt und haengt am Kopf -- kein Bilderstreifen.
 	if filename.begins_with("char_hat_"):
 		return Vector2i(AnglerPose.FRAME_SIZE, AnglerPose.FRAME_SIZE)
-	# Die alten gebackenen Posenreihen: 24 Bilder im 128er Raster. Sie laedt
-	# niemand mehr -- die Figur kommt aus teil_*.png -- und sie fallen in der
-	# naechsten Aufgabe. Bis dahin die feste Zahl: die Konstante, die sie
-	# beschrieb (AnglerPose.FRAMES), gibt es schon nicht mehr.
-	if filename.begins_with("char_"):
-		return Vector2i(AnglerPose.FRAME_SIZE * 24, AnglerPose.FRAME_SIZE)
 	if filename.begins_with("teil_"):
 		var name := _teil_name(filename)
 		if name == &"":
@@ -107,36 +101,6 @@ func test_all_sprites_have_correct_size_and_are_not_empty() -> void:
 		else:
 			assert_true(opaque >= 8, "%s hat kaum sichtbare Pixel (%d)" % [file, opaque])
 	assert_true(checked > 0, "keine PNGs unter assets/art gefunden")
-
-## Die Rute lief über den Rahmenrand hinaus: sie wurde vorne abgeschnitten
-## und blutete in den nächsten Rahmen, was beim Wurf als zweite, falsche Rute
-## zu sehen war.
-##
-## Geprüft wird jetzt der Rand selbst und nicht mehr die Pixelzahl je Rahmen:
-## seit jede Pose anders aussieht, sind unterschiedliche Zahlen normal.
-func test_no_character_frame_bleeds_into_the_next() -> void:
-	var dir := DirAccess.open(ART_DIR)
-	assert_true(dir != null)
-	if dir == null:
-		return
-	var checked := 0
-	for file in dir.get_files():
-		if not file.begins_with("char_") or not file.ends_with(".png"):
-			continue
-		var tex := TextureLoader.load_texture("%s/%s" % [ART_DIR, file])
-		assert_true(tex != null, "%s nicht ladbar" % file)
-		if tex == null:
-			continue
-		var img := tex.get_image()
-		var size := img.get_height()
-		var frames := img.get_width() / size
-		checked += 1
-		for f in frames:
-			for y in size:
-				for x in [f * size, (f + 1) * size - 1]:
-					assert_eq(img.get_pixel(x, y).a, 0.0,
-						"%s: Rahmen %d beruehrt in Zeile %d seinen Rand" % [file, f, y])
-	assert_true(checked > 0, "keine Figurenbilder geprueft")
 
 ## Die Rute lief über den Rahmenrand hinaus: sie wurde vorne abgeschnitten
 ## und blutete in den nächsten Rahmen, was beim Wurf als zweite, falsche Rute

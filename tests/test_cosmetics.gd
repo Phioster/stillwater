@@ -118,17 +118,21 @@ func test_validate_catches_duplicate_category_variant_combo() -> void:
 			found = true
 	assert_true(found, "doppelte Kategorie/Variante-Kombination muss gemeldet werden")
 
+## Am Hut geprueft und nicht mehr an der Haut: seit die Figur aus Teilen
+## kommt, haben Haut, Haar, Pullover und Hose kein eigenes Bild je Variante
+## mehr -- sie sind Ebenen derselben Blaetter. Nur Hut und Rute stehen noch
+## in Database._COSMETIC_SPRITE_PREFIX.
 func test_validate_catches_missing_sprite() -> void:
 	var ghost := CosmeticData.new()
-	ghost.id = &"skin_ghost"
-	ghost.category = &"skin"
+	ghost.id = &"hat_ghost"
+	ghost.category = &"hat"
 	ghost.variant = 42
-	Database.cosmetics[&"skin_ghost"] = ghost
+	Database.cosmetics[&"hat_ghost"] = ghost
 	var problems := Database.validate()
-	Database.cosmetics.erase(&"skin_ghost")
+	Database.cosmetics.erase(&"hat_ghost")
 	var found := false
 	for p in problems:
-		if "skin_ghost" in p:
+		if "hat_ghost" in p:
 			found = true
 	assert_true(found, "eine Variante ohne Sprite muss gemeldet werden")
 

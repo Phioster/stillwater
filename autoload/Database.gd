@@ -22,11 +22,12 @@ const _FOLDERS := {
 
 ## Kategorien mit einem eigenen Sprite pro Variante -- "hair_color" faerbt das
 ## Haar per Shader (angler.gd) statt eine eigene Textur zu laden.
+## Nur noch Hut und Rute haben ein eigenes Bild je Variante. Haut, Haar,
+## Pullover und Hose sind Ebenen der Teileblaetter: dieselben Pixel, anders
+## eingefaerbt. Ihre gebackenen Reihen (char_skin_1..8 und Geschwister) sind
+## weg -- die Toenung kommt in Stufe 4, wie sie fuer die Haarfarbe schon da
+## ist. Bis dahin wirken diese Varianten nicht sichtbar.
 const _COSMETIC_SPRITE_PREFIX := {
-	"skin": "char_skin",
-	"hair": "char_hair",
-	"shirt": "char_shirt",
-	"pants": "char_pants",
 	"hat": "char_hat",
 	"rod": "char_rod",
 }
