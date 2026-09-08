@@ -108,3 +108,21 @@ func test_der_hut_ist_ein_einzelnes_bild() -> void:
 		assert_eq(hut.texture.get_width(), AnglerParts.FRAME,
 			"das Hutbild ist keine 128 breit")
 	a.free()
+
+## Die Rute liegt HINTER dem nahen Arm: die Faust haelt sie, also gehoert die
+## Hand davor. Der Entwurf hatte sie zuletzt einsortiert; gemessen gegen
+## tools/wurf_lauf.py wichen dadurch ueber die zehn Wurfbilder 13 Pixel ab,
+## alle an der Faust. Mit der Rute vor dem Arm sind es null.
+func test_die_rute_liegt_hinter_dem_nahen_arm() -> void:
+	var a := _angler()
+	var namen: Array[StringName] = []
+	for kind in a.get_children():
+		namen.append(StringName(kind.name))
+	var rute := namen.find(&"Rod")
+	var arm := namen.find(&"arm")
+	var fern := namen.find(&"armfern")
+	assert_true(rute >= 0 and arm >= 0 and fern >= 0,
+		"Rod, arm oder armfern fehlt im Baum")
+	assert_true(fern < rute, "die Rute liegt vor dem fernen Arm")
+	assert_true(rute < arm, "die Rute liegt vor dem nahen Arm statt dahinter")
+	a.free()

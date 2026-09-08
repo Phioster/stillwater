@@ -178,11 +178,16 @@ Sprites für sechs Kosmetikebenen gibt es je Teil eine Gruppe, in ihr je Ebene
 ein Sprite. Zeichenreihenfolge, aus `preview_parts.zusammensetzen` übernommen:
 
 ```
-Zopf, Beine, Hals, Rumpf, Kopf, Auge, Arm fern, Arm nah, Hut, Rute
+Zopf, Beine, Hals, Rumpf, Kopf, Auge, Arm fern, Rute, Arm nah, Hut
 ```
 
 Der Kopf liegt **oben**: lag der Rumpf oben, fraß sein Schulterumriss beim
 Absenken die Kinnzeile. Ausgenommen ist der Hals, der hinter den Kragen gehört.
+
+Die **Rute liegt hinter dem nahen Arm** — die Faust hält sie, also gehört die
+Hand davor. Hier stand sie zuerst zuletzt; gemessen gegen `tools/wurf_lauf.py`
+wichen dadurch über die zehn Wurfbilder 13 Pixel ab, alle an der Faust
+(korrigiert 2026-09-08).
 
 Innerhalb eines Teils bleibt die bisherige Reihenfolge: Haut, Hose, Pullover,
 Haar, Grundebene. Die Grundebene liegt über der Kleidung, weil sie Umriss,

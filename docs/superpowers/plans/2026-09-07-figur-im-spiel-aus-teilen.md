@@ -14,7 +14,7 @@
 
 - Godot **4.7.2**, Python-Bildwerkzeuge mit **Pillow 12.3.0** und **numpy 2.4.4** (in `.github/workflows/test.yml` festgenagelt).
 - **`bash tools/test.sh` läuft vollständig durch, bevor committet oder gepusht wird.** Nicht „unbetroffen" annehmen — das ist hier schon zweimal schiefgegangen.
-- Zeichenreihenfolge der Teile, aus `preview_parts.zusammensetzen` übernommen: **Zopf, Beine, Hals, Rumpf, Kopf, Auge, Arm fern, Arm nah, Hut, Rute.** Der Kopf liegt über dem Rumpf; der Hals dahinter, weil er in den Kragen hineingeht. Der Hut liegt **hinter der Rute und vor dem Arm** — er ist deshalb kein Kind der Kopfgruppe, sondern folgt ihr rechnerisch.
+- Zeichenreihenfolge der Teile, aus `preview_parts.zusammensetzen` übernommen: **Zopf, Beine, Hals, Rumpf, Kopf, Auge, Arm fern, Rute, Arm nah, Hut.** Der Kopf liegt über dem Rumpf; der Hals dahinter, weil er in den Kragen hineingeht. Der Hut liegt **hinter der Rute und vor dem Arm** — er ist deshalb kein Kind der Kopfgruppe, sondern folgt ihr rechnerisch.
 - Reihenfolge innerhalb eines Teils: **Haut, Hose, Pullover, Haar, Grundebene.** Die Grundebene liegt über der Kleidung, weil sie Umriss, Auge und Kragen trägt.
 - **Gemessen, nicht getippt.** Rahmen, Anker, Zustandszahlen und Zustandslisten kommen aus dem Bauwerkzeug in eine erzeugte Datei. Keine dieser Zahlen wird von Hand in GDScript geschrieben.
 - Kommentare auf Deutsch, ohne Umlaute im Code (der Bestand macht es so). Commit-Nachrichten ohne Zuschreibungszeilen.

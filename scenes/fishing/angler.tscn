@@ -79,6 +79,10 @@ centered = false
 [node name="base" type="Sprite2D" parent="armfern"]
 centered = false
 
+[node name="Rod" type="Sprite2D" parent="."]
+hframes = 10
+centered = false
+
 [node name="arm" type="Node2D" parent="."]
 
 [node name="skin" type="Sprite2D" parent="arm"]
@@ -94,6 +98,3 @@ centered = false
 hframes = 1
 centered = false
 
-[node name="Rod" type="Sprite2D" parent="."]
-hframes = 10
-centered = false
