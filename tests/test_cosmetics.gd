@@ -8,7 +8,7 @@ func _fresh() -> void:
 ## Die Zahl steht hier bewusst fest: eine Variante, die beim Umbenennen still
 ## verschwindet, faellt sonst niemandem auf.
 func test_every_cosmetic_variant_loads() -> void:
-	assert_eq(Database.cosmetics.size(), 51)
+	assert_eq(Database.cosmetics.size(), 57)
 
 ## Haut, Pullover, Hose und Haarfarbe haben kein eigenes Sprite je Variante:
 ## sie faerben eine Ebene der Teileblaetter ein. Gibt es mehr Varianten als
@@ -154,7 +154,8 @@ func test_every_real_skin_tone_is_free() -> void:
 		"die Fantasiefarben sollen etwas kosten")
 
 func test_variant_zero_of_every_category_is_free() -> void:
-	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants", &"hat", &"rod"]:
+	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants",
+			&"boots", &"hat", &"rod"]:
 		var c := Database.cosmetic_of(category, 0)
 		assert_true(c != null, "Kategorie %s hat keine Variante 0" % category)
 		assert_eq(c.cost, 0, "Variante 0 von %s muss frei sein" % category)
@@ -215,9 +216,10 @@ func test_validate_catches_missing_sprite() -> void:
 
 # --- Game: Besitz, Kauf, Anziehen -------------------------------------------
 
-func test_new_game_owns_exactly_the_six_free_variants() -> void:
+func test_new_game_owns_exactly_the_free_variants() -> void:
 	_fresh()
-	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants", &"hat"]:
+	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants",
+			&"boots", &"hat", &"rod"]:
 		assert_true(Game.owns_cosmetic(category, 0), "Variante 0 von %s muss von Anfang an gehoeren" % category)
 		assert_false(Game.owns_cosmetic(category, 1), "Variante 1 von %s darf nicht von Anfang an gehoeren" % category)
 

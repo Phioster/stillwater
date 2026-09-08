@@ -1,9 +1,5 @@
 extends TestCase
 
-## Reihenfolge folgt character_panel.gd::SLOTS. Kindindex 0 ist der
-## Hinweistext, HAT_ROW_INDEX zeigt auf die letzte Kategoriezeile.
-const HAT_ROW_INDEX := 6
-
 func _panel() -> PanelBase:
 	# character_panel.gd ist ein Szenenskript ohne eigenen class_name, deshalb
 	# per load() statt eines bare Bezeichners (wie in test_upgrade_panel.gd).
@@ -13,9 +9,17 @@ func _panel() -> PanelBase:
 
 ## Container-Typ absichtlich offen: die Varianten stehen in einem Raster,
 ## seit es elf Kopfteile sind -- der Test prueft die Knoepfe, nicht die Form.
+## Die Zeile wird an ihrer Beschriftung gesucht, nicht an ihrer Nummer: eine
+## Kategorie mehr in CharacterPanel.SLOTS verschob sonst den Index, und der
+## Test prueft schweigend die falsche Zeile.
 func _hat_buttons(panel: PanelBase) -> Container:
-	var row: VBoxContainer = panel.get_child(HAT_ROW_INDEX)
-	return row.get_child(1)
+	for kind in panel.get_children():
+		if not (kind is VBoxContainer):
+			continue
+		var kopf := (kind as VBoxContainer).get_child(0)
+		if kopf is Label and (kopf as Label).text.begins_with("Kopf"):
+			return (kind as VBoxContainer).get_child(1)
+	return null
 
 func test_owned_variant_is_shown_as_a_toggled_wear_button() -> void:
 	Game.new_game()

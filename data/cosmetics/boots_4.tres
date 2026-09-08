@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_boots4"]
+
+[resource]
+script = ExtResource("1_boots4")
+id = &"boots_4"
+category = &"boots"
+variant = 4
+display_name = "Aschgrau"
+cost = 2400
+unlock_level = 11

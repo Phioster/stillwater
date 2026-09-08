@@ -8,6 +8,7 @@ const SLOTS := [
 	{"key": &"hair_color", "label": "Haarfarbe"},
 	{"key": &"shirt", "label": "Oberteil"},
 	{"key": &"pants", "label": "Hose"},
+	{"key": &"boots", "label": "Stiefel"},
 	{"key": &"hat", "label": "Kopf"},
 	{"key": &"rod", "label": "Rute"},
 ]

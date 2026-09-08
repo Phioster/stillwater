@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CosmeticData" format=3]
+
+[ext_resource type="Script" path="res://resources/cosmetic_data.gd" id="1_boots0"]
+
+[resource]
+script = ExtResource("1_boots0")
+id = &"boots_0"
+category = &"boots"
+variant = 0
+display_name = "Gummistiefel"
+cost = 0
+unlock_level = 1

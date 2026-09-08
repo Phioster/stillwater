@@ -128,6 +128,7 @@ func deserialize(raw: Dictionary) -> void:
 	Game.cosmetics = (d["cosmetics"] as Dictionary).duplicate()
 	Game.ctx.cosmetics = Game.cosmetics
 	Game.owned_cosmetics = (d["owned_cosmetics"] as Dictionary).duplicate(true)
+	_fill_in_new_cosmetic_categories()
 	_own_the_worn_cosmetics()
 	Game.rng.set_state(int(d["rng_state"]))
 	Game.apply_upgrades()
@@ -140,6 +141,21 @@ func deserialize(raw: Dictionary) -> void:
 
 	_run_offline(int(d["last_seen_unix"]))
 	Game.state_changed.emit()
+
+## Kategorien, die es beim Speichern noch nicht gab. Ein alter Stand kennt
+## weder "rod" noch "boots"; ohne das hier staende ihre Variante 0 als KAUFBAR
+## da -- fuer null Muenzen, aber der Spieler muesste seine eigenen Stiefel
+## erwerben. Gilt fuer jede kuenftige Kategorie mit.
+func _fill_in_new_cosmetic_categories() -> void:
+	for id in Database.cosmetics:
+		var kategorie := String((Database.cosmetics[id] as CosmeticData).category)
+		if not Game.cosmetics.has(kategorie):
+			Game.cosmetics[kategorie] = 0
+		## Auch den Besitz: _own_the_worn_cosmetics() schreibt nur zurueck,
+		## wenn es etwas anfuegt -- eine fehlende Kategorie bliebe sonst ohne
+		## Eintrag, und Variante 0 stuende als kaufbar da.
+		if not Game.owned_cosmetics.has(kategorie):
+			Game.owned_cosmetics[kategorie] = [0]
 
 ## Ein Stand von vor Task 20 trug Varianten, ohne sie zu "besitzen" -- ohne
 ## das hier wuerde das Laden eine Variante zeigen, die dem Spieler nicht gehoert.

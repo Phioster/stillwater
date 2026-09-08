@@ -322,6 +322,14 @@ func test_old_save_without_owned_cosmetics_field_grants_only_variant_zero() -> v
 	for category in [&"skin", &"hair", &"hair_color", &"shirt", &"pants", &"hat"]:
 		assert_true(Game.owns_cosmetic(category, 0))
 		assert_false(Game.owns_cosmetic(category, 1))
+	## Der Stand oben kennt weder "rod" noch "boots" -- die Kategorien kamen
+	## spaeter. Ohne Nachziehen staende ihre Variante 0 als KAUFBAR da, fuer
+	## null Muenzen, und der Spieler muesste seine eigenen Stiefel erwerben.
+	for spaeter in [&"rod", &"boots"]:
+		assert_true(Game.cosmetics.has(String(spaeter)),
+			"eine spaeter hinzugekommene Kategorie fehlt: %s" % spaeter)
+		assert_true(Game.owns_cosmetic(spaeter, 0),
+			"Variante 0 von %s muesste nachgezogen sein" % spaeter)
 
 func test_migrate_sanitizes_a_wrongly_typed_owned_cosmetics_entry() -> void:
 	var broken := {

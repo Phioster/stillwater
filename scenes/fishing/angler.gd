@@ -31,17 +31,21 @@ const TINTS := {
 		&"cloth_grey", &"leather", &"oilskin", &"denim"],
 	&"pants": [&"", &"wood_dark", &"oilskin", &"cloth_plum", &"denim",
 		&"cloth_red"],
+	&"boots": [&"", &"leather", &"wood_dark", &"cloth_red", &"cloth_grey",
+		&"bone"],
 	&"hair_color": [&"hair_dark", &"hair_warm", &"hair_pale", &"hair_moss",
 		&"hair_snow", &"hair_teal", &"hair_violet", &"hair_pink"],
 }
 
 ## Welche Ebene der Teileblaetter eine Kategorie einfaerbt. Die Stiefel haben
-## eine eigene Ebene und gehen die Hose nichts an; die Grundebene traegt
-## Umriss, Auge und Kragen und wird nie umgefaerbt.
+## ihre eigene Ebene und gehen die Hose nichts an -- deshalb sind sie eine
+## eigene Kategorie. Die Grundebene traegt Umriss, Auge und Kragen und wird
+## nie umgefaerbt; sie steht in keiner Zeile hier.
 const TINT_LAYER := {
 	&"skin": &"skin",
 	&"shirt": &"shirt",
 	&"pants": &"pants",
+	&"boots": &"boots",
 	&"hair_color": &"hair",
 }
 
