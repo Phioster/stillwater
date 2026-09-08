@@ -10,15 +10,92 @@ func _fresh() -> void:
 func test_every_cosmetic_variant_loads() -> void:
 	assert_eq(Database.cosmetics.size(), 51)
 
-## Die Haarfarbe ist die einzige Kategorie ohne eigenes Sprite: sie faerbt
-## die Frisur ein. Gibt es mehr Farben als Toene, waehlt man stumm dieselbe.
-func test_every_hair_colour_has_a_tint() -> void:
-	var colours := 0
-	for id in Database.cosmetics:
-		if (Database.cosmetics[id] as CosmeticData).category == &"hair_color":
-			colours += 1
+## Haut, Pullover, Hose und Haarfarbe haben kein eigenes Sprite je Variante:
+## sie faerben eine Ebene der Teileblaetter ein. Gibt es mehr Varianten als
+## Toene, waehlt man stumm dieselbe -- und niemand merkt es.
+func test_jede_variante_hat_einen_ton() -> void:
 	var angler = load("res://scenes/fishing/angler.tscn").instantiate()
-	assert_eq(colours, angler.HAIR_TINTS.size(), "Farben und Toene laufen auseinander")
+	for kategorie in angler.TINTS:
+		var vorhanden := 0
+		for id in Database.cosmetics:
+			if (Database.cosmetics[id] as CosmeticData).category == kategorie:
+				vorhanden += 1
+		var toene: Array = angler.TINTS[kategorie]
+		assert_eq(vorhanden, toene.size(),
+			"%s: %d Varianten, aber %d Toene" % [kategorie, vorhanden, toene.size()])
+	angler.free()
+
+## Palette.get_color() gibt bei einem unbekannten Namen Magenta zurueck und
+## meldet nichts. Ein Tippfehler in der Tabelle waere also eine grellrosa
+## Anglerin und kein Fehler.
+func test_jeder_ton_steht_in_der_palette() -> void:
+	var angler = load("res://scenes/fishing/angler.tscn").instantiate()
+	for kategorie in angler.TINTS:
+		for name in angler.TINTS[kategorie]:
+			if name == &"":
+				continue
+			assert_true(Palette.COLORS.has(name),
+				"%s: den Ton %s kennt die Palette nicht" % [kategorie, name])
+	angler.free()
+
+## Variante 0 ist die GEZEICHNETE Farbe. Durch den Shader geschickt kaeme sie
+## um bis zu einen Wert je Kanal verschoben heraus -- unsichtbar, aber es
+## macht aus "unberuehrt" ein "fast unberuehrt".
+func test_variante_null_wird_nicht_getoent() -> void:
+	var angler = load("res://scenes/fishing/angler.tscn").instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(angler)
+	angler.set_cosmetics({"skin": 0, "shirt": 0, "pants": 0, "hair_color": 0,
+		"hat": 0, "rod": 0})
+	assert_true((angler.get_node("rumpf/skin") as Sprite2D).material == null,
+		"die gezeichnete Haut wird getoent")
+	assert_true((angler.get_node("rumpf/shirt") as Sprite2D).material == null,
+		"der gezeichnete Pullover wird getoent")
+	assert_true((angler.get_node("rumpf/pants") as Sprite2D).material == null,
+		"der gezeichnete Rock wird getoent")
+	## Die Haarfarbe ist die Ausnahme: sie hat keine ungetoente Variante.
+	assert_true((angler.get_node("kopf/hair") as Sprite2D).material != null,
+		"die Haarfarbe 0 muesste toenen")
+	angler.free()
+
+## Die Stiefel sind eine eigene Ebene und gehen die Hose nichts an -- im alten
+## Backweg lagen sie ungetoent ueber der gefaerbten Hose. Die Grundebene traegt
+## Umriss, Auge und Kragen und wird nie umgefaerbt.
+func test_stiefel_und_grundebene_bleiben_ungetoent() -> void:
+	var angler = load("res://scenes/fishing/angler.tscn").instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(angler)
+	angler.set_cosmetics({"skin": 3, "shirt": 5, "pants": 2, "hair_color": 4,
+		"hat": 0, "rod": 0})
+	assert_true((angler.get_node("beine/boots") as Sprite2D).material == null,
+		"die Stiefel werden mit der Hose getoent")
+	for teil in AnglerParts.ORDER:
+		assert_true((angler.get_node(NodePath("%s/base" % teil)) as Sprite2D).material == null,
+			"%s/base wird getoent" % teil)
+	angler.free()
+
+## Und die gewaehlte Farbe muss auch ankommen -- an JEDEM Teil, das die Ebene
+## hat. Der Pullover liegt in Rumpf, Arm und fernem Arm; faerbte man nur den
+## Rumpf, traege sie zwei verschiedene Aermel.
+func test_der_gewaehlte_ton_liegt_auf_allen_teilen() -> void:
+	var angler = load("res://scenes/fishing/angler.tscn").instantiate()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(angler)
+	angler.set_cosmetics({"skin": 0, "shirt": 5, "pants": 0, "hair_color": 0,
+		"hat": 0, "rod": 0})
+	var erwartet := Palette.get_color(angler.TINTS[&"shirt"][5])
+	var geprueft := 0
+	for teil in AnglerParts.ORDER:
+		if not (AnglerParts.LAYERS[teil] as Array).has(&"shirt"):
+			continue
+		var s: Sprite2D = angler.get_node(NodePath("%s/shirt" % teil))
+		assert_true(s.material != null, "%s/shirt ist ungetoent" % teil)
+		if s.material == null:
+			continue
+		geprueft += 1
+		assert_eq((s.material as ShaderMaterial).get_shader_parameter("tint"),
+			erwartet, "%s/shirt traegt einen anderen Ton" % teil)
+	assert_true(geprueft >= 3, "nur %d Pulloverebenen gefunden" % geprueft)
 	angler.free()
 
 ## Die Rute ist eine echte Kategorie mit eigenem Sprite, keine Farbe.

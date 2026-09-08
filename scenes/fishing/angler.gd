@@ -11,11 +11,39 @@ extends Node2D
 ## Reihenfolge ist also eine Frage der Lesbarkeit und keine der Deckung.
 const LAYER_ORDER: Array[StringName] = [&"skin", &"pants", &"shirt", &"hair",
 	&"base"]
-## Die Reihenfolge ist die Variantennummer der Kategorie hair_color -- ein
-## Ton mehr hier verlangt eine .tres mehr, sonst zeigt die Auswahl weniger
-## Farben als es gibt (dagegen steht test_every_hair_colour_has_a_tint).
-const HAIR_TINTS := [&"hair_dark", &"hair_warm", &"hair_pale", &"hair_moss",
-	&"hair_snow", &"hair_teal", &"hair_violet", &"hair_pink"]
+## Welche Kosmetikkategorie welche Toene hat, als Namen aus core/palette.gd --
+## die Hexwerte stehen dort und nicht hier ein zweites Mal.
+##
+## Der leere Name heisst: NICHT toenen. Variante 0 ist bei Haut, Pullover und
+## Hose die gezeichnete Farbe; durch den Shader geschickt kaeme sie um bis zu
+## einen Wert je Kanal verschoben heraus.
+##
+## Die Haarfarbe kennt diese Ausnahme nicht: es gibt keine "gezeichnete
+## Haarfarbe", die man behalten wollte, also toent auch ihre Variante 0.
+##
+## Die Reihenfolge IST die Variantennummer der Kategorie. Eine Variante mehr
+## in data/cosmetics/ verlangt einen Ton mehr hier, sonst waehlt man stumm
+## dieselbe Farbe -- dagegen steht test_jede_variante_hat_einen_ton.
+const TINTS := {
+	&"skin": [&"", &"skin_2", &"skin_3", &"skin_0", &"skin_4", &"skin_moss",
+		&"skin_ice", &"skin_ash", &"skin_white"],
+	&"shirt": [&"", &"cloth_red", &"cloth_green", &"cloth_ochre", &"cloth_plum",
+		&"cloth_grey", &"leather", &"oilskin", &"denim"],
+	&"pants": [&"", &"wood_dark", &"oilskin", &"cloth_plum", &"denim",
+		&"cloth_red"],
+	&"hair_color": [&"hair_dark", &"hair_warm", &"hair_pale", &"hair_moss",
+		&"hair_snow", &"hair_teal", &"hair_violet", &"hair_pink"],
+}
+
+## Welche Ebene der Teileblaetter eine Kategorie einfaerbt. Die Stiefel haben
+## eine eigene Ebene und gehen die Hose nichts an; die Grundebene traegt
+## Umriss, Auge und Kragen und wird nie umgefaerbt.
+const TINT_LAYER := {
+	&"skin": &"skin",
+	&"shirt": &"shirt",
+	&"pants": &"pants",
+	&"hair_color": &"hair",
+}
 
 var _atem: int = 0
 var _zopf: int = 0
@@ -38,7 +66,8 @@ func set_cosmetics(c: Dictionary) -> void:
 	_load_parts()
 	_set_single(&"Hat", "char_hat", int(c.get("hat", 0)))
 	_set_single(&"Rod", "char_rod", int(c.get("rod", 0)))
-	_tint_hair(int(c.get("hair_color", 0)))
+	for kategorie in TINTS:
+		_tint(kategorie, int(c.get(String(kategorie), 0)))
 	set_pose(_atem, _zopf, _seit, _bein, _auge, _arm)
 
 ## Jedes Teileblatt an sein Sprite. Die Blaetter heissen nach Teil und Ebene,
@@ -60,18 +89,27 @@ func _set_single(node: StringName, prefix: String, index: int) -> void:
 	if tex != null:
 		sprite.texture = tex
 
-## Getoent wird jedes Haarblatt -- Zopf, Kopf und die Wimper im Auge. Frueher
-## war Haar EIN Sprite; jetzt liegt es in drei Teilen.
-func _tint_hair(color_index: int) -> void:
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://assets/art/palette_swap.gdshader")
-	mat.set_shader_parameter("tint", Palette.get_color(HAIR_TINTS[clampi(color_index, 0, HAIR_TINTS.size() - 1)]))
-	mat.set_shader_parameter("strength", 1.0)
-	for name in AnglerParts.ORDER:
-		if not AnglerParts.LAYERS[name].has(&"hair"):
+## Eine Kosmetikebene einfaerben -- an JEDEM Teil, das sie hat. Der Pullover
+## liegt in Rumpf, Arm und fernem Arm; faerbte man nur den Rumpf, traege sie
+## zwei verschiedene Aermel.
+##
+## Der Shader behaelt die Helligkeit und ersetzt den Farbton
+## (assets/art/palette_swap.gdshader). Nachgerechnet gegen die frueher
+## gebackenen Blaetter: bei Haut und Pullover kein einziger Pixel Unterschied.
+func _tint(category: StringName, index: int) -> void:
+	var toene: Array = TINTS[category]
+	var name: StringName = toene[clampi(index, 0, toene.size() - 1)]
+	var mat: ShaderMaterial = null
+	if name != &"":
+		mat = ShaderMaterial.new()
+		mat.shader = load("res://assets/art/palette_swap.gdshader")
+		mat.set_shader_parameter("tint", Palette.get_color(name))
+		mat.set_shader_parameter("strength", 1.0)
+	var ebene: StringName = TINT_LAYER[category]
+	for teil in AnglerParts.ORDER:
+		if not (AnglerParts.LAYERS[teil] as Array).has(ebene):
 			continue
-		var s: Sprite2D = get_node(NodePath("%s/hair" % name))
-		s.material = mat
+		(get_node(NodePath("%s/%s" % [teil, ebene])) as Sprite2D).material = mat
 
 ## Die Bewegung in Zahlen, und daraus die Bildnummern und Versaetze. Atem und
 ## Kopfversatz stecken NICHT in den Blaettern: sie sind Versatz der Gruppe.
