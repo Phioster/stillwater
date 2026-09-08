@@ -3,10 +3,15 @@
     python3 -m tools.wurf_lauf [ziel.gif]
 
 Der Ruhelauf kommt aus den Ebenen (Atem, Zopf, Beine, Blinzeln), der Wurf
-aus den zehn fertigen Bildern. Damit beides dieselbe Figur zeigt, werden die
-Ebenen aus wurf_rute_0 geschnitten -- dem Ruhebild der Wurfreihe -- und nicht
-aus der alten Zeichnung pose_raw: dort steckte noch die Rute mit
-der Rolle. Sie ist entfernt.
+aus den zehn fertigen Bildern. Beides wird aus DENSELBEN Teilen gebaut --
+sit3_rumpf mit den Armen, dazu die Rute als eigenes Bild --, und der
+Ruhelauf nimmt dabei Arm und Rute des ersten Wurfbilds.
+
+Hier stand einmal wurf_rute_0.png als Quelle des Ruhelaufs. Das ist eine
+fertig zusammengesetzte Zeichnung, die tools/figur_nachziehen.py nie gesehen
+hat: gemessen wichen 34 Pixel ab, und es waren genau die 34, die dort
+berichtigt werden -- schwarzer Zopfumriss, Kragenecke, Kragenspitze, Saum.
+Das GIF zeigte im Ruhelauf also den alten Stand.
 
 Beim Wurf haengen die Beine still. Sie schwingen genau vier Mal, weil der
 Ruhelauf auf 4 x BEIN_ZUG Schritte gelegt ist und der Schwung bei null
@@ -18,7 +23,6 @@ import os
 import random
 import sys
 
-import numpy as np
 from PIL import Image, ImageDraw
 
 from tools import figure_parts as fp
@@ -122,23 +126,6 @@ SCHNUR_PUNKTE = 12
 ZIEL_X = LINKS + fp.FRAME + 20
 
 
-def rutenebene(bild):
-    """Was die Rute im fertigen Bild ausmacht -- gegen die nackten Ebenen."""
-    ohne = Image.open(os.path.join(TEILE, "sit3_rumpf.png")).convert("RGBA")
-    for teil in ("sit3_arm_fern.png", "sit3_arm_nah.png"):
-        ohne.alpha_composite(Image.open(os.path.join(TEILE, teil)).convert("RGBA"))
-    a = np.array(bild).astype(int)
-    b = np.array(ohne).astype(int)
-    anders = (np.abs(a - b).sum(2) > 30) | ((a[:, :, 3] > 128) & (b[:, :, 3] <= 128))
-    out = Image.new("RGBA", bild.size, (0, 0, 0, 0))
-    op, bp = out.load(), bild.load()
-    for y in range(fp.FRAME):
-        for x in range(fp.FRAME):
-            if anders[y, x]:
-                op[x, y] = bp[x, y]
-    return out
-
-
 def buehne():
     """Der Steg hinter ihr, davor das Wasser -- die Pfosten enden darin.
 
@@ -218,7 +205,12 @@ def wurfbild(ebenen, koepfe, stab, anker, griff, arm, zustand):
     out.alpha_composite(
         pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge, seit),
         (0, OBEN))
-    vx, vy = griff[0] - anker[0], griff[1] - anker[1]
+    ## Die Rute geht mit dem Atem mit -- ein Pixel, wie in
+    ## scenes/fishing/angler.gd::ROD_BREATH. Im Ruhelauf hat der Arm nur einen
+    ## Zustand, die Faust steht also still; ohne diesen Versatz haenge die
+    ## Rute reglos an einer atmenden Figur. Das Fenster wandert nach oben,
+    ## damit die Rute nach unten rutscht.
+    vx, vy = griff[0] - anker[0], griff[1] - anker[1] - atem
     out.alpha_composite(stab, (0, 0),
                         (vx, vy - OBEN, vx + fp.FRAME, vy + fp.FRAME))
     out.alpha_composite(arm, (0, OBEN))
@@ -478,10 +470,6 @@ def ablauf(saat=11):
 
 
 def main(ziel):
-    ruhe = Image.open(os.path.join(SRC, "wurf_rute_0.png")).convert("RGBA")
-    ebenen = fp.split(ruhe, rutenebene(ruhe))
-    koepfe = {s: fp.eye_state(ebenen["head"], s)
-              for s in ("open", "half", "closed")}
     anker = json.load(open(os.path.join(SRC, "wurf_anker.json")))
     staebe = [Image.open(os.path.join(SRC, "wurf_stab_%d.png" % i)).convert("RGBA")
               for i in range(10)]
@@ -510,13 +498,14 @@ def main(ziel):
     bilder, zeiten = [], []
     zeit = 0.0      # laufende Sekunden, fuer Welle und Drift
     for art, nummer, atem, zopf, bein, auge, ms, seit, koeder in ablauf():
+        ## Im Ruhelauf stehen Arm und Rute wie im ersten Wurfbild -- die
+        ## Bilder sind byteweise dieselben. Gebaut wird deshalb ueberall
+        ## gleich, und es gibt keine zweite Quelle, die veralten kann.
         if art == "ruhe":
-            img = hoch(pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein,
-                                         auge, seit))
-        else:
-            img = wurfbild(wurf_ebenen, wurf_koepfe, staebe[nummer],
-                           anker["anker"][nummer], anker["griff"],
-                           arme[nummer], (atem, zopf, bein, auge, seit))
+            nummer = 0
+        img = wurfbild(wurf_ebenen, wurf_koepfe, staebe[nummer],
+                       anker["anker"][nummer], anker["griff"],
+                       arme[nummer], (atem, zopf, bein, auge, seit))
         ganz = szene.copy()
         wasser_malen(ganz, zeit)
         ganz.alpha_composite(img, (LINKS, 0))
