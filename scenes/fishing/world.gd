@@ -236,7 +236,11 @@ func _process(delta: float) -> void:
 	## gezeichnete Wellenlinie am Ufer -- er liegt weiter draussen.
 	var wasserlinie := _bobber_home.y + _wellenhoehe(
 		clampf(_bobber_home.x / maxf(size.x, 1.0), 0.0, 1.0))
-	var zeilen := _schneide(_bobber, _bobber_mitte, wasserlinie, true)
+	## Nur schneiden, wenn er ueberhaupt dazugehoert -- sonst setzt der Schnitt
+	## sprite.visible selbst wieder auf true, sobald ein Stueck ueber der
+	## Wasserlinie liegt, und die Sperre von oben waere umsonst gewesen.
+	var zeilen := _schneide(_bobber, _bobber_mitte, wasserlinie, true) \
+		if _bobber_sichtbar else 0.0
 	_setze_saum(zeilen, wasserlinie)
 	# Der Koeder haengt am Vorfach unter dem Schwimmer. Er taucht vor ihm ein
 	# und verschwindet dabei von selbst -- derselbe Schnitt.
