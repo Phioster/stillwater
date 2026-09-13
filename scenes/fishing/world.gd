@@ -44,8 +44,10 @@ const BOBBER_SCALE := 2.16
 ## Stiefelspitze (122) sind es 38 Figurpixel, und Figur und Steg haben
 ## denselben Massstab. Bei 40 lagen sie knapp ueber der RUHENDEN Wasserlinie
 ## -- seit das Wasser sichtbar wellt, griff der Kamm darueber. 46 laesst rund
-## acht Figurpixel Luft, auch ueber dem Stoss eines Bisses.
-const DECK_OVER_WATER := 46.0
+## acht Figurpixel Luft, auch ueber dem Stoss eines Bisses. Auf Wunsch etwas
+## herabgesetzt -- 43 laesst gut fuenf Figurpixel Luft und bleibt damit klar
+## ueber der bei 40 dokumentierten Kammberuehrung.
+const DECK_OVER_WATER := 43.0
 ## Wo die Anglerin sitzt, vom linken Stegende in Stegpixeln. Ihr Sprite haengt
 ## an der oberen linken Ecke; bei 187 liegt ihre Sitzflaeche (Figurspalten
 ## 44 bis 68) genau auf den letzten Planken, und die Beine haengen ueber der
@@ -106,7 +108,8 @@ const LINE_SAG := 0.28
 ## steht nach aussen und faellt nur wenig. Sitzt der Schwimmer, faellt sie in
 ## den senkrechten Durchhang -- ueber LINE_SETTLE Sekunden, sonst springt sie.
 const LINE_BELLY_AIR := Vector2(0.86, 0.51)
-const LINE_BELLY_WATER := Vector2(0.0, 1.0)
+## Etwas mehr Bauch als der reine senkrechte Durchhang (1.0), auf Wunsch.
+const LINE_BELLY_WATER := Vector2(0.0, 1.4)
 const LINE_SETTLE := 0.14
 ## Wie weit der Koeder unter dem Schwimmer haengt, in Figurpixeln. Er sitzt am
 ## Vorfach: beim Ausholen baumelt er an der Rutenspitze, im Flug zieht er
