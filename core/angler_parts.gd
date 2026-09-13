@@ -20,26 +20,26 @@ const AT_HEAD: Array[StringName] = [&"zopf", &"kopf", &"hals", &"auge"]
 
 ## Rahmen und Anker im 128er Feld, je Teil.
 const BOX := {
-	&"zopf": Rect2i(34, 5, 21, 33),
+	&"zopf": Rect2i(34, 5, 23, 33),
 	&"beine": Rect2i(64, 87, 37, 36),
-	&"hals": Rect2i(54, 28, 6, 4),
+	&"hals": Rect2i(54, 28, 6, 6),
 	&"rumpf": Rect2i(44, 30, 45, 59),
-	&"kopf": Rect2i(47, 5, 25, 28),
+	&"kopf": Rect2i(47, 5, 30, 31),
 	&"auge": Rect2i(63, 20, 4, 3),
 	&"armfern": Rect2i(67, 51, 7, 19),
-	&"arm": Rect2i(45, 36, 38, 42),
+	&"arm": Rect2i(45, 36, 38, 44),
 }
 
 ## Wieviele Bilder ein Blatt traegt.
 const STATES := {
-	&"zopf": 28,
+	&"zopf": 29,
 	&"beine": 13,
-	&"hals": 1,
+	&"hals": 2,
 	&"rumpf": 1,
-	&"kopf": 1,
+	&"kopf": 2,
 	&"auge": 3,
 	&"armfern": 1,
-	&"arm": 11,
+	&"arm": 12,
 }
 
 ## Welche Kosmetikebenen in diesem Teil ueberhaupt vorkommen. Eine

@@ -136,14 +136,25 @@ def zustaende(ebenen, koepfe):
             ap[x, y] = qp[x, y]
         return aus
 
+    ## Zustand 1 von Kopf, Hals und Zopf: die Does-Pose bei voller
+    ## Koedertasche (siehe tools/kopf_neigen.py). Kein Dreieck aus
+    ## Atem/Weite/Versatz wie beim Ruhelauf -- eine feste Neigung, von Hand
+    ## am Rutenpass-Werkzeug abgenommen (2026-09-13) und Pixel fuer Pixel
+    ## nachgebessert. Der Zopf haengt hier NICHT am Kopf-Blatt: er ist sein
+    ## eigenes Teil und bekommt deshalb sein eigenes zusaetzliches Blatt statt
+    ## eines 29. Eintrags im Atem/Weite/Versatz-Dreieck.
+    does_kopf = Image.open(os.path.join(SRC, "does_kopf.png")).convert("RGBA")
+    does_hals = Image.open(os.path.join(SRC, "does_hals.png")).convert("RGBA")
+    does_zopf = Image.open(os.path.join(SRC, "does_zopf_links2.png")).convert("RGBA")
+
     aus = {
         "zopf": [_zopf_mit_naht(ebenen, koepfe, atem, w, seit)
-                 for atem, w, seit in zopf_zustaende()],
+                 for atem, w, seit in zopf_zustaende()] + [does_zopf],
         ## Ein Bild je Teil: der Atem ist ein Versatz des Sprites, kein
         ## anderes Bild, und das Auge ist ein eigenes Teil. Hier standen zwei
         ## byteweise gleiche Bilder, und _index() gab immer 0 zurueck.
-        "kopf": [kopfteil(rest, koepfe["open"])],
-        "hals": [kopfteil(hals, koepfe["open"])],
+        "kopf": [kopfteil(rest, koepfe["open"]), does_kopf],
+        "hals": [kopfteil(hals, koepfe["open"]), does_hals],
         "rumpf": [_verschoben(ebenen["torso"], lambda x, y: (x, y))],
         "beine": [_verschoben(ebenen["legs"],
                               lambda x, y, w=w: (x + fp.swing(y, w,
@@ -158,7 +169,7 @@ def zustaende(ebenen, koepfe):
     }
     aus["arm"] = [Image.open(os.path.join(TEILE, "sit3_arm_nah.png")).convert("RGBA")]
     aus["arm"] += [Image.open(os.path.join(SRC, "wurf_arm_%d.png" % i)).convert("RGBA")
-                   for i in range(10)]
+                   for i in range(11)]
     aus["armfern"] = [Image.open(os.path.join(TEILE, "sit3_arm_fern.png")).convert("RGBA")]
     return aus
 

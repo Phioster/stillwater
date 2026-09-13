@@ -21,26 +21,27 @@ extends RefCounted
 ## — kostet aber ein Viertel an Textur.
 const FRAME_SIZE: int = 128
 
-## Elf Zustaende: Ruhe plus zehn Wurfbilder. Die Rute folgt dem ARM, denn dort
-## ist die Faust. Zustand 0 teilt sich Bild und Griff mit Wurfbild 0 --
-## sit3_arm_nah.png und wurf_arm_0.png sind byteweise dasselbe Bild.
-const ROD_STATES: int = 11
+## Zwoelf Zustaende: Ruhe, zehn Wurfbilder, und die Does-Pose bei voller
+## Koedertasche (Zustand 11). Zustand 0 teilt sich Bild und Griff mit
+## Wurfbild 0 -- sit3_arm_nah.png und wurf_arm_0.png sind byteweise
+## dasselbe Bild.
+const ROD_STATES: int = 12
 
 ## Wo der Griff im 128er Figurenfeld liegt, je Zustand. Gemessen an
 ## assets/source/figure/wurf_anker.json, nicht getippt.
 const ROD_ANCHOR: Array[Vector2i] = [
 	Vector2i(70, 68), Vector2i(70, 68), Vector2i(74, 63), Vector2i(76, 54),
 	Vector2i(76, 47), Vector2i(75, 42), Vector2i(77, 48), Vector2i(76, 57),
-	Vector2i(72, 66), Vector2i(67, 71), Vector2i(68, 70)]
+	Vector2i(72, 66), Vector2i(67, 71), Vector2i(68, 70), Vector2i(63, 72)]
 
 ## Die Spitze, relativ zum Griff -- am gezeichneten Rutenbild abgenommen.
-## Alle elf Zustaende tragen dieselbe Laenge: 76 Pixel, gut zwei Drittel der
+## Alle Zustaende tragen dieselbe Laenge: 76 Pixel, gut zwei Drittel der
 ## sitzenden Figurenhoehe von 118.
 const ROD_TIP_OFF: Array[Vector2i] = [
 	Vector2i(43, -63), Vector2i(43, -63), Vector2i(24, -72),
 	Vector2i(-12, -75), Vector2i(-40, -65), Vector2i(-47, -60),
 	Vector2i(-34, -68), Vector2i(14, -75), Vector2i(40, -65),
-	Vector2i(56, -51), Vector2i(45, -61)]
+	Vector2i(56, -51), Vector2i(45, -61), Vector2i(75, 10)]
 
 ## --- Die Rute hat ihr EIGENES Bildraster ------------------------------------
 ##
@@ -56,9 +57,9 @@ const ROD_FRAME_SIZE: int = 160
 ## Wo der Griff INNERHALB eines Rutenbildes liegt: in der Mitte, damit die
 ## Rute in jede Richtung gleich weit reicht.
 const ROD_GRIP: Vector2i = Vector2i(80, 80)
-## Zehn gezeichnete Winkel; Ruhe und Wurfbild 0 teilen sich einen.
-const ROD_FRAMES: int = 10
-const ROD_FRAME: Array[int] = [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+## Elf gezeichnete Winkel; Ruhe und Wurfbild 0 teilen sich einen.
+const ROD_FRAMES: int = 11
+const ROD_FRAME: Array[int] = [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 static func frame_of(frame: int) -> int:
 	return clampi(frame, 0, ROD_STATES - 1)

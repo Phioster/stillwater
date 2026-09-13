@@ -119,6 +119,12 @@ func _tint(category: StringName, index: int) -> void:
 ## Kopfversatz stecken NICHT in den Blaettern: sie sind Versatz der Gruppe.
 ## Nur die Scherungen von Zopf und Beinen sind gebacken -- eine Scherung
 ## verschiebt jede Zeile anders und laesst sich nicht als Position ausdruecken.
+## Der Armzustand der Does-Pose (volle Koedertasche, siehe
+## tools/rute_anheften.py). Kopf, Hals und Zopf bekommen dabei ihren eigenen
+## zweiten bzw. letzten Zustand statt der Atem/Weite-Formel -- eine feste
+## Neigung, keine Bewegung.
+const DOES_ARM: int = 11
+
 func set_pose(atem: int, zopf: int, seit: int, bein: int, auge: StringName,
 		arm: int) -> void:
 	_atem = atem
@@ -127,8 +133,9 @@ func set_pose(atem: int, zopf: int, seit: int, bein: int, auge: StringName,
 	_bein = bein
 	_auge = auge
 	_arm = arm
+	var does := arm == DOES_ARM
 	var zopf_i := AnglerParts.zopf_index(atem, zopf, seit)
-	if zopf_i < 0:
+	if zopf_i < 0 and not does:
 		# Darf nicht vorkommen: das Bauwerkzeug zaehlt alle erreichbaren
 		# Tripel auf. Wenn doch, lieber der naechstbeste Zustand als ein
 		# leerer Hinterkopf -- und eine Meldung, die den Fall benennt.
@@ -143,12 +150,21 @@ func set_pose(atem: int, zopf: int, seit: int, bein: int, auge: StringName,
 		gruppe.position = versatz
 		var i := 0
 		match name:
-			&"zopf": i = zopf_i
+			&"zopf": i = int(AnglerParts.STATES[name]) - 1 if does else zopf_i
 			&"beine": i = AnglerParts.leg_index(bein)
 			&"auge": i = AnglerParts.eye_index(auge)
+			&"kopf", &"hals": i = 1 if does else 0
 			&"arm": i = clampi(arm, 0, int(AnglerParts.STATES[name]) - 1)
 		for ebene in AnglerParts.LAYERS[name]:
 			(gruppe.get_node(NodePath(String(ebene))) as Sprite2D).frame = i
+		match name:
+			# Das gemalte Auge sitzt schon im Kopf-Blatt der Does-Pose --
+			# eine zweite Auflage laege an den alten, ungedrehten Fenster-
+			# koordinaten daneben.
+			&"auge": gruppe.visible = not does
+			# Der Zopf haengt beim Nicken vor dem Gesicht, nicht dahinter --
+			# umgekehrt zu jeder anderen Haltung.
+			&"zopf": gruppe.z_index = 1 if does else 0
 	_place_hat()
 	_place_rod()
 
@@ -273,6 +289,10 @@ func _process(delta: float) -> void:
 		FishingSim.State.FIGHT:
 			# Arm vorn, Rute unter Zug -- das letzte Wurfbild.
 			_cast_pose(atem, AnglerParts.CAST_ZOPF.size() - 1)
+		FishingSim.State.INVENTORY_FULL:
+			# Doest: Rute quer im Schoss statt hochgehalten, Auge zu. Zustand
+			# 11 ist die elfte Armhaltung (siehe tools/rute_anheften.py).
+			set_pose(atem.x, atem.y, 0, _legs(delta), &"closed", 11)
 		_:
 			# Stillstehen sieht tot aus: ein Atemzug hin und zurueck, die
 			# Beine baumeln, und hin und wieder ein Blinzeln dazwischen.

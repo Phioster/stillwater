@@ -26,14 +26,16 @@ class TestRahmen(unittest.TestCase):
     def test_jedes_teil_hat_seine_zustaende(self):
         ## Die Zahlen sind am Bild gemessen. Der Zopf haengt am TRIPEL aus
         ## Atem, Weite und Kopfversatz, weil seine Naht zum Kopf von allen
-        ## dreien abhaengt und mitgebacken werden muss -- 28 erreichbare.
-        ## Kopf und Hals haben EINEN Zustand: der Atem ist ein Versatz.
-        self.assertEqual(28, len(self.zustaende["zopf"]))
-        self.assertEqual(1, len(self.zustaende["kopf"]))
-        self.assertEqual(1, len(self.zustaende["hals"]))
+        ## dreien abhaengt und mitgebacken werden muss -- 28 erreichbare,
+        ## plus der 29. fuer die Does-Pose (volle Koedertasche).
+        ## Kopf und Hals haben sonst EINEN Zustand (der Atem ist ein
+        ## Versatz), plus denselben zweiten fuer die Does-Pose.
+        self.assertEqual(29, len(self.zustaende["zopf"]))
+        self.assertEqual(2, len(self.zustaende["kopf"]))
+        self.assertEqual(2, len(self.zustaende["hals"]))
         self.assertEqual(1, len(self.zustaende["rumpf"]))
         self.assertEqual(13, len(self.zustaende["beine"]))
-        self.assertEqual(11, len(self.zustaende["arm"]))
+        self.assertEqual(12, len(self.zustaende["arm"]))
         self.assertEqual(1, len(self.zustaende["armfern"]))
         self.assertEqual(3, len(self.zustaende["auge"]))
 
@@ -169,15 +171,16 @@ class TestZopfZustaende(unittest.TestCase):
         zuviel = set(tb.zopf_zustaende()) - self._erreichbar()
         self.assertEqual(set(), zuviel, "unerreichbar: %s" % sorted(zuviel))
 
-    def test_kopf_und_hals_haben_einen_zustand(self):
-        """Der Atem ist ein Versatz, kein Bild. Zwei gleiche Bilder abzulegen
-        war toter Speicher -- _index() gab fuer beide immer 0 zurueck."""
+    def test_kopf_und_hals_haben_zwei_zustaende(self):
+        """Der Atem ist ein Versatz, kein Bild -- zwei gleiche Bilder fuer
+        die Ruhehaltung waeren toter Speicher gewesen. Der zweite Zustand
+        ist echt: die feste Neigung der Does-Pose (volle Koedertasche)."""
         ebenen = fp.split(_laden("sit3_rumpf.png"))
         koepfe = {s: fp.eye_state(ebenen["head"], s)
                   for s in ("open", "half", "closed")}
         z = tb.zustaende(ebenen, koepfe)
-        self.assertEqual(1, len(z["kopf"]))
-        self.assertEqual(1, len(z["hals"]))
+        self.assertEqual(2, len(z["kopf"]))
+        self.assertEqual(2, len(z["hals"]))
 
 
 class TestErzeugteDatei(unittest.TestCase):

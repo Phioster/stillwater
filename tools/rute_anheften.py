@@ -34,10 +34,16 @@ FAUST = (70.0, 68.0)          # Mitte der Faust im Ruhebild
 GRIFF = (160.0, 160.0)        # ROD_GRIP im 320er Rutenraster
 QUER = 3.0                    # ab diesem Abstand zur Rutenachse: Rolle
 KORK = 0.0                    # die Rute bringt ihr Griffende schon mit
+## Elftes Bild, kein Wurf: die Does-Pose bei voller Koedertasche (Nutzer hat
+## Schulter/Ellbogen und Rutenwinkel/-griff selbst am Rutenpass-Werkzeug
+## eingestellt, 2026-09-13).
+DOES_WINKEL_ZUSATZ = 62.0
+DOES_GRIFF_VERSATZ = (-2, -2)
+
 ## Feinkorrektur je Bild: Winkel in Grad, dann Versatz in Feldern. Wird
 ## Bild fuer Bild abgenommen, nicht ueber die ganze Reihe gemittelt -- die
 ## Rute sitzt in jeder Pose anders in der Faust.
-KORREKTUR = [(0.0, (0, 0))] * 10
+KORREKTUR = [(0.0, (0, 0))] * 10 + [(0.0, DOES_GRIFF_VERSATZ)]
 KORREKTUR[1] = (2.5, (0, 1))
 KORREKTUR[3] = (-13.6, (0, 0))   # eingezeichnete Richtung: -121.4 Grad
 KORREKTUR[4] = (-8.3, (0, 0))    # Umkehrpunkt bleibt hinter Pose 4: -128.0 Grad
@@ -57,7 +63,7 @@ HAUT_DUNKEL = (0x9e, 0x3f, 0x51)   # die Kante unten an der Hand
 ## Kein Ton, sondern eine Anweisung: nimm, was hinter der Rute liegt (Rock,
 ## Aermel). None loescht dagegen wirklich -- nur dort, wo nichts dahinter ist.
 DAHINTER = "dahinter"
-GRIFF_FLICKEN = [[] for _ in range(10)]
+GRIFF_FLICKEN = [[] for _ in range(11)]
 GRIFF_FLICKEN[1] = (
     [((72, 67), HOLZ_DUNKEL), ((72, 68), HOLZ_DUNKEL)]
     + [((x, y), HOLZ) for x, y in ((73, 67), (74, 67), (74, 68), (75, 68), (72, 69))]
@@ -117,6 +123,13 @@ GRIFF_FLICKEN[9] = (
 REIHE = [(0, 0), (-7, -11), (-15, -25), (-23, -36), (-30, -44),
          (-23, -33), (-13, -18), (-3, -4), (4, 8), (2, 4)]
 WINKEL = [-55.9, -74.8, -99.0, -107.8, -119.7, -109.0, -79.5, -66.6, -49.2, -53.6]
+
+## Elftes Bild, kein Wurf: die Does-Pose (siehe DOES_WINKEL_ZUSATZ oben).
+## WINKEL[10] wird unten aus dem gemessenen `grund` gesetzt, weil das
+## Rutenpass-Werkzeug den Winkel relativ zur gezeichneten Rute angibt
+## (Zusatzdrehung), nicht absolut wie die Wurfreihe.
+REIHE.append((1.0, 23.0))
+WINKEL.append(None)
 
 
 def teile_rute(bild):
@@ -248,6 +261,7 @@ def main():
     sp = max(zip(xs, ys), key=lambda q: (q[0] - GRIFF[0]) ** 2 + (q[1] - GRIFF[1]) ** 2)
     grund = math.degrees(math.atan2(sp[1] - GRIFF[1], sp[0] - GRIFF[0]))
     print("Rute zeigt von Haus aus auf %.1f Grad" % grund)
+    WINKEL[10] = grund + DOES_WINKEL_ZUSATZ
 
     bilder, staebe, arme, anker = [], [], [], []
     for i, (((ga, gb), soll)) in enumerate(zip(REIHE, WINKEL)):
