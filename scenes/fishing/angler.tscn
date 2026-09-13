@@ -80,7 +80,7 @@ centered = false
 centered = false
 
 [node name="Rod" type="Sprite2D" parent="."]
-hframes = 10
+hframes = 11
 centered = false
 
 [node name="arm" type="Node2D" parent="."]

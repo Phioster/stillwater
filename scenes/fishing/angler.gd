@@ -186,6 +186,9 @@ const LEG_TIME: float = 2.4
 ## sieht nach Uhrwerk aus.
 const LEG_SPREAD_MIN: int = 2
 const LEG_SPREAD_MAX: int = 6
+## Die Does-Pose baumelt kaum -- geklammert, nicht neu gezogen, damit es
+## sofort greift statt erst am naechsten Umkehrpunkt.
+const DOES_LEG_SPREAD: int = 2
 
 ## Wie lange ein Blinzeln dauert und wie oft es kommt. Nicht im Atemtakt:
 ## ein Atemzug dauert gut drei Sekunden, so oft blinzelt niemand.
@@ -268,13 +271,19 @@ func _place_hat() -> void:
 ## also still, und ohne diesen Versatz haengt die Rute reglos an einer
 ## atmenden Figur. Weil die Spitze 76 Pixel entfernt liegt, wird aus dem einen
 ## Pixel am Griff eine sichtbare Bewegung am Ende.
+##
+## Bei der Does-Pose gilt das NICHT: die Rute liegt auf dem Schoss, nicht in
+## der frei schwebenden Faust -- sie darf mit dem Atem nicht mitwandern.
 const ROD_BREATH: int = 1
+
+func _rod_atem() -> int:
+	return 0 if _arm == DOES_ARM else _atem * ROD_BREATH
 
 func _place_rod() -> void:
 	var rod: Sprite2D = $Rod
 	rod.frame = AnglerPose.ROD_FRAME[AnglerPose.frame_of(_arm)]
 	rod.position = Vector2(AnglerPose.rod_offset(_arm)) \
-		+ Vector2(0, float(_atem * ROD_BREATH))
+		+ Vector2(0, float(_rod_atem()))
 
 func _process(delta: float) -> void:
 	_idle_time += delta
@@ -292,7 +301,10 @@ func _process(delta: float) -> void:
 		FishingSim.State.INVENTORY_FULL:
 			# Doest: Rute quer im Schoss statt hochgehalten, Auge zu. Zustand
 			# 11 ist die elfte Armhaltung (siehe tools/rute_anheften.py).
-			set_pose(atem.x, atem.y, 0, _legs(delta), &"closed", 11)
+			# Die Beine baumeln kaum -- ein Doeschen sitzt still, kein Schwung
+			# wie im wartenden Stehen.
+			set_pose(atem.x, atem.y, 0, clampi(_legs(delta), -DOES_LEG_SPREAD,
+				DOES_LEG_SPREAD), &"closed", 11)
 		_:
 			# Stillstehen sieht tot aus: ein Atemzug hin und zurueck, die
 			# Beine baumeln, und hin und wieder ein Blinzeln dazwischen.
@@ -320,4 +332,4 @@ func _on_escaped(_f: FishData) -> void:
 ## nicht abbilden, und die Schnur begann daneben.
 func rod_tip() -> Vector2:
 	return position + (Vector2(AnglerPose.rod_tip(_arm))
-		+ Vector2(0, float(_atem * ROD_BREATH))) * scale
+		+ Vector2(0, float(_rod_atem()))) * scale
