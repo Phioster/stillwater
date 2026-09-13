@@ -44,10 +44,13 @@ const BOBBER_SCALE := 2.16
 ## Stiefelspitze (122) sind es 38 Figurpixel, und Figur und Steg haben
 ## denselben Massstab. Bei 40 lagen sie knapp ueber der RUHENDEN Wasserlinie
 ## -- seit das Wasser sichtbar wellt, griff der Kamm darueber. 46 laesst rund
-## acht Figurpixel Luft, auch ueber dem Stoss eines Bisses. Auf Wunsch etwas
-## herabgesetzt -- 43 laesst gut fuenf Figurpixel Luft und bleibt damit klar
-## ueber der bei 40 dokumentierten Kammberuehrung.
-const DECK_OVER_WATER := 43.0
+## acht Figurpixel Luft, auch ueber dem Stoss eines Bisses.
+##
+## Auf Wunsch bewusst weit herabgesetzt: der Steg soll wie im Wasser stehend
+## aussehen, die Pfosten sollen die Oberflaeche beruehren -- die Welle darf
+## die Deckkante jetzt erreichen, das ist kein Fehler mehr wie bei 40, sondern
+## der Punkt.
+const DECK_OVER_WATER := 8.0
 ## Wo die Anglerin sitzt, vom linken Stegende in Stegpixeln. Ihr Sprite haengt
 ## an der oberen linken Ecke; bei 187 liegt ihre Sitzflaeche (Figurspalten
 ## 44 bis 68) genau auf den letzten Planken, und die Beine haengen ueber der
