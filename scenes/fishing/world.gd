@@ -82,7 +82,12 @@ const WAVE_BIAS := 9.5
 ## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
 ## ein zwei Pixel duenner Streifen Wasser durch (am Screenshot ausgemessen).
-const SHORE_OVERLAP := 10.0
+##
+## Bei 10 schnitt die Wasserflaeche die Stegpfosten so weit oberhalb der
+## Welle ab, dass sie sichtbar darueber zu schweben schienen -- der ganze
+## Streifen dazwischen ist Uferfarbe, nicht Wellenwasser. Knapp ueber dem
+## dokumentierten Mindestwert von 2 belassen.
+const SHORE_OVERLAP := 3.0
 ## Kleiner, laufender Antrieb durchs Zappeln im Kampf -- daraus entsteht die
 ## Stoerung, die von seiner Position nach aussen laeuft. Beim Warten treibt er
 ## nichts an: dort traegt IHN das Wasser, nicht umgekehrt.
