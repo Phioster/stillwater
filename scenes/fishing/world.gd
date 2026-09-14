@@ -78,7 +78,12 @@ const WATER_POINTS := 28
 const WAVE_SCALE := 7.0
 ## Die Welle schwingt komplett UNTERHALB der Uferlinie. Sonst lief sie ins Gras
 ## und die kerzengerade Kante des Hintergrundbilds blieb daneben sichtbar.
-const WAVE_BIAS := 9.5
+##
+## Herabgesetzt, zusammen mit SHORE_OVERLAP: der verbleibende Uferfarbstreifen
+## zwischen abgeschnittenem Pfosten und Welle liess sie noch darueber
+## schweben. Wenn hier eine gerade Kante im Gras auftaucht, muss der Wert
+## wieder hoch.
+const WAVE_BIAS := 5.0
 ## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
 ## ein zwei Pixel duenner Streifen Wasser durch (am Screenshot ausgemessen).
