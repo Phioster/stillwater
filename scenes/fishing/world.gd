@@ -46,11 +46,14 @@ const BOBBER_SCALE := 2.16
 ## -- seit das Wasser sichtbar wellt, griff der Kamm darueber. 46 laesst rund
 ## acht Figurpixel Luft, auch ueber dem Stoss eines Bisses.
 ##
-## Auf Wunsch bewusst weit herabgesetzt: der Steg soll wie im Wasser stehend
-## aussehen, die Pfosten sollen die Oberflaeche beruehren -- die Welle darf
-## die Deckkante jetzt erreichen, das ist kein Fehler mehr wie bei 40, sondern
-## der Punkt.
-const DECK_OVER_WATER := 8.0
+## Auf Wunsch herabgesetzt, damit der Steg im Wasser zu stehen scheint. Die
+## Wasserflaeche schneidet ihn aber an einer FESTEN Linie ab (water_y -
+## SHORE_OVERLAP, siehe _update_water_line) -- nicht erst am Fuss der
+## Pfosten, sondern praktisch am Ufer. Bei 8 rutschte darum schon die
+## Deckoberflaeche selbst darunter (sie braucht rund 14 Stegzeilen Platz).
+## 30 laesst das Deck ganz und zeigt ein gutes Stueck Pfosten bis kurz vors
+## Ufer.
+const DECK_OVER_WATER := 30.0
 ## Wo die Anglerin sitzt, vom linken Stegende in Stegpixeln. Ihr Sprite haengt
 ## an der oberen linken Ecke; bei 187 liegt ihre Sitzflaeche (Figurspalten
 ## 44 bis 68) genau auf den letzten Planken, und die Beine haengen ueber der
