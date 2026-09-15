@@ -51,10 +51,6 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(10, 13)
 	if filename == "bait_pond_grub.png":
 		return Vector2i(10, 6)
-	# Kachelbares Uferschilf vor Steg und Wasserflaeche (scenes/fishing/
-	# world.gd::GRASS_TILE_W/GRASS_H).
-	if filename == "shore_grass.png":
-		return Vector2i(16, 28)
 	return Vector2i(-1, -1)
 
 func _count_opaque(img: Image) -> int:
