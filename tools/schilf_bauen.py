@@ -1,56 +1,61 @@
-"""Die Schilfhalme im Hintergrund von Willow Lake zeichnen.
+"""Himmel und Schilf von Willow Lake bauen.
 
     python3 -m tools.schilf_bauen
 
-Schreibt assets/art/bg_lake.png an Ort und Stelle um: alles oberhalb der
-Uferbande in den drei Schilftoenen wird durch neu gezeichnete Halme
-ersetzt. Deterministisch (fester Zufallssamen) und wiederholbar -- ein
-zweiter Lauf liefert dasselbe Bild.
+Faerbt zuerst den Himmel (tools/himmel_bauen) und zeichnet danach die
+Halme neu. Beides deterministisch und wiederholbar: ein zweiter Lauf
+liefert dasselbe Bild.
 
-Vorher standen dort 40 gleich verteilte Ein-Pixel-Striche in fuenf
-Hoehen mit Periode 46. Im Spiel ist ein Hintergrundpixel rund sechs
+Vorher standen dort 40 gleich verteilte Ein-Pixel-Striche in fuenf Hoehen
+mit Periode 46. Im Spiel ist ein Hintergrundpixel rund sechs
 Bildschirmpixel breit, sie lasen sich deshalb als Balken statt als
-Schilf. Jetzt: gestreute Bueschel, geneigte Halme, haengende Blaetter
-und Rohrkolben.
+Schilf. Jetzt: gestreute Bueschel, kraeftige Halme mit Schattenseite,
+Blaetter, die nach aussen OBEN wegwachsen, trockene Halme dazwischen und
+Rohrkolben.
 
 Nur Willow Lake hat Schilf; die uebrigen Zonenbilder enthalten keinen
 einzigen Halmpixel und werden nicht angefasst.
 
-WICHTIG: reed_dark ist die Farbe der UFERBANDE. Vor dem Himmel liest
-sie sich als Schwarz -- sie darf nur in den untersten Zeilen liegen,
-wo sie mit der Bande verschmilzt, nie im freien Halm.
+WICHTIG: reed_dark ist die Farbe der UFERBANDE. Vor dem Himmel liest sie
+sich als Schwarz -- sie darf nur in den untersten Zeilen liegen, wo sie
+mit der Bande verschmilzt, nie im freien Halm.
 """
 import os
 import random
 import sys
-from collections import Counter
+
 from PIL import Image
 
-DARK = (47, 74, 52, 255)        # reed_dark -- nur im Ufer
-MID = (77, 122, 74, 255)        # reed
-LIGHT = (123, 168, 95, 255)     # reed_light
-KOLBEN = (106, 67, 38, 255)     # leather -- Rohrkolben, wie das Stegholz
-KOLBEN_HELL = (122, 90, 60, 255)  # wood
-GRUEN = {DARK, MID, LIGHT, KOLBEN, KOLBEN_HELL}
-UFER_OBEN = 78
+S = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(S))
 
+from tools import himmel_bauen
 
-def leeren(px, w):
-    """Die alten Halme mit der Himmelfarbe IHRER Zeile uebermalen.
+WURZEL = os.path.dirname(S)
+BILD = os.path.join(WURZEL, "assets", "art", "bg_lake.png")
+UFER_OBEN = himmel_bauen.UFER_OBEN
 
-    Auf durchsichtig geloescht schienen an ihrer Stelle die dunklen
-    Bildschirmraender durch -- als schwarze Balken vor dem Himmel. Der
-    Himmel ist ein reiner Zeilenverlauf, seine Farbe ist also je Zeile
-    eindeutig die haeufigste.
-    """
-    for y in range(UFER_OBEN):
-        zaehler = Counter(px[x, y] for x in range(w) if px[x, y] not in GRUEN)
-        if not zaehler:
-            continue
-        himmel = zaehler.most_common(1)[0][0]
-        for x in range(w):
-            if px[x, y] in GRUEN:
-                px[x, y] = himmel
+## Die drei Schilftoene aus core/palette.gd, dazu drei, die daraus
+## abgeleitet sind: eine Schattenseite fuer dicke Halme, ein helles
+## Gruen fuer frische Spitzen und ein trockenes Olivgelb fuer alte Halme.
+DARK = (47, 74, 52, 255)          # reed_dark -- nur im Ufer
+SCHATTEN = (58, 94, 60, 255)
+MID = (77, 122, 74, 255)          # reed
+LIGHT = (123, 168, 95, 255)       # reed_light
+FRISCH = (163, 199, 112, 255)
+TROCKEN = (152, 148, 88, 255)
+TROCKEN_HELL = (186, 178, 116, 255)
+## Rohrkolben in den Holztoenen des Stegs (leather, wood).
+KOLBEN = (106, 67, 38, 255)
+KOLBEN_HELL = (122, 90, 60, 255)
+
+## (Koerper, Spitze, Schatten) -- die Halme eines Bueschels ziehen daraus.
+SORTEN = (
+    (MID, LIGHT, SCHATTEN),
+    (LIGHT, FRISCH, MID),
+    (MID, FRISCH, SCHATTEN),
+    (TROCKEN, TROCKEN_HELL, MID),
+)
 
 
 def _setz(px, x, y, farbe, w, belegt):
@@ -59,26 +64,35 @@ def _setz(px, x, y, farbe, w, belegt):
         belegt.add((x, y))
 
 
+def leeren(px, w):
+    """Den Himmel ueber alles legen, was vom letzten Lauf stehen blieb."""
+    for y in range(UFER_OBEN):
+        ton = himmel_bauen.farbe(y)
+        for x in range(w):
+            px[x, y] = ton
+
+
 def halm(px, x0, hoehe, neigung, w, rng, belegt, kolben=False):
-    """Fuss im Ufergruen, Halm satt, Spitze hell."""
-    hell = rng.random() < 0.4
-    koerper = LIGHT if hell else MID
-    spitze = MID if hell else LIGHT
+    """Ein Halm. Ab mittlerer Hoehe zwei Pixel breit, mit Schattenseite."""
+    koerper, spitze, schatten = SORTEN[rng.randrange(len(SORTEN))]
+    dick = hoehe >= 16
     spur = []
     for i in range(hoehe):
         t = i / max(1, hoehe - 1)
         x = x0 + int(round(neigung * t ** 1.7))
         y = UFER_OBEN - 1 - i
         spur.append((x, y))
-        # Dunkel nur ganz unten, wo die Uferbande direkt anschliesst.
         if i < 2:
-            farbe = DARK
+            ton = DARK
         elif hoehe > 7 and t > 0.85:
-            farbe = spitze
+            ton = spitze
         else:
-            farbe = koerper
-        _setz(px, x, y, farbe, w, belegt)
-    # Blaetter: durchgehender, haengender Bogen, am Halm angewachsen.
+            ton = koerper
+        _setz(px, x, y, ton, w, belegt)
+        # Die Schattenseite steht rechts: das Licht kommt von links, wie
+        # beim Steg (tools/steg_bauen.py zieht seine Kante genauso).
+        if dick and i >= 2:
+            _setz(px, x + 1, y, DARK if i < 3 else schatten, w, belegt)
     if hoehe >= 9:
         for _ in range(1 if hoehe < 15 else 2):
             i = rng.randint(int(hoehe * 0.4), int(hoehe * 0.8))
@@ -94,7 +108,8 @@ def halm(px, x0, hoehe, neigung, w, rng, belegt, kolben=False):
                     y -= 1
                 if k == laenge and laenge >= 4:
                     y += 1
-                _setz(px, bx + richtung * k, y, koerper, w, belegt)
+                _setz(px, bx + richtung * k, y,
+                      spitze if k == laenge else koerper, w, belegt)
     if kolben:
         # Zwei Pixel breit und vier hoch: schmaler liest er sich als
         # versprengter Farbpunkt statt als Rohrkolben.
@@ -122,19 +137,16 @@ def zeichnen(px, w, saat=11):
         x += rng.randint(6, 16)
 
 
-WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BILD = os.path.join(WURZEL, "assets", "art", "bg_lake.png")
-
-
 def main(quelle=BILD, ziel=None):
     ziel = ziel or quelle
-    im = Image.open(quelle).convert("RGBA")
+    himmel_bauen.main(quelle, ziel)
+    im = Image.open(ziel).convert("RGBA")
     w, _ = im.size
     px = im.load()
     leeren(px, w)
     zeichnen(px, w)
     im.save(ziel)
-    print("geschrieben:", ziel)
+    print("Schilf gezeichnet:", ziel)
 
 
 if __name__ == "__main__":

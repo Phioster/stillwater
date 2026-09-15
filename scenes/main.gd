@@ -92,10 +92,14 @@ func _apply_safe_area() -> void:
 	var top := float(safe.position.y) * scale_y
 	var right := float(screen.x - safe.end.x) * scale_x
 	var bottom := float(screen.y - safe.end.y) * scale_y
-	$Row.offset_left = left
-	$Row.offset_top = top
+	# Die WELT laeuft randlos bis an die Geraetekante: der Kameraausschnitt
+	# soll nicht als grauer Streifen neben dem Bild stehen. Nur was gelesen
+	# oder getroffen werden muss, bleibt im sicheren Bereich -- HUD und Panel
+	# weiter unten, und rechts die Tab-Leiste, die am Ende dieser Zeile sitzt.
+	$Row.offset_left = 0.0
+	$Row.offset_top = 0.0
 	$Row.offset_right = -right
-	$Row.offset_bottom = -bottom
+	$Row.offset_bottom = 0.0
 	$Hud.offset_left = left + 16.0
 	$Hud.offset_top = top + 16.0
 	# Das Panel liegt UEBER der Welt statt neben ihr -- sonst schrumpfte das

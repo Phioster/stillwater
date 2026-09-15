@@ -14,6 +14,7 @@ signal visitor_tapped
 @onready var _angler: Node2D = $Angler
 @onready var _line: Line2D = $Line
 @onready var _water_line: Line2D = $WaterLine
+@onready var _clouds: Clouds = $Clouds
 @onready var _water_body: Polygon2D = $WaterBody
 @onready var _water_view: WaterView = $Water
 @onready var _seam: Sprite2D = $Seam
@@ -237,6 +238,8 @@ func _place_background(water_y: float) -> void:
 	_background.size = gemalt
 	_background.position = Vector2((size.x - gemalt.x) * 0.5,
 		water_y - BG_WATER_ROW * s)
+	# Die Wolken zeichnen im selben Pixelraster wie der Himmel hinter ihnen.
+	_clouds.setze(s, water_y, size.x)
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
