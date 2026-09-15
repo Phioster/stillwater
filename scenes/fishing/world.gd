@@ -227,7 +227,9 @@ func _layout() -> void:
 ##
 ## Der Massstab muss dafuer gross genug sein, dass weder oben noch unten etwas
 ## frei bleibt; die Seiten duerfen dabei beschnitten werden (der Himmel ist
-## ein Verlauf, das Wasser eine Flaeche -- da faellt es nicht auf).
+## ein Verlauf, das Wasser eine Flaeche -- da faellt es nicht auf). Dass sie
+## wirklich beschnitten werden und nicht links aus dem Weltfenster quellen,
+## macht clip_contents am Wurzelknoten (world.tscn).
 func _place_background(water_y: float) -> void:
 	var s := maxf(size.x / BG_SIZE.x, maxf(water_y / BG_WATER_ROW,
 		(size.y - water_y) / (BG_SIZE.y - BG_WATER_ROW)))
