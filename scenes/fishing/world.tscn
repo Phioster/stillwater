@@ -34,6 +34,11 @@ script = ExtResource("6")
 
 [node name="WaterLine" type="Line2D" parent="."]
 
+[node name="ShoreGrass" type="Sprite2D" parent="."]
+centered = false
+texture_repeat = 2
+region_enabled = true
+
 [node name="Angler" parent="." instance=ExtResource("2")]
 position = Vector2(120, 300)
 scale = Vector2(4, 4)

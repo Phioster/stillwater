@@ -14,6 +14,7 @@ signal visitor_tapped
 @onready var _angler: Node2D = $Angler
 @onready var _line: Line2D = $Line
 @onready var _water_line: Line2D = $WaterLine
+@onready var _shore_grass: Sprite2D = $ShoreGrass
 @onready var _water_body: Polygon2D = $WaterBody
 @onready var _water_view: WaterView = $Water
 @onready var _seam: Sprite2D = $Seam
@@ -79,11 +80,11 @@ const WAVE_SCALE := 7.0
 ## Die Welle schwingt komplett UNTERHALB der Uferlinie. Sonst lief sie ins Gras
 ## und die kerzengerade Kante des Hintergrundbilds blieb daneben sichtbar.
 ##
-## Herabgesetzt, zusammen mit SHORE_OVERLAP: der verbleibende Uferfarbstreifen
-## zwischen abgeschnittenem Pfosten und Welle liess sie noch darueber
-## schweben. Wenn hier eine gerade Kante im Gras auftaucht, muss der Wert
-## wieder hoch.
-const WAVE_BIAS := 5.0
+## War kurz auf 5 herabgesetzt, damit die Pfosten naeher an die Welle reichen
+## -- genau die vorhergesagte Kante wurde sichtbar. Zurueck auf den sicheren
+## Wert; das Kaschieren der Pfostenkante uebernimmt jetzt das Uferschilf
+## (ShoreGrass) statt einer riskanten Geometriegrenze.
+const WAVE_BIAS := 9.5
 ## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
 ## ein zwei Pixel duenner Streifen Wasser durch (am Screenshot ausgemessen).
@@ -135,6 +136,18 @@ const BAIT_HANG := 12.0
 const BAIT_FALLBACK := &"pond_grub"
 const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 
+## Uferschilf vor Steg und Wasserflaeche: kaschiert die feste Schnittkante,
+## an der die Wasserflaeche Pfostenfuss und Deck abschneidet (siehe
+## DECK_OVER_WATER, SHORE_OVERLAP) -- statt die Geometrie bis an ihre Grenze
+## zu tunen, deckt hier ein Streifen Gras die Naht einfach zu.
+## assets/art/shore_grass.png: 16x28, kachelbar in der Breite. Die unteren
+## GRASS_BASE Zeilen sind eine durchgehende Uferfarbflaeche, darueber ragen
+## einzelne Halme unterschiedlich hoch -- keine gerade Oberkante.
+const GRASS_TILE_W := 16.0
+const GRASS_H := 28.0
+const GRASS_BASE := 7.0
+const GRASS_SCALE := DOCK_SCALE
+
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
 ## Wo der Schwimmer wirklich sitzt. Nicht dasselbe wie seine Sprite-Position:
@@ -159,6 +172,8 @@ func _ready() -> void:
 	_bobber.texture = TextureLoader.load_texture("res://assets/art/bobber.png")
 	_dock.texture = TextureLoader.load_texture("res://assets/art/dock.png")
 	_dock.scale = Vector2(DOCK_SCALE, DOCK_SCALE)
+	_shore_grass.texture = TextureLoader.load_texture("res://assets/art/shore_grass.png")
+	_shore_grass.scale = Vector2(GRASS_SCALE, GRASS_SCALE)
 	_angler.scale = Vector2(ANGLER_SCALE, ANGLER_SCALE)
 	_bobber.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
 	_bait.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
@@ -210,6 +225,11 @@ func _layout() -> void:
 		water_y + size.y * 0.14)
 	_bobber_mitte = _bobber_home
 	_bobber.position = _bobber_home
+	# Kachelbreite in Texturpixeln, damit die Wiederholung im Bildmassstab
+	# bleibt statt am Bildschirmrand willkuerlich abzuschneiden.
+	_shore_grass.region_rect = Rect2(0.0, 0.0, size.x / GRASS_SCALE, GRASS_H)
+	_shore_grass.position = Vector2(0.0,
+		water_y - (GRASS_H - GRASS_BASE) * GRASS_SCALE)
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
