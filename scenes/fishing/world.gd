@@ -22,8 +22,14 @@ signal visitor_tapped
 var _rain: Rain = null
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
-## Alles andere richtet sich danach, damit es bei jedem Seitenverhaeltnis passt.
-const WATERLINE := 84.0 / 180.0
+const BG_SIZE := Vector2(320.0, 180.0)
+const BG_WATER_ROW := 84.0
+## Wo die Wasserlinie auf dem SCHIRM sitzt -- daran haengt alles andere: Steg,
+## Figur, Schwimmer, Welle. Das ist die Bildkomposition und nicht mehr die
+## Zeile im Hintergrundbild: bei 84/180 sass der Horizont so hoch, dass die
+## Figur im oberen Drittel klebte. Der Hintergrund wird jetzt passend dazu
+## gelegt (_place_background), statt umgekehrt.
+const WATERLINE := 0.60
 ## Steg und Figur laufen wieder im selben Massstab: der neue Steg (262x98,
 ## tools/steg_bauen.py) hat Pixel in Figurengroesse. Vorher war er 512x192 bei
 ## 1.08 -- gleich gross auf dem Schirm, aber mit halb so feinen Pixeln, und
@@ -191,6 +197,7 @@ func _layout() -> void:
 	if size.x <= 0.0 or size.y <= 0.0:
 		return
 	var water_y := size.y * WATERLINE
+	_place_background(water_y)
 	# Der Steg liegt mit seiner Deckoberkante ueber der Wasserlinie, die
 	# Pfosten ragen ins Wasser. Reihenfolge in world.tscn: WaterBody (der
 	# flache Uferstreifen) VOR dem Steg, die Wasserflaeche danach -- so
@@ -213,6 +220,21 @@ func _layout() -> void:
 		water_y + size.y * 0.14)
 	_bobber_mitte = _bobber_home
 	_bobber.position = _bobber_home
+
+## Den Hintergrund so legen, dass seine gemalte Uferkante GENAU auf der
+## Wasserlinie liegt. Sonst zeigt er Wasser, wo die Welt noch Gras rechnet --
+## und die Welle liefe sichtbar neben der gemalten Kante.
+##
+## Der Massstab muss dafuer gross genug sein, dass weder oben noch unten etwas
+## frei bleibt; die Seiten duerfen dabei beschnitten werden (der Himmel ist
+## ein Verlauf, das Wasser eine Flaeche -- da faellt es nicht auf).
+func _place_background(water_y: float) -> void:
+	var s := maxf(size.x / BG_SIZE.x, maxf(water_y / BG_WATER_ROW,
+		(size.y - water_y) / (BG_SIZE.y - BG_WATER_ROW)))
+	var gemalt := BG_SIZE * s
+	_background.size = gemalt
+	_background.position = Vector2((size.x - gemalt.x) * 0.5,
+		water_y - BG_WATER_ROW * s)
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
