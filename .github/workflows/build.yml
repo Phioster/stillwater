@@ -17,18 +17,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # android-actions/setup-android@v3 versuchte hier zusaetzlich ein von
-      # Google entferntes Legacy-Paket ("tools") zu installieren und brach
-      # deshalb ab. Der Runner bringt das SDK unter /usr/local/lib/android/sdk
-      # aber schon fertig mit -- nur eben nicht auf dem PATH. Das holt dieser
-      # Schritt selbst nach, ohne die kaputte Aktion.
-      - name: Android-SDK-Pfad setzen
-        run: |
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
-          dirname "$(find /usr/local/lib/android/sdk/cmdline-tools \
-            -maxdepth 2 -name sdkmanager | head -n1)" >> "$GITHUB_PATH"
-          echo "/usr/local/lib/android/sdk/platform-tools" >> "$GITHUB_PATH"
+      # Ohne packages: '' versucht die Aktion, ihr Vorgabepaket "tools"
+      # nachzuinstallieren -- ein Legacy-Paket, das Google inzwischen aus dem
+      # Repository entfernt hat, woran sie sonst abbricht. Das SDK selbst
+      # (cmdline-tools, PATH, ANDROID_HOME) richtet sie trotzdem ein.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - name: Android-Werkzeuge einrichten
         run: |
