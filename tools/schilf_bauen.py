@@ -65,15 +65,20 @@ def _setz(px, x, y, farbe, belegt):
         belegt.add((x, y))
 
 
-def halm(px, x0, hoehe, neigung, rng, belegt, kolben=False):
-    """Ein Halm. Hohe Halme sind zwei Pixel breit, mit Schattenseite."""
+def halm(px, x0, hoehe, neigung, rng, belegt, kolben=False, fuss=0):
+    """Ein Halm. Hohe Halme sind zwei Pixel breit, mit Schattenseite.
+
+    `fuss` hebt ihn um ein paar Pixel an: stuenden alle auf derselben Zeile,
+    zoege sich eine zweite schnurgerade Linie durchs Bild. Ein angehobener
+    Halm liest sich als einer, der weiter hinten auf der Boeschung steht.
+    """
     koerper, spitze, schatten = SORTEN[rng.randrange(len(SORTEN))]
     dick = hoehe >= 30
     spur = []
     for i in range(hoehe):
         t = i / max(1, hoehe - 1)
         x = x0 + int(round(neigung * t ** 1.7))
-        y = FUSS - i
+        y = FUSS - fuss - i
         spur.append((x, y))
         if t > 0.88 and hoehe > 10:
             ton = spitze
@@ -115,14 +120,18 @@ def zeichnen(px, saat=11):
     belegt = set()
     x = 0
     while x < BREITE:
+        # Ein Bueschel steht als Ganzes etwas hoeher oder tiefer an der
+        # Boeschung; innerhalb streuen die einzelnen Halme noch einmal.
+        boden = rng.randint(0, 5)
         gross = rng.randint(22, 56)
         halm(px, x, gross, rng.choice((-3, -2, -1, 0, 1, 2, 3)), rng, belegt,
-             kolben=gross >= 34 and rng.random() < 0.7)
+             kolben=gross >= 34 and rng.random() < 0.7, fuss=boden)
         for _ in range(rng.randint(2, 5)):
             dx = rng.randint(-7, 7)
             klein = rng.randint(8, max(10, gross - 8))
             halm(px, x + dx, klein, rng.choice((-2, -1, 0, 1, 2)), rng, belegt,
-                 kolben=klein >= 30 and rng.random() < 0.4)
+                 kolben=klein >= 30 and rng.random() < 0.4,
+                 fuss=max(0, boden + rng.randint(-2, 2)))
         x += rng.randint(11, 26)
 
 
