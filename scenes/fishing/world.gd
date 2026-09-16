@@ -160,6 +160,19 @@ const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 const REED_SIZE := Vector2(192.0, 72.0)
 const REED_SCALE := ANGLER_SCALE
 
+## Rabe und Waschbaer (tools/besucher_bauen.py) laufen im Massstab der Figur.
+## Vorher waren sie 18 Pixel breit und wurden auf eine 96er-Box gestreckt --
+## 5,33fach, also zweieinhalb Mal so grob wie alles andere im Bild.
+const VISITOR_PX := 48.0
+const VISITOR_SCALE := ANGLER_SCALE
+## Wo sie auf dem Steg stehen, vom linken Stegende in Stegpixeln.
+const RAVEN_ON_DECK := 4.0
+const TRADER_ON_DECK := 54.0
+## Wie schnell sie wippen. Verschiedene Takte, sonst huepfen sie im
+## Gleichschritt wie ein Uhrwerk.
+const RAVEN_BOB := 2.3
+const TRADER_BOB := 1.7
+
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
 ## Wo der Schwimmer wirklich sitzt. Nicht dasselbe wie seine Sprite-Position:
@@ -524,8 +537,9 @@ func _setup_visitors() -> void:
 	for b in [_raven, _trader]:
 		b.ignore_texture_size = true
 		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		b.custom_minimum_size = Vector2(96, 96)
-		b.size = Vector2(96, 96)
+		var kante := VISITOR_PX * VISITOR_SCALE
+		b.custom_minimum_size = Vector2(kante, kante)
+		b.size = Vector2(kante, kante)
 	if not _raven.pressed.is_connected(_on_raven_pressed):
 		_raven.pressed.connect(_on_raven_pressed)
 	if not _trader.pressed.is_connected(_on_trader_pressed):
@@ -534,9 +548,18 @@ func _setup_visitors() -> void:
 func _update_visitors() -> void:
 	_raven.visible = Game.raven_waiting()
 	_trader.visible = Game.trader_present() and not Game.trader_offer().is_empty()
-	var deck_y := _dock.position.y
-	_raven.position = Vector2(_dock.position.x + 8.0, deck_y - 104.0)
-	_trader.position = Vector2(_dock.position.x + 116.0, deck_y - 96.0)
+	# Beide Bilder stehen mit den Fuessen auf ihrer untersten Zeile
+	# (tools/besucher_bauen.py), ihre Standlinie ist also die Bildunterkante.
+	var deck_oben := _dock.position.y + DECK_IM_BILD * DOCK_SCALE
+	var fuss := deck_oben - VISITOR_PX * VISITOR_SCALE
+	# Nicht auf der Stelle stehen: ein Pixel hoch und runter, jeder in
+	# seinem eigenen Takt, sonst wippen sie im Gleichschritt.
+	var rabe: float = roundf(sin(_bob_time * RAVEN_BOB) * 0.5 + 0.5) * VISITOR_SCALE
+	var baer: float = roundf(sin(_bob_time * TRADER_BOB + 1.7) * 0.5 + 0.5) * VISITOR_SCALE
+	_raven.position = Vector2(_dock.position.x + RAVEN_ON_DECK * DOCK_SCALE,
+		fuss - rabe)
+	_trader.position = Vector2(_dock.position.x + TRADER_ON_DECK * DOCK_SCALE,
+		fuss - baer)
 
 func _on_raven_pressed() -> void:
 	var gift := Game.collect_raven()
