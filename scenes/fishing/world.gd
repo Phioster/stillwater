@@ -165,9 +165,12 @@ const REED_SCALE := ANGLER_SCALE
 ## 5,33fach, also zweieinhalb Mal so grob wie alles andere im Bild.
 const VISITOR_PX := 48.0
 const VISITOR_SCALE := ANGLER_SCALE
-## Wo sie auf dem Steg stehen, vom linken Stegende in Stegpixeln.
-const RAVEN_ON_DECK := 4.0
-const TRADER_ON_DECK := 54.0
+## Wo sie auf dem Steg stehen, vom linken Stegende in Stegpixeln. Beide sind
+## 48 Stegpixel breit, 28 und 88 lassen ihnen also Luft zueinander und bis zur
+## Anglerin auf 187. Bei 4 klebte der Rabe am Bildrand -- seit die Welt
+## randlos laeuft, stand er damit halb im Kameraausschnitt.
+const RAVEN_ON_DECK := 28.0
+const TRADER_ON_DECK := 88.0
 ## Wie schnell sie wippen. Verschiedene Takte, sonst huepfen sie im
 ## Gleichschritt wie ein Uhrwerk.
 const RAVEN_BOB := 2.3
