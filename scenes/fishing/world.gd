@@ -180,6 +180,10 @@ const TRADER_BOB := 1.7
 ## Bilder je Reihe (tools/besucher_bauen.py).
 const VISITOR_FRAMES := 8
 
+## Womit der Himmel bei Regen eingefaerbt wird. Multiplikativ, also eine
+## Entsaettigung ins Graue statt einer zweiten, gemalten Himmelsfarbe.
+const REGEN_HIMMEL := Color(0.62, 0.66, 0.72)
+
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
 ## Wo der Schwimmer wirklich sitzt. Nicht dasselbe wie seine Sprite-Position:
@@ -360,6 +364,10 @@ func _process(delta: float) -> void:
 	_update_visitors(delta)
 	if _rain != null:
 		_rain.visible = Game.ctx.raining
+	# Bei Regen zieht der Himmel grau zu. Die Ueberblendung kommt von den
+	# Wolken, damit Himmelfarbe und Bewoelkung nicht getrennt voneinander
+	# umschalten -- ein Wetter, eine Uhr.
+	_background.modulate = Color.WHITE.lerp(REGEN_HIMMEL, _clouds.nass())
 	_water_time += delta
 	_water.step(delta)
 	if _bobber_sichtbar and kaempft:

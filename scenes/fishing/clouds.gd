@@ -36,9 +36,10 @@ const FORMEN: Array = [
 		Vector3i(2, 3, 39)],
 ]
 
-## Wieviele Wolken am Himmel stehen -- trocken und im Regen.
+## Wieviele Wolken am Himmel stehen -- trocken und im Regen. Bei Regen soll
+## er sich zuziehen, nicht nur ein paar Wolken mehr tragen.
 const ZAHL_KLAR := 5
-const ZAHL_REGEN := 13
+const ZAHL_REGEN := 20
 ## So viele halten wir ueberhaupt vor; die ueberzaehligen sind nur
 ## durchsichtig, damit im Regen keine aus dem Nichts erscheint.
 const VORRAT := ZAHL_REGEN
@@ -61,8 +62,8 @@ const WECHSEL := 6.0
 
 const KLAR_HELL := Color("d2e4f0")
 const KLAR_DUNKEL := Color("a8c4dc")
-const REGEN_HELL := Color("94a2b4")
-const REGEN_DUNKEL := Color("6e7d92")
+const REGEN_HELL := Color("7c8796")
+const REGEN_DUNKEL := Color("5a6473")
 
 var _zelle: float = 0.0
 var _horizont: float = 0.0
@@ -92,7 +93,13 @@ func _ready() -> void:
 	# deshalb fest und beginnt mit den am weitesten auseinanderliegenden.
 	var reihenfolge := [0, 7, 3, 5, 1, 6, 2, 4]
 	for i in VORRAT:
+		# Die ersten sind die Schoenwetterwolken, die spaeteren kommen erst
+		# im Regen dazu -- und das sind bewusst die grossen und tiefen: so
+		# zieht sich der Himmel zu, statt nur mehr Tupfer zu tragen.
+		var regenwolke := i >= ZAHL_KLAR
 		var f: int = reihenfolge[i % reihenfolge.size()]
+		if regenwolke:
+			f = FORMEN.size() - 1 - (i % 3)
 		# Groesse, Hoehe, Tempo und Blaesse haengen zusammen, statt einzeln
 		# zu wuerfeln: eine kleine, blasse, langsame Wolke tief am Himmel
 		# liest sich als weit weg, eine grosse, satte, schnelle weiter oben
@@ -102,10 +109,14 @@ func _ready() -> void:
 			/ maxf(float(breit - schmal), 1.0), 0.0, 1.0)
 		_wolken.append({
 			"form": f,
-			"reihe": lerpf(float(REIHE_UNTEN), float(REIHE_OBEN), g)
-				+ rng.randf_range(-4.0, 4.0),
+			# Regenwolken haengen tiefer und streuen weiter: ein zugezogener
+			# Himmel hat keinen freien Streifen ueber dem Horizont.
+			"reihe": (rng.randf_range(float(REIHE_UNTEN) - 14.0,
+					float(REIHE_OBEN)) if regenwolke
+				else lerpf(float(REIHE_UNTEN), float(REIHE_OBEN), g)
+					+ rng.randf_range(-4.0, 4.0)),
 			"tempo": lerpf(TEMPO_MIN, TEMPO_MAX, g) * rng.randf_range(0.85, 1.15),
-			"deckung": lerpf(0.68, 1.0, g),
+			"deckung": 1.0 if regenwolke else lerpf(0.68, 1.0, g),
 			"x": rng.randf_range(-60.0, 360.0),
 		})
 
@@ -135,6 +146,11 @@ func _process(delta: float) -> void:
 		if float(w["x"]) > rand + 60.0:
 			w["x"] = -60.0
 	queue_redraw()
+
+## Wie sehr es gerade nach Regen aussieht, 0 bis 1. world.gd faerbt den
+## Himmel damit ein -- eine Quelle fuer den Wetterwechsel, nicht zwei.
+func nass() -> float:
+	return _nass
 
 func _draw() -> void:
 	if _breite <= 0.0 or _zelle <= 0.0:

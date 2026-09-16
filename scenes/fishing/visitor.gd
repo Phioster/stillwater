@@ -15,8 +15,10 @@ enum Zustand { ABWESEND, ANKUNFT, DA, ABGANG }
 const DAUER := 1.6
 ## Bilder je Sekunde in der Laufreihe.
 const TAKT := 10.0
-## Wie hoch der Rabe an- und abfliegt, in Bildpixeln seiner eigenen Kante.
-const FLUG_HOCH := 1.25
+## Wie weit ueber den oberen Bildrand hinaus der Rabe verschwindet, in
+## seinen eigenen Kantenlaengen -- und wie weit dabei zur Seite.
+const FLUG_HOCH := 1.0
+const FLUG_SEITE := 1.6
 ## Wie weit ausserhalb des Bildes die Reise beginnt und endet.
 const WEITE := 1.6
 ## Kantenlaenge eines Besucherbildes in Bildpixeln.
@@ -144,9 +146,13 @@ func _ort() -> Vector2:
 	return steht.lerp(fern, t * t)
 
 func _fern() -> Vector2:
-	var hoch := _kante * FLUG_HOCH if _fliegt else 0.0
+	if _fliegt:
+		# Schraeg ueber dem Platz aus dem Bild, nicht quer hindurch: ein
+		# Vogel steigt auf und ist weg. Die ganze Bildbreite abzufliegen
+		# machte aus dem Abflug eine Reise.
+		var seite := -FLUG_SEITE if _zustand == Zustand.ANKUNFT else FLUG_SEITE
+		return Vector2(_ziel_x + _kante * seite, -_kante * FLUG_HOCH)
 	var weit := _kante * WEITE
-	var nach_links := _zustand == Zustand.ABGANG and _geht_links \
-		or _zustand == Zustand.ANKUNFT
+	var nach_links := _zustand == Zustand.ANKUNFT or _geht_links
 	var x := -weit if nach_links else _breite_welt + weit
-	return Vector2(x, _fuss - hoch)
+	return Vector2(x, _fuss)
