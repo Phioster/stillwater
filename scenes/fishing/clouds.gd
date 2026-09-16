@@ -17,15 +17,23 @@ extends Node2D
 ## Hintergrundpixeln. Unten flach, oben bauschig -- so liest sich ein
 ## Haufen und kein Klotz.
 const FORMEN: Array = [
+	# Ein Fetzen, kaum mehr als ein Strich.
+	[Vector3i(1, 0, 4), Vector3i(0, 1, 7)],
+	[Vector3i(3, 0, 4), Vector3i(0, 1, 9), Vector3i(0, 2, 11)],
 	[Vector3i(4, 0, 6), Vector3i(1, 1, 12), Vector3i(0, 2, 16),
 		Vector3i(0, 3, 15)],
+	# Schief: der Bausch sitzt rechts, nicht in der Mitte.
+	[Vector3i(9, 0, 6), Vector3i(6, 1, 11), Vector3i(1, 2, 17),
+		Vector3i(0, 3, 19)],
 	[Vector3i(7, 0, 5), Vector3i(3, 1, 12), Vector3i(1, 2, 19),
 		Vector3i(0, 3, 22), Vector3i(1, 4, 19)],
 	[Vector3i(9, 0, 7), Vector3i(4, 1, 14), Vector3i(1, 2, 24),
 		Vector3i(0, 3, 30), Vector3i(2, 4, 26)],
-	[Vector3i(3, 0, 4), Vector3i(0, 1, 9), Vector3i(0, 2, 11)],
 	[Vector3i(12, 0, 8), Vector3i(6, 1, 17), Vector3i(2, 2, 28),
 		Vector3i(0, 3, 34), Vector3i(3, 4, 28)],
+	# Eine lange, flache Bank -- liegt anders da als die bauschigen.
+	[Vector3i(14, 0, 9), Vector3i(5, 1, 24), Vector3i(0, 2, 44),
+		Vector3i(2, 3, 39)],
 ]
 
 ## Wieviele Wolken am Himmel stehen -- trocken und im Regen.
@@ -66,14 +74,38 @@ var _wolken: Array = []
 ## 0 = trocken, 1 = Regen. Laeuft ueber WECHSEL Sekunden hinueber.
 var _nass: float = 0.0
 
+## Die Breite einer Form in Pixelspalten -- der aeusserste Lauf gibt sie.
+static func _breite_von(form: Array) -> int:
+	var b := 0
+	for lauf in form:
+		var v: Vector3i = lauf
+		b = maxi(b, v.x + v.z)
+	return b
+
 func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20260915
+	var schmal := _breite_von(FORMEN[0])
+	var breit := _breite_von(FORMEN[FORMEN.size() - 1])
+	# Sichtbar sind bei klarem Wetter nur die ersten ZAHL_KLAR Wolken. Wuerfelte
+	# man ihre Formen, koennten das fuenf aehnliche sein -- die Reihe steht
+	# deshalb fest und beginnt mit den am weitesten auseinanderliegenden.
+	var reihenfolge := [0, 7, 3, 5, 1, 6, 2, 4]
 	for i in VORRAT:
+		var f: int = reihenfolge[i % reihenfolge.size()]
+		# Groesse, Hoehe, Tempo und Blaesse haengen zusammen, statt einzeln
+		# zu wuerfeln: eine kleine, blasse, langsame Wolke tief am Himmel
+		# liest sich als weit weg, eine grosse, satte, schnelle weiter oben
+		# als nah. Gewuerfelt sieht dieselbe Zahl Wolken nur unordentlich
+		# aus, gekoppelt ergibt sie Tiefe.
+		var g: float = clampf(float(_breite_von(FORMEN[f]) - schmal)
+			/ maxf(float(breit - schmal), 1.0), 0.0, 1.0)
 		_wolken.append({
-			"form": rng.randi_range(0, FORMEN.size() - 1),
-			"reihe": rng.randf_range(float(REIHE_UNTEN), float(REIHE_OBEN)),
-			"tempo": rng.randf_range(TEMPO_MIN, TEMPO_MAX),
+			"form": f,
+			"reihe": lerpf(float(REIHE_UNTEN), float(REIHE_OBEN), g)
+				+ rng.randf_range(-4.0, 4.0),
+			"tempo": lerpf(TEMPO_MIN, TEMPO_MAX, g) * rng.randf_range(0.85, 1.15),
+			"deckung": lerpf(0.68, 1.0, g),
 			"x": rng.randf_range(-60.0, 360.0),
 		})
 
@@ -100,8 +132,8 @@ func _process(delta: float) -> void:
 		w["x"] = float(w["x"]) + float(w["tempo"]) * delta
 		# Rechts hinaus, links wieder herein. Der Vorlauf ist so breit wie
 		# die groesste Form, sonst blitzt sie am Rand auf.
-		if float(w["x"]) > rand + 40.0:
-			w["x"] = -40.0
+		if float(w["x"]) > rand + 60.0:
+			w["x"] = -60.0
 	queue_redraw()
 
 func _draw() -> void:
@@ -128,6 +160,8 @@ func _draw() -> void:
 			var v: Vector3i = lauf
 			# Die unterste Zeile ist die Schattenseite.
 			var ton := dunkel if v.y == form.size() - 1 else hell
-			ton.a = sicht
+			# Die blassen lassen den Himmel durchscheinen -- das ist der
+			# Dunst, der ferne Wolken verschluckt.
+			ton.a = sicht * float(w["deckung"])
 			draw_rect(Rect2(x0 + float(v.x) * _zelle,
 				y0 + float(v.y) * _zelle, float(v.z) * _zelle, _zelle), ton)
