@@ -14,7 +14,10 @@ func test_lake_uses_the_lake_look() -> void:
 	Game.new_game()
 	var world := _world()
 	assert_true(world.get_node("Background").texture != null, "kein Hintergrund geladen")
-	assert_eq(world.get_node("WaterBody").color, Palette.get_color(&"reed_dark"))
+	# Der Streifen traegt den Uferton der Zone, abgedunkelt auf das Ende der
+	# gemalten Uferbande -- der Faktor steht in world.gd, nicht hier.
+	assert_eq(world.get_node("WaterBody").color,
+		Palette.get_color(&"reed_dark").darkened(world.SHORE_STRIP_DARKEN))
 	world.free()
 
 func test_travelling_to_the_coast_changes_background_and_water() -> void:
@@ -25,7 +28,8 @@ func test_travelling_to_the_coast_changes_background_and_water() -> void:
 	assert_true(Game.travel_to(&"sunset_coast"), "Reise zur Kueste schlug fehl")
 	assert_true(world.get_node("Background").texture != lake_texture,
 		"der Hintergrund blieb der des Sees")
-	assert_eq(world.get_node("WaterBody").color, Palette.get_color(&"sand_dark"))
+	assert_eq(world.get_node("WaterBody").color,
+		Palette.get_color(&"sand_dark").darkened(world.SHORE_STRIP_DARKEN))
 	var crest: Color = world.get_node("WaterLine").default_color
 	var expected := Palette.get_color(&"sea_foam")
 	assert_true(Color(crest.r, crest.g, crest.b) == Color(expected.r, expected.g, expected.b),

@@ -24,25 +24,20 @@ BILD = os.path.join(WURZEL, "assets", "art", "bg_lake.png")
 OBEN = 78
 UNTEN = 83
 
-## Von der belichteten Oberkante bis zum Schatten am Wasser. Die mittleren
-## Toene sind reed_dark und reed aus core/palette.gd, die aeusseren daraus
-## aufgehellt beziehungsweise abgedunkelt.
+## Je Zeile drei Toene: Grundton, ein hellerer und ein dunklerer, jeweils
+## mit ihrer Haeufigkeit. Die mittleren sind reed_dark und reed aus
+## core/palette.gd, die uebrigen daraus auf- und abgedunkelt.
+##
+## Auch die unteren Zeilen streuen kraeftig: mit zwei fast einfarbigen
+## Zeilen am Wasser las sich die untere Haelfte wieder als Balken, und
+## genau den sollte die Bande loswerden.
 ZEILEN = (
-    (77, 122, 74, 255),
-    (58, 94, 60, 255),
-    (47, 74, 52, 255),
-    (47, 74, 52, 255),
-    (40, 64, 46, 255),
-    (34, 55, 40, 255),
-)
-## Streupixel je Zeile: (Ton, Wahrscheinlichkeit).
-NARBE = (
-    ((123, 168, 95, 255), 0.22),
-    ((77, 122, 74, 255), 0.18),
-    ((58, 94, 60, 255), 0.14),
-    ((40, 64, 46, 255), 0.10),
-    ((47, 74, 52, 255), 0.10),
-    ((40, 64, 46, 255), 0.08),
+    ((77, 122, 74, 255), ((123, 168, 95, 255), 0.30), ((58, 94, 60, 255), 0.16)),
+    ((58, 94, 60, 255), ((92, 140, 82, 255), 0.28), ((47, 74, 52, 255), 0.18)),
+    ((47, 74, 52, 255), ((70, 110, 66, 255), 0.26), ((40, 64, 46, 255), 0.18)),
+    ((43, 68, 48, 255), ((60, 96, 60, 255), 0.24), ((36, 58, 42, 255), 0.18)),
+    ((38, 60, 44, 255), ((52, 84, 54, 255), 0.22), ((32, 52, 38, 255), 0.16)),
+    ((34, 54, 38, 255), ((46, 74, 48, 255), 0.20), ((30, 48, 36, 255), 0.14)),
 )
 
 
@@ -53,10 +48,15 @@ def main(quelle=BILD, ziel=None):
     px = im.load()
     rng = random.Random(5)
     for i, y in enumerate(range(OBEN, UNTEN + 1)):
-        grund = ZEILEN[i]
-        streu, wahrscheinlich = NARBE[i]
+        grund, (hell, p_hell), (dunkel, p_dunkel) = ZEILEN[i]
         for x in range(w):
-            px[x, y] = streu if rng.random() < wahrscheinlich else grund
+            wurf = rng.random()
+            if wurf < p_hell:
+                px[x, y] = hell
+            elif wurf < p_hell + p_dunkel:
+                px[x, y] = dunkel
+            else:
+                px[x, y] = grund
     im.save(ziel)
     print("Ufer gefaerbt:", ziel)
 

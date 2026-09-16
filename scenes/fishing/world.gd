@@ -26,6 +26,9 @@ var _rain: Rain = null
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 const BG_SIZE := Vector2(320.0, 180.0)
 const BG_WATER_ROW := 84.0
+## Zeilen der Uferbande. Das Schilf steht an ihrer Oberkante und nicht an
+## der Wasserlinie: es waechst HINTER dem Ufer, die Grasnarbe liegt davor.
+const BG_SHORE_ROWS := 6.0
 ## Wo die Wasserlinie auf dem SCHIRM sitzt -- daran haengt alles andere: Steg,
 ## Figur, Schwimmer, Welle. Das ist die Bildkomposition und nicht mehr die
 ## Zeile im Hintergrundbild: bei 84/180 sass der Horizont so hoch, dass die
@@ -101,6 +104,11 @@ const WAVE_BIAS := 9.5
 ## Streifen dazwischen ist Uferfarbe, nicht Wellenwasser. Knapp ueber dem
 ## dokumentierten Mindestwert von 2 belassen.
 const SHORE_OVERLAP := 3.0
+## Wie weit der Uferstreifen unter dem Uferton der Zone liegt. Er schliesst
+## an die UNTERSTE Zeile der gemalten Uferbande an (tools/ufer_bauen.py), und
+## die ist abgedunkelt: im vollen Uferton stand er als hellerer gruener Balken
+## zwischen Gras und Welle.
+const SHORE_STRIP_DARKEN := 0.27
 ## Kleiner, laufender Antrieb durchs Zappeln im Kampf -- daraus entsteht die
 ## Stoerung, die von seiner Position nach aussen laeuft. Beim Warten treibt er
 ## nichts an: dort traegt IHN das Wasser, nicht umgekehrt.
@@ -251,9 +259,12 @@ func _place_background(water_y: float) -> void:
 		water_y - BG_WATER_ROW * s)
 	# Die Wolken zeichnen im selben Pixelraster wie der Himmel hinter ihnen.
 	_clouds.setze(s, water_y, size.x)
-	# Das Schilf steht mit seiner untersten Zeile auf der Wasserlinie.
+	# Das Schilf steht mit seiner untersten Zeile auf der OBERKANTE der
+	# Uferbande. An der Wasserlinie sass es zu tief -- es stand dann vor dem
+	# Gras statt dahinter.
+	var schilf_fuss := water_y - BG_SHORE_ROWS * s
 	_reeds.region_rect = Rect2(0.0, 0.0, size.x / REED_SCALE, REED_SIZE.y)
-	_reeds.position = Vector2(0.0, water_y - REED_SIZE.y * REED_SCALE)
+	_reeds.position = Vector2(0.0, schilf_fuss - REED_SIZE.y * REED_SCALE)
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
@@ -485,7 +496,7 @@ func _apply_zone() -> void:
 	var crest := schaum
 	crest.a = 0.85
 	_water_line.default_color = crest
-	_water_body.color = Palette.get_color(zone.shore_key)
+	_water_body.color = Palette.get_color(zone.shore_key).darkened(SHORE_STRIP_DARKEN)
 	_water_view.faerbe(schaum, Palette.get_color(zone.water_light_key),
 		Palette.get_color(zone.water_deep_key))
 	var stoff := _seam.material as ShaderMaterial

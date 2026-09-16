@@ -44,8 +44,8 @@ const REIHE_UNTEN := 56
 const RAND_OBEN := 6
 
 ## Pixelzeilen je Sekunde -- gemaechlich, es ist ein stiller See.
-const TEMPO_MIN := 0.7
-const TEMPO_MAX := 2.2
+const TEMPO_MIN := 1.2
+const TEMPO_MAX := 3.0
 
 ## Wie schnell der Himmel auf einsetzenden Regen umstellt. Ueber Sekunden,
 ## nicht schlagartig: ein Wetterwechsel im selben Bild sieht nach Fehler aus.
@@ -117,7 +117,11 @@ func _draw() -> void:
 			continue
 		var w: Dictionary = _wolken[i]
 		var form: Array = FORMEN[int(w["form"])]
-		var x0 := snappedf(float(w["x"]) * _zelle, _zelle)
+		# NICHT aufs Pixelraster rasten: bei ein bis drei Zeilen je Sekunde
+		# spraenge eine Wolke sonst nur alle paar Sekunden um eine ganze
+		# Zelle weiter, und genau das sah aus wie Ruckeln. Die Form bleibt
+		# im Raster, nur ihre Lage laeuft stufenlos.
+		var x0 := float(w["x"]) * _zelle
 		var reihe: float = minf(float(w["reihe"]), _reihe_max)
 		var y0 := _horizont - reihe * _zelle
 		for lauf in form:
