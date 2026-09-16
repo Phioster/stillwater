@@ -27,6 +27,11 @@ script = ExtResource("8")
 
 [node name="WaterBody" type="Polygon2D" parent="."]
 
+[node name="Reeds" type="Sprite2D" parent="."]
+centered = false
+texture_repeat = 2
+region_enabled = true
+
 [node name="Dock" type="Sprite2D" parent="."]
 centered = false
 

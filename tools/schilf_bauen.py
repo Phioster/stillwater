@@ -1,24 +1,23 @@
-"""Himmel und Schilf von Willow Lake bauen.
+"""Das Uferschilf als eigenes Blatt bauen.
 
     python3 -m tools.schilf_bauen
 
-Faerbt zuerst den Himmel (tools/himmel_bauen) und zeichnet danach die
-Halme neu. Beides deterministisch und wiederholbar: ein zweiter Lauf
-liefert dasselbe Bild.
+Schreibt assets/art/schilf.png: einen in der Breite kachelbaren Streifen,
+den scenes/fishing/world.gd im MASSSTAB DER FIGUR ueber die Uferlinie
+legt.
 
-Vorher standen dort 40 gleich verteilte Ein-Pixel-Striche in fuenf Hoehen
-mit Periode 46. Im Spiel ist ein Hintergrundpixel rund sechs
-Bildschirmpixel breit, sie lasen sich deshalb als Balken statt als
-Schilf. Jetzt: gestreute Bueschel, kraeftige Halme mit Schattenseite,
-Blaetter, die nach aussen OBEN wegwachsen, trockene Halme dazwischen und
-Rohrkolben.
+Warum ein eigenes Blatt und nicht mehr im Hintergrundbild: dort ist ein
+Pixel rund sechs Bildschirmpixel breit (die Figur hat gut zwei). Ein Halm
+war damit dreimal so grob wie alles andere und wirkte viel zu gross fuers
+Spiel, und weil er im Hintergrund steckte, konnte auch keine Wolke
+dahinter ziehen. Im Figurenmassstab stimmen beide Punkte.
 
-Nur Willow Lake hat Schilf; die uebrigen Zonenbilder enthalten keinen
-einzigen Halmpixel und werden nicht angefasst.
+Deterministisch (fester Zufallssamen) und wiederholbar.
 
-WICHTIG: reed_dark ist die Farbe der UFERBANDE. Vor dem Himmel liest sie
-sich als Schwarz -- sie darf nur in den untersten Zeilen liegen, wo sie
-mit der Bande verschmilzt, nie im freien Halm.
+Der Streifen endet UNTEN an der Standlinie: darunter ist nichts, damit er
+nichts verdeckt. Genau daran ist ein frueherer Versuch gescheitert -- der
+hatte ein durchgehendes Fussband und legte sich als Balken ueber Welle und
+Steg.
 """
 import os
 import random
@@ -26,22 +25,23 @@ import sys
 
 from PIL import Image
 
-S = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(S))
+WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BLATT = os.path.join(WURZEL, "assets", "art", "schilf.png")
 
-from tools import himmel_bauen
+## Kachelbreite in Figurpixeln. Breit genug, dass sich die Wiederholung
+## ueber die Bildbreite nicht als Muster liest.
+BREITE = 192
+HOEHE = 72
+## Die Standlinie ist die unterste Zeile.
+FUSS = HOEHE - 1
 
-WURZEL = os.path.dirname(S)
-BILD = os.path.join(WURZEL, "assets", "art", "bg_lake.png")
-UFER_OBEN = himmel_bauen.UFER_OBEN
-
-## Die drei Schilftoene aus core/palette.gd, dazu drei, die daraus
-## abgeleitet sind: eine Schattenseite fuer dicke Halme, ein helles
-## Gruen fuer frische Spitzen und ein trockenes Olivgelb fuer alte Halme.
-DARK = (47, 74, 52, 255)          # reed_dark -- nur im Ufer
+## Die drei Schilftoene aus core/palette.gd, dazu drei abgeleitete: eine
+## Schattenseite fuer dicke Halme, ein helles Gruen fuer frische Spitzen
+## und ein trockenes Olivgelb fuer alte Halme.
+DARK = (47, 74, 52, 255)
 SCHATTEN = (58, 94, 60, 255)
-MID = (77, 122, 74, 255)          # reed
-LIGHT = (123, 168, 95, 255)       # reed_light
+MID = (77, 122, 74, 255)
+LIGHT = (123, 168, 95, 255)
 FRISCH = (163, 199, 112, 255)
 TROCKEN = (152, 148, 88, 255)
 TROCKEN_HELL = (186, 178, 116, 255)
@@ -49,7 +49,7 @@ TROCKEN_HELL = (186, 178, 116, 255)
 KOLBEN = (106, 67, 38, 255)
 KOLBEN_HELL = (122, 90, 60, 255)
 
-## (Koerper, Spitze, Schatten) -- die Halme eines Bueschels ziehen daraus.
+## (Koerper, Spitze, Schatten)
 SORTEN = (
     (MID, LIGHT, SCHATTEN),
     (LIGHT, FRISCH, MID),
@@ -58,95 +58,79 @@ SORTEN = (
 )
 
 
-def _setz(px, x, y, farbe, w, belegt):
-    if 0 <= x < w and 0 <= y < UFER_OBEN and (x, y) not in belegt:
+def _setz(px, x, y, farbe, belegt):
+    x %= BREITE                      # umlaufend: der Streifen kachelt
+    if 0 <= y < HOEHE and (x, y) not in belegt:
         px[x, y] = farbe
         belegt.add((x, y))
 
 
-def leeren(px, w):
-    """Den Himmel ueber alles legen, was vom letzten Lauf stehen blieb."""
-    for y in range(UFER_OBEN):
-        ton = himmel_bauen.farbe(y)
-        for x in range(w):
-            px[x, y] = ton
-
-
-def halm(px, x0, hoehe, neigung, w, rng, belegt, kolben=False):
-    """Ein Halm. Ab mittlerer Hoehe zwei Pixel breit, mit Schattenseite."""
+def halm(px, x0, hoehe, neigung, rng, belegt, kolben=False):
+    """Ein Halm. Hohe Halme sind zwei Pixel breit, mit Schattenseite."""
     koerper, spitze, schatten = SORTEN[rng.randrange(len(SORTEN))]
-    dick = hoehe >= 16
+    dick = hoehe >= 30
     spur = []
     for i in range(hoehe):
         t = i / max(1, hoehe - 1)
         x = x0 + int(round(neigung * t ** 1.7))
-        y = UFER_OBEN - 1 - i
+        y = FUSS - i
         spur.append((x, y))
-        if i < 2:
-            ton = DARK
-        elif hoehe > 7 and t > 0.85:
+        if t > 0.88 and hoehe > 10:
             ton = spitze
+        elif i < 2:
+            ton = schatten
         else:
             ton = koerper
-        _setz(px, x, y, ton, w, belegt)
-        # Die Schattenseite steht rechts: das Licht kommt von links, wie
-        # beim Steg (tools/steg_bauen.py zieht seine Kante genauso).
+        _setz(px, x, y, ton, belegt)
+        # Schattenseite rechts: das Licht kommt von links, wie beim Steg.
         if dick and i >= 2:
-            _setz(px, x + 1, y, DARK if i < 3 else schatten, w, belegt)
-    if hoehe >= 9:
-        for _ in range(1 if hoehe < 15 else 2):
-            i = rng.randint(int(hoehe * 0.4), int(hoehe * 0.8))
+            _setz(px, x + 1, y, schatten, belegt)
+    if hoehe >= 14:
+        for _ in range(rng.randint(1, 3)):
+            i = rng.randint(int(hoehe * 0.35), int(hoehe * 0.85))
             bx, by = spur[i]
             richtung = rng.choice((-1, 1))
-            laenge = rng.randint(2, 3 if hoehe < 16 else 4)
+            laenge = rng.randint(3, 7)
             y = by
             for k in range(1, laenge + 1):
+                # Nach aussen OBEN und erst an der Spitze abknickend --
+                # andersherum haengt es wie ein Tannenzweig.
                 if k >= 2:
-                    # Nach aussen OBEN: ein Blatt waechst vom Halm weg nach
-                    # oben und knickt erst an der Spitze ab. Andersherum
-                    # haengt es wie ein Tannenzweig nach unten.
                     y -= 1
-                if k == laenge and laenge >= 4:
+                if k >= laenge - 1 and laenge >= 5:
                     y += 1
                 _setz(px, bx + richtung * k, y,
-                      spitze if k == laenge else koerper, w, belegt)
+                      spitze if k == laenge else koerper, belegt)
     if kolben:
-        # Zwei Pixel breit und vier hoch: schmaler liest er sich als
-        # versprengter Farbpunkt statt als Rohrkolben.
         kx, ky = spur[-1]
-        for k in range(4):
-            _setz(px, kx, ky - k, KOLBEN, w, belegt)
-            _setz(px, kx + 1, ky - k, KOLBEN if k else KOLBEN_HELL, w, belegt)
-        _setz(px, kx, ky - 3, KOLBEN_HELL, w, belegt)
+        for k in range(5):
+            _setz(px, kx, ky - k, KOLBEN, belegt)
+            _setz(px, kx + 1, ky - k, KOLBEN if k else KOLBEN_HELL, belegt)
+        _setz(px, kx, ky - 4, KOLBEN_HELL, belegt)
     return spur
 
 
-def zeichnen(px, w, saat=11):
+def zeichnen(px, saat=11):
     rng = random.Random(saat)
     belegt = set()
-    x = rng.randint(0, 6)
-    while x < w + 6:
-        gross = rng.randint(10, 28)
-        halm(px, x, gross, rng.choice((-2, -1, 0, 1, 2)), w, rng, belegt,
-             kolben=gross >= 14 and rng.random() < 0.8)
-        for _ in range(rng.randint(2, 4)):
-            dx = rng.randint(-4, 4)
-            klein = rng.randint(4, max(5, gross - 4))
-            halm(px, x + dx, klein, rng.choice((-1, 0, 1)), w, rng, belegt,
-                 kolben=klein >= 13 and rng.random() < 0.45)
-        x += rng.randint(6, 16)
+    x = 0
+    while x < BREITE:
+        gross = rng.randint(22, 56)
+        halm(px, x, gross, rng.choice((-3, -2, -1, 0, 1, 2, 3)), rng, belegt,
+             kolben=gross >= 34 and rng.random() < 0.7)
+        for _ in range(rng.randint(2, 5)):
+            dx = rng.randint(-7, 7)
+            klein = rng.randint(8, max(10, gross - 8))
+            halm(px, x + dx, klein, rng.choice((-2, -1, 0, 1, 2)), rng, belegt,
+                 kolben=klein >= 30 and rng.random() < 0.4)
+        x += rng.randint(11, 26)
 
 
-def main(quelle=BILD, ziel=None):
-    ziel = ziel or quelle
-    himmel_bauen.main(quelle, ziel)
-    im = Image.open(ziel).convert("RGBA")
-    w, _ = im.size
-    px = im.load()
-    leeren(px, w)
-    zeichnen(px, w)
+def main(ziel=BLATT):
+    im = Image.new("RGBA", (BREITE, HOEHE), (0, 0, 0, 0))
+    zeichnen(im.load())
     im.save(ziel)
-    print("Schilf gezeichnet:", ziel)
+    print("Schilfblatt geschrieben:", ziel)
 
 
 if __name__ == "__main__":

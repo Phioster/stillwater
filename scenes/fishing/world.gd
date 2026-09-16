@@ -15,6 +15,7 @@ signal visitor_tapped
 @onready var _line: Line2D = $Line
 @onready var _water_line: Line2D = $WaterLine
 @onready var _clouds: Clouds = $Clouds
+@onready var _reeds: Sprite2D = $Reeds
 @onready var _water_body: Polygon2D = $WaterBody
 @onready var _water_view: WaterView = $Water
 @onready var _seam: Sprite2D = $Seam
@@ -142,6 +143,14 @@ const BAIT_HANG := 12.0
 const BAIT_FALLBACK := &"pond_grub"
 const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
 
+## Das Schilf (tools/schilf_bauen.py) laeuft im Massstab der FIGUR, nicht in
+## dem des Hintergrunds: dort waere ein Halm dreimal so grob wie alles andere.
+## Das Blatt kachelt in der Breite; seine unterste Zeile ist die Standlinie
+## und kommt auf die Wasserlinie. Gezeichnet wird es vor dem Uferstreifen und
+## hinter dem Steg (world.tscn) -- so ziehen die Wolken dahinter vorbei.
+const REED_SIZE := Vector2(192.0, 72.0)
+const REED_SCALE := ANGLER_SCALE
+
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
 ## Wo der Schwimmer wirklich sitzt. Nicht dasselbe wie seine Sprite-Position:
@@ -166,6 +175,8 @@ func _ready() -> void:
 	_bobber.texture = TextureLoader.load_texture("res://assets/art/bobber.png")
 	_dock.texture = TextureLoader.load_texture("res://assets/art/dock.png")
 	_dock.scale = Vector2(DOCK_SCALE, DOCK_SCALE)
+	_reeds.texture = TextureLoader.load_texture("res://assets/art/schilf.png")
+	_reeds.scale = Vector2(REED_SCALE, REED_SCALE)
 	_angler.scale = Vector2(ANGLER_SCALE, ANGLER_SCALE)
 	_bobber.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
 	_bait.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
@@ -240,6 +251,9 @@ func _place_background(water_y: float) -> void:
 		water_y - BG_WATER_ROW * s)
 	# Die Wolken zeichnen im selben Pixelraster wie der Himmel hinter ihnen.
 	_clouds.setze(s, water_y, size.x)
+	# Das Schilf steht mit seiner untersten Zeile auf der Wasserlinie.
+	_reeds.region_rect = Rect2(0.0, 0.0, size.x / REED_SCALE, REED_SIZE.y)
+	_reeds.position = Vector2(0.0, water_y - REED_SIZE.y * REED_SCALE)
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte

@@ -51,6 +51,9 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(10, 13)
 	if filename == "bait_pond_grub.png":
 		return Vector2i(10, 6)
+	# Kachelbares Uferschilf im Massstab der Figur (tools/schilf_bauen.py).
+	if filename == "schilf.png":
+		return Vector2i(192, 72)
 	return Vector2i(-1, -1)
 
 func _count_opaque(img: Image) -> int:

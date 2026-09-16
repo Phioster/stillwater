@@ -35,9 +35,13 @@ const ZAHL_REGEN := 13
 ## durchsichtig, damit im Regen keine aus dem Nichts erscheint.
 const VORRAT := ZAHL_REGEN
 
-## Hoehenband, in Hintergrundpixeln ueber der Wasserlinie gezaehlt.
-const REIHE_OBEN := 54
-const REIHE_UNTEN := 33
+## Hoehenband, in Hintergrundpixeln ueber der Wasserlinie gezaehlt: weit
+## oben am Himmel. Wie weit davon wirklich zu sehen ist, haengt am
+## Seitenverhaeltnis -- `setze` deckelt das Band auf den sichtbaren Himmel.
+const REIHE_OBEN := 80
+const REIHE_UNTEN := 56
+## Wieviele Zeilen unter dem Bildrand die oberste Wolke mindestens bleibt.
+const RAND_OBEN := 6
 
 ## Pixelzeilen je Sekunde -- gemaechlich, es ist ein stiller See.
 const TEMPO_MIN := 0.7
@@ -55,6 +59,8 @@ const REGEN_DUNKEL := Color("6e7d92")
 var _zelle: float = 0.0
 var _horizont: float = 0.0
 var _breite: float = 0.0
+## Die hoechste Reihe, die im Fenster noch zu sehen ist.
+var _reihe_max: float = float(REIHE_OBEN)
 ## Je Wolke: Form, Reihe ueber der Wasserlinie, Tempo, Lage in Pixeln.
 var _wolken: Array = []
 ## 0 = trocken, 1 = Regen. Laeuft ueber WECHSEL Sekunden hinueber.
@@ -77,6 +83,11 @@ func setze(zelle: float, horizont: float, breite: float) -> void:
 	_zelle = zelle
 	_horizont = horizont
 	_breite = breite
+	# Ueber der Wasserlinie ist nur so viel Himmel zu sehen, wie zwischen ihr
+	# und dem Bildrand liegt. Bei einem schmalen Fenster wird der Hintergrund
+	# staerker vergroessert und oben beschnitten -- dann muessen die Wolken
+	# mit herunter, sonst ziehen sie ausserhalb des Bildes.
+	_reihe_max = horizont / maxf(zelle, 0.001) - float(RAND_OBEN)
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -107,7 +118,8 @@ func _draw() -> void:
 		var w: Dictionary = _wolken[i]
 		var form: Array = FORMEN[int(w["form"])]
 		var x0 := snappedf(float(w["x"]) * _zelle, _zelle)
-		var y0 := _horizont - float(w["reihe"]) * _zelle
+		var reihe: float = minf(float(w["reihe"]), _reihe_max)
+		var y0 := _horizont - reihe * _zelle
 		for lauf in form:
 			var v: Vector3i = lauf
 			# Die unterste Zeile ist die Schattenseite.
