@@ -165,10 +165,14 @@ func test_the_raven_is_only_visible_when_one_waits() -> void:
 	Game.paused = true
 	Game.visitors = Visitors.new()
 	var w := _world()
-	w._update_visitors()
+	w._update_visitors(0.0)
 	assert_true(w.get_node("Visitors/Raven").visible, "das Paket fehlt")
 	Game.collect_raven()
-	w._update_visitors()
+	# Er verschwindet nicht mehr schlagartig, sondern fliegt weg -- erst
+	# nach dem Abgang ist er wirklich fort.
+	w._update_visitors(0.0)
+	assert_true(w.get_node("Visitors/Raven").visible, "er ist weggeblinkt statt abzufliegen")
+	w._update_visitors(Visitor.DAUER + 0.1)
 	assert_false(w.get_node("Visitors/Raven").visible, "es liegt noch da, obwohl geholt")
 	w.free()
 
@@ -178,7 +182,7 @@ func test_tapping_the_raven_puts_a_potion_in_the_satchel() -> void:
 	Game.visitors = Visitors.new()
 	Game.consumable_counts.clear()
 	var w := _world()
-	w._update_visitors()
+	w._update_visitors(0.0)
 	w._on_raven_pressed()
 	var total := 0
 	for id in Game.consumable_counts:

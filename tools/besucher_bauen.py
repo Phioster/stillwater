@@ -39,6 +39,16 @@ BESUCHER = (
     ("waschbaer_roh.png", "trader.png", True),
 )
 
+## Bildreihen: (Namensmuster, Bildzahl, Zielblatt).
+##
+## Sie sind mit PixelLab AUS den fertigen Standbildern entstanden, liegen
+## also schon gespiegelt und auf der Standlinie -- hier wird nur noch die
+## Palette angeglichen und nebeneinandergelegt.
+REIHEN = (
+    ("rabe_flug_%d.png", 8, "raven_fly.png"),
+    ("waschbaer_lauf_%d.png", 8, "trader_walk.png"),
+)
+
 
 def palette():
     text = open(PALETTE_GD, encoding="utf-8").read()
@@ -145,6 +155,22 @@ def main():
         im.save(os.path.join(ZIEL, fertig))
         print("%s -> %s  (%d Loecher offen, %d Toene angeglichen%s)"
               % (roh, fertig, offen, fremd, ", gespiegelt" if spiegeln else ""))
+    for muster, zahl, blatt in REIHEN:
+        bilder = []
+        fremd = 0
+        for i in range(zahl):
+            im = Image.open(os.path.join(QUELLE, muster % i)).convert("RGBA")
+            px = im.load()
+            fuellen(px, im.width, im.height)
+            fremd += angleichen(px, im.width, im.height, pal)
+            bilder.append(im)
+        breit, hoch = bilder[0].size
+        streifen = Image.new("RGBA", (breit * zahl, hoch), (0, 0, 0, 0))
+        for i, im in enumerate(bilder):
+            streifen.alpha_composite(im, (i * breit, 0))
+        streifen.save(os.path.join(ZIEL, blatt))
+        print("%s -> %s  (%d Bilder, %d Toene angeglichen)"
+              % (muster % 0, blatt, zahl, fremd))
 
 
 if __name__ == "__main__":

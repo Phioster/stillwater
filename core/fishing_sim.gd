@@ -97,6 +97,15 @@ func tick(delta: float, ctx: SimContext, rng: StillRNG) -> Array:
 						_escape(events)
 	return events
 
+## Entwicklerschalter (Optionen): sofort in die Ruhepause springen, statt
+## auf das Ende des laufenden Wurfs zu warten. Raeumt den Kampf dabei
+## ordentlich ab -- ein stehengebliebener Fisch wuerde sonst in der
+## Kampfansicht weiterleben.
+func dev_pause() -> void:
+	_clear_hooked()
+	state = State.INVENTORY_FULL
+	timer = 0.0
+
 ## Ein Tipp auf einen Orb. Wirkt nur während eines Kampfes.
 func tap(ctx: SimContext) -> Array:
 	var events: Array = []

@@ -22,6 +22,8 @@ signal visitor_tapped
 @onready var _raven: TextureButton = $Visitors/Raven
 @onready var _trader: TextureButton = $Visitors/Trader
 var _rain: Rain = null
+var _rabe_besuch: Visitor = null
+var _baer_besuch: Visitor = null
 
 ## Der Hintergrund ist 320x180: Himmel bis Zeile 77, Ufer 78-83, Wasser ab 84.
 const BG_SIZE := Vector2(320.0, 180.0)
@@ -175,6 +177,8 @@ const TRADER_ON_DECK := 88.0
 ## Gleichschritt wie ein Uhrwerk.
 const RAVEN_BOB := 2.3
 const TRADER_BOB := 1.7
+## Bilder je Reihe (tools/besucher_bauen.py).
+const VISITOR_FRAMES := 8
 
 var _bob_time: float = 0.0
 var _bobber_home: Vector2
@@ -353,7 +357,7 @@ func _process(delta: float) -> void:
 		_line.points = punkte
 	# Die Orbs erscheinen rund um den Schwimmer, nicht ueber dem ganzen Bild.
 	$CatchView.focus_point = _bobber_mitte
-	_update_visitors()
+	_update_visitors(delta)
 	if _rain != null:
 		_rain.visible = Game.ctx.raining
 	_water_time += delta
@@ -535,34 +539,45 @@ func _cast_position() -> Vector2:
 ## Besucher stehen am Steg und wollen angetippt werden. Sichtbar nur, wenn
 ## es wirklich etwas zu holen gibt -- ein Knopf, der nichts tut, ist Ballast.
 func _setup_visitors() -> void:
-	_raven.texture_normal = TextureLoader.load_texture("res://assets/art/raven.png")
-	_trader.texture_normal = TextureLoader.load_texture("res://assets/art/trader.png")
+	var rabe_ruhe := TextureLoader.load_texture("res://assets/art/raven.png")
+	var baer_ruhe := TextureLoader.load_texture("res://assets/art/trader.png")
+	_raven.texture_normal = rabe_ruhe
+	_trader.texture_normal = baer_ruhe
 	for b in [_raven, _trader]:
 		b.ignore_texture_size = true
 		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		var kante := VISITOR_PX * VISITOR_SCALE
 		b.custom_minimum_size = Vector2(kante, kante)
 		b.size = Vector2(kante, kante)
+	# Der Rabe fliegt an und zieht nach rechts uebers Wasser ab, der
+	# Waschbaer laeuft von links herein und links wieder hinaus.
+	_rabe_besuch = Visitor.new(_raven, rabe_ruhe,
+		TextureLoader.load_texture("res://assets/art/raven_fly.png"),
+		VISITOR_FRAMES, true, false, RAVEN_BOB)
+	_baer_besuch = Visitor.new(_trader, baer_ruhe,
+		TextureLoader.load_texture("res://assets/art/trader_walk.png"),
+		VISITOR_FRAMES, false, true, TRADER_BOB)
 	if not _raven.pressed.is_connected(_on_raven_pressed):
 		_raven.pressed.connect(_on_raven_pressed)
 	if not _trader.pressed.is_connected(_on_trader_pressed):
 		_trader.pressed.connect(_on_trader_pressed)
 
-func _update_visitors() -> void:
-	_raven.visible = Game.raven_waiting()
-	_trader.visible = Game.trader_present() and not Game.trader_offer().is_empty()
+func _update_visitors(delta: float) -> void:
+	if _rabe_besuch == null:
+		return
 	# Beide Bilder stehen mit den Fuessen auf ihrer untersten Zeile
 	# (tools/besucher_bauen.py), ihre Standlinie ist also die Bildunterkante.
 	var deck_oben := _dock.position.y + DECK_IM_BILD * DOCK_SCALE
-	var fuss := deck_oben - VISITOR_PX * VISITOR_SCALE
-	# Nicht auf der Stelle stehen: ein Pixel hoch und runter, jeder in
-	# seinem eigenen Takt, sonst wippen sie im Gleichschritt.
-	var rabe: float = roundf(sin(_bob_time * RAVEN_BOB) * 0.5 + 0.5) * VISITOR_SCALE
-	var baer: float = roundf(sin(_bob_time * TRADER_BOB + 1.7) * 0.5 + 0.5) * VISITOR_SCALE
-	_raven.position = Vector2(_dock.position.x + RAVEN_ON_DECK * DOCK_SCALE,
-		fuss - rabe)
-	_trader.position = Vector2(_dock.position.x + TRADER_ON_DECK * DOCK_SCALE,
-		fuss - baer)
+	var kante := VISITOR_PX * VISITOR_SCALE
+	var fuss := deck_oben - kante
+	_rabe_besuch.setze(fuss, _dock.position.x + RAVEN_ON_DECK * DOCK_SCALE,
+		kante, size.x)
+	_baer_besuch.setze(fuss, _dock.position.x + TRADER_ON_DECK * DOCK_SCALE,
+		kante, size.x)
+	# Die Welt sagt nur, ob sie da sein SOLLEN -- Ankommen und Weggehen
+	# regelt scenes/fishing/visitor.gd.
+	_rabe_besuch.tick(delta, Game.raven_waiting())
+	_baer_besuch.tick(delta, Game.trader_visible())
 
 func _on_raven_pressed() -> void:
 	var gift := Game.collect_raven()

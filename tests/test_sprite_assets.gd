@@ -44,6 +44,9 @@ func _expected_size(filename: String) -> Vector2i:
 	# (tools/besucher_bauen.py).
 	if filename == "raven.png" or filename == "trader.png":
 		return Vector2i(48, 48)
+	# Flug- und Laufreihe, acht Bilder nebeneinander.
+	if filename == "raven_fly.png" or filename == "trader_walk.png":
+		return Vector2i(48 * 8, 48)
 	if filename == "orb.png":
 		return Vector2i(16, 16)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).

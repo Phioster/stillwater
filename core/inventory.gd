@@ -20,8 +20,13 @@ func count_favorites() -> int:
 func count_stored() -> int:
 	return fish.size() - count_favorites()
 
+## Entwicklerschalter (Optionen): zwingt "voll", ohne einen Fisch anzufassen.
+## Die Does-Pose liesse sich sonst nur mit einer wirklich vollen Kiste
+## ansehen -- und die wieder zu leeren hiesse, Faenge wegzuwerfen.
+var dev_full: bool = false
+
 func is_full() -> bool:
-	return count_stored() >= capacity
+	return dev_full or count_stored() >= capacity
 
 func favorites_full() -> bool:
 	return count_favorites() >= favorite_capacity

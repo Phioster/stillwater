@@ -23,6 +23,68 @@ func refresh() -> void:
 	hint.modulate = Palette.get_color(&"reed_light")
 	add_child(hint)
 
+	_dev_bereich()
+
+## Schalter, die sonst an Uhrzeit, Zufall und Fangstand haengen. Ohne sie
+## laesst sich weder der Anflug des Raben noch der Regen noch die Does-Pose
+## ansehen, wenn das Spiel sie gerade nicht vorsieht.
+func _dev_bereich() -> void:
+	add_child(_title("Entwickler"))
+	add_child(_dreifach("Rabe", Game.dev_raven, func(w: int) -> void:
+		Game.dev_raven = w))
+	add_child(_dreifach("Waschbär", Game.dev_trader, func(w: int) -> void:
+		Game.dev_trader = w))
+	add_child(_dreifach("Regen", Game.dev_rain, func(w: int) -> void:
+		Game.dev_rain = w))
+
+	var voll := Game.ctx != null and Game.ctx.inventory.dev_full
+	var pose := TapButton.new()
+	pose.custom_minimum_size = Vector2(0, 88)
+	pose.text = "%s   Dös-Pose (Kiste „voll“)" % ["☑" if voll else "☐"]
+	pose.tapped.connect(func() -> void:
+		if Game.ctx == null:
+			return
+		Game.ctx.inventory.dev_full = not voll
+		# Der Zustand wechselt sonst erst, wenn der laufende Wurf vorbei ist.
+		if not voll:
+			Game.sim.dev_pause()
+		elif Game.sim.state == FishingSim.State.INVENTORY_FULL:
+			Game.sim.state = FishingSim.State.IDLE
+		refresh())
+	add_child(pose)
+
+	var zurueck := TapButton.new()
+	zurueck.custom_minimum_size = Vector2(0, 88)
+	zurueck.text = "Alles zurück auf Spielregeln"
+	zurueck.tapped.connect(func() -> void:
+		Game.dev_raven = -1
+		Game.dev_trader = -1
+		Game.dev_rain = -1
+		if Game.ctx != null:
+			Game.ctx.inventory.dev_full = false
+			if Game.sim.state == FishingSim.State.INVENTORY_FULL:
+				Game.sim.state = FishingSim.State.IDLE
+		refresh())
+	add_child(zurueck)
+
+	var dev_hint := Label.new()
+	dev_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dev_hint.text = "„Spielregeln“ heißt: das Spiel entscheidet wie sonst. Ein Wechsel auf „da“ oder „weg“ spielt Ankunft beziehungsweise Abgang ab. Nichts davon wird gespeichert."
+	dev_hint.modulate = Palette.get_color(&"reed_light")
+	add_child(dev_hint)
+
+## Ein Schalter mit drei Stellungen: Spielregeln, erzwungen da, erzwungen weg.
+## Ein Knopf statt dreier -- die Liste ist ohnehin lang genug.
+func _dreifach(text: String, wert: int, apply: Callable) -> Control:
+	var wie := {-1: "Spielregeln", 0: "weg", 1: "da"}
+	var b := TapButton.new()
+	b.custom_minimum_size = Vector2(0, 88)
+	b.text = "%s:   %s" % [text, wie[wert]]
+	b.tapped.connect(func() -> void:
+		apply.call(1 if wert == -1 else (0 if wert == 1 else -1))
+		refresh())
+	return b
+
 func _title(text: String) -> Control:
 	var l := Label.new()
 	l.text = text

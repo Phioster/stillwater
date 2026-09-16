@@ -39,6 +39,18 @@ var ctx: SimContext
 var rng: StillRNG
 var paused: bool = false
 
+## --- Entwicklerschalter ------------------------------------------------
+##
+## Nur fuer den Bereich ganz unten in den Optionen. Ankunft und Abflug der
+## Besucher, Regen und die Does-Pose haengen an Uhrzeit, Zufall und
+## Fangstand -- ohne diese Schalter liessen sie sich nur ansehen, wenn es
+## das Spiel gerade zulaesst.
+##
+## -1 heisst: die Spielregeln entscheiden. 0 und 1 zwingen.
+var dev_raven: int = -1
+var dev_trader: int = -1
+var dev_rain: int = -1
+
 ## Beschleunigt die Simulation für Entwicklung/Debug. Im Release 1 ungenutzt.
 var time_scale: float = 1.0
 
@@ -462,6 +474,14 @@ func trader_offer_size() -> int:
 func trader_present() -> bool:
 	return trader_unlocked() and not visitors.trader_gone
 
+## Ob der Haendler am Steg STEHT: er muss da sein und etwas anzubieten haben.
+## Eine Frage statt zweier, damit die Welt nicht beide Haelften kennen muss
+## -- und damit der Entwicklerschalter an einer Stelle greift.
+func trader_visible() -> bool:
+	if dev_trader >= 0:
+		return dev_trader == 1
+	return trader_present() and not trader_offer().is_empty()
+
 ## Der Laden wurde geschlossen. Wer gekauft hat, sieht den Händler danach
 ## weiterziehen -- der Abschied hängt am Schließen, nicht am Kauf selbst,
 ## sonst verschwände er dem Spieler unter den Fingern weg.
@@ -497,6 +517,8 @@ func reroll_trader() -> bool:
 	return true
 
 func raven_waiting() -> bool:
+	if dev_raven >= 0:
+		return dev_raven == 1
 	return visitors.raven_waiting(Time.get_unix_time_from_system())
 
 ## Das Paket des Raben. Es wartet, bis es jemand aufhebt -- verfallen zu
@@ -591,6 +613,8 @@ func hand_in_quest(id: StringName) -> bool:
 
 ## Regnet es gerade dort, wo geangelt wird?
 func raining() -> bool:
+	if dev_rain >= 0:
+		return dev_rain == 1
 	if ctx == null or ctx.zone == null:
 		return false
 	return Weather.is_raining(Time.get_unix_time_from_system(), ctx.zone.id)
