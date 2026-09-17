@@ -84,8 +84,8 @@ func test_the_hud_says_when_it_rains() -> void:
 	var hud := m.get_node("Hud")
 	Game.ctx.raining = false
 	hud.refresh()
-	var dry: String = hud.get_node("Box/Zone").text
+	var dry: String = hud.get_node("Box/Bottom/Zone").text
 	Game.ctx.raining = true
 	hud.refresh()
-	assert_true(hud.get_node("Box/Zone").text != dry, "der Regen wird nicht angesagt")
+	assert_true(hud.get_node("Box/Bottom/Zone").text != dry, "der Regen wird nicht angesagt")
 	m.free()

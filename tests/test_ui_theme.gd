@@ -313,3 +313,59 @@ func test_the_fish_row_keeps_its_size_contract() -> void:
 	assert_almost_eq(mn.y, FishRow.HEIGHT, 0.5,
 		"Zeile ist %d hoch statt %d -- VirtualList rechnet dann falsch"
 			% [mn.y, FishRow.HEIGHT])
+
+## Die Fanganzeige verschwand hinter der Kopfzeile. Beide sitzen oben, und in
+## main.tscn kommt die Kopfzeile NACH der Welt -- sie wird also darueber
+## gezeichnet. Ausgeloest hat es der Kontostand: mit echten Zahlen war die
+## Kopfzeile 640 Punkte breit und reichte bis in die Bildmitte, wo die
+## Fanganzeige steht. Der Test rechnet deshalb mit einem grossen Betrag und
+## dem schmalsten Querformat, mit dem wir rechnen.
+func test_the_catch_panel_never_hides_behind_the_hud() -> void:
+	Game.new_game()
+	Game.coins = 999999999
+	var tree := Engine.get_main_loop() as SceneTree
+	var halter := Control.new()
+	# Ohne Theme misst beides in Godots Standardschrift -- die ist schmaler
+	# als Silkscreen, der Test waere damit wertlos.
+	halter.theme = UiTheme.build()
+	tree.root.add_child(halter)
+
+	var hud: Control = load("res://scenes/ui/hud.tscn").instantiate()
+	halter.add_child(hud)
+	hud.call("refresh")
+	var kopf := hud.get_combined_minimum_size()
+
+	var cv: Control = load("res://scenes/fishing/catch_view.tscn").instantiate()
+	halter.add_child(cv)
+	var panel: Control = cv.get_node("Panel")
+	var panel_breite: float = maxf(panel.offset_right - panel.offset_left,
+		panel.get_combined_minimum_size().x)
+	var panel_oben: float = panel.offset_top
+	halter.free()
+
+	# Die Kopfzeile sitzt 16 Punkte von links und von oben (main.gd::_layout).
+	var kopf_rechts := 16.0 + kopf.x
+	var kopf_unten := 16.0 + kopf.y
+	# Die Fanganzeige steht mittig in der WELT, und die ist das Fenster ohne
+	# die Reiterleiste.
+	var welt := 1280.0 - MAIN.RAIL_WIDTH
+	var panel_links := welt * 0.5 - panel_breite * 0.5
+	assert_true(panel_oben >= kopf_unten or panel_links >= kopf_rechts,
+		"Kopfzeile geht bis x=%d y=%d, Fanganzeige beginnt bei x=%d y=%d"
+			% [kopf_rechts, kopf_unten, panel_links, panel_oben])
+
+## Und die Kopfzeile selbst darf nicht wieder ueber das halbe Bild laufen.
+func test_the_hud_stays_narrow_even_with_a_huge_balance() -> void:
+	Game.new_game()
+	Game.coins = 999999999
+	var halter := Control.new()
+	halter.theme = UiTheme.build()
+	(Engine.get_main_loop() as SceneTree).root.add_child(halter)
+	var hud: Control = load("res://scenes/ui/hud.tscn").instantiate()
+	halter.add_child(hud)
+	hud.call("refresh")
+	var breite := hud.get_combined_minimum_size().x
+	halter.free()
+	# Ein Drittel des schmalsten Querformats. Darueber deckt sie zu viel zu.
+	assert_true(breite <= 1280.0 / 3.0,
+		"Kopfzeile ist %d Punkte breit, erlaubt sind %d" % [breite, 1280.0 / 3.0])

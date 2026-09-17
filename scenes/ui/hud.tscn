@@ -3,20 +3,26 @@
 [ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1"]
 
 [node name="Hud" type="PanelContainer"]
-offset_right = 420.0
-offset_bottom = 64.0
+offset_right = 360.0
+offset_bottom = 100.0
 script = ExtResource("1")
 
-[node name="Box" type="HBoxContainer" parent="."]
+[node name="Box" type="VBoxContainer" parent="."]
+theme_override_constants/separation = 6
+
+[node name="Top" type="HBoxContainer" parent="Box"]
 theme_override_constants/separation = 18
 
-[node name="Coins" type="Label" parent="Box"]
+[node name="Coins" type="Label" parent="Box/Top"]
 
-[node name="Level" type="Label" parent="Box"]
+[node name="Level" type="Label" parent="Box/Top"]
 
-[node name="Xp" type="ProgressBar" parent="Box"]
+[node name="Bottom" type="HBoxContainer" parent="Box"]
+theme_override_constants/separation = 18
+
+[node name="Xp" type="ProgressBar" parent="Box/Bottom"]
 custom_minimum_size = Vector2(160, 18)
 size_flags_vertical = 4
 show_percentage = false
 
-[node name="Zone" type="Label" parent="Box"]
+[node name="Zone" type="Label" parent="Box/Bottom"]
