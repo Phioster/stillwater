@@ -9,11 +9,13 @@ env:
   GODOT_VERSION: 4.7.2
   ## Die Python-Tests unter tools/tests/ schneiden Bilder und brauchen dafuer
   ## Pillow; tools/wurf_lauf.py, rotsprite.py, arm_schwenken.py und
-  ## rute_anheften.py vergleichen Bilder als Array und brauchen numpy.
-  ## Beide festgenagelt wie die Godot-Version: sonst entscheidet der Tag, an
+  ## rute_anheften.py vergleichen Bilder als Array und brauchen numpy;
+  ## tools/zeichen_bauen.py baut die Zeichenschrift und braucht fontTools.
+  ## Alle festgenagelt wie die Godot-Version: sonst entscheidet der Tag, an
   ## dem die CI laeuft, mit welcher Fassung geprueft wird.
   PILLOW_VERSION: 12.3.0
   NUMPY_VERSION: 2.4.4
+  FONTTOOLS_VERSION: 4.63.0
 
 jobs:
   test:
@@ -32,11 +34,13 @@ jobs:
       - name: Ressourcen importieren
         run: godot --headless --import --quit-after 2000 || true
 
-      - name: Pillow und numpy holen
+      - name: Pillow, numpy und fontTools holen
         run: |
-          pip install --quiet "pillow==${PILLOW_VERSION}" "numpy==${NUMPY_VERSION}"
+          pip install --quiet "pillow==${PILLOW_VERSION}" "numpy==${NUMPY_VERSION}" \
+            "fonttools==${FONTTOOLS_VERSION}"
           python3 -c "import PIL; print('Pillow', PIL.__version__)"
           python3 -c "import numpy; print('numpy', numpy.__version__)"
+          python3 -c "import fontTools; print('fontTools', fontTools.version)"
 
       - name: Inhalte prüfen und Tests laufen lassen
         run: bash tools/test.sh
