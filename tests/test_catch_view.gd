@@ -176,3 +176,42 @@ func test_the_name_line_calls_for_hands_when_the_rod_is_not_enough() -> void:
 	assert_false("antippen" in v.get_node("Panel/Box/FishName").text,
 		"die Aufforderung steht da, obwohl die Rute reicht")
 	v.free()
+
+## Seit der Schwimmer dicht unter der Wasserkante liegt, reicht der Streukreis
+## der Orbs (ORB_RADIUS ist 190) bis in den Himmel. Ein Orb ueber der
+## Wasserlinie saesse im Schilf oder in der Luft -- er muss im See bleiben.
+##
+## Gerechnet wird gegen die ECHTE Flaeche der Anzeige: ihre Groesse laesst
+## sich nicht von Hand setzen, das Layout ueberschreibt sie (Godot warnt
+## ausdruecklich davor), und dann pruefte der Test gegen erfundene Zahlen.
+func test_no_orb_ever_appears_above_the_water() -> void:
+	_into_a_fight()
+	var v := _view()
+	var flaeche: Vector2 = v.spawn_area.size
+	assert_true(flaeche.y > 200.0,
+		"die Anzeige ist nur %d hoch, der Test greift ins Leere" % flaeche.y)
+	var kante := flaeche.y * 0.6
+	v.water_line = kante
+	# Dicht unter der Kante, so wie der Schwimmer jetzt liegt.
+	v.focus_point = Vector2(flaeche.x * 0.5, kante + 10.0)
+	var hoechster := 99999.0
+	for i in 300:
+		hoechster = minf(hoechster, v._orb_position().y)
+	v.free()
+	assert_true(hoechster >= kante,
+		"ein Orb saesse auf y=%d, das Wasser beginnt erst bei %d"
+			% [hoechster, kante])
+
+## Ohne gemeldete Wasserlinie -- etwa im allerersten Bild -- darf er trotzdem
+## nicht ausserhalb der Anzeige landen.
+func test_orbs_stay_inside_the_view_without_a_water_line() -> void:
+	_into_a_fight()
+	var v := _view()
+	var flaeche: Vector2 = v.spawn_area.size
+	v.focus_point = flaeche * 0.5
+	for i in 200:
+		var p: Vector2 = v._orb_position()
+		assert_true(p.x >= 0.0 and p.x <= flaeche.x
+			and p.y >= 0.0 and p.y <= flaeche.y,
+			"Orb bei %s, die Anzeige ist %s gross" % [p, flaeche])
+	v.free()

@@ -20,6 +20,9 @@ const ORB_RADIUS: float = 190.0
 ## gesetzt. Ohne Welt bleibt es die Mitte der Flaeche, damit CatchView
 ## eigenstaendig laedt.
 var focus_point: Vector2 = Vector2.ZERO
+## Wo das Wasser anfaengt. Darueber darf kein Orb erscheinen -- er saesse
+## sonst im Himmel oder im Schilf. world.gd meldet es jedes Bild.
+var water_line: float = 0.0
 
 ## Die Anzeige steht LINKS unter der Kopfzeile, nicht mittig im Bild.
 ## Mittig geriet sie zwischen die Anglerin (der Zopf reicht bis dort hinauf)
@@ -167,8 +170,11 @@ func _orb_position() -> Vector2:
 	var angle := randf() * TAU
 	var distance := sqrt(randf()) * ORB_RADIUS
 	var pos := center + Vector2(cos(angle), sin(angle)) * distance
+	# Nach oben begrenzt die Wasserlinie, nach unten der Bildrand.
+	var oben := maxf(ORB_MARGIN, water_line)
+	var unten := maxf(area.y - ORB_MARGIN, oben + 1.0)
 	return Vector2(
 		clampf(pos.x, ORB_MARGIN, maxf(area.x - ORB_MARGIN, ORB_MARGIN + 1.0)),
-		clampf(pos.y, ORB_MARGIN, maxf(area.y - ORB_MARGIN, ORB_MARGIN + 1.0))
+		clampf(pos.y, oben, unten)
 	)
 
