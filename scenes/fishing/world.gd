@@ -390,8 +390,11 @@ func _update_water_line() -> void:
 		pts[i] = Vector2(size.x * fraction, water_y + WAVE_BIAS + wave * WAVE_SCALE)
 	_water_line.points = pts
 	## Dieselbe Punktfolge malt die Flaeche darunter -- Linie und Wasser
-	## koennen dadurch nicht auseinanderlaufen.
+	## koennen dadurch nicht auseinanderlaufen. Und der Regen hoert darauf
+	## auf, statt quer ueber das Wasser weiterzulaufen.
 	_water_view.setze(pts, size.x, size.y, _water_time)
+	if _rain != null:
+		_rain.setze_wasser(pts, water_y + WAVE_BIAS)
 	# Ufer bis zur Welle herunterziehen: hin entlang der Welle, zurueck entlang
 	# der geraden Uferlinie.
 	var poly := PackedVector2Array()
