@@ -341,18 +341,23 @@ func test_the_catch_panel_never_hides_behind_the_hud() -> void:
 	var panel_breite: float = maxf(panel.offset_right - panel.offset_left,
 		panel.get_combined_minimum_size().x)
 	var panel_oben: float = panel.offset_top
+	var panel_links: float = panel.offset_left
 	halter.free()
 
 	# Die Kopfzeile sitzt 16 Punkte von links und von oben (main.gd::_layout).
 	var kopf_rechts := 16.0 + kopf.x
 	var kopf_unten := 16.0 + kopf.y
-	# Die Fanganzeige steht mittig in der WELT, und die ist das Fenster ohne
-	# die Reiterleiste.
-	var welt := 1280.0 - MAIN.RAIL_WIDTH
-	var panel_links := welt * 0.5 - panel_breite * 0.5
+	# Die Fanganzeige steht links, wie die Kopfzeile -- geprueft wird also,
+	# dass sie UNTER ihr beginnt.
 	assert_true(panel_oben >= kopf_unten or panel_links >= kopf_rechts,
 		"Kopfzeile geht bis x=%d y=%d, Fanganzeige beginnt bei x=%d y=%d"
 			% [kopf_rechts, kopf_unten, panel_links, panel_oben])
+	# Und sie darf nicht unter das Seitenpanel geraten, wenn das offen ist.
+	# Das Panel haengt rechts; frei bleibt alles links davon.
+	var frei := 1280.0 - MAIN.RAIL_WIDTH - MAIN.PANEL_WIDTH
+	assert_true(panel_links + panel_breite <= frei,
+		"Fanganzeige geht bis x=%d, das offene Menue beginnt bei x=%d"
+			% [panel_links + panel_breite, frei])
 
 ## Und die Kopfzeile selbst darf nicht wieder ueber das halbe Bild laufen.
 func test_the_hud_stays_narrow_even_with_a_huge_balance() -> void:

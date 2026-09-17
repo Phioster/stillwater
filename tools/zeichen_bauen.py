@@ -147,6 +147,17 @@ ZEICHEN = {
 }
 
 
+## Zeichen, die NICHT auf der Grundlinie stehen sollen, in Pixeln nach unten.
+##
+## Ein Buchstabe ist 5 Pixel hoch, die Muenze 7. Auf derselben Grundlinie sitzt
+## ihre Mitte damit 1 Pixel ueber der Buchstabenmitte -- neben einer Zahl sieht
+## das aus, als schwebe sie. Ein runder Umriss will optisch mittig sitzen und
+## nicht aufsitzen; bei Stern und Schirm ist Aufsitzen dagegen richtig.
+VERSATZ = {
+    0x2A00: -1,   # Muenze
+}
+
+
 def laeufe(zeile):
     """Die zusammenhaengenden Strecken einer Zeile als (von, bis)."""
     out, start = [], None
@@ -160,7 +171,7 @@ def laeufe(zeile):
     return out
 
 
-def zeichne(muster):
+def zeichne(muster, versatz=0):
     """Ein Muster als Kontur. Waagerechte Strecken werden zusammengefasst --
     ein Rechteck je Strecke statt eines je Pixel haelt die Schrift klein."""
     stift = TTGlyphPen(None)
@@ -168,7 +179,7 @@ def zeichne(muster):
     for y, zeile in enumerate(muster):
         # Oberste Musterzeile liegt am hoechsten: y zaehlt nach unten, die
         # Schrift rechnet nach oben.
-        unten = (hoch - 1 - y) * PIXEL
+        unten = (hoch - 1 - y + versatz) * PIXEL
         for von, bis in laeufe(zeile):
             x0 = (LUFT + von) * PIXEL
             x1 = (LUFT + bis) * PIXEL
@@ -189,7 +200,7 @@ def bauen():
     glyphen = {".notdef": TTGlyphPen(None).glyph()}
     breiten = {".notdef": (PIXEL * 6, 0)}
     for cp, (name, muster) in ZEICHEN.items():
-        glyphen[name] = zeichne(muster)
+        glyphen[name] = zeichne(muster, VERSATZ.get(cp, 0))
         breite = (len(muster[0]) + 2 * LUFT) * PIXEL
         breiten[name] = (breite, LUFT * PIXEL)
     fb.setupGlyf(glyphen)

@@ -83,7 +83,7 @@ class TestZeichen(unittest.TestCase):
         gs = f.getGlyphSet()
         from fontTools.pens.boundsPen import BoundsPen
         P, L = zeichen_bauen.PIXEL, zeichen_bauen.LUFT
-        for name, muster in zeichen_bauen.ZEICHEN.values():
+        for cp, (name, muster) in zeichen_bauen.ZEICHEN.items():
             bp = BoundsPen(gs)
             gs[name].draw(bp)
             self.assertIsNotNone(bp.bounds, "%s ist leer" % name)
@@ -91,12 +91,14 @@ class TestZeichen(unittest.TestCase):
             zeilen = [y for y, z in enumerate(muster) if "#" in z]
             spalten = [x for x in range(len(muster[0]))
                        if any(z[x] == "#" for z in muster)]
-            erwartet = ((L + min(spalten)) * P, (hoch - 1 - max(zeilen)) * P,
-                        (L + max(spalten) + 1) * P, (hoch - min(zeilen)) * P)
+            v = zeichen_bauen.VERSATZ.get(cp, 0)
+            erwartet = ((L + min(spalten)) * P, (hoch - 1 - max(zeilen) + v) * P,
+                        (L + max(spalten) + 1) * P, (hoch - min(zeilen) + v) * P)
             self.assertEqual(tuple(bp.bounds), erwartet,
                              "%s sitzt nicht auf seinem Muster" % name)
-            self.assertGreaterEqual(bp.bounds[1], 0,
-                                    "%s haengt unter der Grundlinie" % name)
+            # Unter die Grundlinie darf nur, was ausdruecklich versetzt ist.
+            self.assertGreaterEqual(bp.bounds[1], v * P,
+                                    "%s haengt tiefer als vorgesehen" % name)
 
     def test_die_schrift_auf_der_platte_ist_aktuell(self):
         auf_platte = zeichensatz(zeichen_bauen.BLATT)

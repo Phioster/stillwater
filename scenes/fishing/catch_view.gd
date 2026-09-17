@@ -21,6 +21,10 @@ const ORB_RADIUS: float = 190.0
 ## eigenstaendig laedt.
 var focus_point: Vector2 = Vector2.ZERO
 
+## Die Anzeige steht LINKS unter der Kopfzeile, nicht mittig im Bild.
+## Mittig geriet sie zwischen die Anglerin (der Zopf reicht bis dort hinauf)
+## und das Seitenpanel, das rechts darueber liegt, sobald es offen ist --
+## beides verdeckte sie. Links ist die einzige Spalte, die immer frei bleibt.
 @onready var _panel: PanelContainer = $Panel
 @onready var _name: Label = $Panel/Box/FishName
 @onready var _health_slot: Control = $Panel/Box/Health

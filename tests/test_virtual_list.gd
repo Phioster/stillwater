@@ -159,3 +159,59 @@ func _all(n: Node) -> Array[Node]:
 	for c in n.get_children():
 		out.append_array(_all(c))
 	return out
+
+## Beim Weiterrollen darf die Liste NICHT alles neu bauen. Genau das tat sie:
+## ein Zeilensprung warf das ganze Fenster weg und baute es neu -- bei
+## dreizehn Zeilen aus je vier bis fuenf Knoten rund sechzig Knoten, und der
+## Eintritt in den Baum ist laut der Messung oben das Teure daran. Beim
+## Wischen fiel dadurch regelmaessig ein Bild aus.
+func test_scrolling_on_by_one_row_only_builds_one_row() -> void:
+	var list := _list(200)
+	# setup() hat das Fenster schon aufgebaut.
+	var vorher := list.live_rows()
+	assert_true(vorher > 1, "das Fenster ist leer, der Test greift ins Leere")
+	# Ohne Layout-Durchlauf kennt der Scrollbalken seinen Bereich noch nicht
+	# und klemmt jede Position auf 0 -- wie im Test weiter oben von Hand setzen.
+	var scroll: ScrollContainer = list.get_parent()
+	scroll.get_v_scroll_bar().max_value = 200.0 * 96.0
+	scroll.scroll_vertical += 96
+	list._refresh_window()
+	assert_eq(list.built_last_refresh(), 1,
+		"ein Zeilensprung hat %d Zeilen gebaut statt einer"
+			% list.built_last_refresh())
+	assert_true(list.live_rows() <= vorher + 1,
+		"das Fenster ist von %d auf %d gewachsen" % [vorher, list.live_rows()])
+	list.get_parent().free()
+
+## Ein Sprung ans andere Ende baut dagegen alles neu -- dort ist nichts zu
+## recyceln, und es DARF nichts stehenbleiben.
+func test_jumping_far_rebuilds_the_whole_window() -> void:
+	var list := _list(200)
+	var scroll: ScrollContainer = list.get_parent()
+	scroll.get_v_scroll_bar().max_value = 200.0 * 96.0
+	scroll.scroll_vertical += 96 * 100
+	list._refresh_window()
+	assert_true(list.built_last_refresh() > 1, "es wurde gar nichts gebaut")
+	assert_eq(list.built_last_refresh(), list.live_rows(),
+		"%d gebaut, aber %d haengen im Baum -- da blieb etwas Altes stehen"
+			% [list.built_last_refresh(), list.live_rows()])
+	list.get_parent().free()
+
+## Und nichts Altes darf zurueckbleiben: die Zeilen im Baum muessen genau die
+## Indizes des Fensters tragen.
+func test_recycling_leaves_no_stale_rows_behind() -> void:
+	var list := _list(200)
+	var scroll: ScrollContainer = list.get_parent()
+	scroll.get_v_scroll_bar().max_value = 200.0 * 96.0
+	for schritt in 12:
+		scroll.scroll_vertical += 96
+		list._refresh_window()
+	var fenster := list.window()
+	for c in list.get_children():
+		var i := int(c.get_meta(&"row"))
+		assert_true(i >= fenster.x and i <= fenster.y,
+			"Zeile %d haengt noch im Baum, das Fenster ist %d..%d"
+				% [i, fenster.x, fenster.y])
+	assert_eq(list.live_rows(), fenster.y - fenster.x + 1,
+		"es fehlen Zeilen im Fenster")
+	list.get_parent().free()

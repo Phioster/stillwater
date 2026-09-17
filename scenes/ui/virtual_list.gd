@@ -26,6 +26,12 @@ var _build: Callable = Callable()
 var _first: int = -1
 var _last: int = -1
 var _scroll: ScrollContainer = null
+## Welche Zeile gerade im Baum haengt, nach Index. Damit laesst sich beim
+## Weiterrollen unterscheiden, was BLEIBT und was wirklich neu ist.
+var _rows: Dictionary = {}
+## Wie viele Zeilen der letzte Durchlauf gebaut hat -- der Beleg dafuer, dass
+## recycelt wird.
+var _gebaut: int = 0
 
 ## `build` bekommt den Index und gibt die fertige Zeile zurück.
 func setup(count: int, row_height: float, build: Callable) -> void:
@@ -37,6 +43,7 @@ func setup(count: int, row_height: float, build: Callable) -> void:
 	for c in get_children():
 		remove_child(c)
 		c.queue_free()
+	_rows.clear()
 	# Die volle Höhe steht auch ohne Inhalt: sonst wüsste der Scrollbalken
 	# nicht, wie weit es geht.
 	custom_minimum_size = Vector2(0, float(_count) * _row_height)
@@ -80,22 +87,39 @@ func window() -> Vector2i:
 	var last := int(ceil((top + height) / _row_height)) + OVERSCAN
 	return Vector2i(clampi(first, 0, _count - 1), clampi(last, 0, _count - 1))
 
+## Nur die Zeilen anfassen, die wirklich dazugekommen oder herausgefallen
+## sind. Frueher wurden bei JEDEM Zeilensprung alle weggeworfen und alle neu
+## gebaut -- bei dreizehn Zeilen aus je vier bis fuenf Knoten sind das rund
+## sechzig Knoten, und der Eintritt in den Baum kostet laut der Messung oben
+## den Loewenanteil. Beim Wischen fiel damit regelmaessig ein Bild aus.
+## Rollt man weiter, ist jetzt EINE Zeile neu statt dreizehn.
 func _refresh_window() -> void:
 	if _count == 0 or not _build.is_valid():
 		return
 	var w := window()
+	# Der Zaehler gehoert VOR den Fruehausstieg: "beim letzten Durchlauf
+	# gebaut" ist null, wenn sich nichts geruehrt hat, und nicht der alte Wert.
+	_gebaut = 0
 	if w.x == _first and w.y == _last:
 		return
 	_first = w.x
 	_last = w.y
-	for c in get_children():
-		remove_child(c)
-		c.queue_free()
+	for i in _rows.keys():
+		if i < _first or i > _last:
+			var alt_row: Node = _rows[i]
+			_rows.erase(i)
+			if is_instance_valid(alt_row):
+				remove_child(alt_row)
+				alt_row.queue_free()
 	for i in range(_first, _last + 1):
+		if _rows.has(i):
+			continue
 		var row: Control = _build.call(i)
 		if row == null:
 			continue
 		add_child(row)
+		_rows[i] = row
+		_gebaut += 1
 		# Oben verankert und ueber die volle Breite: dann folgt die Zeile der
 		# Breite der Liste von selbst. Mit fester Groesse waere sie null Pixel
 		# breit, solange das Layout beim Bauen noch nicht gelaufen ist.
@@ -104,6 +128,11 @@ func _refresh_window() -> void:
 		row.offset_right = 0.0
 		row.offset_top = float(i) * _row_height
 		row.offset_bottom = row.offset_top + _row_height
+
+## Wie viele Zeilen der letzte Durchlauf neu gebaut hat. Nur fuer den Test,
+## der nachweist, dass beim Weiterrollen recycelt und nicht neu gebaut wird.
+func built_last_refresh() -> int:
+	return _gebaut
 
 ## Wie viele Zeilen gerade wirklich im Baum stehen.
 func live_rows() -> int:
