@@ -25,6 +25,12 @@ func _expected_size(filename: String) -> Vector2i:
 		# 256x96 gezeichnet, plus der Versatz der hinteren Haelfte
 		# (tools/steg_bauen.py: TIEFE 6 nach rechts, HOCH 2 nach oben).
 		return Vector2i(262, 98)
+	if filename == "panel_rahmen.png":
+		# Aus dem Steg geschnitten (tools/rahmen_bauen.py): zwei Raender plus
+		# je eine Kachel. Die Raender sind dieselben, die das Theme dem
+		# 9-Slice gibt -- deshalb stehen sie hier nicht noch einmal als Zahl.
+		return Vector2i(UiTheme.RAHMEN_SEITE * 2 + 56,
+			UiTheme.RAHMEN_OBEN * 2 + 24)
 	# Die Rute hat ihr eigenes, groesseres Raster und nur ein Bild je Winkel.
 	if filename.begins_with("char_rod_"):
 		return Vector2i(AnglerPose.ROD_FRAME_SIZE * AnglerPose.ROD_FRAMES,
