@@ -1,10 +1,12 @@
-## Wolken, die am Himmel vorbeiziehen -- und bei Regen mehr werden und
-## nachdunkeln.
+## Wolken, die am Himmel vorbeiziehen -- und bei Regen groesser und mehr
+## werden und nachdunkeln.
 ##
 ## Sie sind GEZEICHNET und nicht gemalt: als Rechtecke im Pixelraster des
 ## Hintergrunds, damit ihre Kanten genauso gross sind wie die des Himmels
 ## dahinter. Ein Bild waere billiger, koennte aber weder mitziehen noch die
-## Farbe wechseln.
+## Farbe wechseln. Eine Regenwolke ist deshalb auch nicht dieselbe Form
+## groesser skaliert -- das haette groebere Pixel als der Himmel --, sondern
+## eine eigene, groessere Form im selben Raster.
 ##
 ## Sie bleiben oberhalb der Schilfspitzen (REIHE_OBEN/REIHE_UNTEN zaehlen in
 ## Hintergrundpixeln ueber der Wasserlinie, das Schilf reicht 28 hoch): das
@@ -36,8 +38,31 @@ const FORMEN: Array = [
 		Vector3i(2, 3, 39)],
 ]
 
+## Die Wolken, die erst im Regen dazukommen. Eigene Liste statt der grossen
+## Enden von FORMEN: sie sind rund doppelt so breit und mit sechs bis sieben
+## Zeilen fast doppelt so hoch: ein Regenhimmel traegt schwere Baenke, keine
+## Ansammlung von Schoenwettertupfern. Aufsteigend nach Breite -- daran haengt
+## die Kopplung Groesse/Hoehe/Tempo weiter unten.
+const REGEN_FORMEN: Array = [
+	[Vector3i(16, 0, 9), Vector3i(9, 1, 20), Vector3i(3, 2, 34),
+		Vector3i(0, 3, 46), Vector3i(0, 4, 52), Vector3i(3, 5, 46)],
+	# Schief, der Bausch links -- sonst sehen alle Baenke gleich aus.
+	[Vector3i(4, 0, 10), Vector3i(1, 1, 22), Vector3i(0, 2, 34),
+		Vector3i(0, 3, 45), Vector3i(2, 4, 54), Vector3i(4, 5, 56),
+		Vector3i(8, 6, 50)],
+	[Vector3i(22, 0, 11), Vector3i(13, 1, 26), Vector3i(5, 2, 44),
+		Vector3i(0, 3, 60), Vector3i(0, 4, 68), Vector3i(4, 5, 60)],
+	# Die schwerste: quer ueber ein Viertel des Himmels.
+	[Vector3i(26, 0, 12), Vector3i(17, 1, 27), Vector3i(8, 2, 46),
+		Vector3i(2, 3, 64), Vector3i(0, 4, 76), Vector3i(0, 5, 78),
+		Vector3i(5, 6, 68)],
+]
+
 ## Wieviele Wolken am Himmel stehen -- trocken und im Regen. Bei Regen soll
-## er sich zuziehen, nicht nur ein paar Wolken mehr tragen.
+## er sich zuziehen, nicht nur ein paar Wolken mehr tragen. Die Zahl bleibt,
+## obwohl die Regenwolken doppelt so gross sind: weniger, dafuer groessere
+## liessen den Himmel duenner aussehen als vorher, und zugezogen soll er
+## bleiben. Mehr als diese 20 fliessen dagegen zu Streifen zusammen.
 const ZAHL_KLAR := 5
 const ZAHL_REGEN := 20
 ## So viele halten wir ueberhaupt vor; die ueberzaehligen sind nur
@@ -74,6 +99,10 @@ var _reihe_max: float = float(REIHE_OBEN)
 var _wolken: Array = []
 ## 0 = trocken, 1 = Regen. Laeuft ueber WECHSEL Sekunden hinueber.
 var _nass: float = 0.0
+## Wieweit links vom Bild eine Wolke starten muss, damit sie nicht mit halber
+## Breite am Rand aufblitzt: die breiteste Form. Seit die Regenbaenke 78 breit
+## sind, reicht der frueher feste Wert von 60 dafuer nicht mehr.
+var _vorlauf: float = 0.0
 
 ## Die Breite einer Form in Pixelspalten -- der aeusserste Lauf gibt sie.
 static func _breite_von(form: Array) -> int:
@@ -83,41 +112,52 @@ static func _breite_von(form: Array) -> int:
 		b = maxi(b, v.x + v.z)
 	return b
 
+## Welche Form die i-te Wolke traegt: die ersten ZAHL_KLAR sind die
+## Schoenwetterwolken, alles danach kommt erst im Regen dazu. Getrennt von
+## _ready, damit die Tests sie ohne Szenenbaum pruefen koennen.
+static func form_fuer(i: int) -> Array:
+	if i >= ZAHL_KLAR:
+		return REGEN_FORMEN[(i - ZAHL_KLAR) % REGEN_FORMEN.size()]
+	# Sichtbar sind bei klarem Wetter nur diese fuenf. Wuerfelte man ihre
+	# Formen, koennten das fuenf aehnliche sein -- die Reihe steht deshalb fest
+	# und beginnt mit den am weitesten auseinanderliegenden.
+	const REIHENFOLGE := [0, 7, 3, 5, 1, 6, 2, 4]
+	return FORMEN[REIHENFOLGE[i % REIHENFOLGE.size()]]
+
 func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20260915
-	var schmal := _breite_von(FORMEN[0])
-	var breit := _breite_von(FORMEN[FORMEN.size() - 1])
-	# Sichtbar sind bei klarem Wetter nur die ersten ZAHL_KLAR Wolken. Wuerfelte
-	# man ihre Formen, koennten das fuenf aehnliche sein -- die Reihe steht
-	# deshalb fest und beginnt mit den am weitesten auseinanderliegenden.
-	var reihenfolge := [0, 7, 3, 5, 1, 6, 2, 4]
+	for liste in [FORMEN, REGEN_FORMEN]:
+		for form in liste:
+			_vorlauf = maxf(_vorlauf, float(_breite_von(form)))
 	for i in VORRAT:
-		# Die ersten sind die Schoenwetterwolken, die spaeteren kommen erst
-		# im Regen dazu -- und das sind bewusst die grossen und tiefen: so
-		# zieht sich der Himmel zu, statt nur mehr Tupfer zu tragen.
 		var regenwolke := i >= ZAHL_KLAR
-		var f: int = reihenfolge[i % reihenfolge.size()]
-		if regenwolke:
-			f = FORMEN.size() - 1 - (i % 3)
+		var form: Array = form_fuer(i)
 		# Groesse, Hoehe, Tempo und Blaesse haengen zusammen, statt einzeln
 		# zu wuerfeln: eine kleine, blasse, langsame Wolke tief am Himmel
 		# liest sich als weit weg, eine grosse, satte, schnelle weiter oben
 		# als nah. Gewuerfelt sieht dieselbe Zahl Wolken nur unordentlich
-		# aus, gekoppelt ergibt sie Tiefe.
-		var g: float = clampf(float(_breite_von(FORMEN[f]) - schmal)
+		# aus, gekoppelt ergibt sie Tiefe. Gemessen wird innerhalb der EIGENEN
+		# Liste -- an FORMEN gemessen saessen alle Regenbaenke am Anschlag und
+		# zoegen gleich hoch und gleich schnell dahin.
+		var liste: Array = REGEN_FORMEN if regenwolke else FORMEN
+		var schmal := _breite_von(liste[0])
+		var breit := _breite_von(liste[liste.size() - 1])
+		var g: float = clampf(float(_breite_von(form) - schmal)
 			/ maxf(float(breit - schmal), 1.0), 0.0, 1.0)
 		_wolken.append({
-			"form": f,
+			"form": form,
 			# Regenwolken haengen tiefer und streuen weiter: ein zugezogener
-			# Himmel hat keinen freien Streifen ueber dem Horizont.
-			"reihe": (rng.randf_range(float(REIHE_UNTEN) - 14.0,
+			# Himmel hat keinen freien Streifen ueber dem Horizont. Die Reihe
+			# ist die OBERKANTE, die sechs bis sieben Zeilen haengen darunter
+			# -- unten bleiben sie damit immer noch ueber dem Schilf.
+			"reihe": (rng.randf_range(float(REIHE_UNTEN) - 8.0,
 					float(REIHE_OBEN)) if regenwolke
 				else lerpf(float(REIHE_UNTEN), float(REIHE_OBEN), g)
 					+ rng.randf_range(-4.0, 4.0)),
 			"tempo": lerpf(TEMPO_MIN, TEMPO_MAX, g) * rng.randf_range(0.85, 1.15),
 			"deckung": 1.0 if regenwolke else lerpf(0.68, 1.0, g),
-			"x": rng.randf_range(-60.0, 360.0),
+			"x": rng.randf_range(-_vorlauf, 360.0),
 		})
 
 ## Wo der Himmel liegt und wie gross ein Hintergrundpixel auf dem Schirm
@@ -141,10 +181,11 @@ func _process(delta: float) -> void:
 	var rand := _breite / _zelle
 	for w in _wolken:
 		w["x"] = float(w["x"]) + float(w["tempo"]) * delta
-		# Rechts hinaus, links wieder herein. Der Vorlauf ist so breit wie
-		# die groesste Form, sonst blitzt sie am Rand auf.
-		if float(w["x"]) > rand + 60.0:
-			w["x"] = -60.0
+		# Rechts hinaus, links wieder herein: umgesetzt wird erst, wenn die
+		# LINKE Kante draussen ist, und zurueck auf einen Vorlauf so breit wie
+		# die groesste Form -- sonst blitzt sie am Rand auf.
+		if float(w["x"]) > rand:
+			w["x"] = -_vorlauf
 	queue_redraw()
 
 ## Wie sehr es gerade nach Regen aussieht, 0 bis 1. world.gd faerbt den
@@ -164,7 +205,7 @@ func _draw() -> void:
 		if sicht <= 0.0:
 			continue
 		var w: Dictionary = _wolken[i]
-		var form: Array = FORMEN[int(w["form"])]
+		var form: Array = w["form"]
 		# NICHT aufs Pixelraster rasten: bei ein bis drei Zeilen je Sekunde
 		# spraenge eine Wolke sonst nur alle paar Sekunden um eine ganze
 		# Zelle weiter, und genau das sah aus wie Ruckeln. Die Form bleibt
