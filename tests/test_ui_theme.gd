@@ -124,3 +124,71 @@ func test_every_tab_label_fits_the_rail() -> void:
 		assert_true(w <= platz,
 			"Reiter '%s' ist %d breit, in die Leiste passen %d"
 				% [reiter, w, platz])
+
+## Godots Vorgabe fuer den Abstand zwischen zwei Kindern einer HBox. Die
+## Reiterzeile setzt nichts anderes, also gilt der hier.
+const HBOX_ABSTAND: float = 4.0
+
+func _gruppen(node: Node, out: Array) -> void:
+	if node is TabGroup:
+		var g: TabGroup = node
+		if g.labels.size() > 1:
+			out.append(g.labels)
+	for kind in node.get_children():
+		_gruppen(kind, out)
+
+## Dieselbe Falle wie bei der Reiterleiste, nur eine Ebene tiefer: die
+## Unterreiterzeile eines Panels ("Inventar Vitrine Beutel Auftraege Geheim")
+## steht waagerecht und wird mit der Schrift breiter. Passt sie nicht mehr,
+## bleibt sie nicht etwa stehen -- ein PanelContainer darf nicht schmaler
+## werden als sein Inhalt, also waechst er nach rechts und schiebt sich ueber
+## die Leiste daneben. Genau so ist es beim ersten Anlauf passiert.
+func test_every_tab_group_row_fits_the_side_panel() -> void:
+	var szene: PackedScene = load("res://scenes/main.tscn")
+	assert_true(szene != null, "main.tscn laesst sich nicht laden")
+	if szene == null:
+		return
+	var haupt: Node = szene.instantiate()
+	var seite: Control = haupt.get_node_or_null("SidePanel")
+	assert_true(seite != null, "SidePanel steht nicht mehr in main.tscn")
+	var breite: float = 0.0
+	if seite != null:
+		breite = seite.offset_right - seite.offset_left
+	var gruppen: Array = []
+	_gruppen(haupt, gruppen)
+	haupt.free()
+	assert_true(gruppen.size() > 0, "keine einzige Reitergruppe gefunden")
+	var schrift := UiTheme.build().default_font
+	var platz := breite - 2.0 * float(UiTheme.RAHMEN_SEITE + 2)
+	for labels in gruppen:
+		var noetig := HBOX_ABSTAND * float(labels.size() - 1)
+		for l in labels:
+			noetig += schrift.get_string_size(l, HORIZONTAL_ALIGNMENT_LEFT,
+				-1, UiTheme.SCHRIFT_GROESSE).x + 2.0 * float(UiTheme.KNOPF_RAND)
+		assert_true(noetig <= platz,
+			"Reiterzeile %s braucht %d, im Panel sind %d"
+				% [", ".join(labels), noetig, platz])
+
+## Der Erfahrungsbalken war Godots heller runder Standard und auf dem
+## Sandpanel praktisch unsichtbar.
+func test_the_progress_bar_is_styled_at_all() -> void:
+	var t := UiTheme.build()
+	for name in ["background", "fill"]:
+		var box := t.get_stylebox(name, "ProgressBar")
+		assert_true(box is StyleBoxFlat, "ProgressBar/%s ist nicht gesetzt" % name)
+	var rinne: StyleBoxFlat = t.get_stylebox("background", "ProgressBar")
+	var fuellung: StyleBoxFlat = t.get_stylebox("fill", "ProgressBar")
+	assert_false(rinne.bg_color.is_equal_approx(fuellung.bg_color),
+		"Rinne und Fuellung haben dieselbe Farbe")
+
+## Der Umriss haengt daran, WORAUF der Text sitzt: Beschriftungen auf dem
+## hellen Sandpanel, Knoepfe auf dunklem Holz. Gleiche Farbe fuer beide hiesse,
+## dass eines von beidem ersaeuft.
+func test_labels_and_buttons_outline_in_opposite_directions() -> void:
+	var t := UiTheme.build()
+	var label_umriss: Color = t.get_color("font_outline_color", "Label")
+	var knopf_umriss: Color = t.get_color("font_outline_color", "Button")
+	assert_true(label_umriss.get_luminance() > 0.5,
+		"der Umriss der Beschriftungen ist nicht hell")
+	assert_true(knopf_umriss.get_luminance() < 0.5,
+		"der Umriss der Knoepfe ist nicht dunkel")

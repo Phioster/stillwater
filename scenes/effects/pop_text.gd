@@ -10,8 +10,11 @@ var _start_y: float = 0.0
 
 func _ready() -> void:
 	add_theme_color_override("font_outline_color", Palette.get_color(&"shadow"))
-	add_theme_constant_override("outline_size", 6)
-	add_theme_font_size_override("font_size", 26)
+	# Dieser Text steht als einziger ueber dem WASSER und nicht auf dem
+	# Sandpanel -- deshalb behaelt er den dunklen Umriss, waehrend ihn das
+	# Theme fuer Beschriftungen auf hell umgestellt hat.
+	add_theme_constant_override("outline_size", 3)
+	add_theme_font_size_override("font_size", 24)
 
 ## pos ist der Mittelpunkt des Texts, nicht die obere linke Ecke --
 ## custom_minimum_size steht schon in der .tscn, damit hier keine

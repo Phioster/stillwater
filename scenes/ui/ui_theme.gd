@@ -50,11 +50,21 @@ static func build() -> Theme:
 		t.default_font = schrift
 	t.default_font_size = SCHRIFT_GROESSE
 
-	# Ein dunkler Umriss trägt Text über jedem Hintergrund — auch über
-	# bewegtem Wasser, wo eine Schriftfarbe allein nie reicht. Der weiche
-	# Schatten von früher ist weg: neben einer Pixelschrift liest er sich
-	# als Unschärfe, und der Umriss leistet dasselbe härter.
-	for type_name in ["Label", "Button", "RichTextLabel", "LineEdit"]:
+	# Der Umriss trägt den Text über seinem Untergrund, wo eine Schriftfarbe
+	# allein nicht reicht. Seine Farbe haengt deshalb davon ab, WORAUF der
+	# Text sitzt, und nicht am Geschmack:
+	#
+	# Beschriftungen stehen auf dem hellen Sandpanel und tragen ihre
+	# Seltenheits- oder Akzentfarbe (fish_row.gd, zwanzig weitere Stellen).
+	# Die sind alle dunkler als Sand. Mit dunklem Umriss ersaufen sie darin --
+	# ausprobiert, alles sah schwarz aus; ein HELLER Umriss holt sie heraus.
+	#
+	# Knöpfe sind dunkles Holz mit hellem Text, dort gilt das Umgekehrte.
+	for type_name in ["Label", "RichTextLabel"]:
+		t.set_color("font_outline_color", type_name,
+			Palette.get_color(&"sea_foam"))
+		t.set_constant("outline_size", type_name, OUTLINE)
+	for type_name in ["Button", "LineEdit"]:
 		t.set_color("font_outline_color", type_name, ink)
 		t.set_constant("outline_size", type_name, OUTLINE)
 
@@ -77,6 +87,16 @@ static func build() -> Theme:
 	var stumm := _knopf(Palette.get_color(&"wood_dark"), ink)
 	stumm.bg_color.a = 0.55
 	t.set_stylebox("disabled", "Button", stumm)
+
+	# Der Erfahrungsbalken war Godots Standard: hell, rund und auf dem
+	# Sandpanel praktisch unsichtbar. Dunkle Rinne, goldene Füllung, harte
+	# Kante -- damit liest man auf einen Blick, wie weit er ist.
+	var rinne := _knopf(Palette.get_color(&"wood_dark"), ink)
+	rinne.set_content_margin_all(0)
+	t.set_stylebox("background", "ProgressBar", rinne)
+	var fuellung := StyleBoxFlat.new()
+	fuellung.bg_color = Palette.get_color(&"accent")
+	t.set_stylebox("fill", "ProgressBar", fuellung)
 	return t
 
 ## Silkscreen mit der eigenen Zeichenschrift als Ersatz dahinter.
