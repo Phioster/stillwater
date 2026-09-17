@@ -12,6 +12,12 @@ const HEIGHT: float = 96.0
 ## ob Name plus Knoepfe noch ins Seitenpanel passen.
 const FAV_WIDTH: float = 96.0
 const SELL_WIDTH: float = 120.0
+## So schmal darf der Name werden, bevor er umbricht, und so viele Zeilen
+## darf er hoechstens brauchen. Beide Werte sind gemessen: unter 150 Punkten
+## braucht "✦ Schwarzwasserstör (klein)" mehr als drei Zeilen, und drei Zeilen
+## sind 93 Punkte -- gerade noch innerhalb von HEIGHT.
+const NAME_WIDTH: float = 240.0
+const NAME_LINES: int = 3
 
 static func build(index: int, in_showcase: bool) -> Control:
 	var c: CaughtFish = Game.ctx.inventory.fish[index]
@@ -21,13 +27,20 @@ static func build(index: int, in_showcase: bool) -> Control:
 
 	var label := Label.new()
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# Ohne Umbruch ist die MINDESTBREITE einer Beschriftung ihr ganzer Text.
+	# Ohne Umbruch ist die MINDESTBREITE einer Beschriftung ihr ganzer Text:
 	# "✦ Schwarzwasserstör (klein)" plus die beiden Knoepfe sind 524 Punkte,
-	# im Panel sind 488 -- und ein Container wird nicht schmaler als sein
-	# Inhalt, also schob die Zeile sich ueber die Reiterleiste daneben. Mit
-	# Umbruch zaehlt nur noch das laengste Wort, und bei 96 Punkten Zeilenhoehe
-	# ist Platz fuer drei Textzeilen statt zweier.
+	# und ein Container wird nicht schmaler als sein Inhalt -- die Zeile schob
+	# sich damit ueber die Reiterleiste daneben.
+	#
+	# Umbruch allein reicht aber NICHT: ohne Mindestbreite faellt die auf 1
+	# Punkt, und dann steht derselbe Text auf acht Zeilen -- die Mindesthoehe
+	# sprang damit auf 165. VirtualList rechnet die sichtbaren Zeilen aus der
+	# Scrollposition aus und setzt dafuer ueberall dieselbe Hoehe voraus; mit
+	# zu hohen Zeilen ruckelt das Wischen sichtbar. Beides muss also stehen:
+	# eine Mindestbreite, und ein Deckel auf der Zeilenzahl.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(NAME_WIDTH, 0.0)
+	label.max_lines_visible = NAME_LINES
 	var name := fish.full_name(c.weight_dev) if fish != null else String(c.fish_id)
 	if c.is_shiny:
 		name = "✦ " + name

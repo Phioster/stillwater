@@ -109,11 +109,7 @@ func test_nothing_in_the_theme_has_rounded_corners() -> void:
 ## schrift, das faellt beim Schriftwechsel nicht von selbst auf.
 func test_every_tab_label_fits_the_rail() -> void:
 	var schrift := UiTheme.build().default_font
-	var szene: PackedScene = load("res://scenes/ui/tab_rail.tscn")
-	assert_true(szene != null, "tab_rail.tscn laesst sich nicht laden")
-	var leiste: Control = szene.instantiate()
-	var breite: float = leiste.custom_minimum_size.x
-	leiste.free()
+	var breite: float = MAIN.RAIL_WIDTH
 	# Vom Rand der Leiste bleibt uebrig: Rahmeninnenabstand und Knopfrand.
 	var platz := breite - 2.0 * float(UiTheme.RAHMEN_SEITE + 2) \
 		- 2.0 * float(UiTheme.KNOPF_RAND)
@@ -149,11 +145,7 @@ func test_every_tab_group_row_fits_the_side_panel() -> void:
 	if szene == null:
 		return
 	var haupt: Node = szene.instantiate()
-	var seite: Control = haupt.get_node_or_null("SidePanel")
-	assert_true(seite != null, "SidePanel steht nicht mehr in main.tscn")
-	var breite: float = 0.0
-	if seite != null:
-		breite = seite.offset_right - seite.offset_left
+	var breite: float = MAIN.PANEL_WIDTH
 	var gruppen: Array = []
 	_gruppen(haupt, gruppen)
 	haupt.free()
@@ -193,18 +185,15 @@ func test_labels_and_buttons_outline_in_opposite_directions() -> void:
 	assert_true(knopf_umriss.get_luminance() < 0.5,
 		"der Umriss der Knoepfe ist nicht dunkel")
 
-## Die Breite des Seitenpanels, wie main.tscn sie festlegt.
+## Die Breite des Seitenpanels. Sie kommt aus main.gd und NICHT aus der
+## Szene: _layout() dort schreibt die Offsets jeden Durchlauf neu, was in
+## main.tscn steht ist nur der Anfangswert. Genau daran ist eine Korrektur
+## schon einmal wirkungslos verpufft -- und dieser Test war gruen dabei, weil
+## er die falsche Quelle las.
+const MAIN := preload("res://scenes/main.gd")
+
 func _panel_breite() -> float:
-	var szene: PackedScene = load("res://scenes/main.tscn")
-	if szene == null:
-		return 0.0
-	var haupt: Node = szene.instantiate()
-	var seite: Control = haupt.get_node_or_null("SidePanel")
-	var b := 0.0
-	if seite != null:
-		b = seite.offset_right - seite.offset_left
-	haupt.free()
-	return b
+	return MAIN.PANEL_WIDTH
 
 ## Die Fischzeile ist die breiteste Zeile der Oberflaeche: Name und zwei
 ## Knoepfe in Daumengroesse. Ohne Umbruch war ihre MINDESTBREITE der ganze
@@ -262,3 +251,65 @@ func test_every_rarity_colour_stays_readable_on_the_sand_panel() -> void:
 	var gemalt2 := Color(grund.r * akzent.r, grund.g * akzent.g, grund.b * akzent.b)
 	assert_true(_kontrast(gemalt2, sand) >= 4.0,
 		"die Akzentfarbe hat auf Sand nur Kontrast %.1f" % _kontrast(gemalt2, sand))
+
+## Zwei Quellen fuer dasselbe Mass sind eine Falle, und sie hat zugeschnappt:
+## main.tscn wurde geaendert, main.gd nicht -- und weil _layout() die Offsets
+## jeden Durchlauf neu schreibt, blieb im Spiel alles beim Alten. Der Test
+## haelt beide zusammen, damit das nicht noch einmal stumm passiert.
+func test_the_layout_constants_and_the_scenes_agree() -> void:
+	var haupt: Node = load("res://scenes/main.tscn").instantiate()
+	var seite: Control = haupt.get_node_or_null("SidePanel")
+	assert_true(seite != null, "SidePanel steht nicht mehr in main.tscn")
+	if seite != null:
+		assert_almost_eq(seite.offset_right - seite.offset_left,
+			MAIN.PANEL_WIDTH, 0.5,
+			"main.tscn und PANEL_WIDTH laufen auseinander")
+		assert_almost_eq(-seite.offset_right, MAIN.RAIL_WIDTH, 0.5,
+			"das Panel endet nicht genau an der Leiste")
+	var leiste: Control = haupt.get_node_or_null("Row/TabRail")
+	assert_true(leiste != null, "TabRail steht nicht mehr in main.tscn")
+	if leiste != null:
+		assert_almost_eq(leiste.custom_minimum_size.x, MAIN.RAIL_WIDTH, 0.5,
+			"tab_rail.tscn und RAIL_WIDTH laufen auseinander")
+	haupt.free()
+
+## Die Fischzeile hat zwei Zusicherungen, und beide sind schon gebrochen
+## worden: sie darf nicht breiter werden als das Panel (sonst schiebt sie sich
+## ueber die Leiste, denn ein Container wird nicht schmaler als sein Inhalt),
+## und sie muss GENAU FishRow.HEIGHT hoch bleiben -- VirtualList rechnet die
+## sichtbaren Zeilen aus der Scrollposition aus und setzt ueberall dieselbe
+## Hoehe voraus. Zu hohe Zeilen sind kein Schoenheitsfehler, sondern Ruckeln.
+func test_the_fish_row_keeps_its_size_contract() -> void:
+	Game.new_game()
+	var schrift := UiTheme.build().default_font
+	var laengste := 0.0
+	var id: StringName = &""
+	for f in Database.fish.values():
+		for dev in [-0.95, 0.0, 0.95]:
+			var w: float = schrift.get_string_size("✦ " + f.full_name(dev),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SCHRIFT_GROESSE).x
+			if w > laengste:
+				laengste = w
+				id = f.id
+	assert_true(id != &"", "kein Fisch in der Datenbank")
+	Game.ctx.inventory.capacity = 10
+	Game.ctx.inventory.fish.clear()
+	var c := CaughtFish.make(id, -0.95)
+	c.is_shiny = true
+	Game.ctx.inventory.add(c)
+	var platz := MAIN.PANEL_WIDTH - 2.0 * float(UiTheme.RAHMEN_SEITE + 2)
+	var halter := Control.new()
+	# Ohne das Theme misst die Zeile in Godots Standardschrift -- und die ist
+	# schmaler als Silkscreen, der Test waere damit wertlos.
+	halter.theme = UiTheme.build()
+	halter.size = Vector2(platz, 720.0)
+	(Engine.get_main_loop() as SceneTree).root.add_child(halter)
+	var zeile: Control = FishRow.build(0, false)
+	halter.add_child(zeile)
+	var mn := zeile.get_combined_minimum_size()
+	halter.free()
+	assert_true(mn.x <= platz,
+		"Zeile ist %d breit, im Panel sind %d" % [mn.x, platz])
+	assert_almost_eq(mn.y, FishRow.HEIGHT, 0.5,
+		"Zeile ist %d hoch statt %d -- VirtualList rechnet dann falsch"
+			% [mn.y, FishRow.HEIGHT])

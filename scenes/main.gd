@@ -3,8 +3,15 @@
 ## kann mitten im Laden gedrillt werden.
 extends Control
 
-const PANEL_WIDTH := 420.0
-const RAIL_WIDTH := 96.0
+## Die WIRKLICHEN Masse des Seitenlayouts. _layout() schreibt daraus jeden
+## Durchlauf die Offsets von $SidePanel -- was in main.tscn steht, ist nur der
+## Anfangswert und wird ueberschrieben. Wer hier etwas aendert, aendert es
+## also fuer das Spiel; wer es nur in der Szene aendert, aendert nichts.
+##
+## Das Panel liegt UEBER der Welt (siehe _layout), es kostet also keine
+## Bildbreite -- nur die Leiste tut das dauerhaft.
+const PANEL_WIDTH := 520.0
+const RAIL_WIDTH := 140.0
 ## Unterreiter der Fischgruppe: Inventar, Vitrine, Beutel, Auftraege, Geheim.
 const FISH_SUB_SECRET := 4
 ## Laden-Reiter und darin der Haendler.
