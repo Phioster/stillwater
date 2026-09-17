@@ -192,3 +192,73 @@ func test_labels_and_buttons_outline_in_opposite_directions() -> void:
 		"der Umriss der Beschriftungen ist nicht hell")
 	assert_true(knopf_umriss.get_luminance() < 0.5,
 		"der Umriss der Knoepfe ist nicht dunkel")
+
+## Die Breite des Seitenpanels, wie main.tscn sie festlegt.
+func _panel_breite() -> float:
+	var szene: PackedScene = load("res://scenes/main.tscn")
+	if szene == null:
+		return 0.0
+	var haupt: Node = szene.instantiate()
+	var seite: Control = haupt.get_node_or_null("SidePanel")
+	var b := 0.0
+	if seite != null:
+		b = seite.offset_right - seite.offset_left
+	haupt.free()
+	return b
+
+## Die Fischzeile ist die breiteste Zeile der Oberflaeche: Name und zwei
+## Knoepfe in Daumengroesse. Ohne Umbruch war ihre MINDESTBREITE der ganze
+## Name -- und weil ein Container nicht schmaler wird als sein Inhalt, schob
+## sie sich ueber die Reiterleiste daneben, statt umzubrechen. Geprueft wird
+## deshalb das laengste unteilbare Wort, denn das ist die Untergrenze.
+func test_the_widest_fish_row_fits_the_side_panel() -> void:
+	var schrift := UiTheme.build().default_font
+	var breitestes := 0.0
+	var wer := ""
+	for f in Database.fish.values():
+		for dev in [-0.9, -0.4, 0.0, 0.4, 0.9]:
+			for wort in ("✦ " + f.full_name(dev)).split(" "):
+				var w: float = schrift.get_string_size(wort,
+					HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SCHRIFT_GROESSE).x
+				if w > breitestes:
+					breitestes = w
+					wer = wort
+	assert_true(breitestes > 0.0, "kein einziger Fischname gefunden")
+	var noetig := breitestes + FishRow.FAV_WIDTH + FishRow.SELL_WIDTH \
+		+ 2.0 * HBOX_ABSTAND
+	var platz := _panel_breite() - 2.0 * float(UiTheme.RAHMEN_SEITE + 2)
+	assert_true(noetig <= platz,
+		"Zeile mit '%s' braucht %d, im Panel sind %d" % [wer, noetig, platz])
+
+## WCAG-Kontrast: das Verhaeltnis der relativen Helligkeiten, 4.5 ist die
+## uebliche Schwelle fuer Fliesstext.
+func _kontrast(a: Color, b: Color) -> float:
+	var la := _linear(a)
+	var lb := _linear(b)
+	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
+
+func _linear(c: Color) -> float:
+	var k := func(v: float) -> float:
+		return v / 12.92 if v <= 0.03928 else pow((v + 0.055) / 1.055, 2.4)
+	return 0.2126 * k.call(c.r) + 0.7152 * k.call(c.g) + 0.0722 * k.call(c.b)
+
+## Der eigentliche Grund fuer die abgesenkte Grundfarbe: die Oberflaeche
+## faerbt per modulate ein, und modulate MULTIPLIZIERT. Mit heller Grundfarbe
+## landete jede Seltenheitsfarbe hell auf hellem Sand -- keine kam ueber einen
+## Kontrast von 1,9, und man konnte die Liste schlicht nicht lesen.
+func test_every_rarity_colour_stays_readable_on_the_sand_panel() -> void:
+	var sand := Palette.get_color(&"sand_light")
+	var grund: Color = UiTheme.build().get_color("font_color", "Label")
+	var geprueft := 0
+	for r in Database.rarities.values():
+		var gemalt := Color(grund.r * r.color.r, grund.g * r.color.g,
+			grund.b * r.color.b)
+		geprueft += 1
+		assert_true(_kontrast(gemalt, sand) >= 4.0,
+			"%s hat auf Sand nur Kontrast %.1f" % [r.id, _kontrast(gemalt, sand)])
+	assert_true(geprueft >= 5, "nur %d Seltenheiten geprueft" % geprueft)
+	# Und die Akzentfarbe, die Ueberschriften und Preise tragen.
+	var akzent := Palette.get_color(&"accent")
+	var gemalt2 := Color(grund.r * akzent.r, grund.g * akzent.g, grund.b * akzent.b)
+	assert_true(_kontrast(gemalt2, sand) >= 4.0,
+		"die Akzentfarbe hat auf Sand nur Kontrast %.1f" % _kontrast(gemalt2, sand))

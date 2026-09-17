@@ -9,10 +9,13 @@ var _age: float = 0.0
 var _start_y: float = 0.0
 
 func _ready() -> void:
-	add_theme_color_override("font_outline_color", Palette.get_color(&"shadow"))
 	# Dieser Text steht als einziger ueber dem WASSER und nicht auf dem
-	# Sandpanel -- deshalb behaelt er den dunklen Umriss, waehrend ihn das
-	# Theme fuer Beschriftungen auf hell umgestellt hat.
+	# Sandpanel. Er dreht deshalb beides zurueck, was das Theme fuer
+	# Beschriftungen auf hell eingestellt hat: dunkler Umriss statt hellem,
+	# und die volle Grundfarbe statt der abgesenkten -- ueber dunklem Wasser
+	# waere abgesenkt unsichtbar.
+	add_theme_color_override("font_color", Color.WHITE)
+	add_theme_color_override("font_outline_color", Palette.get_color(&"shadow"))
 	add_theme_constant_override("outline_size", 3)
 	add_theme_font_size_override("font_size", 24)
 

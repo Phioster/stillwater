@@ -34,6 +34,16 @@ const SCHRIFT_GROESSE: int = 16
 ## Vorher standen hier 6 -- das war für eine Schrift ohne eigene Kontur
 ## gedacht und sähe an einer Pixelschrift aus wie mit dem Filzstift nachgezogen.
 const OUTLINE: int = 2
+## Die Grundfarbe der Beschriftungen. Sie ist ein MULTIPLIKATOR und keine
+## Farbe: die Oberfläche färbt an zwanzig Stellen per `modulate` ein
+## (Seltenheit, Akzent, Warnung), und `modulate` multipliziert. Eine helle
+## Grundfarbe ließ jede dieser Farben hell auf hellem Sand landen —
+## nachgemessen kam KEINE über einen Kontrast von 1,9, lesbar wird es ab 4,5.
+## Abgesenkt bleiben die Farbtöne erhalten und landen bei 5 bis 7.
+##
+## Wer hier heller dreht, macht die Seltenheitsfarben unlesbar; wer dunkler
+## dreht, macht sie alle schwarz und wirft die Farbkodierung weg.
+const TINTE_AUF_SAND := Color(0.36, 0.35, 0.33)
 ## Wieviel Luft ein Knopf um seine Aufschrift lässt.
 const KNOPF_RAND: int = 4
 ## Die 9-Slice-Ränder des Rahmenbildes, in Bildpunkten. Sie stehen so auch in
@@ -64,6 +74,7 @@ static func build() -> Theme:
 		t.set_color("font_outline_color", type_name,
 			Palette.get_color(&"sea_foam"))
 		t.set_constant("outline_size", type_name, OUTLINE)
+		t.set_color("font_color", type_name, TINTE_AUF_SAND)
 	for type_name in ["Button", "LineEdit"]:
 		t.set_color("font_outline_color", type_name, ink)
 		t.set_constant("outline_size", type_name, OUTLINE)

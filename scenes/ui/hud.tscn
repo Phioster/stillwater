@@ -16,6 +16,7 @@ theme_override_constants/separation = 18
 
 [node name="Xp" type="ProgressBar" parent="Box"]
 custom_minimum_size = Vector2(160, 18)
+size_flags_vertical = 4
 show_percentage = false
 
 [node name="Zone" type="Label" parent="Box"]
