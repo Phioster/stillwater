@@ -293,11 +293,16 @@ func _process(delta: float) -> void:
 			var left: float = clampf(Game.sim.timer / FishingSim.CAST_TIME,
 				0.0, 1.0)
 			var n := AnglerParts.CAST_ZOPF.size()
-			var f: int = clampi(int((1.0 - left) * float(n)), 0, n - 1)
-			_cast_pose(atem, f)
+			# Der Schwung laeuft nur im ERSTEN Teil des Wurfs ab, danach
+			# steht sie und sieht dem Schwimmer nach. Frueher waren es zehn
+			# Bilder ueber die ganze Sekunde -- zehn Bilder je Sekunde, also
+			# sichtbar stufig, waehrend alles andere mit sechzig laeuft. Auf
+			# dem kuerzeren Stueck sind es rund zwanzig.
+			var schwung := clampf((1.0 - left) / CAST_SWING, 0.0, 1.0)
+			_cast_pose(atem, schwung * float(n - 1))
 		FishingSim.State.FIGHT:
 			# Arm vorn, Rute unter Zug -- das letzte Wurfbild.
-			_cast_pose(atem, AnglerParts.CAST_ZOPF.size() - 1)
+			_cast_pose(atem, float(AnglerParts.CAST_ZOPF.size() - 1))
 		FishingSim.State.INVENTORY_FULL:
 			# Doest: Rute quer im Schoss statt hochgehalten, Auge zu. Zustand
 			# 11 ist die elfte Armhaltung (siehe tools/rute_anheften.py).
@@ -310,16 +315,30 @@ func _process(delta: float) -> void:
 			# Beine baumeln, und hin und wieder ein Blinzeln dazwischen.
 			set_pose(atem.x, atem.y, 0, _legs(delta), _blink(delta), 0)
 
+## Welcher Anteil des Wurfs auf den Schwung entfaellt. Der Rest ist
+## Nachschwung: sie sitzt still, waehrend der Schwimmer fliegt.
+const CAST_SWING: float = 0.45
+
 ## Beim Werfen schwingen die Beine nach dem gemessenen Muster; Atem und Zopf
 ## laufen weiter, und der Kopf lehnt zurueck.
-func _cast_pose(atem: Vector2i, f: int) -> void:
-	set_pose(atem.x, atem.y + int(AnglerParts.CAST_ZOPF[f]),
-		int(AnglerParts.CAST_HEAD[f]), int(AnglerParts.CAST_LEGS[f]),
-		&"open", f + 1)
+##
+## `pos` ist eine Stelle ZWISCHEN den gemessenen Bildern. Zopf, Kopf und Beine
+## werden dazwischen interpoliert und laufen dadurch stufenlos; nur die Rute
+## springt weiter, die hat elf gezeichnete Winkel und keinen zwoelften.
+func _cast_pose(atem: Vector2i, pos: float) -> void:
+	var n := AnglerParts.CAST_ZOPF.size()
+	var i := clampi(int(floor(pos)), 0, n - 1)
+	var j := clampi(i + 1, 0, n - 1)
+	var k := clampf(pos - float(i), 0.0, 1.0)
+	var zopf := lerpf(float(AnglerParts.CAST_ZOPF[i]), float(AnglerParts.CAST_ZOPF[j]), k)
+	var kopf := lerpf(float(AnglerParts.CAST_HEAD[i]), float(AnglerParts.CAST_HEAD[j]), k)
+	var bein := lerpf(float(AnglerParts.CAST_LEGS[i]), float(AnglerParts.CAST_LEGS[j]), k)
+	set_pose(atem.x, atem.y + int(round(zopf)), int(round(kopf)),
+		int(round(bein)), &"open", i + 1)
 
 func _on_bite(_fish: FishData) -> void:
 	_cast_pose(breath_at(_idle_time / BREATH_TIME),
-		AnglerParts.CAST_ZOPF.size() - 1)
+		float(AnglerParts.CAST_ZOPF.size() - 1))
 
 func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
 	set_pose(0, 0, 0, 0, &"open", 0)

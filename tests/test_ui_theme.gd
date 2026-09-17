@@ -374,3 +374,38 @@ func test_the_hud_stays_narrow_even_with_a_huge_balance() -> void:
 	# Ein Drittel des schmalsten Querformats. Darueber deckt sie zu viel zu.
 	assert_true(breite <= 1280.0 / 3.0,
 		"Kopfzeile ist %d Punkte breit, erlaubt sind %d" % [breite, 1280.0 / 3.0])
+
+## Die Fangmeldung setzt ihre Lage im CODE, weil die Anker einer Szenenwurzel
+## den Export nicht ueberleben (siehe catch_toast.gd). Damit gibt es zwei
+## Stellen fuer dasselbe Mass -- und genau daran ist eine Korrektur schon
+## einmal wirkungslos verpufft: ich hatte nur die Szene geaendert, und im
+## Spiel stand die Karte weiter mittig hinter dem Zopf.
+func test_the_catch_toast_code_and_scene_agree() -> void:
+	var szene: PackedScene = load("res://scenes/ui/catch_toast.tscn")
+	assert_true(szene != null, "catch_toast.tscn laesst sich nicht laden")
+	var karte: Control = szene.instantiate()
+	var links: float = karte.offset_left
+	var oben: float = karte.offset_top
+	var breite: float = karte.offset_right - karte.offset_left
+	var hoehe: float = karte.offset_bottom - karte.offset_top
+	var soll: Rect2 = karte.RECT
+	karte.free()
+	assert_almost_eq(links, soll.position.x, 0.5, "linke Kante laeuft auseinander")
+	assert_almost_eq(oben, soll.position.y, 0.5, "obere Kante laeuft auseinander")
+	assert_almost_eq(breite, soll.size.x, 0.5, "Breite laeuft auseinander")
+	assert_almost_eq(hoehe, soll.size.y, 0.5, "Hoehe laeuft auseinander")
+
+## Und sie muss in derselben freien Spalte stehen wie die Kampfanzeige:
+## links, unter der Kopfzeile, neben dem offenen Menue vorbei.
+func test_the_catch_toast_stays_in_the_free_column() -> void:
+	var szene: PackedScene = load("res://scenes/ui/catch_toast.tscn")
+	var karte: Control = szene.instantiate()
+	var soll: Rect2 = karte.RECT
+	karte.free()
+	var frei := 1280.0 - MAIN.RAIL_WIDTH - MAIN.PANEL_WIDTH
+	assert_true(soll.position.x + soll.size.x <= frei,
+		"die Karte geht bis x=%d, das offene Menue beginnt bei x=%d"
+			% [soll.position.x + soll.size.x, frei])
+	assert_true(soll.position.y >= 116.0,
+		"die Karte beginnt bei y=%d und liegt damit in der Kopfzeile"
+			% soll.position.y)

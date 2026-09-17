@@ -139,7 +139,18 @@ const CAST_OVERSHOOT := 90.0
 ## Der Koeder faellt, er schwebt nicht: die Kurve wird beschleunigt abgefahren,
 ## also oben langsam und unten schnell. Die Wurfdauer selbst bleibt, die
 ## gehoert der Simulation.
-const CAST_FALL := 1.45
+## Wie die Flugzeit verteilt ist -- als AUSKLINGEN: 1 - (1-t)^CAST_EASE.
+## Der Schwimmer schiesst hinaus und wird langsamer, so wie eine Schnur
+## ausrollt. Vorher stand hier pow(t, 1.45), also das Gegenteil: er hing
+## erst hinterher und stuerzte dann in einem Satz ins Wasser.
+##
+## Ein blosser Exponent unter 1 reichte nicht. Die Bahn ist hinten viel
+## laenger als vorn -- rund 60 Punkte hinauf, aber 220 wieder hinunter --,
+## also muss die Zeit am Ende deutlich langsamer laufen und nicht nur etwas.
+const CAST_EASE := 2.2
+## Wann er die Rutenspitze verlaesst, als Anteil des Wurfs. Bis dahin haengt
+## er an ihr; der Schwung selbst dauert CAST_SWING (angler.gd).
+const CAST_RELEASE := 0.3
 ## Wie weit die Schnur durchhaengt, als Anteil ihrer eigenen Laenge. Ein
 ## fester Wert waere im Flug ein Klumpen und in Ruhe kaum zu sehen; so haengt
 ## sie ueberall gleich, und der Bogen ist schon im Flug da.
@@ -548,11 +559,14 @@ func _apply_zone() -> void:
 ## kommt aus der Simulationsuhr, damit Flug und Wurfdauer nicht auseinander
 ## laufen koennen.
 func _cast_position() -> Vector2:
-	var t := 1.0 - clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
+	var roh := 1.0 - clampf(Game.sim.timer / FishingSim.CAST_TIME, 0.0, 1.0)
+	# Der Schwimmer bleibt an der Rutenspitze, bis sie nach vorn schnellt --
+	# vorher flog er schon los, waehrend sie noch ausholte.
+	var t := clampf((roh - CAST_RELEASE) / (1.0 - CAST_RELEASE), 0.0, 1.0)
 	var from: Vector2 = _angler.rod_tip()
 	var to := _bobber_home
 	var peak := Vector2(to.x + CAST_OVERSHOOT, from.y - CAST_ARC)
-	t = pow(t, CAST_FALL)
+	t = 1.0 - pow(1.0 - t, CAST_EASE)
 	var inv := 1.0 - t
 	return inv * inv * from + 2.0 * inv * t * peak + t * t * to
 

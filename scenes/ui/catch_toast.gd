@@ -3,6 +3,16 @@
 extends PanelContainer
 
 const SHOW_SECONDS: float = 3.0
+## Wo die Karte sitzt. Sie stand mittig im Bild und geriet damit hinter den
+## Zopf der Anglerin und unter das Seitenpanel, sobald das offen war. Links
+## unter der Kopfzeile ist die einzige Spalte, die immer frei bleibt -- und
+## dort steht auch schon die Kampfanzeige (catch_view.tscn), die beiden
+## zeigen sich nie gleichzeitig.
+##
+## Diese Werte stehen HIER und nicht in catch_toast.tscn, weil _ready() sie
+## ohnehin setzen muss: die Anker einer Szenenwurzel ueberleben den Export
+## nicht. tests/test_ui_theme.gd haelt beide Stellen zusammen.
+const RECT := Rect2(16.0, 132.0, 360.0, 86.0)
 
 @onready var _line1: Label = $Box/Line1
 @onready var _line2: Label = $Box/Line2
@@ -10,12 +20,17 @@ const SHOW_SECONDS: float = 3.0
 
 func _ready() -> void:
 	# Siehe catch_view.gd: Anker der Szenenwurzel ueberleben den Export nicht.
-	anchor_left = 0.5
-	anchor_right = 0.5
-	offset_left = -220.0
-	offset_right = 220.0
-	offset_top = 110.0
-	offset_bottom = 180.0
+	anchor_left = 0.0
+	anchor_right = 0.0
+	offset_left = RECT.position.x
+	offset_right = RECT.position.x + RECT.size.x
+	offset_top = RECT.position.y
+	offset_bottom = RECT.position.y + RECT.size.y
+	# Ein langer Fischname darf die Karte nicht breiter ziehen -- ein Container
+	# wird nicht schmaler als sein Inhalt, und dann stuende sie wieder unter
+	# dem Menue. Lieber umbrechen.
+	_line1.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_line2.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	visible = false
 	_timer.wait_time = SHOW_SECONDS
 	_timer.one_shot = true

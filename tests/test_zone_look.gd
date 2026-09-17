@@ -83,9 +83,14 @@ func _cast_world() -> Control:
 func test_the_bobber_flies_an_arc_while_casting() -> void:
 	var w := _cast_world()
 	assert_eq(Game.sim.state, FishingSim.State.CASTING, "der Wurf muss laufen")
+	# Der Flug beginnt erst beim Abwurf: davor haengt der Schwimmer an der
+	# Rutenspitze, sonst flaege er los, waehrend sie noch ausholt. Geprueft
+	# wird deshalb ab dem Abwurf.
+	var los: float = w.CAST_RELEASE
 	var seen: Array[Vector2] = []
 	for i in 5:
-		Game.sim.timer = FishingSim.CAST_TIME * (1.0 - float(i) / 4.0)
+		var fortschritt := los + (1.0 - los) * float(i) / 4.0
+		Game.sim.timer = FishingSim.CAST_TIME * (1.0 - fortschritt)
 		w._process(0.0)
 		assert_true(w.get_node("Bobber").visible, "der Schwimmer muss beim Wurf zu sehen sein")
 		seen.append(w.get_node("Bobber").position)
@@ -156,3 +161,42 @@ func test_the_rod_tip_moves_between_poses() -> void:
 	assert_true(not idle.is_equal_approx(cast),
 		"die Rutenspitze steht in jeder Pose gleich: %s" % idle)
 	w.free()
+
+## Vor dem Abwurf haengt der Schwimmer an der Rutenspitze und fliegt NICHT
+## schon los -- er startete frueher im selben Augenblick, in dem sie erst
+## ausholte, und war unten, bevor die Rute wieder herunterkam.
+func test_the_bobber_waits_at_the_rod_tip_until_the_release() -> void:
+	var w := _cast_world()
+	var los: float = w.CAST_RELEASE
+	assert_true(los > 0.0, "ohne Abwurfpunkt prueft der Test nichts")
+	var spitze := Vector2.ZERO
+	for i in 4:
+		# Von Wurfbeginn bis kurz vor den Abwurf.
+		var fortschritt := los * float(i) / 4.0
+		Game.sim.timer = FishingSim.CAST_TIME * (1.0 - fortschritt)
+		w._process(0.0)
+		var p: Vector2 = w.get_node("Bobber").position
+		if i == 0:
+			spitze = p
+		assert_true(p.distance_to(spitze) < 24.0,
+			"der Schwimmer ist bei %d%% des Wurfs schon %d Punkte unterwegs"
+				% [int(fortschritt * 100.0), p.distance_to(spitze)])
+	w.free()
+
+## Und er darf am Ende nicht in einem Satz ins Wasser fallen: der letzte
+## Abschnitt des Flugs muss kuerzer sein als der erste, nicht laenger.
+func test_the_bobber_settles_instead_of_dropping_at_the_end() -> void:
+	var w := _cast_world()
+	var los: float = w.CAST_RELEASE
+	var punkte: Array[Vector2] = []
+	for i in 5:
+		var fortschritt := los + (1.0 - los) * float(i) / 4.0
+		Game.sim.timer = FishingSim.CAST_TIME * (1.0 - fortschritt)
+		w._process(0.0)
+		punkte.append(w.get_node("Bobber").position)
+	var erster := punkte[0].distance_to(punkte[1])
+	var letzter := punkte[3].distance_to(punkte[4])
+	w.free()
+	assert_true(letzter < erster,
+		"der Schwimmer legt zuletzt %d Punkte zurueck und zuerst nur %d -- er stuerzt"
+			% [letzter, erster])
