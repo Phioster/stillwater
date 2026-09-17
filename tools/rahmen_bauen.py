@@ -29,10 +29,16 @@ BLATT = os.path.join(W, "assets", "art", "panel_rahmen.png")
 ## Womit die Mitte gefuellt wird. Der Name wird in core/palette.gd
 ## nachgeschlagen statt hier als Hexwert zu stehen -- dieselbe Regel wie in
 ## den anderen Werkzeugen: eine Quelle fuer die Farbe, nicht zwei.
-FUELLUNG = "water_deep"
+##
+## Sand und nicht Wasser: im Holzrahmen liest sich die helle Flaeche als
+## Papier auf einem Brett. Der Text bleibt dabei hell mit dunklem Umriss --
+## dunkler Text saehe auf Sand zwar besser aus, aber die Oberflaeche faerbt
+## an zwanzig Stellen per modulate ein, und multiplikativ verschwinden die
+## goldenen Akzente dann hell auf hell.
+FUELLUNG = "sand_light"
 ## Wie deckend. Nicht ganz: durch das Panel schimmert der See, sonst klebt
-## ein schwarzes Brett vor der Welt.
-DECKUNG = 235
+## ein Brett vor der Welt.
+DECKUNG = 215
 
 ## Das Deck im Stegbild: die obersten Zeilen, ueber die ganze Breite gefuellt.
 DECK_HOCH = 16

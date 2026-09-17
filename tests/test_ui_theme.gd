@@ -102,3 +102,25 @@ func test_nothing_in_the_theme_has_rounded_corners() -> void:
 					"%s/%s hat runde Ecken" % [typ, name])
 				assert_eq(box.shadow_size, 0, "%s/%s wirft einen Schatten" % [typ, name])
 	assert_true(geprueft > 0, "kein einziger StyleBoxFlat im Theme gefunden")
+
+## Die Reiterleiste ist auf eine feste Breite genagelt, und genau daran ist
+## die groessere Schrift zuerst gescheitert: "Optionen" lief rechts aus dem
+## Bild. Silkscreen ist je Zeichen deutlich breiter als Godots Standard-
+## schrift, das faellt beim Schriftwechsel nicht von selbst auf.
+func test_every_tab_label_fits_the_rail() -> void:
+	var schrift := UiTheme.build().default_font
+	var szene: PackedScene = load("res://scenes/ui/tab_rail.tscn")
+	assert_true(szene != null, "tab_rail.tscn laesst sich nicht laden")
+	var leiste: Control = szene.instantiate()
+	var breite: float = leiste.custom_minimum_size.x
+	leiste.free()
+	# Vom Rand der Leiste bleibt uebrig: Rahmeninnenabstand und Knopfrand.
+	var platz := breite - 2.0 * float(UiTheme.RAHMEN_SEITE + 2) \
+		- 2.0 * float(UiTheme.KNOPF_RAND)
+	assert_true(platz > 0.0, "die Leiste ist schmaler als ihre Raender")
+	for reiter in TabRail.TABS:
+		var w: float = schrift.get_string_size(reiter,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SCHRIFT_GROESSE).x
+		assert_true(w <= platz,
+			"Reiter '%s' ist %d breit, in die Leiste passen %d"
+				% [reiter, w, platz])
