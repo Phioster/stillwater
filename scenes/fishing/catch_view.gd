@@ -99,7 +99,7 @@ func _on_bite(fish: FishData) -> void:
 	# Ansagen, ob die Rute allein reicht. Die Referenz spielt dafuer einen
 	# eigenen Klang; bis wir Ton haben, steht es in der Zeile.
 	Audio.play(&"bite")
-	var call := "  ·  ✋ antippen!" if Game.sim.needs_hands else ""
+	var call := "  ·  antippen!" if Game.sim.needs_hands else ""
 	_name.text = "%s  ·  Rang %s%s" % [fish.display_name, rank, call]
 	_name.modulate = Palette.get_color(&"accent") if Game.sim.needs_hands else Color.WHITE
 	# Beim Anbiss darf nichts hinterherlaufen -- sonst zeigt die Leiste kurz

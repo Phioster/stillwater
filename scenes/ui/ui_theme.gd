@@ -1,38 +1,115 @@
-## Umriss und Schatten für die ganze Oberfläche an EINER Stelle.
+## Schrift, Umriss und Rahmen für die ganze Oberfläche an EINER Stelle.
 ##
 ## Die Referenz hat dafür eigene Varianten jedes Standardelements. Ein Theme
 ## erreicht dasselbe, ohne dass jede neue Zeile daran denken muss — und
-## Vergessen ist die wahrscheinlichste Fehlerquelle bei so etwas.
+## Vergessen ist die wahrscheinlichste Fehlerquelle bei so etwas. main.gd
+## setzt es einmal auf den Wurzel-Control, alles darunter erbt es.
+##
+## Die Oberfläche lief vorher in Godots Standardschrift mit runden Ecken und
+## weichen Schatten — daneben sah die gemalte Welt aus wie aus einem anderen
+## Spiel. Jetzt: Pixelschrift, harte Kanten, und als Panelrahmen der Steg
+## selbst (tools/rahmen_bauen.py schneidet ihn aus assets/art/dock.png).
 class_name UiTheme
 extends RefCounted
 
-const OUTLINE: int = 6
-const PANEL_RADIUS: int = 10
+const SCHRIFT := "res://assets/fonts/Silkscreen.ttf"
+const SCHRIFT_FETT := "res://assets/fonts/Silkscreen-Bold.ttf"
+## Die dreizehn Zeichen, die Silkscreen nicht hat (tools/zeichen_bauen.py) --
+## Regenschirm, Sterne, Kästchen, Pfeile. Sie hängen als ERSATZSCHRIFT hinten
+## dran: Godot greift pro Zeichen von selbst darauf zurück, und deshalb muss
+## keine der zwölf Dateien angefasst werden, die solche Zeichen benutzen.
+const ZEICHEN := "res://assets/fonts/StillwaterZeichen.ttf"
+const RAHMEN := "res://assets/art/panel_rahmen.png"
+
+## Silkscreen ist auf acht Pixel gezeichnet, 24 sind genau das Dreifache. Bei
+## einem krummen Vielfachen bekommt ein Teil der Buchstaben ein Pixel mehr als
+## der andere, und die Zeile wirkt zittrig.
+const SCHRIFT_GROESSE: int = 24
+## Bei dreifacher Vergrößerung ist 3 genau EIN gezeichnetes Pixel Umriss.
+## Vorher standen hier 6 -- das war für eine Schrift ohne eigene Kontur
+## gedacht und sähe an einer Pixelschrift aus wie mit dem Filzstift nachgezogen.
+const OUTLINE: int = 3
+## Die 9-Slice-Ränder des Rahmenbildes, in Bildpunkten. Sie stehen so auch in
+## tools/rahmen_bauen.py; tests/test_ui_theme.gd hält beide zusammen.
+const RAHMEN_SEITE: int = 14
+const RAHMEN_OBEN: int = 16
 
 static func build() -> Theme:
 	var t := Theme.new()
 	var ink := Palette.get_color(&"outline")
 
+	var schrift := _schrift(SCHRIFT)
+	if schrift != null:
+		t.default_font = schrift
+	t.default_font_size = SCHRIFT_GROESSE
+
 	# Ein dunkler Umriss trägt Text über jedem Hintergrund — auch über
-	# bewegtem Wasser, wo eine Schriftfarbe allein nie reicht.
+	# bewegtem Wasser, wo eine Schriftfarbe allein nie reicht. Der weiche
+	# Schatten von früher ist weg: neben einer Pixelschrift liest er sich
+	# als Unschärfe, und der Umriss leistet dasselbe härter.
 	for type_name in ["Label", "Button", "RichTextLabel", "LineEdit"]:
 		t.set_color("font_outline_color", type_name, ink)
 		t.set_constant("outline_size", type_name, OUTLINE)
-	t.set_color("font_shadow_color", "Label", Color(ink.r, ink.g, ink.b, 0.5))
-	t.set_constant("shadow_offset_y", "Label", 2)
 
-	var panel := StyleBoxFlat.new()
-	panel.bg_color = Palette.get_color(&"water_deep")
-	panel.bg_color.a = 0.92
-	panel.corner_radius_top_left = PANEL_RADIUS
-	panel.corner_radius_top_right = PANEL_RADIUS
-	panel.corner_radius_bottom_left = PANEL_RADIUS
-	panel.corner_radius_bottom_right = PANEL_RADIUS
-	panel.border_color = ink
-	panel.set_border_width_all(2)
-	panel.shadow_color = Color(ink.r, ink.g, ink.b, 0.55)
-	panel.shadow_size = 6
-	panel.shadow_offset = Vector2(0, 3)
-	t.set_stylebox("panel", "PanelContainer", panel)
-	t.set_stylebox("panel", "Panel", panel)
+	var rahmen := _rahmen()
+	t.set_stylebox("panel", "PanelContainer", rahmen)
+	t.set_stylebox("panel", "Panel", rahmen)
+
+	# Knöpfe standen bisher gar nicht im Theme und trugen deshalb Godots
+	# graue Standardkapsel mit runden Ecken. Sie bekommen kein Holz -- ein
+	# Rahmen um jede Listenzeile wäre eine Wand aus Brettern --, sondern eine
+	# flache Fläche mit harter Kante: das Panel ist das Möbel, der Knopf ist
+	# die Aufschrift darauf.
+	t.set_stylebox("normal", "Button", _knopf(Palette.get_color(&"water_mid"), ink))
+	t.set_stylebox("hover", "Button", _knopf(Palette.get_color(&"water_light"), ink))
+	t.set_stylebox("pressed", "Button", _knopf(Palette.get_color(&"water_deep"), ink))
+	t.set_stylebox("focus", "Button", _knopf(Palette.get_color(&"water_mid"),
+		Palette.get_color(&"accent")))
+	var stumm := _knopf(Palette.get_color(&"water_deep"), ink)
+	stumm.bg_color.a = 0.55
+	t.set_stylebox("disabled", "Button", stumm)
 	return t
+
+## Silkscreen mit der eigenen Zeichenschrift als Ersatz dahinter.
+static func _schrift(pfad: String) -> FontFile:
+	var f := FontLoader.load_font(pfad)
+	if f == null:
+		return null
+	var zeichen := FontLoader.load_font(ZEICHEN)
+	if zeichen != null:
+		f.fallbacks = [zeichen]
+	return f
+
+## Der Steg als Panelrahmen. Ohne das Bild bliebe die Oberfläche unbenutzbar,
+## deshalb gibt es einen flachen Rückfall statt eines leeren Rahmens.
+static func _rahmen() -> StyleBox:
+	var bild := TextureLoader.load_texture(RAHMEN)
+	if bild == null:
+		return _knopf(Palette.get_color(&"water_deep"),
+			Palette.get_color(&"outline"))
+	var box := StyleBoxTexture.new()
+	box.texture = bild
+	box.texture_margin_left = RAHMEN_SEITE
+	box.texture_margin_right = RAHMEN_SEITE
+	box.texture_margin_top = RAHMEN_OBEN
+	box.texture_margin_bottom = RAHMEN_OBEN
+	# Der Inhalt darf nicht unter dem Holz liegen.
+	box.content_margin_left = RAHMEN_SEITE + 6
+	box.content_margin_right = RAHMEN_SEITE + 6
+	box.content_margin_top = RAHMEN_OBEN + 4
+	box.content_margin_bottom = RAHMEN_OBEN + 4
+	# GEKACHELT und nicht gedehnt: die Maserung hat eine feste Pixelgröße, ein
+	# gedehntes Brett hätte gröbere Pixel als das Deck im Bild daneben.
+	box.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+	box.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+	return box
+
+## Eine flache Fläche mit harter Kante -- keine Rundung, kein Schatten.
+static func _knopf(flaeche: Color, kante: Color) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = flaeche
+	box.bg_color.a = 0.92
+	box.border_color = kante
+	box.set_border_width_all(2)
+	box.set_content_margin_all(8)
+	return box

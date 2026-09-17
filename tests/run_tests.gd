@@ -55,6 +55,7 @@ const SUITES := [
 	"res://tests/test_character_layers.gd",
 	"res://tests/test_clouds.gd",
 	"res://tests/test_rain.gd",
+	"res://tests/test_ui_theme.gd",
 ]
 
 func _init() -> void:
