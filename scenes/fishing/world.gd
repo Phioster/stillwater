@@ -149,8 +149,13 @@ const CAST_OVERSHOOT := 90.0
 ## also muss die Zeit am Ende deutlich langsamer laufen und nicht nur etwas.
 const CAST_EASE := 2.2
 ## Wann er die Rutenspitze verlaesst, als Anteil des Wurfs. Bis dahin haengt
-## er an ihr; der Schwung selbst dauert CAST_SWING (angler.gd).
-const CAST_RELEASE := 0.3
+## er an ihr.
+##
+## Der Wert gehoert zum Umkehrpunkt der Anglerin: der liegt bei
+## CAST_SWING * CAST_WINDUP (angler.gd), also bei 0.315, und der Schwimmer
+## loest sich kurz DANACH -- im Schnalzen nach vorn, nicht im Ausholen.
+## tests/test_zone_look.gd haelt beide Zahlen zusammen.
+const CAST_RELEASE := 0.34
 ## Wie weit die Schnur durchhaengt, als Anteil ihrer eigenen Laenge. Ein
 ## fester Wert waere im Flug ein Klumpen und in Ruhe kaum zu sehen; so haengt
 ## sie ueberall gleich, und der Bogen ist schon im Flug da.

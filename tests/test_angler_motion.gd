@@ -96,3 +96,50 @@ func test_zwischen_den_blinzlern_ist_das_auge_offen() -> void:
 			zu += 1
 	assert_eq(zu, 0, "sie blinzelt in %d von 100 Schritten der Wartezeit" % zu)
 	a.free()
+
+const ANGLER := preload("res://scenes/fishing/angler.gd")
+
+## Ausholen und Wurf duerfen nicht gleich schnell laufen -- dann sieht ein
+## Wurf nach nichts aus. Die Bewegung bis zum Umkehrpunkt muss deutlich mehr
+## Zeit bekommen als das Schnalzen danach.
+func test_the_windup_takes_longer_than_the_throw() -> void:
+	var n := AnglerParts.CAST_ZOPF.size()
+	# Zeit bis zum Umkehrpunkt gegen Zeit danach, je Bild gerechnet.
+	var bilder_hin := float(ANGLER.CAST_PEAK)
+	var bilder_zurueck := float(n - 1 - ANGLER.CAST_PEAK)
+	var je_bild_hin := ANGLER.CAST_WINDUP / bilder_hin
+	var je_bild_zurueck := (1.0 - ANGLER.CAST_WINDUP) / bilder_zurueck
+	assert_true(je_bild_hin > je_bild_zurueck * 1.5,
+		"ein Ausholbild dauert %.3f, ein Wurfbild %.3f -- das ist kein Wurf"
+			% [je_bild_hin, je_bild_zurueck])
+
+## Der Umkehrpunkt muss der Stelle entsprechen, an der die gemessenen Daten
+## wirklich am weitesten ausschlagen. Verschoebe sich das Muster, zeigte
+## CAST_PEAK sonst stumm auf ein beliebiges Bild.
+func test_the_peak_frame_is_where_the_pose_reaches_furthest() -> void:
+	var weiteste := 0
+	var groesster := -999
+	for i in AnglerParts.CAST_ZOPF.size():
+		var ausschlag: int = absi(AnglerParts.CAST_ZOPF[i]) \
+			+ absi(AnglerParts.CAST_HEAD[i]) + absi(AnglerParts.CAST_LEGS[i])
+		if ausschlag > groesster:
+			groesster = ausschlag
+			weiteste = i
+	assert_eq(ANGLER.CAST_PEAK, weiteste,
+		"CAST_PEAK zeigt auf Bild %d, am weitesten ausgeschlagen ist Bild %d"
+			% [ANGLER.CAST_PEAK, weiteste])
+
+## Und der Schwung muss den Bilderbogen wirklich durchlaufen: vom ersten Bild
+## ueber den Umkehrpunkt bis zum letzten, ohne dazwischen zurueckzuspringen.
+func test_the_swing_runs_through_every_frame_in_order() -> void:
+	var n := AnglerParts.CAST_ZOPF.size()
+	assert_almost_eq(ANGLER._swing_frame(0.0, n), 0.0, 0.001, "beginnt nicht bei Bild 0")
+	assert_almost_eq(ANGLER._swing_frame(ANGLER.CAST_WINDUP, n),
+		float(ANGLER.CAST_PEAK), 0.001, "trifft den Umkehrpunkt nicht")
+	assert_almost_eq(ANGLER._swing_frame(1.0, n), float(n - 1), 0.001,
+		"endet nicht auf dem letzten Bild")
+	var vorher := -1.0
+	for i in 60:
+		var pos: float = ANGLER._swing_frame(float(i) / 59.0, n)
+		assert_true(pos >= vorher, "der Schwung springt zurueck: %f nach %f" % [pos, vorher])
+		vorher = pos

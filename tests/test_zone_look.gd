@@ -200,3 +200,19 @@ func test_the_bobber_settles_instead_of_dropping_at_the_end() -> void:
 	assert_true(letzter < erster,
 		"der Schwimmer legt zuletzt %d Punkte zurueck und zuerst nur %d -- er stuerzt"
 			% [letzter, erster])
+
+## Der Schwimmer muss sich NACH dem Umkehrpunkt loesen, nicht davor: im
+## Schnalzen nach vorn, nicht mitten im Ausholen. Die beiden Zahlen stehen in
+## verschiedenen Dateien (angler.gd und world.gd) und koennen sonst stumm
+## auseinanderlaufen.
+func test_the_bobber_releases_after_the_windup_peak() -> void:
+	var angler := preload("res://scenes/fishing/angler.gd")
+	var welt := preload("res://scenes/fishing/world.gd")
+	var umkehr: float = angler.CAST_SWING * angler.CAST_WINDUP
+	assert_true(welt.CAST_RELEASE >= umkehr,
+		"der Abwurf liegt bei %.2f, der Umkehrpunkt erst bei %.2f"
+			% [welt.CAST_RELEASE, umkehr])
+	# Aber auch nicht erst, wenn der Schwung laengst vorbei ist.
+	assert_true(welt.CAST_RELEASE <= angler.CAST_SWING,
+		"der Abwurf liegt bei %.2f, der Schwung endet schon bei %.2f"
+			% [welt.CAST_RELEASE, angler.CAST_SWING])

@@ -299,7 +299,7 @@ func _process(delta: float) -> void:
 			# sichtbar stufig, waehrend alles andere mit sechzig laeuft. Auf
 			# dem kuerzeren Stueck sind es rund zwanzig.
 			var schwung := clampf((1.0 - left) / CAST_SWING, 0.0, 1.0)
-			_cast_pose(atem, schwung * float(n - 1))
+			_cast_pose(atem, _swing_frame(schwung, n))
 		FishingSim.State.FIGHT:
 			# Arm vorn, Rute unter Zug -- das letzte Wurfbild.
 			_cast_pose(atem, float(AnglerParts.CAST_ZOPF.size() - 1))
@@ -318,6 +318,24 @@ func _process(delta: float) -> void:
 ## Welcher Anteil des Wurfs auf den Schwung entfaellt. Der Rest ist
 ## Nachschwung: sie sitzt still, waehrend der Schwimmer fliegt.
 const CAST_SWING: float = 0.45
+## Das Bild, in dem sie am weitesten hinten steht -- der Umkehrpunkt. Steht
+## so in den gemessenen Daten: bei Bild 4 sind Zopf, Kopf und Beine alle drei
+## am staerksten ausgeschlagen (AnglerParts.CAST_*).
+const CAST_PEAK: int = 4
+## Welcher Anteil der SCHWUNGZEIT auf das Ausholen bis dorthin entfaellt.
+## Vorher lief der Schwung gleichmaessig durch, Ausholen und Wurf also gleich
+## schnell -- und ein Wurf, der so aussieht, sieht nach nichts aus. Ausholen
+## ist eine langsame, gesammelte Bewegung, der Wurf danach ein Schnalzen.
+const CAST_WINDUP: float = 0.7
+
+## Wo im Bilderbogen der Schwung gerade steht. Die Zeit ist UNGLEICH
+## verteilt: CAST_WINDUP davon geht auf das Ausholen bis zum Umkehrpunkt, der
+## kurze Rest auf den Wurf.
+static func _swing_frame(schwung: float, n: int) -> float:
+	if schwung <= CAST_WINDUP:
+		return schwung / CAST_WINDUP * float(CAST_PEAK)
+	var rest := (schwung - CAST_WINDUP) / maxf(1.0 - CAST_WINDUP, 0.001)
+	return float(CAST_PEAK) + rest * float(n - 1 - CAST_PEAK)
 
 ## Beim Werfen schwingen die Beine nach dem gemessenen Muster; Atem und Zopf
 ## laufen weiter, und der Kopf lehnt zurueck.
