@@ -5,9 +5,8 @@ extends PanelBase
 func refresh() -> void:
 	clear(self)
 
-	var header := Label.new()
-	header.text = "Ködertasche  %d / %d" % [Game.bait_used(), Game.bait_capacity()]
-	add_child(header)
+	add_child(zeile("Ködertasche  %d / %d" % [Game.bait_used(),
+		Game.bait_capacity()]))
 
 	for b in Database.baits_in_order():
 		if Game.ctx.player_level < b.unlock_level:
@@ -17,11 +16,9 @@ func refresh() -> void:
 func _row(b: BaitData) -> Control:
 	var box := VBoxContainer.new()
 
-	var title := Label.new()
 	var owned := "unbegrenzt" if b.unlimited else "%d Stück" % int(Game.ctx.bait_counts.get(b.id, 0))
 	var active := "  ← aktiv" if Game.ctx.bait.id == b.id else ""
-	title.text = "%s  (%s)%s" % [b.display_name, owned, active]
-	box.add_child(title)
+	box.add_child(zeile("%s  (%s)%s" % [b.display_name, owned, active]))
 
 	# Was der Köder verspricht, steht auf dem Köder. Das ist der eigentliche
 	# Gewinn der Rangtabelle: eine verschobene Verteilung ließe sich gar
@@ -34,20 +31,16 @@ func _row(b: BaitData) -> Control:
 		var speed := ""
 		if b.bite_time_mult < 0.99:
 			speed = "  ·  %d %% schneller" % int(round((1.0 - b.bite_time_mult) * 100.0))
-		var promise := Label.new()
-		promise.text = "  am besten für Rang %s%s" % ["/".join(names), speed]
-		promise.modulate = Palette.get_color(&"accent")
-		box.add_child(promise)
+		box.add_child(zeile("  am besten für Rang %s%s"
+			% ["/".join(names), speed], &"accent"))
 
 	if not b.rarity_weight_bonus.is_empty():
-		var effect := Label.new()
 		var parts: Array[String] = []
 		for rarity_id in b.rarity_weight_bonus:
 			var r: RarityData = Database.rarities.get(rarity_id)
 			var label := r.display_name if r != null else String(rarity_id)
 			parts.append("%s ×%.1f" % [label, float(b.rarity_weight_bonus[rarity_id])])
-		effect.text = "  " + ", ".join(parts)
-		box.add_child(effect)
+		box.add_child(zeile("  " + ", ".join(parts)))
 
 	var row := HBoxContainer.new()
 

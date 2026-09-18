@@ -274,3 +274,63 @@ func test_the_developer_switch_makes_the_reeds_stand_again() -> void:
 	assert_false(Game.reeds_ready(), "der Aufbau ging schief")
 	Game.dev_grow_reeds()
 	assert_true(Game.reeds_ready(), "das Schilf steht nicht wieder")
+
+# --- Das Wiegen des Horsts --------------------------------------------------
+#
+# Er wiegt sich, indem ganze Pixelreihen ruecken -- wie die Beine der
+# Anglerin. Eine Drehung waere kein Pixelbild mehr.
+
+const HORST_H := 62
+
+## Unten ruehrt sich nichts: ein Halm steht im Boden fest.
+func test_the_bottom_row_of_the_clump_never_moves() -> void:
+	for schritt in 200:
+		assert_eq(ReedPatch.versatz(HORST_H - 1, HORST_H, float(schritt) * 0.05), 0,
+			"die unterste Reihe ist gewandert")
+
+## Oben aber schon, sonst waere es keine Bewegung.
+func test_the_top_of_the_clump_does_move() -> void:
+	var gesehen := {}
+	for schritt in 200:
+		gesehen[ReedPatch.versatz(0, HORST_H, float(schritt) * 0.05)] = true
+	assert_true(gesehen.size() >= 3,
+		"die Spitze nimmt nur %d Stellungen ein" % gesehen.size())
+	assert_true(gesehen.has(0), "sie kommt nie zur Ruhe")
+
+## Und der Ausschlag nimmt nach unten ab, statt dass der Horst als Brett kippt.
+func test_the_sway_fades_towards_the_ground() -> void:
+	# Ein Zeitpunkt mit deutlichem Ausschlag.
+	var zeit := PI * 0.5 / ReedPatch.TEMPO
+	var vorher := absi(ReedPatch.versatz(0, HORST_H, zeit))
+	assert_true(vorher > 0, "zum Hoechststand steht er still")
+	for r in range(1, HORST_H):
+		var jetzt := absi(ReedPatch.versatz(r, HORST_H, zeit))
+		assert_true(jetzt <= vorher,
+			"Reihe %d schlaegt weiter aus als die darueber" % r)
+		vorher = jetzt
+
+## Die Baender muessen das Bild lueckenlos abdecken -- ein vergessenes Band
+## waere ein Streifen, der im Halm fehlt.
+func test_the_bands_cover_every_row_exactly_once() -> void:
+	for schritt in 60:
+		var zeit := float(schritt) * 0.07
+		var naechste := 0
+		for band in ReedPatch.baender(HORST_H, zeit):
+			assert_eq(int(band[0]), naechste,
+				"bei %f klafft eine Luecke bei Reihe %d" % [zeit, naechste])
+			assert_true(int(band[1]) > 0, "leeres Band")
+			# Jede Reihe im Band muss denselben Versatz haben.
+			for r in range(int(band[0]), int(band[0]) + int(band[1])):
+				assert_eq(ReedPatch.versatz(r, HORST_H, zeit), int(band[2]),
+					"Reihe %d passt nicht zu ihrem Band" % r)
+			naechste += int(band[1])
+		assert_eq(naechste, HORST_H, "die Baender decken nicht das ganze Bild")
+
+## Und es bleiben wenige -- der Sinn der Baender ist, nicht sechzig Zeilen
+## einzeln zu zeichnen.
+func test_the_bands_stay_few() -> void:
+	var meiste := 0
+	for schritt in 200:
+		meiste = maxi(meiste, ReedPatch.baender(HORST_H, float(schritt) * 0.05).size())
+	assert_true(meiste <= int(ReedPatch.AUSSCHLAG) * 2 + 2,
+		"%d Baender fuer %.0f Pixel Ausschlag" % [meiste, ReedPatch.AUSSCHLAG])

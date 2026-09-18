@@ -25,8 +25,7 @@ signal reeds_tapped
 @onready var _raven: TextureButton = $Visitors/Raven
 @onready var _trader: TextureButton = $Visitors/Trader
 var _rain: Rain = null
-var _schilf_knopf: TextureButton = null
-var _schilf_zeit: float = 0.0
+var _schilf_knopf: ReedPatch = null
 var _rabe_besuch: Visitor = null
 var _baer_besuch: Visitor = null
 
@@ -114,8 +113,6 @@ const SCHILF_KNOPF_X := 0.80
 ## Der Horst laeuft im Massstab der Figur, wie das Uferband daneben.
 const SCHILF_KNOPF_SKALA := ANGLER_SCALE
 const SCHILF_HORST_H := 62.0
-## Wie weit er sich wiegt, im Bogenmass -- ein Hauch, kein Winken.
-const SCHILF_WIEGEN := 0.06
 const WAVE_BIAS := 9.5
 ## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
@@ -257,19 +254,16 @@ func _ready() -> void:
 	# Das reife Schilf: ein einzelner dichter Horst am Ufer, antippbar. Er
 	# steht unter $Visitors, damit er in derselben Ebene liegt wie Rabe und
 	# Haendler -- vor dem Hintergrund, hinter Steg und Figur.
-	_schilf_knopf = TextureButton.new()
 	# Das Blatt hat drei Bilder nebeneinander (voll, angeschnitten, Stummel);
-	# am Ufer steht immer das volle. Ein TextureButton kann keinen Ausschnitt,
-	# also kommt der ueber eine AtlasTexture.
-	var horst := AtlasTexture.new()
-	horst.atlas = TextureLoader.load_texture("res://assets/art/schilf_horst.png")
-	horst.region = Rect2(0.0, 0.0, float(Reeds.HALM_B), SCHILF_HORST_H)
-	_schilf_knopf.texture_normal = horst
-	_schilf_knopf.ignore_texture_size = true
-	_schilf_knopf.stretch_mode = TextureButton.STRETCH_SCALE
+	# am Ufer steht immer das volle.
+	_schilf_knopf = ReedPatch.new()
+	_schilf_knopf.setze(
+		TextureLoader.load_texture("res://assets/art/schilf_horst.png"),
+		Rect2(0.0, 0.0, float(Reeds.HALM_B), SCHILF_HORST_H),
+		SCHILF_KNOPF_SKALA)
 	_schilf_knopf.visible = false
 	$Visitors.add_child(_schilf_knopf)
-	_schilf_knopf.pressed.connect(_on_reeds_pressed)
+	_schilf_knopf.tapped.connect(_on_reeds_pressed)
 
 	_rain = Rain.new()
 	add_child(_rain)
@@ -343,12 +337,8 @@ func _place_background(water_y: float) -> void:
 	_reeds.position = Vector2(0.0, schilf_fuss - REED_SIZE.y * REED_SCALE)
 	if _schilf_knopf != null:
 		# Rechts aussen: Steg und Figur stehen links, dort waere er im Weg.
-		# Nur das erste der drei Bilder -- die anderen zwei sind geschnitten.
-		var hoch := SCHILF_HORST_H * SCHILF_KNOPF_SKALA
-		_schilf_knopf.size = Vector2(float(Reeds.HALM_B) * SCHILF_KNOPF_SKALA,
-			hoch)
 		_schilf_knopf.position = Vector2(size.x * SCHILF_KNOPF_X,
-			schilf_fuss - hoch)
+			schilf_fuss - _schilf_knopf.size.y)
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
@@ -677,17 +667,15 @@ func _on_trader_pressed() -> void:
 ## Der Schilfhorst ist nur da, wenn er reif ist, und wiegt sich dann leicht.
 ## Er steht selten genug, dass er auffallen darf (GAME_DESIGN.md, "Auffaellig
 ## nur, was selten ist") -- aber wiegen, nicht blinken.
-func _update_schilf(delta: float) -> void:
+func _update_schilf(_delta: float) -> void:
 	if _schilf_knopf == null:
 		return
 	var reif := Game.reeds_ready()
 	_schilf_knopf.visible = reif
 	if not reif:
 		return
-	_schilf_zeit += delta
-	_schilf_knopf.pivot_offset = Vector2(_schilf_knopf.size.x * 0.5,
-		_schilf_knopf.size.y)
-	_schilf_knopf.rotation = sin(_schilf_zeit * 1.6) * SCHILF_WIEGEN
+	# Das Wiegen macht der Horst selbst: er rueckt ganze Pixelreihen,
+	# ReedPatch.versatz() -- gedreht waere er das einzige weiche Ding im Bild.
 
 func _on_reeds_pressed() -> void:
 	if not Game.reeds_ready():

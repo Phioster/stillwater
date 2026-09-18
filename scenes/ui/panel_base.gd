@@ -28,6 +28,21 @@ func _on_visibility_changed() -> void:
 func refresh() -> void:
 	pass
 
+## Eine Textzeile fuers Panel. IMMER mit Umbruch.
+##
+## Ohne ihn verlangt ein Label als MINDESTbreite seine volle Textbreite. Ein
+## einziger langer Satz schiebt damit die ganze Gruppe ueber den Rahmen
+## hinaus: der Sandgrund hoert an der richtigen Stelle auf, die Knoepfe laufen
+## darueber weiter und verschwinden unter der Bildlaufleiste. Genau so sah der
+## Koederreiter aus (tests/test_panel_width.gd haelt es jetzt fest).
+func zeile(text: String, farbe: StringName = &"") -> Label:
+	var l := Label.new()
+	l.text = text
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if farbe != &"":
+		l.modulate = Palette.get_color(farbe)
+	return l
+
 ## Sofort aus dem Baum nehmen, nicht nur zum Freigeben vormerken: sonst haengen
 ## die alten Zeilen bis zum Frameende neben den neuen, die Liste ist kurz
 ## doppelt so lang und die Ansicht springt.

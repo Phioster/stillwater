@@ -7,18 +7,29 @@ func refresh() -> void:
 	for id in Database.upgrades:
 		add_child(_row(Database.upgrades[id]))
 
+## "Jetzt x → danach y" mit so vielen Nachkommastellen, wie noetig sind,
+## damit die beiden Zahlen sich unterscheiden.
+##
+## Vorher stand hier %.0f. Bei der Ködertasche (30 → 50) stimmte das, bei der
+## Sichelschärfe stand "Jetzt 7 → danach 7" da: ein Schritt von 0,3
+## verschwindet in der gerundeten Zahl, und die Stufe sah wirkungslos aus,
+## obwohl sie wirkte.
+static func spanne(jetzt: float, danach: float) -> String:
+	for stellen in 3:
+		var a := String.num(jetzt, stellen)
+		var b := String.num(danach, stellen)
+		if a != b:
+			return "Jetzt %s → danach %s" % [a, b]
+	# Wirklich gleich -- dann ist auch "7 → 7" die Wahrheit.
+	return "Jetzt %s → danach %s" % [String.num(jetzt, 0), String.num(danach, 0)]
+
 func _row(u: UpgradeData) -> Control:
 	var level := int(Game.upgrade_levels.get(u.id, 0))
 	var box := VBoxContainer.new()
 
-	var title := Label.new()
-	title.text = "%s  Stufe %d" % [u.display_name, level]
-	box.add_child(title)
-
-	var detail := Label.new()
-	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail.text = "%s\nJetzt %.0f → danach %.0f" % [u.description, Game.upgrade_value(u.id), u.value_at(level + 1)]
-	box.add_child(detail)
+	box.add_child(zeile("%s  Stufe %d" % [u.display_name, level]))
+	box.add_child(zeile("%s\n%s" % [u.description,
+		spanne(Game.upgrade_value(u.id), u.value_at(level + 1))]))
 
 	var buy := TapButton.new()
 	buy.custom_minimum_size = Vector2(0, 96)

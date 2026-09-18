@@ -23,3 +23,20 @@ func test_upgrade_panel_shows_game_upgrade_cost() -> void:
 				"Preis fuer %s muss aus Game.upgrade_cost() kommen" % id)
 		i += 1
 	panel.free()
+
+## Die Stufenanzeige muss den Unterschied zeigen. Mit %.0f stand bei der
+## Sichelschaerfe "Jetzt 7 → danach 7": ein Schritt von 0,3 verschwindet in
+## der gerundeten Zahl, und die Stufe sah wirkungslos aus, obwohl sie wirkte.
+func test_every_upgrade_step_shows_a_visible_difference() -> void:
+	const PANEL := preload("res://scenes/ui/panels/upgrade_panel.gd")
+	for id in Database.upgrades:
+		var u: UpgradeData = Database.upgrades[id]
+		for level in range(0, u.max_level):
+			var text: String = PANEL.spanne(u.value_at(level), u.value_at(level + 1))
+			# Beide Woerter raus, sonst stuende "danach" noch in der rechten
+			# Haelfte und die beiden Seiten waeren NIE gleich -- der Test haette
+			# dann nichts geprueft (genau so ist er zuerst dagestanden).
+			var teile := text.replace("Jetzt", "").replace("danach", "").split("→")
+			assert_eq(teile.size(), 2, "unerwarteter Text: %s" % text)
+			assert_true(teile[0].strip_edges() != teile[1].strip_edges(),
+				"%s Stufe %d zeigt zweimal dieselbe Zahl: %s" % [id, level, text])
