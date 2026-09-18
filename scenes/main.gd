@@ -35,6 +35,8 @@ func _ready() -> void:
 	var world := $Row/World
 	if world.has_signal("visitor_tapped") and not world.visitor_tapped.is_connected(_open_trader):
 		world.visitor_tapped.connect(_open_trader)
+	if world.has_signal("reeds_tapped") and not world.reeds_tapped.is_connected(_open_reeds):
+		world.reeds_tapped.connect(_open_reeds)
 	if not _rail.tab_selected.is_connected(show_tab):
 		_rail.tab_selected.connect(show_tab)
 	if not _journal_panel.fish_tapped.is_connected(_fish_window.open):
@@ -129,6 +131,11 @@ func _update_secret_sub() -> void:
 		return
 	var known := Game.ctx != null and Game.ctx.journal.has_any_secret()
 	_fish_group.set_sub_visible(FISH_SUB_SECRET, known)
+
+## Das Schilfschneiden legt sich ueber alles. Waehrenddessen laeuft die
+## Angel weiter -- es ist eine Nebenbeschaeftigung, keine zweite Partie.
+func _open_reeds() -> void:
+	$ReedCut.starte()
 
 func _open_trader() -> void:
 	_rail.select(SHOP_TAB)

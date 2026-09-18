@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://resources/upgrade_data.gd" id="1_ul5xq"]
+
+[resource]
+script = ExtResource("1_ul5xq")
+id = &"scythe_reach"
+display_name = "Sichelreichweite"
+description = "Die Sichel greift weiter, es steht also mehr Schilf gleichzeitig darin."
+max_level = 20
+base_cost = 150
+cost_growth = 1.60
+value_base = 50.0
+value_per_level = 4.00

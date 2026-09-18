@@ -80,6 +80,7 @@ func serialize() -> Dictionary:
 		"active_consumables": Game.buffs.to_dict(),
 		"consumable_inventory": Game.consumable_counts.duplicate(),
 		"visitors": Game.visitors.to_dict(),
+		"reeds": Game.reeds.to_dict(),
 		"quests": Game.quests.to_dict(),
 		"records": Game.records.to_dict(),
 		"settings": Game.settings.to_dict(),
@@ -134,6 +135,7 @@ func deserialize(raw: Dictionary) -> void:
 	Game.apply_upgrades()
 	Game.apply_settings()
 	Game.visitors.load_dict(d["visitors"])
+	Game.reeds.load_dict(d["reeds"])
 	Game.quests.load_dict(d["quests"])
 	Game.records.load_dict(d["records"])
 	Game.buffs.load_dict(d["active_consumables"])
@@ -204,6 +206,7 @@ func migrate(raw: Dictionary) -> Dictionary:
 		counts[key] = _safe_int(_safe_dict(raw.get("consumable_inventory"), {})[key], 0)
 	d["consumable_inventory"] = counts
 	d["visitors"] = _safe_dict(raw.get("visitors"), {})
+	d["reeds"] = _safe_dict(raw.get("reeds"), {})
 	d["quests"] = _safe_dict(raw.get("quests"), {})
 	d["records"] = _safe_dict(raw.get("records"), {})
 	d["settings"] = _safe_dict(raw.get("settings"), {})

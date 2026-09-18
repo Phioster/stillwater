@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://resources/upgrade_data.gd" id="1_ul5xq"]
+
+[resource]
+script = ExtResource("1_ul5xq")
+id = &"scythe_edge"
+display_name = "Sichelschärfe"
+description = "Schneidet mehr Schilf je Durchgang. Zähes Schilf braucht sonst zu viele."
+max_level = 30
+base_cost = 120
+cost_growth = 1.55
+value_base = 1.0
+value_per_level = 0.30

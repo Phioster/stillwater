@@ -30,6 +30,8 @@ fish = Array[ExtResource("1_fish")]([ExtResource("10_feathe"), ExtResource("11_w
 bite_time_min = 30.0
 bite_time_max = 52.0
 fight_window = 28.0
+reed_baits = Array[StringName]([&"cloud_moth", &"mayfly_nymph", &"star_roe"])
+reed_toughness = 32
 rarity_weights = {
 &"common": 28.0,
 &"uncommon": 30.0,

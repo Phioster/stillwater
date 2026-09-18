@@ -55,6 +55,14 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(48 * 8, 48)
 	if filename == "orb.png":
 		return Vector2i(16, 16)
+	# Der schneidbare Horst hat drei Bilder nebeneinander: voll, angeschnitten,
+	# Stummel. Die Sichel ist quadratisch, ihr Kreis fuellt das Bild
+	# (tools/sichel_bauen.py). Das UFERBAND heisst schilf.png und ist ein
+	# anderes Blatt -- die beiden nicht verwechseln.
+	if filename == "schilf_horst.png":
+		return Vector2i(Reeds.HALM_B * Reeds.HALM_STUFEN, 34)
+	if filename == "sichel.png":
+		return Vector2i(44, 44)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).
 	if filename == "bobber.png":
 		return Vector2i(10, 13)
