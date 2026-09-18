@@ -113,7 +113,7 @@ const WAVE_SCALE := 7.0
 const SCHILF_KNOPF_X := 0.80
 ## Der Horst laeuft im Massstab der Figur, wie das Uferband daneben.
 const SCHILF_KNOPF_SKALA := ANGLER_SCALE
-const SCHILF_HORST_H := 34.0
+const SCHILF_HORST_H := 62.0
 ## Wie weit er sich wiegt, im Bogenmass -- ein Hauch, kein Winken.
 const SCHILF_WIEGEN := 0.06
 const WAVE_BIAS := 9.5

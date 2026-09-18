@@ -60,7 +60,7 @@ func _expected_size(filename: String) -> Vector2i:
 	# (tools/sichel_bauen.py). Das UFERBAND heisst schilf.png und ist ein
 	# anderes Blatt -- die beiden nicht verwechseln.
 	if filename == "schilf_horst.png":
-		return Vector2i(Reeds.HALM_B * Reeds.HALM_STUFEN, 34)
+		return Vector2i(Reeds.HALM_B * Reeds.HALM_STUFEN, 62)
 	if filename == "sichel.png":
 		return Vector2i(44, 44)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).

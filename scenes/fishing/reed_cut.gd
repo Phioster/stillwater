@@ -13,8 +13,11 @@ extends Control
 
 signal beendet
 
-const HALB_B := 52.0
-const HALB_H := 26.0
+## Der Zellabstand. Gross genug, dass die Halme sich nicht gegenseitig
+## verdecken -- sie sind so hoch wie die am Ufer, und das sind ueber hundert
+## Punkte auf dem Schirm.
+const HALB_B := 62.0
+const HALB_H := 34.0
 ## Wie Steg, Figur und Schwimmer -- ein Pixel ist ein Pixel.
 const SKALA := 2.16
 ## Der aeussere Radius der gezeichneten Sichel in ihren eigenen Pixeln. Die
@@ -80,7 +83,7 @@ func starte() -> void:
 	Audio.play(&"cast")
 
 func _beet_mitte() -> Vector2:
-	return Vector2(size.x * 0.5, size.y * 0.47)
+	return Vector2(size.x * 0.5, size.y * 0.54)
 
 func _zelle_pos(c: int, r: int) -> Vector2:
 	var x := float(c - r) * HALB_B
@@ -209,39 +212,52 @@ func _baue_hud() -> void:
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hud)
 
+	# Die Zahl ist das Ergebnis der Runde -- sie darf gross sein. Ein Vielfaches
+	# der Theme-Groesse, damit Silkscreen auf ihrem Achterraster bleibt.
+	var kopf := VBoxContainer.new()
+	kopf.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	kopf.offset_left = 32.0
+	kopf.offset_top = 18.0
+	kopf.add_theme_constant_override(&"separation", 0)
+	hud.add_child(kopf)
 	_zaehler = Label.new()
 	_zaehler.text = "0"
-	_zaehler.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	_zaehler.offset_left = 28.0
-	_zaehler.offset_top = 20.0
-	hud.add_child(_zaehler)
+	_zaehler.add_theme_font_size_override(&"font_size", UiTheme.SCHRIFT_GROESSE * 3)
+	_zaehler.add_theme_constant_override(&"outline_size", UiTheme.OUTLINE * 3)
+	kopf.add_child(_zaehler)
+	var unterschrift := Label.new()
+	unterschrift.text = "HALME"
+	unterschrift.modulate = Palette.get_color(&"reed_light")
+	kopf.add_child(unterschrift)
 
 	_uhr = ProgressBar.new()
 	_uhr.show_percentage = false
 	_uhr.max_value = 100.0
 	_uhr.value = 100.0
 	_uhr.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_uhr.offset_left = 180.0
-	_uhr.offset_right = -180.0
-	_uhr.offset_top = 24.0
-	_uhr.offset_bottom = 48.0
+	_uhr.offset_left = 320.0
+	_uhr.offset_right = -320.0
+	_uhr.offset_top = 26.0
+	_uhr.offset_bottom = 62.0
 	hud.add_child(_uhr)
 
+	# Die Karte legt sich mittig hin und wird nur so gross wie ihr Inhalt --
+	# fest gesetzte Masse gaben eine halbleere Tafel ueber dem ganzen Beet.
+	var mitte := CenterContainer.new()
+	mitte.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mitte.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(mitte)
 	_karte = PanelContainer.new()
-	_karte.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_karte.offset_left = -240.0
-	_karte.offset_right = 240.0
-	_karte.offset_top = -150.0
-	_karte.offset_bottom = 150.0
+	_karte.custom_minimum_size = Vector2(560.0, 0.0)
 	_karte.visible = false
-	hud.add_child(_karte)
+	mitte.add_child(_karte)
 	var kasten := VBoxContainer.new()
 	kasten.add_theme_constant_override(&"separation", 18)
 	_karte.add_child(kasten)
 	_karte_text = RichTextLabel.new()
 	_karte_text.bbcode_enabled = true
 	_karte_text.fit_content = true
-	_karte_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_karte_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	kasten.add_child(_karte_text)
 	var fertig := Button.new()
 	fertig.text = "FERTIG"

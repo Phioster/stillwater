@@ -53,6 +53,21 @@ func _dev_bereich() -> void:
 		refresh())
 	add_child(pose)
 
+	# Aufraeumen. Beim Ausprobieren ist nach kurzer Zeit alles voll, und dann
+	# laesst sich nichts mehr pruefen, ohne neu anzufangen.
+	add_child(_leeren("Fischkiste leeren", func() -> int:
+		return Game.dev_clear_fish()))
+	add_child(_leeren("Ködertasche leeren", func() -> int:
+		return Game.dev_clear_bait()))
+	var schilf := TapButton.new()
+	schilf.custom_minimum_size = Vector2(0, 88)
+	schilf.text = "Schilf sofort stehen lassen"
+	schilf.tapped.connect(func() -> void:
+		Game.dev_grow_reeds()
+		SaveManager.save()
+		refresh())
+	add_child(schilf)
+
 	var zurueck := TapButton.new()
 	zurueck.custom_minimum_size = Vector2(0, 88)
 	zurueck.text = "Alles zurück auf Spielregeln"
@@ -69,9 +84,21 @@ func _dev_bereich() -> void:
 
 	var dev_hint := Label.new()
 	dev_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dev_hint.text = "„Spielregeln“ heißt: das Spiel entscheidet wie sonst. Ein Wechsel auf „da“ oder „weg“ spielt Ankunft beziehungsweise Abgang ab. Nichts davon wird gespeichert."
+	dev_hint.text = "„Spielregeln“ heißt: das Spiel entscheidet wie sonst. Ein Wechsel auf „da“ oder „weg“ spielt Ankunft beziehungsweise Abgang ab und wird nicht gespeichert. Die drei Aufräumknöpfe darüber wirken dagegen sofort und bleiben — was weg ist, ist weg."
 	dev_hint.modulate = Palette.get_color(&"reed_light")
 	add_child(dev_hint)
+
+## Ein Knopf, der etwas leert und sagt, wie viel es war. Ohne die Zahl weiss
+## man nicht, ob er etwas getan hat oder schon leer war.
+func _leeren(text: String, tun: Callable) -> Control:
+	var b := TapButton.new()
+	b.custom_minimum_size = Vector2(0, 88)
+	b.text = text
+	b.tapped.connect(func() -> void:
+		var zahl: int = tun.call()
+		b.text = "%s  (%d weg)" % [text, zahl]
+		SaveManager.save())
+	return b
 
 ## Ein Schalter mit drei Stellungen: Spielregeln, erzwungen da, erzwungen weg.
 ## Ein Knopf statt dreier -- die Liste ist ohnehin lang genug.

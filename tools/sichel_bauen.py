@@ -29,8 +29,10 @@ PALETTE = os.path.join(WURZEL, "core", "palette.gd")
 KUNST = os.path.join(WURZEL, "assets", "art")
 
 ## Muessen zu Reeds.HALM_B und Reeds.HALM_STUFEN passen.
-HORST_B = 30
-HORST_H = 34
+## Der Horst muss so gross sein wie das Uferband daneben (schilf_bauen: Halme
+## von 22 bis 56 Pixeln). Kleiner sah er aus wie Gras vor echtem Schilf.
+HORST_B = 34
+HORST_H = 62
 STUFEN = 3
 ## Was nach dem jeweiligen Schnitt noch steht.
 RESTE = (1.0, 0.6, 0.28)
@@ -39,9 +41,9 @@ SAAT = 4711
 ## Die Halme des Horsts: Versatz zur Mitte, volle Hoehe, Neigung, Fusshoehe.
 ## Die hinteren und kuerzeren zuerst, die hohen zuletzt -- wer zuletzt
 ## gezeichnet wird, steht vorn (_setz laesst belegte Pixel stehen).
-HALME = ((-9, 13, -3, 3), (9, 14, 3, 2), (-6, 17, -2, 4), (6, 16, 2, 3),
-         (-3, 21, -1, 2), (4, 20, 1, 1), (-7, 23, -2, 0), (7, 22, 2, 1),
-         (-2, 26, -1, 0), (2, 25, 1, 0), (0, 24, 0, 1))
+HALME = ((-11, 24, -3, 4), (11, 26, 3, 3), (-8, 31, -3, 5), (8, 29, 3, 4),
+         (-4, 38, -2, 3), (5, 36, 2, 2), (-9, 43, -2, 1), (9, 41, 2, 2),
+         (-3, 49, -1, 0), (3, 47, 1, 1), (0, 52, 0, 0))
 
 SICHEL = 44
 SICHEL_VERSATZ = 0.34
@@ -81,7 +83,7 @@ def horst():
             for dx, hoehe, neigung, fuss in HALME:
                 gekappt = max(3, int(round(hoehe * RESTE[stufe])))
                 schilf_bauen.halm(px, HORST_B // 2 + dx, gekappt, neigung, rng,
-                                  belegt, kolben=gekappt >= 24, fuss=fuss)
+                                  belegt, kolben=gekappt >= 34, fuss=fuss)
             bild.paste(teil, (stufe * HORST_B, 0))
     finally:
         schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS = alt

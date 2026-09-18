@@ -227,3 +227,50 @@ func test_the_three_cutting_stages_really_differ() -> void:
 		assert_true(gefuellt[i] > gefuellt[i + 1],
 			"Stufe %d hat %d Pixel, Stufe %d aber %d -- es wird nicht kuerzer"
 				% [i, gefuellt[i], i + 1, gefuellt[i + 1]])
+
+## Der Horst steht zwischen dem Uferschilf und muss dessen Groesse haben. Als
+## er halb so hoch war, sah er aus wie Gras vor echtem Schilf.
+func test_the_cut_clump_is_as_tall_as_the_shore_reeds() -> void:
+	var horst := TextureLoader.load_texture("res://assets/art/schilf_horst.png")
+	assert_true(float(horst.get_height()) >= WORLD.REED_SIZE.y * 0.75,
+		"der Horst ist %d hoch, das Uferband %d" % [horst.get_height(),
+			int(WORLD.REED_SIZE.y)])
+
+# --- Entwicklerhilfen -------------------------------------------------------
+#
+# Beim Ausprobieren laeuft alles voll, und danach laesst sich nichts mehr
+# pruefen. Diese drei muessen wirklich leeren, nicht nur die Anzeige.
+
+func test_the_developer_switch_empties_the_fish_box() -> void:
+	Game.new_game()
+	for i in 5:
+		var c := CaughtFish.new()
+		c.fish_id = &"bluegill"
+		Game.ctx.inventory.add(c)
+	assert_eq(Game.ctx.inventory.fish.size(), 5, "der Aufbau ging schief")
+	assert_eq(Game.dev_clear_fish(), 5, "er meldet die falsche Zahl")
+	assert_eq(Game.ctx.inventory.fish.size(), 0, "die Kiste ist noch voll")
+
+## Eine volle Kiste haelt das Angeln an -- nach dem Leeren muss es weitergehen.
+func test_emptying_the_box_lets_fishing_continue() -> void:
+	Game.new_game()
+	Game.sim.state = FishingSim.State.INVENTORY_FULL
+	Game.dev_clear_fish()
+	assert_true(Game.sim.state != FishingSim.State.INVENTORY_FULL,
+		"das Angeln haengt weiter an der vollen Kiste")
+
+func test_the_developer_switch_empties_the_bait_bag() -> void:
+	Game.new_game()
+	Game.upgrade_levels[&"bait_capacity"] = 9
+	Game.gain_bait(&"pond_grub", 12)
+	assert_true(Game.bait_used() >= 12, "der Aufbau ging schief")
+	var weg := Game.dev_clear_bait()
+	assert_true(weg >= 12, "er meldet %d statt mindestens 12" % weg)
+	assert_eq(Game.bait_used(), 0, "die Tasche ist noch voll")
+
+func test_the_developer_switch_makes_the_reeds_stand_again() -> void:
+	Game.new_game()
+	Game.finish_reed_cut(30)
+	assert_false(Game.reeds_ready(), "der Aufbau ging schief")
+	Game.dev_grow_reeds()
+	assert_true(Game.reeds_ready(), "das Schilf steht nicht wieder")

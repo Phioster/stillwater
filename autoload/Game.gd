@@ -307,6 +307,40 @@ func scythe_reach() -> float:
 func scythe_speed() -> float:
 	return upgrade_value(&"scythe_speed")
 
+## --- Entwicklerhilfen zum Leeren --------------------------------------------
+##
+## Beim Ausprobieren laeuft alles voll: Kiste, Ködertasche, Schilf geschnitten.
+## Danach laesst sich nichts mehr pruefen, ohne einen neuen Spielstand
+## anzufangen. Diese drei raeumen gezielt auf -- und sie speichern sofort,
+## damit ein Absturz nicht alles zurueckbringt.
+
+## Leert die Fischkiste, Lieblinge eingeschlossen.
+func dev_clear_fish() -> int:
+	if ctx == null:
+		return 0
+	var zahl := ctx.inventory.fish.size()
+	ctx.inventory.fish.clear()
+	if sim.state == FishingSim.State.INVENTORY_FULL:
+		sim.state = FishingSim.State.IDLE
+	state_changed.emit()
+	progress_changed.emit()
+	return zahl
+
+## Leert die Ködertasche. Der aktive Köder bleibt gewaehlt -- wer ihn auch
+## noch verliert, muss ihn danach von Hand wieder einstellen.
+func dev_clear_bait() -> int:
+	if ctx == null:
+		return 0
+	var zahl := bait_used()
+	ctx.bait_counts = {}
+	state_changed.emit()
+	return zahl
+
+## Laesst das Schilf sofort wieder stehen, statt zwei Stunden zu warten.
+func dev_grow_reeds() -> void:
+	reeds.cut_slot = -1
+	state_changed.emit()
+
 func reeds_ready() -> bool:
 	return reeds.ready_at(Time.get_unix_time_from_system())
 

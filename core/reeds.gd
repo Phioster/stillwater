@@ -35,7 +35,7 @@ const ZEILEN: int = 7
 
 ## Das Schilfbild hat drei Halme nebeneinander: voll, angeschnitten, Stummel.
 ## Ein Halm, der nach jedem Treffer gleich aussieht, gibt keine Rueckmeldung.
-const HALM_B: int = 30
+const HALM_B: int = 34
 const HALM_STUFEN: int = 3
 
 const HALME_JE_KOEDER: int = 6
