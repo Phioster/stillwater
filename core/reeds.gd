@@ -22,14 +22,15 @@ const DAUER: float = 18.0
 const DREHUNG: float = 2.0
 const REICHWEITE: float = 50.0
 const SCHNEIDE: float = 1.0
-## Wie breit die Schneide trifft, im Bogenmass -- so breit, wie die Klinge
-## gezeichnet ist (tools/sichel_bauen.py: rund 106 Grad). Ein voller Kreis
-## waere ein Rasenmaeher; der Reiz ist, dass die Klinge vorbeikommen MUSS.
-const SEKTOR: float = 1.80
-## Wie tief die Klinge nach innen reicht, in ihren eigenen Pixeln -- die Dicke
-## ihres Bauchs (tools/sichel_bauen.py). Mal dem Weltmassstab ergibt das den
-## Ring, in dem geschnitten wird.
-const KLINGE_PIXEL: float = 8.0
+## Die Sichel ist ein Kreis minus einem zweiten (tools/sichel_bauen.py), und
+## GENAU DIESE Form trifft auch. Beide Zahlen sind Vielfache ihres
+## Aussenradius: der Ausschnittkreis ist groesser als die Klinge und liegt
+## weit links daneben. Dadurch ist ihre INNENKANTE FAST GERADE -- und genau
+## daran sind die Versuche davor gescheitert, die dort einen konzentrischen
+## Bogen annahmen, der sich in die andere Richtung woelbt.
+const KLINGE_VERSATZ: float = 6.63
+const KLINGE_SCHNITT: float = 7.25
+
 ## Zwei Treffer derselben Umdrehung auf denselben Halm zaehlen als einer.
 const TREFFER_PAUSE: float = 0.10
 
@@ -108,25 +109,36 @@ func fund(halme: int, rng: RandomNumberGenerator) -> StringName:
 
 ## Trifft die Sichel diesen Halm? Getrennt vom Zeichnen, damit die Tests
 ## nachrechnen koennen -- am fertigen Bild ginge das nicht.
-## Die Klinge selbst ist die Trefferform: ein Bogen um IHREN Mittelpunkt, so
-## breit und so dick, wie sie gezeichnet ist.
+## Die Klinge selbst ist die Trefferform, und zwar nach DERSELBEN Rechnung,
+## nach der sie gezeichnet wird: innerhalb ihres Aussenkreises und ausserhalb
+## des Ausschnittkreises.
 ##
-## Zwei Anlaeufe davor lagen daneben, und beide auf dieselbe Weise: die Zone
-## war um die HAND gezogen, die Klinge aber um ihren eigenen Mittelpunkt.
-## Zwei Kreise mit verschiedenen Mittelpunkten koennen sich nicht decken --
-## erst war es ein Keil bis zur Hand, dann ein Ring um die Hand, und beide
-## passten nur an einer einzigen Stelle auf die Klinge.
+## Drei Anlaeufe davor lagen daneben, alle am selben Punkt: die Zone war eine
+## ANDERE Form als die Klinge. Erst ein Keil bis zur Hand, dann ein Ring um
+## die Hand, dann ein Ringstueck um die Klingenmitte -- das letzte lag schon
+## richtig, hatte aber innen einen runden Bogen, wo die Klinge fast gerade
+## ist. Eine Form, zwei Rechnungen, geht nicht.
 static func trifft(halm: Vector2, klinge: Vector2, winkel: float,
-		radius: float, tiefe: float = -1.0, sektor: float = -1.0) -> bool:
-	var t := tiefe if tiefe >= 0.0 else KLINGE_PIXEL * 2.16
-	var k := sektor if sektor >= 0.0 else SEKTOR
-	var d := halm - klinge
-	var weit := d.length()
-	if weit > radius:
+		radius: float) -> bool:
+	# In die Koordinaten der Klinge drehen: ihr Bauch zeigt dann nach +x.
+	var d := (halm - klinge).rotated(-winkel)
+	if d.length() > radius:
 		return false
-	if t > 0.0 and weit < radius - t:
-		return false
-	return absf(wrapf(d.angle() - winkel, -PI, PI)) <= k * 0.5
+	return (d + Vector2(KLINGE_VERSATZ * radius, 0.0)).length() \
+		>= KLINGE_SCHNITT * radius
+
+## Wie weit die Klinge um ihren Mittelpunkt reicht, im Bogenmass -- aus der
+## Bauform gerechnet, nicht danebengeschrieben.
+static func spanne() -> float:
+	var c := -(1.0 - KLINGE_SCHNITT * KLINGE_SCHNITT
+		+ KLINGE_VERSATZ * KLINGE_VERSATZ) / (2.0 * KLINGE_VERSATZ)
+	return 2.0 * acos(clampf(c, -1.0, 1.0))
+
+## Wie weit ihr Ausschnittkreis um seine eigene Mitte reicht -- der Winkel,
+## unter dem die Innenkante zu zeichnen ist.
+static func innen_spanne() -> float:
+	var halb := spanne() * 0.5
+	return 2.0 * atan2(sin(halb), cos(halb) + KLINGE_VERSATZ)
 
 func to_dict() -> Dictionary:
 	return {"cut_slot": cut_slot}

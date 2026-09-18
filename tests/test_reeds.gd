@@ -107,65 +107,71 @@ func test_a_find_stays_rare_however_much_is_cut() -> void:
 ## Die Sichel muss vorbeikommen: was hinter ihr steht, wird nicht geschnitten,
 ## auch wenn es nah genug ist. Ein voller Kreis waere ein Rasenmaeher.
 func test_the_blade_only_cuts_in_front_of_its_edge() -> void:
-	var hand := Vector2(400.0, 300.0)
-	var reichweite := 50.0
-	var tiefe := 20.0
-	# Im Ring und genau vor der Schneide.
-	assert_true(Reeds.trifft(hand + Vector2(45.0, 0.0), hand, 0.0, reichweite,
-		tiefe))
-	# Genauso weit, aber hinter ihr.
-	assert_false(Reeds.trifft(hand + Vector2(-45.0, 0.0), hand, 0.0,
-		reichweite, tiefe), "die Sichel schneidet nach hinten")
-	# Direkt vor ihr, aber weiter als sie reicht.
-	assert_false(Reeds.trifft(hand + Vector2(70.0, 0.0), hand, 0.0, reichweite,
-		tiefe), "die Sichel greift weiter, als sie reicht")
-	# Am Rand des Ausschnitts, drinnen und knapp draussen.
-	var knapp_drin := Reeds.SEKTOR * 0.5 - 0.02
-	var knapp_raus := Reeds.SEKTOR * 0.5 + 0.02
-	assert_true(Reeds.trifft(hand + Vector2(45.0, 0.0).rotated(knapp_drin),
-		hand, 0.0, reichweite, tiefe))
-	assert_false(Reeds.trifft(hand + Vector2(45.0, 0.0).rotated(knapp_raus),
-		hand, 0.0, reichweite, tiefe))
+	var klinge := Vector2(400.0, 300.0)
+	var r := 45.0
+	var halb := Reeds.spanne() * 0.5
+	var bauch := r * (1.0 + (Reeds.KLINGE_SCHNITT - Reeds.KLINGE_VERSATZ)) * 0.5
+	assert_true(Reeds.trifft(klinge + Vector2(bauch, 0.0), klinge, 0.0, r),
+		"der Bauch der Klinge trifft nicht")
+	assert_false(Reeds.trifft(klinge + Vector2(-bauch, 0.0), klinge, 0.0, r),
+		"die Sichel schneidet nach hinten")
+	assert_false(Reeds.trifft(klinge + Vector2(r * 1.4, 0.0), klinge, 0.0, r),
+		"die Sichel greift weiter, als sie reicht")
+	# Dicht an der Schneide: zu den Spitzen hin wandert der Bauch nach aussen
+	# und wird duenner, ein Punkt auf der Bauchmitte laege dort schon daneben.
+	assert_true(Reeds.trifft(klinge + Vector2(r * 0.97, 0.0).rotated(halb * 0.6),
+		klinge, 0.0, r), "vor der Spitze trifft sie nicht")
+	assert_false(Reeds.trifft(klinge + Vector2(r * 0.97, 0.0).rotated(halb * 1.4),
+		klinge, 0.0, r), "hinter ihrer Spitze trifft sie doch")
 
-## Und sie schneidet NUR DA, WO SIE IST. Zwischen Hand und Klinge passiert
-## nichts mehr -- vorher galt der ganze Keil bis zur Hand, und alles darin
-## wurde von nichts Sichtbarem geschnitten.
+## Und sie schneidet NUR DA, WO SIE IST. Die Mitte ihres Kreises liegt im Loch
+## des Ausschnitts, dort ist keine Klinge.
 func test_nothing_is_cut_between_the_hand_and_the_blade() -> void:
-	var hand := Vector2(400.0, 300.0)
-	var reichweite := 50.0
-	var tiefe := 20.0
-	for weit in [0.0, 5.0, 15.0, 29.0]:
-		assert_false(Reeds.trifft(hand + Vector2(weit, 0.0), hand, 0.0,
-			reichweite, tiefe),
-			"bei %f von der Hand wird geschnitten, die Klinge ist bei %f"
-				% [weit, reichweite])
-	# Und am inneren Rand des Rings faengt es an.
-	assert_true(Reeds.trifft(hand + Vector2(31.0, 0.0), hand, 0.0, reichweite,
-		tiefe), "am inneren Rand des Rings wird nicht geschnitten")
+	var klinge := Vector2(400.0, 300.0)
+	var r := 45.0
+	for weit in [0.0, 5.0, 15.0, 22.0]:
+		assert_false(Reeds.trifft(klinge + Vector2(weit, 0.0), klinge, 0.0, r),
+			"bei %f vor der Mitte wird geschnitten, die Klinge sitzt aussen"
+				% weit)
 
 ## Die Klinge dreht sich, also dreht sich auch, was sie trifft.
 func test_the_cut_sector_turns_with_the_blade() -> void:
-	var hand := Vector2(400.0, 300.0)
-	var ziel := hand + Vector2(0.0, 45.0)
-	assert_false(Reeds.trifft(ziel, hand, 0.0, 50.0, 20.0))
-	assert_true(Reeds.trifft(ziel, hand, PI * 0.5, 50.0, 20.0),
+	var klinge := Vector2(400.0, 300.0)
+	var r := 45.0
+	var ziel := klinge + Vector2(0.0, 40.0)
+	assert_false(Reeds.trifft(ziel, klinge, 0.0, r))
+	assert_true(Reeds.trifft(ziel, klinge, PI * 0.5, r),
 		"gedreht trifft sie ihr Ziel nicht")
 
-## Der Ring darf nicht tiefer sein als die Klinge dick ist -- sonst schnitte
-## sie wieder, wo nichts gezeichnet ist.
-func test_the_cut_ring_is_no_deeper_than_the_drawn_blade() -> void:
+## Der entscheidende Test: die Regel muss mit dem BILD uebereinstimmen, Pixel
+## fuer Pixel. Drei Anlaeufe davor hatten eine andere Form als die Zeichnung,
+## und am Bild sah man es jedes Mal sofort -- an Zahlen nicht.
+func test_the_rule_agrees_with_the_drawn_blade_pixel_by_pixel() -> void:
 	var bild := TextureLoader.load_texture(
 		"res://assets/art/sichel.png").get_image()
-	var mitte := bild.get_height() / 2
-	# Am Bauch, also waagerecht durch die Mitte nach rechts.
-	var dick := 0
-	for x in range(mitte, bild.get_width()):
-		if bild.get_pixel(x, mitte).a > 0.0:
-			dick += 1
-	assert_true(dick > 2, "die Klinge ist am Bauch nur %d Pixel dick" % dick)
-	assert_true(Reeds.KLINGE_PIXEL <= float(dick),
-		"der Ring ist %.0f Pixel tief, die Klinge nur %d dick"
-			% [Reeds.KLINGE_PIXEL, dick])
+	var m := Vector2(bild.get_width(), bild.get_height()) * 0.5
+	var r := m.x - 1.0
+	var daneben := 0
+	var gemalt := 0
+	for y in bild.get_height():
+		for x in bild.get_width():
+			var p := Vector2(x, y) + Vector2(0.5, 0.5)
+			var ist_gemalt := bild.get_pixel(x, y).a > 0.0
+			if ist_gemalt:
+				gemalt += 1
+			if Reeds.trifft(p, m, 0.0, r) == ist_gemalt:
+				continue
+			# Direkt auf einer Kante darf es um ein Pixel abweichen -- das ist
+			# die Rundung des Rasters, nicht die Form.
+			var d := p - m
+			var aussen: float = absf(d.length() - r)
+			var innen: float = absf((d + Vector2(Reeds.KLINGE_VERSATZ * r,
+				0.0)).length() - Reeds.KLINGE_SCHNITT * r)
+			if minf(aussen, innen) > 1.5:
+				daneben += 1
+	assert_true(gemalt > 100, "die Sichel ist fast leer")
+	assert_eq(daneben, 0,
+		"%d Pixel weit ab von jeder Kante stimmen nicht mit der Regel" % daneben)
 
 # --- Was ein Schnitt einbringt --------------------------------------------
 
@@ -416,26 +422,24 @@ func test_the_shown_hitbox_is_the_one_that_cuts() -> void:
 	var radius: float = schnitt.SICHEL_RADIUS * schnitt.SKALA
 	assert_almost_eq(schnitt._zone.reichweite, radius, 0.001,
 		"die gezeigte Zone ist nicht so gross wie die Klinge")
-	assert_almost_eq(schnitt._zone.tiefe, Reeds.KLINGE_PIXEL * schnitt.SKALA,
-		0.001, "die gezeigte Tiefe ist nicht die Dicke der Klinge")
 	assert_almost_eq(schnitt._zone.winkel, schnitt._winkel, 0.001,
 		"die gezeigte Richtung ist nicht die der Klinge")
 	# Und an den Kanten der gezeichneten Zone muss die Regel kippen.
 	var mitte: Vector2 = schnitt._zone.mitte
-	var tiefe: float = schnitt._zone.tiefe
-	var halb := Reeds.SEKTOR * 0.5
-	var mittig := radius - tiefe * 0.5
+	var halb := Reeds.spanne() * 0.5
+	# Mitten durch den Bauch: vom Ausschnittkreis bis zum Aussenkreis.
+	var bauch := radius * (1.0
+		+ (Reeds.KLINGE_SCHNITT - Reeds.KLINGE_VERSATZ)) * 0.5
 	for probe in [
-		[Vector2(mittig, 0.0).rotated(schnitt._winkel + halb - 0.02), true],
-		[Vector2(mittig, 0.0).rotated(schnitt._winkel + halb + 0.02), false],
-		[Vector2(radius - tiefe * 0.2, 0.0).rotated(schnitt._winkel), true],
-		[Vector2(radius - tiefe * 1.5, 0.0).rotated(schnitt._winkel), false],
-		[Vector2(radius * 1.2, 0.0).rotated(schnitt._winkel), false],
+		[Vector2(bauch, 0.0).rotated(schnitt._winkel), true],
+		[Vector2(bauch, 0.0).rotated(schnitt._winkel + halb * 1.4), false],
+		[Vector2(radius * 1.3, 0.0).rotated(schnitt._winkel), false],
+		[Vector2(radius * 0.2, 0.0).rotated(schnitt._winkel), false],
 	]:
 		var stelle: Vector2 = mitte + (probe[0] as Vector2)
-		assert_eq(Reeds.trifft(stelle, mitte, schnitt._winkel, radius, tiefe),
+		assert_eq(Reeds.trifft(stelle, mitte, schnitt._winkel, radius),
 			probe[1] as bool,
-			"bei %s stimmt Bild und Regel nicht ueberein" % str(probe[0]))
+			"bei %s stimmen Bild und Regel nicht ueberein" % str(probe[0]))
 	Game.dev_scythe_box = false
 	schnitt.free()
 
@@ -497,14 +501,9 @@ func test_the_drawn_blade_matches_what_it_cuts() -> void:
 	for i in winkel.size() - 1:
 		luecke = maxf(luecke, winkel[i + 1] - winkel[i])
 	var spanne := TAU - luecke
-	assert_true(spanne <= Reeds.SEKTOR * 1.6,
-		"die Klinge spannt %.0f Grad, geschnitten wird in %.0f"
-			% [rad_to_deg(spanne), rad_to_deg(Reeds.SEKTOR)])
-	# Und sie darf auch nicht SCHMALER sein als die Zone -- dann traefe sie
-	# Halme, die sie gar nicht beruehrt.
-	assert_true(spanne >= Reeds.SEKTOR,
-		"die Klinge spannt nur %.0f Grad, geschnitten wird in %.0f"
-			% [rad_to_deg(spanne), rad_to_deg(Reeds.SEKTOR)])
+	assert_almost_eq(spanne, Reeds.spanne(), 0.08,
+		"die Klinge spannt %.0f Grad, die Regel rechnet mit %.0f"
+			% [rad_to_deg(spanne), rad_to_deg(Reeds.spanne())])
 
 ## Die Klinge waechst NICHT mit der Reichweite, sie kreist weiter aussen.
 ##
@@ -585,12 +584,13 @@ func test_it_really_is_the_blade_that_does_the_cutting() -> void:
 	for i in 40:
 		schnitt._process(0.02)
 	var radius: float = schnitt.SICHEL_RADIUS * schnitt.SKALA
-	var tiefe: float = Reeds.KLINGE_PIXEL * schnitt.SKALA
 	var bahn: float = (schnitt._sichel.position - schnitt._hand).length()
 	assert_true(bahn > radius,
 		"die Bahn (%.0f) ist nicht weiter als die Klinge gross (%.0f) -- der"
 			% [bahn, radius] + " Test kann die beiden Faelle nicht trennen")
-	var mittig := radius - tiefe * 0.5
+	# Mitten durch den Bauch der Klinge.
+	var mittig := radius * (1.0
+		+ (Reeds.KLINGE_SCHNITT - Reeds.KLINGE_VERSATZ)) * 0.5
 	var schluessel: Array = schnitt._halme.keys()
 	assert_true(schluessel.size() >= 2, "zu wenige Halme zum Pruefen")
 	var getroffen: Sprite2D = schnitt._halme[schluessel[0]]
