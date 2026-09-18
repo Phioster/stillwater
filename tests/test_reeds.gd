@@ -275,116 +275,73 @@ func test_the_developer_switch_makes_the_reeds_stand_again() -> void:
 	Game.dev_grow_reeds()
 	assert_true(Game.reeds_ready(), "das Schilf steht nicht wieder")
 
-# --- Das Wiegen des Horsts --------------------------------------------------
+# --- Der Wind am Ufer -------------------------------------------------------
 #
-# Er wiegt sich, indem ganze Pixelreihen ruecken -- wie die Beine der
-# Anglerin. Eine Drehung waere kein Pixelbild mehr.
+# Der Horst schaltet zwischen GEZEICHNETEN Stellungen um. Zwei Versuche davor
+# haben das Bild stattdessen verschoben -- gedreht, dann zeilenweise geschert
+# -- und beide sahen falsch aus, das zweite wie verrutschte Bildzeilen.
 
-const HORST_H := 62
+## Er steht nicht still, aber er zappelt auch nicht. Jeder Wechsel ist ein
+## ganzes neues Bild und damit sichtbar; sieben je Sekunde lasen sich als
+## Zittern. Das ist die Zahl, an der sich die Beschwerde messen laesst.
+func test_the_reeds_change_pose_slowly() -> void:
+	const SCHRITTE := 6000
+	const DT := 0.01
+	var wechsel := 0
+	var vorher := ReedPatch.stellung(0.0, Reeds.WIND_BILDER)
+	for i in range(1, SCHRITTE):
+		var jetzt := ReedPatch.stellung(float(i) * DT, Reeds.WIND_BILDER)
+		if jetzt != vorher:
+			wechsel += 1
+		vorher = jetzt
+	var je_sekunde := float(wechsel) / (float(SCHRITTE) * DT)
+	assert_true(je_sekunde <= 2.5,
+		"der Horst wechselt %.2f mal je Sekunde -- das zittert" % je_sekunde)
+	assert_true(je_sekunde >= 0.4,
+		"der Horst wechselt nur %.2f mal je Sekunde -- das steht" % je_sekunde)
 
-## Unten ruehrt sich nichts: ein Halm steht im Boden fest.
-func test_the_bottom_row_of_the_clump_never_moves() -> void:
-	for schritt in 200:
-		assert_eq(ReedPatch.versatz(HORST_H - 1, HORST_H, float(schritt) * 0.05), 0,
-			"die unterste Reihe ist gewandert")
-
-## Oben aber schon, sonst waere es keine Bewegung.
-func test_the_top_of_the_clump_does_move() -> void:
+## Und er nutzt alle gezeichneten Stellungen. Wer nur zwischen zweien hin und
+## her springt, haette sich die anderen sparen koennen.
+func test_the_wind_uses_every_drawn_pose() -> void:
 	var gesehen := {}
-	for schritt in 200:
-		gesehen[ReedPatch.versatz(0, HORST_H, float(schritt) * 0.05)] = true
-	assert_true(gesehen.size() >= 3,
-		"die Spitze nimmt nur %d Stellungen ein" % gesehen.size())
-	assert_true(gesehen.has(0), "sie kommt nie zur Ruhe")
+	for i in 6000:
+		gesehen[ReedPatch.stellung(float(i) * 0.01, Reeds.WIND_BILDER)] = true
+	assert_eq(gesehen.size(), Reeds.WIND_BILDER,
+		"nur %d von %d Stellungen kommen vor" % [gesehen.size(), Reeds.WIND_BILDER])
 
-## Der Ausschlag nimmt nach unten ab -- gemessen ueber die ZEIT, nicht in
-## einem Augenblick. In einem einzelnen Bild darf das Profil krumm sein, das
-## ist ja gerade der Knick; was nicht sein darf, ist dass unten insgesamt
-## genauso viel passiert wie oben.
-func test_the_sway_fades_towards_the_ground() -> void:
-	var vorher := 999
-	for r in HORST_H:
-		var groesste := 0
-		for schritt in 600:
-			groesste = maxi(groesste,
-				absi(ReedPatch.versatz(r, HORST_H, float(schritt) * 0.02)))
-		assert_true(groesste <= vorher,
-			"Reihe %d schlaegt mit %d weiter aus als die darueber mit %d"
-				% [r, groesste, vorher])
-		vorher = groesste
-	assert_eq(vorher, 0, "die unterste Reihe bewegt sich doch")
-
-## Der Halm BIEGT sich, statt zu kippen: die Bewegung laeuft ihn hinauf, also
-## muss es Augenblicke geben, in denen Spitze und Mitte in verschiedene
-## Richtungen zeigen. Ohne das sah es aus wie ein Metronom -- alle Reihen im
-## selben Takt, nur der Ausschlag wuchs nach oben.
-func test_the_stalk_bends_instead_of_tilting() -> void:
-	var gegenlaeufig := 0
-	for schritt in 1200:
-		var zeit := float(schritt) * 0.02
-		if ReedPatch.versatz(0, HORST_H, zeit) \
-				* ReedPatch.versatz(HORST_H / 2, HORST_H, zeit) < 0:
-			gegenlaeufig += 1
-	assert_true(gegenlaeufig > 20,
-		"Spitze und Mitte zeigen nur in %d von 1200 Augenblicken"
-			% gegenlaeufig + " in verschiedene Richtungen -- der Horst kippt")
-
-## Und es wiederholt sich nicht sichtbar: zwei Schwingungen liegen
-## uebereinander, deren Perioden nicht ineinander aufgehen.
+## Es wiederholt sich nicht sichtbar: zwei Boen uebereinander, deren Perioden
+## nicht ineinander aufgehen.
 func test_the_wind_does_not_repeat_after_one_gust() -> void:
 	var periode := 1.0 / ReedPatch.BOE
 	var erste: Array[int] = []
 	var zweite: Array[int] = []
 	for i in 40:
 		var t := float(i) / 40.0 * periode
-		erste.append(ReedPatch.versatz(0, HORST_H, t))
-		zweite.append(ReedPatch.versatz(0, HORST_H, t + periode))
+		erste.append(ReedPatch.stellung(t, Reeds.WIND_BILDER))
+		zweite.append(ReedPatch.stellung(t + periode, Reeds.WIND_BILDER))
 	assert_true(erste != zweite,
 		"nach einer Boe faengt dasselbe Bild wieder von vorn an")
 
-## Die Baender muessen das Bild lueckenlos abdecken -- ein vergessenes Band
-## waere ein Streifen, der im Halm fehlt.
-func test_the_bands_cover_every_row_exactly_once() -> void:
-	for schritt in 60:
-		var zeit := float(schritt) * 0.07
-		var naechste := 0
-		for band in ReedPatch.baender(HORST_H, zeit):
-			assert_eq(int(band[0]), naechste,
-				"bei %f klafft eine Luecke bei Reihe %d" % [zeit, naechste])
-			assert_true(int(band[1]) > 0, "leeres Band")
-			# Jede Reihe im Band muss denselben Versatz haben.
-			for r in range(int(band[0]), int(band[0]) + int(band[1])):
-				assert_eq(ReedPatch.versatz(r, HORST_H, zeit), int(band[2]),
-					"Reihe %d passt nicht zu ihrem Band" % r)
-			naechste += int(band[1])
-		assert_eq(naechste, HORST_H, "die Baender decken nicht das ganze Bild")
-
-## Und es bleiben wenige -- der Sinn der Baender ist, nicht sechzig Zeilen
-## einzeln zu zeichnen.
-func test_the_bands_stay_few() -> void:
-	var meiste := 0
-	for schritt in 200:
-		meiste = maxi(meiste, ReedPatch.baender(HORST_H, float(schritt) * 0.05).size())
-	assert_true(meiste <= int(ReedPatch.AUSSCHLAG) * 2 + 4,
-		"%d Baender fuer %.0f Pixel Ausschlag" % [meiste, ReedPatch.AUSSCHLAG])
-
-## Es darf nicht zappeln. Jeder Versatz ist ein GANZER Pixel und damit
-## sichtbar; sieben Spruenge je Sekunde lasen sich als Zittern, nicht als
-## Wind. Das war die eigentliche Beschwerde, und es ist die Zahl, an der man
-## sie messen kann.
-func test_the_clump_does_not_twitch() -> void:
-	const SCHRITTE := 6000
-	const DT := 0.01
-	var spruenge := 0
-	var vorher := ReedPatch.versatz(0, HORST_H, 0.0)
-	for i in range(1, SCHRITTE):
-		var jetzt := ReedPatch.versatz(0, HORST_H, float(i) * DT)
-		if jetzt != vorher:
-			spruenge += 1
-		vorher = jetzt
-	var je_sekunde := float(spruenge) / (float(SCHRITTE) * DT)
-	assert_true(je_sekunde <= 2.5,
-		"die Spitze springt %.2f mal je Sekunde -- das zittert" % je_sekunde)
-	# Aber stehen soll sie auch nicht.
-	assert_true(je_sekunde >= 0.4,
-		"die Spitze springt nur %.2f mal je Sekunde -- das steht" % je_sekunde)
+## Die gezeichneten Stellungen muessen sich der Reihe nach weiter neigen --
+## sonst springt der Horst beim Wechsel, statt sich zu biegen. Gemessen am
+## Schwerpunkt des oberen Drittels, wo die Halme sich bewegen.
+func test_the_drawn_poses_lean_further_and_further() -> void:
+	var blatt := TextureLoader.load_texture("res://assets/art/schilf_wind.png")
+	assert_true(blatt != null, "das Windblatt fehlt")
+	var bild := blatt.get_image()
+	var drittel := bild.get_height() / 3
+	var vorher := -9999.0
+	for stellung in Reeds.WIND_BILDER:
+		var summe := 0.0
+		var zahl := 0
+		for x in range(stellung * Reeds.HALM_B, (stellung + 1) * Reeds.HALM_B):
+			for y in drittel:
+				if bild.get_pixel(x, y).a > 0.0:
+					summe += float(x - stellung * Reeds.HALM_B)
+					zahl += 1
+		assert_true(zahl > 0, "Stellung %d ist oben leer" % stellung)
+		var mitte := summe / float(zahl)
+		assert_true(mitte > vorher,
+			"Stellung %d neigt sich nicht weiter als die davor (%.2f vs %.2f)"
+				% [stellung, mitte, vorher])
+		vorher = mitte

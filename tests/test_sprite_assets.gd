@@ -61,6 +61,8 @@ func _expected_size(filename: String) -> Vector2i:
 	# anderes Blatt -- die beiden nicht verwechseln.
 	if filename == "schilf_horst.png":
 		return Vector2i(Reeds.HALM_B * Reeds.HALM_STUFEN, 62)
+	if filename == "schilf_wind.png":
+		return Vector2i(Reeds.HALM_B * Reeds.WIND_BILDER, 62)
 	if filename == "sichel.png":
 		return Vector2i(44, 44)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).

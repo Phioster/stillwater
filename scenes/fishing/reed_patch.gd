@@ -1,127 +1,87 @@
 ## Der antippbare Schilfhorst am Ufer.
 ##
-## Er wiegt sich, indem ganze PIXELREIHEN nach links und rechts ruecken -- so
-## wie die Beine der Anglerin versetzt werden, nicht als gedrehtes Bild. Eine
-## Drehung waere kein Pixelbild mehr: die Halme bekaemen Treppen und
-## Zwischenfarben, die in keiner Palette stehen, und der Horst haette als
-## einziges Ding im Bild weiche Kanten.
+## Er hat GEZEICHNETE Windstellungen (tools/sichel_bauen.py: WIND), zwischen
+## denen umgeschaltet wird -- so wie die Anglerin gezeichnete Posen hat und
+## die Rute elf gezeichnete Winkel.
 ##
-## Unten ruehrt sich nichts und oben am meisten -- ein Halm steht im Boden
-## fest. Der Ausschlag waechst quadratisch nach oben, sonst kippt der ganze
-## Horst wie ein Brett.
+## Zwei Versuche davor waren falsch, und beide auf dieselbe Weise: das Bild
+## wurde VERSCHOBEN statt neu gemalt. Erst gedreht, was weiche Kanten und
+## Zwischenfarben gab; dann zeilenweise geschert, wobei ganze waagerechte
+## Baender gemeinsam ruecken und quer durch die Halme eine Naht laeuft. Das
+## sah aus wie die verrutschten Bildzeilen eines alten Fernsehers. Ein Halm
+## muss sich als GANZE Linie bewegen, und dafuer muss er gemalt sein.
+##
+## Der Wind selbst: zwei langsame Boen uebereinander, deren Perioden nicht
+## ineinander aufgehen, also wiederholt sich das Bild fuers Auge nie. Und er
+## draengt in eine Richtung und laesst zurueckfedern, statt symmetrisch nach
+## beiden Seiten zu ziehen -- der Horst steht deshalb auch in Ruhe leicht
+## geneigt.
 class_name ReedPatch
 extends Control
 
 signal tapped
 
-## Wind statt Uhrwerk.
-##
-## Eine einzelne Sinuswelle sah mechanisch aus, und zwar aus drei Gruenden,
-## die echtes Gras alle anders macht:
-##
-## 1. Die Bewegung LAEUFT DEN HALM HINAUF. Die Spitze hinkt dem Fuss nach,
-##    dadurch biegt sich der Halm, statt starr zu kippen. Das ist der
-##    groesste Unterschied -- vorher schwang jede Reihe im selben Takt und nur
-##    der Ausschlag wuchs nach oben, also kippte der Horst als Brett.
-## 2. Es liegen ZWEI Schwingungen uebereinander. Weil ihre Perioden nicht
-##    ineinander aufgehen, wiederholt sich das Bild fuers Auge nie. BEIDE
-##    sind langsam: die zweite war zuerst ein schnelles Flattern, und weil
-##    jeder Versatz ein ganzer Pixel ist, sprang die Spitze damit siebenmal
-##    je Sekunde. Das las sich als Zittern, nicht als Wind.
-## 3. Der Wind DRAENGT IN EINE RICHTUNG und laesst zurueckfedern, statt
-##    symmetrisch nach beiden Seiten zu ziehen. Der Horst steht deshalb auch
-##    in Ruhe leicht geneigt.
-##
-## Alles bleibt in ganzen Pixeln -- gedreht waere er das einzige weiche Ding
-## im Bild.
-## Die beiden Boen, in Schwingungen je Sekunde. 0,17 sind knapp sechs
-## Sekunden je Zug -- gemessen daran, wie oft die Spitze dabei ueberhaupt
-## springt (rund anderthalb Mal je Sekunde statt sieben).
+## Die beiden Boen, in Schwingungen je Sekunde. Langsam: jeder Bildwechsel
+## ist sichtbar, und zu viele davon lesen sich als Zittern statt als Wind.
 const BOE := 0.17
 const ZWEITE_BOE := 0.29
 ## Wie stark die zweite gegenueber der ersten zu Wort kommt.
 const ZWEIT_ANTEIL := 0.28
-## Wie viele Sekunden die Spitze dem Fuss nachhinkt. Daran haengt, ob sich der
-## Halm biegt oder kippt. Er waechst mit der Boe mit: bei den langsamen
-## Boen braucht es 2,2 Sekunden, damit die Spitze noch nach links zieht,
-## waehrend die Mitte schon nach rechts geht. Das ist der Knick, der es wie
-## einen Halm aussehen laesst.
-const NACHLAUF := 2.2
 ## Wie weit der Wind in seine Richtung draengt. 0 waere symmetrisch.
 const DRANG := 0.35
-## Spitzenausschlag in Bildpixeln.
-const AUSSCHLAG := 4.0
-## Wie schnell der Ausschlag nach unten abnimmt.
-const POTENZ := 1.6
 
 var _bild: Texture2D
-var _ausschnitt := Rect2()
+var _bild_groesse := Vector2.ZERO
+var _anzahl := 1
 var _skala := 1.0
 var _zeit := 0.0
+var _stellung := 0
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-func setze(bild: Texture2D, ausschnitt: Rect2, skala: float) -> void:
+## Das Blatt mit den Windstellungen nebeneinander, die Groesse EINER Stellung
+## und wie viele es sind.
+func setze(bild: Texture2D, bild_groesse: Vector2, anzahl: int,
+		skala: float) -> void:
 	_bild = bild
-	_ausschnitt = ausschnitt
+	_bild_groesse = bild_groesse
+	_anzahl = maxi(anzahl, 1)
 	_skala = skala
-	size = ausschnitt.size * skala
+	size = bild_groesse * skala
 	queue_redraw()
 
-## Um wie viele PIXEL diese Bildzeile nach rechts rueckt. Ganze Zahlen, sonst
-## waere es wieder ein weicher Versatz.
-static func versatz(reihe: int, hoehe: int, zeit: float) -> int:
-	if hoehe <= 1:
+## Welche Stellung zu diesem Zeitpunkt gilt.
+static func stellung(zeit: float, anzahl: int) -> int:
+	if anzahl <= 1:
 		return 0
-	# reihe 0 ist oben. Unten null, oben voll.
-	var t := 1.0 - float(reihe) / float(hoehe - 1)
-	# Die Bewegung laeuft nach oben: je hoeher, desto spaeter kommt sie an.
-	var spaet := zeit - t * NACHLAUF
-	var wind := (1.0 - ZWEIT_ANTEIL) * sin(spaet * BOE * TAU) \
-		+ ZWEIT_ANTEIL * sin(spaet * ZWEITE_BOE * TAU + 1.7)
-	# In eine Richtung draengen, in die andere nur zurueckfedern.
+	var wind := (1.0 - ZWEIT_ANTEIL) * sin(zeit * BOE * TAU) \
+		+ ZWEIT_ANTEIL * sin(zeit * ZWEITE_BOE * TAU + 1.7)
+	# In eine Richtung draengen, in die andere nur zurueckfedern. Danach
+	# reicht der Wind von hier bis 1 -- daran wird die Stellung gemessen.
 	wind = (wind + DRANG) / (1.0 + DRANG)
-	# Nach oben zunehmend, unten steht der Halm im Boden fest. Der Exponent
-	# ist gemessen, nicht gewaehlt: bei 2 bewegt sich die Mitte in ganzen
-	# Pixeln fast nie, und ohne Mitte gibt es keinen Knick.
-	return int(round(wind * AUSSCHLAG * pow(t, POTENZ)))
-
-## Die Zeilen zu Baendern gleichen Versatzes zusammenfassen: bei zwei Pixeln
-## Ausschlag sind das eine Handvoll statt sechzig Zeichenbefehlen -- und
-## genau so sieht Pixelanimation aus, ganze Baender ruecken gemeinsam.
-static func baender(hoehe: int, zeit: float) -> Array:
-	var raus: Array = []
-	var von := 0
-	var wert := versatz(0, hoehe, zeit)
-	for r in range(1, hoehe):
-		var v := versatz(r, hoehe, zeit)
-		if v != wert:
-			raus.append([von, r - von, wert])
-			von = r
-			wert = v
-	raus.append([von, hoehe - von, wert])
-	return raus
+	var unten := -(1.0 - DRANG) / (1.0 + DRANG)
+	var anteil := clampf((wind - unten) / (1.0 - unten), 0.0, 1.0)
+	return clampi(int(round(anteil * float(anzahl - 1))), 0, anzahl - 1)
 
 func _process(delta: float) -> void:
 	if not visible:
 		return
 	_zeit += delta
-	queue_redraw()
+	var neu := stellung(_zeit, _anzahl)
+	# Nur bei einem Wechsel neu zeichnen: dazwischen steht das Bild still,
+	# und genau das soll es auch.
+	if neu != _stellung:
+		_stellung = neu
+		queue_redraw()
 
 func _draw() -> void:
-	if _bild == null or _ausschnitt.size.y < 1.0:
+	if _bild == null or _bild_groesse.x < 1.0:
 		return
-	var hoehe := int(_ausschnitt.size.y)
-	for band in baender(hoehe, _zeit):
-		var von: int = band[0]
-		var zahl: int = band[1]
-		var dx: float = float(band[2]) * _skala
-		var quelle := Rect2(_ausschnitt.position.x,
-			_ausschnitt.position.y + float(von), _ausschnitt.size.x, float(zahl))
-		var ziel := Rect2(dx, float(von) * _skala,
-			_ausschnitt.size.x * _skala, float(zahl) * _skala)
-		draw_texture_rect_region(_bild, ziel, quelle)
+	var quelle := Rect2(Vector2(float(_stellung) * _bild_groesse.x, 0.0),
+		_bild_groesse)
+	draw_texture_rect_region(_bild, Rect2(Vector2.ZERO, _bild_groesse * _skala),
+		quelle)
 
 func _gui_input(event: InputEvent) -> void:
 	var getippt: bool = (event is InputEventScreenTouch \

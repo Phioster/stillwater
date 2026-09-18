@@ -45,6 +45,17 @@ HALME = ((-11, 24, -3, 4), (11, 26, 3, 3), (-8, 31, -3, 5), (8, 29, 3, 4),
          (-4, 38, -2, 3), (5, 36, 2, 2), (-9, 43, -2, 1), (9, 41, 2, 2),
          (-3, 49, -1, 0), (3, 47, 1, 1), (0, 52, 0, 0))
 
+## Windbilder: wie weit die Spitzen in diesem Bild geneigt stehen, in Pixeln.
+## Der Wind draengt in eine Richtung, deshalb reicht die Reihe weiter nach
+## rechts als nach links.
+##
+## Gezeichnete Bilder und KEIN verschobenes Bild: der Horst wurde vorher
+## zeilenweise geschert, und weil dabei ganze waagerechte Baender gemeinsam
+## ruecken, lief quer durch die Halme eine Naht. Das sah aus wie die
+## verrutschten Bildzeilen eines alten Fernsehers, nicht wie Wind. Hier bewegt
+## sich jeder Halm als durchgehende Linie, weil er neu gemalt wird.
+WIND = (-1, 0, 1, 2, 3, 4)
+
 SICHEL = 44
 SICHEL_VERSATZ = 0.34
 SICHEL_RADIUS = 0.92
@@ -121,9 +132,37 @@ def sichel():
     return bild
 
 
+def wind():
+    """Der volle Horst in mehreren Windstellungen, nebeneinander."""
+    bild = Image.new("RGBA", (HORST_B * len(WIND), HORST_H), (0, 0, 0, 0))
+    alt = (schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS)
+    schilf_bauen.BREITE = HORST_B
+    schilf_bauen.HOEHE = HORST_H
+    schilf_bauen.FUSS = HORST_H - 1
+    hoechster = max(h for _, h, _, _ in HALME)
+    try:
+        for i, neigen in enumerate(WIND):
+            teil = Image.new("RGBA", (HORST_B, HORST_H), (0, 0, 0, 0))
+            px = teil.load()
+            rng = random.Random(SAAT)
+            belegt = set()
+            for dx, hoehe, neigung, fuss in HALME:
+                # Hohe Halme geben mehr nach als kurze -- ein Stummel im
+                # selben Wind bleibt fast gerade.
+                zu = int(round(neigen * hoehe / hoechster))
+                schilf_bauen.halm(px, HORST_B // 2 + dx, hoehe, neigung + zu,
+                                  rng, belegt, kolben=hoehe >= 34, fuss=fuss)
+            bild.paste(teil, (i * HORST_B, 0))
+    finally:
+        schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS = alt
+    return bild
+
+
 def main():
     os.makedirs(KUNST, exist_ok=True)
-    for name, bild in (("schilf_horst.png", horst()), ("sichel.png", sichel())):
+    for name, bild in (("schilf_horst.png", horst()),
+                       ("schilf_wind.png", wind()),
+                       ("sichel.png", sichel())):
         bild.save(os.path.join(KUNST, name))
         print("%s  %dx%d" % (name, bild.width, bild.height))
 

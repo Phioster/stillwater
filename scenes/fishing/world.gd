@@ -254,12 +254,12 @@ func _ready() -> void:
 	# Das reife Schilf: ein einzelner dichter Horst am Ufer, antippbar. Er
 	# steht unter $Visitors, damit er in derselben Ebene liegt wie Rabe und
 	# Haendler -- vor dem Hintergrund, hinter Steg und Figur.
-	# Das Blatt hat drei Bilder nebeneinander (voll, angeschnitten, Stummel);
-	# am Ufer steht immer das volle.
+	# Am Ufer steht der volle Horst in seinen Windstellungen -- ein anderes
+	# Blatt als das geschnittene Schilf im Minispiel.
 	_schilf_knopf = ReedPatch.new()
 	_schilf_knopf.setze(
-		TextureLoader.load_texture("res://assets/art/schilf_horst.png"),
-		Rect2(0.0, 0.0, float(Reeds.HALM_B), SCHILF_HORST_H),
+		TextureLoader.load_texture("res://assets/art/schilf_wind.png"),
+		Vector2(float(Reeds.HALM_B), SCHILF_HORST_H), Reeds.WIND_BILDER,
 		SCHILF_KNOPF_SKALA)
 	_schilf_knopf.visible = false
 	$Visitors.add_child(_schilf_knopf)
