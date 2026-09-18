@@ -5,7 +5,7 @@ func test_all_content_loads() -> void:
 	assert_eq(Database.baits.size(), 8)
 	assert_eq(Database.fish.size(), 107)
 	assert_eq(Database.zones.size(), 7)
-	# Sieben von Anfang an, dazu die drei Sichel-Ausbauten fuers Schilfschneiden.
+	# Sieben von Anfang an, dazu die drei Klingen-Ausbauten fuers Schilfschneiden.
 	assert_eq(Database.upgrades.size(), 10)
 
 func test_validate_reports_no_problems() -> void:

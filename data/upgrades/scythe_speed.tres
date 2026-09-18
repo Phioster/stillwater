@@ -5,10 +5,10 @@
 [resource]
 script = ExtResource("1_ul5xq")
 id = &"scythe_speed"
-display_name = "Sicheltempo"
-description = "Die Sichel kreist schneller und kommt öfter am selben Halm vorbei."
+display_name = "Klingentempo"
+description = "Die Klinge kreist schneller und kommt öfter am selben Halm vorbei."
 max_level = 20
 base_cost = 180
 cost_growth = 1.62
-value_base = 2.0
+value_base = 3.0
 value_per_level = 0.20

@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_ul5xq")
 id = &"scythe_edge"
-display_name = "Sichelschärfe"
-description = "Schneidet mehr Schilf je Durchgang. Zähes Schilf braucht sonst zu viele."
+display_name = "Klingenschärfe"
+description = "Schneidet mehr Schilf je Durchgang. Zähes Schilf braucht sonst zu viele Treffer."
 max_level = 30
 base_cost = 120
 cost_growth = 1.55

@@ -51,7 +51,7 @@ var paused: bool = false
 var dev_raven: int = -1
 var dev_trader: int = -1
 var dev_rain: int = -1
-## Zeichnet die Trefferzone der Sense mit. Am Bild sieht man sonst nicht,
+## Zeichnet die Trefferzone der Klinge mit. Am Bild sieht man sonst nicht,
 ## warum ein Halm stehen bleibt, an dem die Klinge vorbeizugehen scheint.
 var dev_scythe_box: bool = false
 
@@ -300,7 +300,7 @@ func finish_reed_cut(halme: int) -> Dictionary:
 	return {"halme": halme, "bait": art, "wanted": wollte, "got": bekam,
 		"find": gefunden}
 
-## Die Sichel, wie sie gerade schneidet: Grundwert plus Ausbau.
+## Die Klinge, wie sie gerade schneidet: Grundwert plus Ausbau.
 func scythe_edge() -> float:
 	return upgrade_value(&"scythe_edge")
 

@@ -1,6 +1,6 @@
 ## Der antippbare Schilfhorst am Ufer.
 ##
-## Er hat GEZEICHNETE Windstellungen (tools/sichel_bauen.py: WIND), zwischen
+## Er hat GEZEICHNETE Windstellungen (tools/schilfschneiden_bauen.py: WIND), zwischen
 ## denen umgeschaltet wird -- so wie die Anglerin gezeichnete Posen hat und
 ## die Rute elf gezeichnete Winkel.
 ##

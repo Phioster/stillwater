@@ -55,18 +55,17 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(48 * 8, 48)
 	if filename == "orb.png":
 		return Vector2i(16, 16)
-	# Der schneidbare Horst hat drei Bilder nebeneinander: voll, angeschnitten,
-	# Stummel. Die Sichel ist quadratisch, ihr Kreis fuellt das Bild
-	# (tools/sichel_bauen.py). Das UFERBAND heisst schilf.png und ist ein
-	# anderes Blatt -- die beiden nicht verwechseln.
-	# Ein Blatt fuer beides: Spalten sind Windstellungen, Zeilen die
-	# Schnittstufen. Das Ufer nimmt die oberste Zeile, das Minispiel die zur
-	# jeweiligen Stufe (tools/sichel_bauen.py).
+	# Der schneidbare Horst: Spalten sind Windstellungen, Zeilen die
+	# Schnittstufen (tools/schilfschneiden_bauen.py). Das UFERBAND heisst
+	# schilf.png und ist ein anderes Blatt -- die beiden nicht verwechseln.
 	if filename == "schilf_horst.png":
 		return Vector2i(Reeds.HALM_B * Reeds.WIND_BILDER,
 			Reeds.HALM_H * Reeds.HALM_STUFEN)
-	if filename == "sichel.png":
-		return Vector2i(44, 44)
+	# Das Messer kommt von PixelLab und wird nur gespiegelt und beschnitten,
+	# seine Groesse steht also im Bild. Genau die haelt diese Zeile fest --
+	# aendert sie sich, aendert sich auch die Trefferform.
+	if filename == "klinge.png":
+		return Vector2i(44, 8)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).
 	if filename == "bobber.png":
 		return Vector2i(10, 13)

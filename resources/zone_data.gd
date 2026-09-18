@@ -25,7 +25,7 @@ extends Resource
 @export var rarity_weights: Dictionary = {}
 ## Welche Koeder im Schilf dieser Zone sitzen und wie zaeh es ist. Die
 ## Zaehigkeit ist die Fortschrittsachse des Schilfschneidens: sie steigt mit
-## der Zone, die Schaerfe der Sichel kommt aus dem Ausbau.
+## der Zone, die Schaerfe der Klinge kommt aus dem Ausbau.
 @export var reed_baits: Array[StringName] = []
 @export var reed_toughness: int = 5
 @export var unlock_cost: int = 0

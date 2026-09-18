@@ -53,7 +53,7 @@ func _dev_bereich() -> void:
 		refresh())
 	add_child(pose)
 
-	add_child(_toggle("Trefferzone der Sense zeigen", Game.dev_scythe_box,
+	add_child(_toggle("Trefferzone der Klinge zeigen", Game.dev_scythe_box,
 		func(on: bool) -> void: Game.dev_scythe_box = on))
 
 	# Aufraeumen. Beim Ausprobieren ist nach kurzer Zeit alles voll, und dann

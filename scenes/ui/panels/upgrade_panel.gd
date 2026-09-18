@@ -7,21 +7,27 @@ func refresh() -> void:
 	for id in Database.upgrades:
 		add_child(_row(Database.upgrades[id]))
 
-## "Jetzt x → danach y" mit so vielen Nachkommastellen, wie noetig sind,
-## damit die beiden Zahlen sich unterscheiden.
+## Wie viele Nachkommastellen ein Ausbau braucht, damit EIN Schritt sichtbar
+## ist. Das haengt am Schritt, nicht am aktuellen Wert.
 ##
-## Vorher stand hier %.0f. Bei der Ködertasche (30 → 50) stimmte das, bei der
-## Sichelschärfe stand "Jetzt 7 → danach 7" da: ein Schritt von 0,3
-## verschwindet in der gerundeten Zahl, und die Stufe sah wirkungslos aus,
-## obwohl sie wirkte.
-static func spanne(jetzt: float, danach: float) -> String:
-	for stellen in 3:
-		var a := String.num(jetzt, stellen)
-		var b := String.num(danach, stellen)
-		if a != b:
-			return "Jetzt %s → danach %s" % [a, b]
-	# Wirklich gleich -- dann ist auch "7 → 7" die Wahrheit.
-	return "Jetzt %s → danach %s" % [String.num(jetzt, 0), String.num(danach, 0)]
+## Vorher suchte das hier die wenigsten Stellen, mit denen sich die beiden
+## Zahlen unterscheiden -- und damit wechselte die Genauigkeit von Stufe zu
+## Stufe. Bei der Klingenschaerfe (Schritt 0,3) stand auf Stufe 0 "1,0 → 1,3",
+## auf Stufe 1 aber "1 → 2", weil sich die GERUNDETEN Zahlen dort zufaellig
+## schon unterschieden. Die Reihe sprang, obwohl sie gleichmaessig waechst.
+static func stellen(schritt: float) -> int:
+	var s := absf(schritt)
+	for n in 3:
+		if s >= pow(10.0, -float(n)) * 0.95:
+			return n
+	return 3
+
+## "Jetzt x → danach y", mit der Genauigkeit des Ausbaus -- auf allen seinen
+## Stufen derselben, damit das "danach" der einen Stufe genau das "Jetzt" der
+## naechsten ist.
+static func spanne(jetzt: float, danach: float, schritt: float) -> String:
+	var n := stellen(schritt)
+	return "Jetzt %s → danach %s" % [String.num(jetzt, n), String.num(danach, n)]
 
 func _row(u: UpgradeData) -> Control:
 	var level := int(Game.upgrade_levels.get(u.id, 0))
@@ -29,7 +35,8 @@ func _row(u: UpgradeData) -> Control:
 
 	box.add_child(zeile("%s  Stufe %d" % [u.display_name, level]))
 	box.add_child(zeile("%s\n%s" % [u.description,
-		spanne(Game.upgrade_value(u.id), u.value_at(level + 1))]))
+		spanne(Game.upgrade_value(u.id), u.value_at(level + 1),
+			u.value_per_level)]))
 
 	var buy := TapButton.new()
 	buy.custom_minimum_size = Vector2(0, 96)

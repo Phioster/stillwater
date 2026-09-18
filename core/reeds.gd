@@ -16,20 +16,26 @@ extends RefCounted
 const INTERVAL: float = 7200.0
 const DAUER: float = 18.0
 
-## Grundwerte der Sichel, am Geraet an den Reglern der Probe eingestellt
-## (2026-09-18): langsam, klein und zaeh. Das ist ein Spielanfang, kein
-## Rasenmaeher -- was darueber hinausgeht, kommt aus dem Ausbau.
-const DREHUNG: float = 2.0
-const REICHWEITE: float = 50.0
+## Grundwerte der Klinge. Das ist ein Spielanfang, kein Rasenmaeher -- was
+## darueber hinausgeht, kommt aus dem Ausbau.
+##
+## Reichweite ist der Abstand der SPITZE von der Hand, das Messer haengt also
+## mit dem Griff nach innen darunter. Sie muss deshalb mindestens so gross
+## sein wie das Messer lang ist, sonst raggt der Griff auf der anderen Seite
+## wieder heraus. Tempo und Reichweite sind gegenueber der Sichel angehoben:
+## die traf ueber einen breiten Bogen und landete je Vorbeifahrt zwei Treffer,
+## das schmale Messer nur einen.
+const DREHUNG: float = 3.0
+const REICHWEITE: float = 110.0
 const SCHNEIDE: float = 1.0
-## Die Sichel ist ein Kreis minus einem zweiten (tools/sichel_bauen.py), und
-## GENAU DIESE Form trifft auch. Beide Zahlen sind Vielfache ihres
-## Aussenradius: der Ausschnittkreis ist groesser als die Klinge und liegt
-## weit links daneben. Dadurch ist ihre INNENKANTE FAST GERADE -- und genau
-## daran sind die Versuche davor gescheitert, die dort einen konzentrischen
-## Bogen annahmen, der sich in die andere Richtung woelbt.
-const KLINGE_VERSATZ: float = 6.63
-const KLINGE_SCHNITT: float = 7.25
+## Das Bild der Klinge. Ihre MASKE ist die Trefferform -- Masse stehen
+## deshalb nirgends mehr, sie kommen aus dem Bild (tools/schilfschneiden_bauen.py).
+const KLINGE_BILD: String = "res://assets/art/klinge.png"
+## Ab welcher Deckung ein Bildpunkt als Klinge zaehlt. Steht hier und nicht in
+## der Voreinstellung, weil die Tests dieselbe Grenze brauchen: in der CI wird
+## das PNG verlustbehaftet importiert, und mit zwei Grenzen liefen Regel und
+## Bild dort um einzelne Randpixel auseinander.
+const MASKE_SCHWELLE: float = 0.1
 
 ## Zwei Treffer derselben Umdrehung auf denselben Halm zaehlen als einer.
 const TREFFER_PAUSE: float = 0.10
@@ -45,7 +51,7 @@ const HALM_B: int = 34
 const HALM_H: int = 62
 const HALM_STUFEN: int = 3
 ## Wie viele GEZEICHNETE Windstellungen der Horst hat
-## (tools/sichel_bauen.py: WIND). Gezeichnet und nicht verschoben -- ein
+## (tools/schilfschneiden_bauen.py: WIND). Gezeichnet und nicht verschoben -- ein
 ## geschertes Bild sah aus wie verrutschte Bildzeilen.
 const WIND_BILDER: int = 26
 
@@ -68,7 +74,7 @@ func cut(now: float) -> void:
 	cut_slot = slot(now)
 
 ## Wie viele Treffer ein Halm braucht: die Zaehigkeit der Zone gegen die
-## Schaerfe der Sichel. Mindestens einer -- eine Sichel, der nichts mehr
+## Schaerfe der Klinge. Mindestens einer -- eine Klinge, der nichts mehr
 ## entgegensteht, nimmt dem Schneiden den Sinn.
 static func treffer_noetig(zaehigkeit: int, schneide: float) -> int:
 	return maxi(1, int(ceil(float(zaehigkeit) / maxf(schneide, 0.1))))
@@ -107,38 +113,58 @@ func fund(halme: int, rng: RandomNumberGenerator) -> StringName:
 			return c.id
 	return pool[pool.size() - 1].id
 
-## Trifft die Sichel diesen Halm? Getrennt vom Zeichnen, damit die Tests
-## nachrechnen koennen -- am fertigen Bild ginge das nicht.
-## Die Klinge selbst ist die Trefferform, und zwar nach DERSELBEN Rechnung,
-## nach der sie gezeichnet wird: innerhalb ihres Aussenkreises und ausserhalb
-## des Ausschnittkreises.
+## Die Trefferform IST das Bild der Klinge: ihre Maske, in ihre eigenen
+## Koordinaten gedreht.
 ##
-## Drei Anlaeufe davor lagen daneben, alle am selben Punkt: die Zone war eine
-## ANDERE Form als die Klinge. Erst ein Keil bis zur Hand, dann ein Ring um
-## die Hand, dann ein Ringstueck um die Klingenmitte -- das letzte lag schon
-## richtig, hatte aber innen einen runden Bogen, wo die Klinge fast gerade
-## ist. Eine Form, zwei Rechnungen, geht nicht.
-static func trifft(halm: Vector2, klinge: Vector2, winkel: float,
-		radius: float) -> bool:
-	# In die Koordinaten der Klinge drehen: ihr Bauch zeigt dann nach +x.
-	var d := (halm - klinge).rotated(-winkel)
-	if d.length() > radius:
+## Vier Anlaeufe davor rechneten die Form nach, und drei davon rechneten eine
+## ANDERE als die gezeichnete -- am Bild sah man es jedes Mal sofort, an
+## Zahlen nie. Eine Form, zwei Rechnungen, geht nicht; also gibt es nur noch
+## eine, und die Zeichnung ist es.
+static var _maske: BitMap = null
+static var _maske_groesse: Vector2i = Vector2i.ZERO
+
+static func maske() -> BitMap:
+	if _maske != null:
+		return _maske
+	var bild := TextureLoader.load_texture(KLINGE_BILD).get_image()
+	# In der CI wird das PNG komprimiert importiert, auf diesem Geraet nicht.
+	if bild.is_compressed():
+		bild.decompress()
+	if bild.get_format() != Image.FORMAT_RGBA8:
+		bild.convert(Image.FORMAT_RGBA8)
+	_maske_groesse = Vector2i(bild.get_width(), bild.get_height())
+	_maske = BitMap.new()
+	_maske.create_from_image_alpha(bild, MASKE_SCHWELLE)
+	return _maske
+
+static func klinge_groesse() -> Vector2i:
+	maske()
+	return _maske_groesse
+
+## Wie weit die Mitte des Klingenbildes von der Hand weg sitzt: so weit, dass
+## ihre SPITZE genau auf der Reichweite liegt. Der Ausbau bewegt also ihre
+## Bahn, nicht ihre Groesse -- skaliert waere ein Klingenpixel voll ausgebaut
+## dreimal so grob wie alles daneben.
+static func klinge_bahn(reichweite: float, skala: float) -> float:
+	return reichweite - float(klinge_groesse().x) * 0.5 * skala
+
+## Trifft die Klinge diesen Halm? Getrennt vom Zeichnen, damit die Tests
+## nachrechnen koennen -- am fertigen Bild ginge das nicht.
+static func trifft(halm: Vector2, hand: Vector2, winkel: float,
+		reichweite: float, skala: float) -> bool:
+	var g := klinge_groesse()
+	# In die Koordinaten des Bildes drehen: x ab dem Griffende nach aussen,
+	# y ab seiner Oberkante nach unten.
+	var d := (halm - hand).rotated(-winkel)
+	var bx := (d.x - (reichweite - float(g.x) * skala)) / skala
+	var by := d.y / skala + float(g.y) * 0.5
+	if bx < 0.0 or by < 0.0:
 		return false
-	return (d + Vector2(KLINGE_VERSATZ * radius, 0.0)).length() \
-		>= KLINGE_SCHNITT * radius
-
-## Wie weit die Klinge um ihren Mittelpunkt reicht, im Bogenmass -- aus der
-## Bauform gerechnet, nicht danebengeschrieben.
-static func spanne() -> float:
-	var c := -(1.0 - KLINGE_SCHNITT * KLINGE_SCHNITT
-		+ KLINGE_VERSATZ * KLINGE_VERSATZ) / (2.0 * KLINGE_VERSATZ)
-	return 2.0 * acos(clampf(c, -1.0, 1.0))
-
-## Wie weit ihr Ausschnittkreis um seine eigene Mitte reicht -- der Winkel,
-## unter dem die Innenkante zu zeichnen ist.
-static func innen_spanne() -> float:
-	var halb := spanne() * 0.5
-	return 2.0 * atan2(sin(halb), cos(halb) + KLINGE_VERSATZ)
+	var ix := int(bx)
+	var iy := int(by)
+	if ix >= g.x or iy >= g.y:
+		return false
+	return maske().get_bit(ix, iy)
 
 func to_dict() -> Dictionary:
 	return {"cut_slot": cut_slot}

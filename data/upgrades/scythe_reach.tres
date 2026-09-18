@@ -5,10 +5,10 @@
 [resource]
 script = ExtResource("1_ul5xq")
 id = &"scythe_reach"
-display_name = "Sichelreichweite"
-description = "Die Sichel greift weiter, es steht also mehr Schilf gleichzeitig darin."
+display_name = "Klingenreichweite"
+description = "Die Klinge kreist weiter draußen, ihre Bahn deckt also mehr Schilf ab."
 max_level = 20
 base_cost = 150
 cost_growth = 1.60
-value_base = 50.0
-value_per_level = 4.00
+value_base = 110.0
+value_per_level = 6.00

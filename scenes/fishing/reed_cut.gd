@@ -1,50 +1,110 @@
 ## Das Schilfschneiden: die kurze, aktive Sache zwischen zwei Bissen.
 ##
-## Eine kreisende Sichel folgt dem Finger ueber ein Schilfbeet. Sie dreht sich
+## Ein kreisendes Messer folgt dem Finger ueber ein Schilfbeet. Es dreht sich
 ## von selbst -- es gibt keinen Schlagknopf und keine laufende Figur, der
-## Finger IST die Klinge. Getroffen wird, was im Kreisausschnitt vor ihrer
-## Schneide steht, also muss die Klinge erst vorbeikommen; ein voller Kreis
-## waere ein Rasenmaeher.
+## Finger IST die Hand. Getroffen wird nur, wo die Klinge WIRKLICH ist, sie
+## muss also erst vorbeikommen; ein voller Kreis waere ein Rasenmaeher.
 ##
-## Die Zahlen stehen nicht hier, sondern in core/reeds.gd und im Ausbau: was
-## sich am Geraet gut angefuehlt hat, ist der GRUNDwert, alles darueber kommt
-## aus Sichelschaerfe, -reichweite und -tempo.
+## Die Zahlen stehen nicht hier, sondern in core/reeds.gd und im Ausbau.
 extends Control
 
 signal beendet
 
-## Zeigt, wo die Sense wirklich trifft: der Kreisausschnitt vor ihrer
-## Schneide. Die gezeichnete Klinge ist breiter als ihre Trefferzone -- ohne
-## das Bild sieht man nicht, warum ein Halm stehen bleibt, an dem sie
-## vorbeizugehen scheint. Eigener Knoten, weil er UEBER Halmen und Klinge
-## liegen muss; _draw der Wurzel malt hinter ihre Kinder.
+## Zeigt, wo die Klinge wirklich trifft. Sie ist ihre eigene Trefferform, das
+## Bild hier ist also der Umriss DERSELBEN Bitmap, nach der geschnitten wird
+## -- es kann gar nicht auseinanderlaufen. Eigener Knoten, weil er UEBER
+## Halmen und Klinge liegen muss; _draw der Wurzel malt hinter ihre Kinder.
 class Trefferzone extends Node2D:
-	var mitte := Vector2.ZERO
+	var hand := Vector2.ZERO
 	var winkel := 0.0
 	var reichweite := 0.0
+	var skala := 1.0
 
-	## Wo die Hand steht -- dazu die blasse Bahn, auf der die Klinge kreist.
-	var bahn := Vector2.ZERO
+	var _umriss: Array[PackedVector2Array] = []
 
 	func _draw() -> void:
 		if reichweite <= 0.0:
 			return
-		var kraeftig := Color(1.0, 0.33, 0.28, 0.9)
-		# Blass die Bahn um die Hand: so sieht man, wo die Klinge gleich sein
-		# wird und was der Ausbau an Reichweite gebracht hat.
-		draw_arc(bahn, (mitte - bahn).length(), 0.0, TAU, 48,
-			Color(1.0, 0.33, 0.28, 0.22), 1.0)
-		# Und kraeftig die Form der Klinge: aussen ihr eigener Kreis, innen
-		# der grosse Ausschnittkreis -- der ist so flach, dass die Innenkante
-		# fast gerade laeuft.
-		var halb := Reeds.spanne() * 0.5
-		draw_arc(mitte, reichweite, winkel - halb, winkel + halb, 24,
-			kraeftig, 2.0)
-		var loch := mitte + Vector2(-Reeds.KLINGE_VERSATZ * reichweite,
-			0.0).rotated(winkel)
-		var i_halb := Reeds.innen_spanne() * 0.5
-		draw_arc(loch, Reeds.KLINGE_SCHNITT * reichweite, winkel - i_halb,
-			winkel + i_halb, 24, kraeftig, 2.0)
+		var rot := Color(1.0, 0.33, 0.28, 0.9)
+		# Blass die Bahn der Spitze: daran ist der Reichweiten-Ausbau zu sehen.
+		draw_arc(hand, reichweite, 0.0, TAU, 64, Color(1.0, 0.33, 0.28, 0.22),
+			1.0)
+		var g := Reeds.klinge_groesse()
+		if _umriss.is_empty():
+			_umriss = Reeds.maske().opaque_to_polygons(
+				Rect2i(Vector2i.ZERO, g), 0.5)
+		var fuss := reichweite - float(g.x) * skala
+		for teil in _umriss:
+			var welt := PackedVector2Array()
+			for punkt in teil:
+				welt.append(hand + Vector2(fuss + punkt.x * skala,
+					(punkt.y - float(g.y) * 0.5) * skala).rotated(winkel))
+			if welt.size() > 1:
+				welt.append(welt[0])
+				draw_polyline(welt, rot, 2.0, false)
+
+
+## Die Spur, die die Klinge hinter sich laesst.
+##
+## Sie ist der Grund, warum man ueberhaupt sieht, dass sich da etwas dreht:
+## ein kurzes Messer allein blitzt nur. Im Vorbild ist genau DAS das grosse
+## weisse Sicheldings, das wie eine Klinge aussieht -- nachgemessen ist das
+## Werkzeug dort ein Balken von vierzehn Pixeln, der Rest ist Schweif.
+##
+## Und weil die Spur mit dem Tempo laenger wird, ist auch dieser Ausbau zu
+## sehen, statt sich nur in einer Zahl abzuspielen.
+class Schweif extends Node2D:
+	## Wie lange sie nachleuchtet.
+	const NACHLEUCHTEN := 0.13
+	const DECKUNG := 0.40
+	## Welcher Teil des Messers die Spur zieht -- die Schneide vorn, nicht
+	## der Griff.
+	const ANTEIL := 0.55
+
+	var innen := 0.0
+	var aussen := 0.0
+
+	var _hand := PackedVector2Array()
+	var _dreh := PackedFloat32Array()
+	var _zeit := PackedFloat32Array()
+
+	func melde(stelle: Vector2, winkel: float, jetzt: float) -> void:
+		_hand.append(stelle)
+		_dreh.append(winkel)
+		_zeit.append(jetzt)
+		while _zeit.size() > 0 and jetzt - _zeit[0] > NACHLEUCHTEN:
+			_hand.remove_at(0)
+			_dreh.remove_at(0)
+			_zeit.remove_at(0)
+		queue_redraw()
+
+	func leere() -> void:
+		_hand.clear()
+		_dreh.clear()
+		_zeit.clear()
+
+	func _draw() -> void:
+		if _zeit.size() < 2 or aussen <= innen:
+			return
+		var jetzt := _zeit[_zeit.size() - 1]
+		var c := Palette.get_color(&"rod_shine")
+		var mitte := (innen + aussen) * 0.5
+		var halb := (aussen - innen) * 0.5
+		for i in _zeit.size() - 1:
+			var t0 := clampf((jetzt - _zeit[i]) / NACHLEUCHTEN, 0.0, 1.0)
+			var t1 := clampf((jetzt - _zeit[i + 1]) / NACHLEUCHTEN, 0.0, 1.0)
+			# Nach hinten duenner UND blasser: ein gleich breites Band sieht
+			# aus wie ein Reifen, nicht wie eine Spur.
+			var h0 := halb * (1.0 - t0 * 0.8)
+			var h1 := halb * (1.0 - t1 * 0.8)
+			var ecken := PackedVector2Array([
+				_hand[i] + Vector2(mitte + h0, 0.0).rotated(_dreh[i]),
+				_hand[i + 1] + Vector2(mitte + h1, 0.0).rotated(_dreh[i + 1]),
+				_hand[i + 1] + Vector2(mitte - h1, 0.0).rotated(_dreh[i + 1]),
+				_hand[i] + Vector2(mitte - h0, 0.0).rotated(_dreh[i])])
+			var f0 := Color(c.r, c.g, c.b, DECKUNG * (1.0 - t0))
+			var f1 := Color(c.r, c.g, c.b, DECKUNG * (1.0 - t1))
+			draw_polygon(ecken, PackedColorArray([f0, f1, f1, f0]))
 
 
 ## Der Zellabstand. Gross genug, dass die Halme sich nicht gegenseitig
@@ -54,22 +114,13 @@ const HALB_B := 62.0
 const HALB_H := 34.0
 ## Wie Steg, Figur und Schwimmer -- ein Pixel ist ein Pixel.
 const SKALA := 2.16
-## Der aeussere Radius der gezeichneten Sichel in ihren eigenen Pixeln.
-##
-## Die Klinge wird NICHT auf die Reichweite skaliert. Das war sie bis
-## 2026-09-18, und voll ausgebaut war ein Klingenpixel dann 6,2 Punkte gross,
-## waehrend die ganze uebrige Welt mit 2,16 zeichnet -- fast dreimal so grob
-## wie alles daneben. Stattdessen KREIST sie weiter aussen: ihre Schneide
-## liegt immer genau auf der Reichweite, und der Ausbau ist an ihrer Bahn zu
-## sehen statt an ihrer Groesse.
-const SICHEL_RADIUS := 21.0
-
 var _schilf: Texture2D
-var _sichel_bild: Texture2D
+var _klinge_bild: Texture2D
 
 var _halme_ebene: Node2D
-var _sichel: Sprite2D
+var _klinge: Sprite2D
 var _zone: Trefferzone
+var _schweif: Schweif
 var _zaehler: Label
 var _warnung: Label
 var _uhr: ProgressBar
@@ -82,6 +133,7 @@ var _ziel := Vector2.ZERO
 ## Wo die Hand steht -- die Klinge kreist darum.
 var _hand := Vector2.ZERO
 var _zeit := 0.0
+var _zeit_gesamt := 0.0
 var _seit_nachwuchs := 0.0
 var _wind := 0.0
 var _geschnitten := 0
@@ -95,15 +147,17 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_schilf = TextureLoader.load_texture("res://assets/art/schilf_horst.png")
-	_sichel_bild = TextureLoader.load_texture("res://assets/art/sichel.png")
+	_klinge_bild = TextureLoader.load_texture(Reeds.KLINGE_BILD)
 	_rng.randomize()
 
 	_halme_ebene = Node2D.new()
 	_halme_ebene.y_sort_enabled = true
 	add_child(_halme_ebene)
-	_sichel = Sprite2D.new()
-	_sichel.texture = _sichel_bild
-	add_child(_sichel)
+	_schweif = Schweif.new()
+	add_child(_schweif)
+	_klinge = Sprite2D.new()
+	_klinge.texture = _klinge_bild
+	add_child(_klinge)
 	_zone = Trefferzone.new()
 	_zone.visible = false
 	add_child(_zone)
@@ -121,6 +175,7 @@ func starte() -> void:
 	for i in Reeds.START_HALME:
 		_saee()
 	_zeit = Reeds.DAUER
+	_zeit_gesamt = 0.0
 	_geschnitten = 0
 	_laeuft = true
 	_karte.visible = false
@@ -130,7 +185,9 @@ func starte() -> void:
 	_warnung.visible = Game.bait_used() >= Game.bait_capacity()
 	_ziel = _beet_mitte()
 	_hand = _ziel
-	_sichel.position = _ziel
+	_winkel = 0.0
+	_schweif.leere()
+	_klinge.position = _ziel
 	visible = true
 	Audio.play(&"cast")
 
@@ -180,24 +237,30 @@ func _gui_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
-	_winkel = wrapf(_winkel + Game.scythe_speed() * TAU * delta, -PI, PI)
+	# Nicht gewickelt: der Schweif haengt an aufeinanderfolgenden Winkeln,
+	# und ein Sprung von PI auf -PI zoege ihn einmal ums ganze Bild.
+	_winkel += Game.scythe_speed() * TAU * delta
 	var reichweite := Game.scythe_reach()
 	# Die Hand zieht dem Finger NACH, statt an ihm zu kleben: ohne das springt
 	# sie bei jedem Antippen quer durchs Bild.
 	_hand = _hand.lerp(_ziel, clampf(delta * 18.0, 0.0, 1.0))
-	# Die Klinge kreist um die Hand, und zwar so weit draussen, dass ihre
-	# Schneide genau auf der Reichweite liegt.
-	_sichel.position = _hand + Vector2(maxf(reichweite - SICHEL_RADIUS * SKALA,
-		0.0), 0.0).rotated(_winkel)
-	_sichel.rotation = _winkel
-	_sichel.scale = Vector2(SKALA, SKALA)
+	# Das Messer haengt mit dem Griff nach innen an der Hand, seine Spitze
+	# genau auf der Reichweite.
+	_klinge.position = _hand + Vector2(Reeds.klinge_bahn(reichweite, SKALA),
+		0.0).rotated(_winkel)
+	_klinge.rotation = _winkel
+	_klinge.scale = Vector2(SKALA, SKALA)
+	var lang := float(Reeds.klinge_groesse().x) * SKALA
+	_schweif.innen = reichweite - lang * Schweif.ANTEIL
+	_schweif.aussen = reichweite
+	_schweif.melde(_hand, _winkel, _zeit_gesamt)
+	_zeit_gesamt += delta
 	_zone.visible = Game.dev_scythe_box
 	if _zone.visible:
-		# Um die KLINGE, nicht um die Hand -- sie ist die Trefferform.
-		_zone.mitte = _sichel.position
+		_zone.hand = _hand
 		_zone.winkel = _winkel
-		_zone.reichweite = SICHEL_RADIUS * SKALA
-		_zone.bahn = _hand
+		_zone.reichweite = reichweite
+		_zone.skala = SKALA
 		_zone.queue_redraw()
 	if not _laeuft:
 		queue_redraw()
@@ -216,7 +279,8 @@ func _process(delta: float) -> void:
 		_beende()
 	queue_redraw()
 
-## Wer im Kreisausschnitt vor der Schneide steht, bekommt einen Treffer.
+## Wer unter der Klinge steht, bekommt einen Treffer -- unter der Klinge
+## selbst, nicht unter irgendeinem Kreis um sie herum.
 func _schneide(delta: float, reichweite: float) -> void:
 	for z in _halme.keys():
 		var s: Sprite2D = _halme[z]
@@ -224,8 +288,7 @@ func _schneide(delta: float, reichweite: float) -> void:
 		if pause > 0.0:
 			s.set_meta(&"pause", pause - delta)
 			continue
-		if not Reeds.trifft(s.position, _sichel.position, _winkel,
-				SICHEL_RADIUS * SKALA):
+		if not Reeds.trifft(s.position, _hand, _winkel, reichweite, SKALA):
 			continue
 		var leben: int = int(s.get_meta(&"leben")) - 1
 		s.set_meta(&"leben", leben)

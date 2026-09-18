@@ -1,6 +1,6 @@
-"""Der schneidbare Schilfhorst und die Sichel fuers Schilfschneiden.
+"""Der schneidbare Schilfhorst und die Klinge fuers Schilfschneiden.
 
-    python3 -m tools.sichel_bauen
+    python3 -m tools.schilfschneiden_bauen
 
 Der Horst wird NICHT neu gezeichnet. Er benutzt schilf_bauen.halm(), also
 denselben Halm wie das Uferband -- die beiden stehen im selben Spiel, und zwei
@@ -11,10 +11,17 @@ Drei Bilder nebeneinander: voll, angeschnitten, Stummel. Ein Halm, der nach
 jedem Treffer gleich aussieht und dann verschwindet, gibt keine Rueckmeldung --
 man weiss nicht, ob man ihn schon hat.
 
-Die Sichel ist ein grosser Kreis minus einem versetzten Kreis. Der Ausschnitt
-sitzt genau nach links, damit der BAUCH der Klinge dorthin zeigt, wo die
-Trefferzone liegt (core/reeds.gd). Ihre Schneide liegt auf dem AEUSSEREN Bogen
--- der Seite, die beim Kreisen durchs Schilf faehrt.
+Die Klinge kommt NICHT aus diesem Werkzeug, sie kommt von PixelLab und liegt
+roh unter assets/source/schilfschneiden/messer.png -- mit der Spielpalette als
+Zwangspalette erzeugt, also schon in unseren Farben. Hier wird sie nur
+gespiegelt (die Spitze muss nach +x zeigen, dorthin kreist sie) und auf ihren
+Umriss beschnitten. Kein Drehen, kein Verkleinern: ein Pixel bleibt ein Pixel.
+
+Bis 2026-09-18 war an ihrer Stelle eine grosse Sichel aus Kreis minus Kreis.
+Das war ein Missverstaendnis: das grosse weisse Sicheldings im Vorbild ist gar
+nicht die Klinge, sondern ihr SCHWEIF. Nachgemessen ist das Werkzeug dort ein
+Balken von 14 x 3 Pixeln, in zwei Bildern acht Spielminuten auseinander
+unveraendert gross. Was waechst, ist seine Bahn.
 """
 import os
 import random
@@ -67,23 +74,8 @@ WIND_VON = -1.0
 WIND_BIS = 4.0
 WIND_SCHRITT = 0.2
 
-SICHEL = 44
-## Ausschnittkreis: Mitte um VERSATZ nach links, Radius RADIUS. Zusammen
-## bestimmen sie, wie dick der Bauch ist UND wie weit die Sichel um den Kreis
-## reicht.
-##
-## Sie spannte 222 Grad, ihre Trefferzone aber nur 80 (Reeds.SEKTOR) -- zwei
-## Drittel der sichtbaren Klinge schnitten gar nicht, und genau deshalb blieben
-## Halme stehen, ueber die sie hinwegzugehen schien. Aufgefallen ist es erst,
-## als die Trefferzone einblendbar war. Jetzt spannt sie rund 100 Grad: die
-## Spitzen greifen noch etwas weiter als die Zone, der Bauch trifft.
-##
-## Der Ausschnittkreis ist dabei GROESSER als die Sichel selbst und liegt weit
-## links daneben -- nur ein flacher Kreis schneidet einen kurzen Bogen heraus.
-## Ein kleiner Ausschnitt dicht an der Mitte gibt den Vollmond-Sichel, die um
-## fast den ganzen Kreis reicht.
-SICHEL_VERSATZ = 6.63
-SICHEL_RADIUS = 7.25
+ROH_MESSER = os.path.join(WURZEL, "assets", "source", "schilfschneiden",
+                          "messer.png")
 
 
 def farbe(name):
@@ -162,41 +154,17 @@ def horst():
     return bild
 
 
-def sichel():
-    bild = Image.new("RGBA", (SICHEL, SICHEL), (0, 0, 0, 0))
-    m = SICHEL / 2.0
-    r = m - 1.0
-    versatz = SICHEL_VERSATZ * r
-    r_schnitt = SICHEL_RADIUS * r
-    schneide, silber = farbe("rod_shine"), farbe("silver")
-    stahl, ruecken = farbe("rod_steel"), farbe("outline")
-    for y in range(SICHEL):
-        for x in range(SICHEL):
-            dx, dy = x + 0.5 - m, y + 0.5 - m
-            aussen = (dx * dx + dy * dy) ** 0.5
-            innen = ((dx + versatz) ** 2 + dy * dy) ** 0.5
-            if aussen > r or innen < r_schnitt:
-                continue
-            zur_schneide = r - aussen
-            zum_ruecken = innen - r_schnitt
-            if zur_schneide < 1.2:
-                f = schneide
-            elif zum_ruecken < 1.2:
-                f = ruecken
-            elif zur_schneide < 3.2:
-                f = silber
-            elif zum_ruecken < 3.0:
-                f = stahl
-            else:
-                f = silber
-            bild.putpixel((x, y), f)
-    return bild
+def klinge():
+    """Das rohe Messer gespiegelt und auf seinen Umriss beschnitten."""
+    bild = Image.open(ROH_MESSER).convert("RGBA")
+    bild = bild.transpose(Image.FLIP_LEFT_RIGHT)
+    return bild.crop(bild.getbbox())
 
 
 def main():
     os.makedirs(KUNST, exist_ok=True)
     for name, bild in (("schilf_horst.png", horst()),
-                       ("sichel.png", sichel())):
+                       ("klinge.png", klinge())):
         bild.save(os.path.join(KUNST, name))
         print("%s  %dx%d" % (name, bild.width, bild.height))
 

@@ -1,7 +1,7 @@
 extends TestCase
 
 ## Das Schilfschneiden. Geprueft wird die Rechnung dahinter, nicht das Bild:
-## wann Schilf reif ist, was ein Schnitt einbringt und ob die Sichel mit den
+## wann Schilf reif ist, was ein Schnitt einbringt und ob die Klinge mit den
 ## Zonen mithaelt.
 
 const STUNDE := 3600.0
@@ -35,7 +35,7 @@ func test_nothing_regrows_inside_the_same_window() -> void:
 			continue
 		assert_false(r.ready_at(t), "innerhalb der Zeitspanne nachgewachsen")
 
-## Eine Sichel, der nichts entgegensteht, nimmt dem Schneiden den Sinn.
+## Eine Klinge, der nichts entgegensteht, nimmt dem Schneiden den Sinn.
 func test_a_stalk_always_takes_at_least_one_hit() -> void:
 	for zaeh in range(1, 60):
 		for schaerfe in [0.0, 0.5, 1.0, 12.0, 999.0]:
@@ -49,7 +49,7 @@ func test_the_first_lake_takes_five_hits_without_any_upgrade() -> void:
 	var zone: ZoneData = Database.zones[&"willow_lake"]
 	assert_eq(Reeds.treffer_noetig(zone.reed_toughness, Reeds.SCHNEIDE), 5)
 
-## Und der Ausbau haelt mit: in der letzten Zone mit voll ausgebauter Sichel
+## Und der Ausbau haelt mit: in der letzten Zone mit voll ausgebauter Klinge
 ## darf es nicht zaeher sein als am Anfang ohne. Sonst waere Fortschritt
 ## Rueckschritt.
 func test_a_maxed_scythe_keeps_up_with_the_last_zone() -> void:
@@ -61,7 +61,7 @@ func test_a_maxed_scythe_keeps_up_with_the_last_zone() -> void:
 		var z: ZoneData = Database.zones[id]
 		var noetig := Reeds.treffer_noetig(z.reed_toughness, voll)
 		assert_true(noetig <= zuerst,
-			"%s braucht mit voller Sichel %d Treffer, der Anfang nur %d"
+			"%s braucht mit voller Klinge %d Treffer, der Anfang nur %d"
 				% [id, noetig, zuerst])
 
 ## Das Schilf wird mit jeder Zone zaeher -- das ist die Fortschrittsachse,
@@ -104,74 +104,80 @@ func test_a_find_stays_rare_however_much_is_cut() -> void:
 		vorher = c
 	assert_almost_eq(Reeds.fund_chance(0), Reeds.FUND_BASIS, 0.0001)
 
-## Die Sichel muss vorbeikommen: was hinter ihr steht, wird nicht geschnitten,
-## auch wenn es nah genug ist. Ein voller Kreis waere ein Rasenmaeher.
-func test_the_blade_only_cuts_in_front_of_its_edge() -> void:
-	var klinge := Vector2(400.0, 300.0)
-	var r := 45.0
-	var halb := Reeds.spanne() * 0.5
-	var bauch := r * (1.0 + (Reeds.KLINGE_SCHNITT - Reeds.KLINGE_VERSATZ)) * 0.5
-	assert_true(Reeds.trifft(klinge + Vector2(bauch, 0.0), klinge, 0.0, r),
-		"der Bauch der Klinge trifft nicht")
-	assert_false(Reeds.trifft(klinge + Vector2(-bauch, 0.0), klinge, 0.0, r),
-		"die Sichel schneidet nach hinten")
-	assert_false(Reeds.trifft(klinge + Vector2(r * 1.4, 0.0), klinge, 0.0, r),
-		"die Sichel greift weiter, als sie reicht")
-	# Dicht an der Schneide: zu den Spitzen hin wandert der Bauch nach aussen
-	# und wird duenner, ein Punkt auf der Bauchmitte laege dort schon daneben.
-	assert_true(Reeds.trifft(klinge + Vector2(r * 0.97, 0.0).rotated(halb * 0.6),
-		klinge, 0.0, r), "vor der Spitze trifft sie nicht")
-	assert_false(Reeds.trifft(klinge + Vector2(r * 0.97, 0.0).rotated(halb * 1.4),
-		klinge, 0.0, r), "hinter ihrer Spitze trifft sie doch")
+## Getroffen wird nur, wo die Klinge WIRKLICH ist. Das Messer haengt mit dem
+## Griff nach innen an der Hand, seine Spitze liegt auf der Reichweite -- vor
+## der Spitze und hinter dem Griff ist nichts.
+func test_the_knife_only_cuts_where_it_is() -> void:
+	var hand := Vector2(400.0, 300.0)
+	var weit := 200.0
+	var skala := 2.0
+	var lang := float(Reeds.klinge_groesse().x) * skala
+	var dick := float(Reeds.klinge_groesse().y) * skala
+	assert_true(Reeds.trifft(hand + Vector2(weit - lang * 0.25, 0.0), hand,
+		0.0, weit, skala), "die Klinge trifft auf ihrer eigenen Achse nicht")
+	assert_false(Reeds.trifft(hand + Vector2(weit + 4.0, 0.0), hand, 0.0,
+		weit, skala), "sie greift ueber ihre Spitze hinaus")
+	assert_false(Reeds.trifft(hand + Vector2(weit - lang - 4.0, 0.0), hand,
+		0.0, weit, skala), "sie schneidet hinter ihrem Griff")
+	assert_false(Reeds.trifft(hand + Vector2(weit - lang * 0.25, dick), hand,
+		0.0, weit, skala), "sie schneidet neben sich")
 
-## Und sie schneidet NUR DA, WO SIE IST. Die Mitte ihres Kreises liegt im Loch
-## des Ausschnitts, dort ist keine Klinge.
-func test_nothing_is_cut_between_the_hand_and_the_blade() -> void:
-	var klinge := Vector2(400.0, 300.0)
-	var r := 45.0
-	for weit in [0.0, 5.0, 15.0, 22.0]:
-		assert_false(Reeds.trifft(klinge + Vector2(weit, 0.0), klinge, 0.0, r),
-			"bei %f vor der Mitte wird geschnitten, die Klinge sitzt aussen"
-				% weit)
+## Und nichts zwischen Hand und Klinge -- dort ist keine.
+func test_nothing_is_cut_between_the_hand_and_the_knife() -> void:
+	var hand := Vector2(400.0, 300.0)
+	var weit := 300.0
+	var skala := 2.0
+	var lang := float(Reeds.klinge_groesse().x) * skala
+	for nah in [0.0, 20.0, lang * 0.5, weit - lang - 6.0]:
+		assert_false(Reeds.trifft(hand + Vector2(nah, 0.0), hand, 0.0, weit,
+			skala), "bei %f vor der Hand wird geschnitten" % nah)
 
 ## Die Klinge dreht sich, also dreht sich auch, was sie trifft.
-func test_the_cut_sector_turns_with_the_blade() -> void:
-	var klinge := Vector2(400.0, 300.0)
-	var r := 45.0
-	var ziel := klinge + Vector2(0.0, 40.0)
-	assert_false(Reeds.trifft(ziel, klinge, 0.0, r))
-	assert_true(Reeds.trifft(ziel, klinge, PI * 0.5, r),
+func test_what_is_cut_turns_with_the_knife() -> void:
+	var hand := Vector2(400.0, 300.0)
+	var weit := 200.0
+	var skala := 2.0
+	var lang := float(Reeds.klinge_groesse().x) * skala
+	var ziel := hand + Vector2(0.0, weit - lang * 0.25)
+	assert_false(Reeds.trifft(ziel, hand, 0.0, weit, skala))
+	assert_true(Reeds.trifft(ziel, hand, PI * 0.5, weit, skala),
 		"gedreht trifft sie ihr Ziel nicht")
 
-## Der entscheidende Test: die Regel muss mit dem BILD uebereinstimmen, Pixel
-## fuer Pixel. Drei Anlaeufe davor hatten eine andere Form als die Zeichnung,
-## und am Bild sah man es jedes Mal sofort -- an Zahlen nicht.
-func test_the_rule_agrees_with_the_drawn_blade_pixel_by_pixel() -> void:
-	var bild := TextureLoader.load_texture(
-		"res://assets/art/sichel.png").get_image()
-	var m := Vector2(bild.get_width(), bild.get_height()) * 0.5
-	var r := m.x - 1.0
-	var daneben := 0
+## Der entscheidende Test: was gezeichnet ist, schneidet -- und was nicht
+## gezeichnet ist, schneidet nicht. Jedes Bildpixel wird durch DIESELBE
+## Rechnung an seinen Platz in der Welt gesetzt, mit der reed_cut.gd die
+## Klinge hinstellt, und dort muss die Regel dasselbe sagen wie das Bild.
+##
+## Vier Anlaeufe davor rechneten die Form nach, statt sie zu benutzen, und
+## drei davon rechneten eine andere. Am Bild sah man es jedes Mal sofort.
+func test_every_drawn_pixel_cuts_and_no_other() -> void:
+	var bild := TextureLoader.load_texture(Reeds.KLINGE_BILD).get_image()
+	if bild.is_compressed():
+		bild.decompress()
+	if bild.get_format() != Image.FORMAT_RGBA8:
+		bild.convert(Image.FORMAT_RGBA8)
+	var hand := Vector2(500.0, 400.0)
+	var weit := 260.0
+	var skala := 2.16
+	var winkel := 0.7
+	var g := Vector2(bild.get_width(), bild.get_height())
+	var fuss := weit - g.x * skala
 	var gemalt := 0
+	var daneben := 0
 	for y in bild.get_height():
 		for x in bild.get_width():
-			var p := Vector2(x, y) + Vector2(0.5, 0.5)
-			var ist_gemalt := bild.get_pixel(x, y).a > 0.0
-			if ist_gemalt:
+			var lokal := Vector2(fuss + (float(x) + 0.5) * skala,
+				(float(y) + 0.5 - g.y * 0.5) * skala)
+			var stelle := hand + lokal.rotated(winkel)
+			var ist := bild.get_pixel(x, y).a > Reeds.MASKE_SCHWELLE
+			if ist:
 				gemalt += 1
-			if Reeds.trifft(p, m, 0.0, r) == ist_gemalt:
-				continue
-			# Direkt auf einer Kante darf es um ein Pixel abweichen -- das ist
-			# die Rundung des Rasters, nicht die Form.
-			var d := p - m
-			var aussen: float = absf(d.length() - r)
-			var innen: float = absf((d + Vector2(Reeds.KLINGE_VERSATZ * r,
-				0.0)).length() - Reeds.KLINGE_SCHNITT * r)
-			if minf(aussen, innen) > 1.5:
+			if Reeds.trifft(stelle, hand, winkel, weit, skala) != ist:
 				daneben += 1
-	assert_true(gemalt > 100, "die Sichel ist fast leer")
+	assert_true(gemalt > 200, "die Klinge ist fast leer")
 	assert_eq(daneben, 0,
-		"%d Pixel weit ab von jeder Kante stimmen nicht mit der Regel" % daneben)
+		"%d von %d Bildpunkten schneiden anders, als sie aussehen"
+			% [daneben, bild.get_width() * bild.get_height()])
 
 # --- Was ein Schnitt einbringt --------------------------------------------
 
@@ -219,7 +225,7 @@ func test_the_cut_survives_a_save_and_load() -> void:
 	alt.load_dict({})
 	assert_true(alt.ready_at(jetzt))
 
-## Die drei Sichel-Ausbauten muessen den Grundwerten entsprechen, mit denen
+## Die drei Klingen-Ausbauten muessen den Grundwerten entsprechen, mit denen
 ## das Spiel ohne sie rechnet. Zwei Quellen fuer dieselbe Zahl laufen sonst
 ## auseinander, und gemerkt haette man es erst am Geraet.
 func test_the_upgrades_start_at_the_measured_base_values() -> void:
@@ -229,7 +235,7 @@ func test_the_upgrades_start_at_the_measured_base_values() -> void:
 	assert_almost_eq(Game.scythe_speed(), Reeds.DREHUNG, 0.0001)
 
 ## Und sie muessen wirklich etwas tun.
-func test_every_scythe_upgrade_actually_grows() -> void:
+func test_every_knife_upgrade_actually_grows() -> void:
 	for id in [&"scythe_edge", &"scythe_reach", &"scythe_speed"]:
 		var u: UpgradeData = Database.upgrades[id]
 		assert_true(u.value_at(1) > u.value_at(0), "%s waechst nicht" % id)
@@ -404,9 +410,10 @@ func test_the_drawn_poses_lean_further_and_further() -> void:
 			% [mitten[mitten.size() - 1], mitten[0]])
 
 ## Die eingeblendete Trefferzone muss dieselbe sein, nach der auch wirklich
-## geschnitten wird -- und sie liegt auf der KLINGE, nicht um die Hand. Zwei
-## Anlaeufe davor zogen sie um die Hand, und ein Kreis um die Hand kann einen
-## Kreis um die Klingenmitte nur an einer Stelle beruehren.
+## geschnitten wird. Sie ist es jetzt buchstaeblich: gezeichnet wird der
+## Umriss DERSELBEN Bitmap, die auch trifft. Was dieser Test noch pruefen
+## kann, ist die Verdrahtung -- dass die Zone an derselben Hand, demselben
+## Winkel und derselben Reichweite haengt wie der Schnitt.
 func test_the_shown_hitbox_is_the_one_that_cuts() -> void:
 	Game.new_game()
 	Game.dev_scythe_box = true
@@ -417,36 +424,21 @@ func test_the_shown_hitbox_is_the_one_that_cuts() -> void:
 	schnitt.starte()
 	schnitt._process(0.05)
 	assert_true(schnitt._zone.visible, "die Zone wird nicht gezeigt")
-	assert_true(schnitt._zone.mitte.is_equal_approx(schnitt._sichel.position),
-		"die Zone liegt nicht auf der Klinge")
-	var radius: float = schnitt.SICHEL_RADIUS * schnitt.SKALA
-	assert_almost_eq(schnitt._zone.reichweite, radius, 0.001,
-		"die gezeigte Zone ist nicht so gross wie die Klinge")
+	assert_true(schnitt._zone.hand.is_equal_approx(schnitt._hand),
+		"die Zone haengt nicht an der Hand")
+	assert_almost_eq(schnitt._zone.reichweite, Game.scythe_reach(), 0.001,
+		"die gezeigte Reichweite ist nicht die, mit der geschnitten wird")
 	assert_almost_eq(schnitt._zone.winkel, schnitt._winkel, 0.001,
 		"die gezeigte Richtung ist nicht die der Klinge")
-	# Und an den Kanten der gezeichneten Zone muss die Regel kippen.
-	var mitte: Vector2 = schnitt._zone.mitte
-	var halb := Reeds.spanne() * 0.5
-	# Mitten durch den Bauch: vom Ausschnittkreis bis zum Aussenkreis.
-	var bauch := radius * (1.0
-		+ (Reeds.KLINGE_SCHNITT - Reeds.KLINGE_VERSATZ)) * 0.5
-	for probe in [
-		[Vector2(bauch, 0.0).rotated(schnitt._winkel), true],
-		[Vector2(bauch, 0.0).rotated(schnitt._winkel + halb * 1.4), false],
-		[Vector2(radius * 1.3, 0.0).rotated(schnitt._winkel), false],
-		[Vector2(radius * 0.2, 0.0).rotated(schnitt._winkel), false],
-	]:
-		var stelle: Vector2 = mitte + (probe[0] as Vector2)
-		assert_eq(Reeds.trifft(stelle, mitte, schnitt._winkel, radius),
-			probe[1] as bool,
-			"bei %s stimmen Bild und Regel nicht ueberein" % str(probe[0]))
+	assert_almost_eq(schnitt._zone.skala, schnitt.SKALA, 0.001,
+		"die Zone rechnet mit einem anderen Massstab als die Klinge")
+	# Und der Umriss stammt aus der Maske, nicht aus einer zweiten Rechnung.
+	var g := Reeds.klinge_groesse()
+	var teile := Reeds.maske().opaque_to_polygons(Rect2i(Vector2i.ZERO, g), 0.5)
+	assert_true(teile.size() > 0, "die Maske hat keinen Umriss")
 	Game.dev_scythe_box = false
 	schnitt.free()
 
-## Die Anzeige im Schilfschneiden steht UEBER der Welt, nicht auf dem
-## Sandpanel. Das Theme faerbt Beschriftungen dunkel und umrandet sie hell --
-## fuer die Panels richtig, ueber dem Nachtwasser unlesbar. Genau so war
-## "HALME" kaum zu erkennen.
 func test_the_reed_hud_is_written_for_the_dark_world() -> void:
 	Game.new_game()
 	var tree := Engine.get_main_loop() as SceneTree
@@ -480,30 +472,29 @@ func _labels(n: Node) -> Array[Label]:
 func _helligkeit(c: Color) -> float:
 	return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
 
-## Die gezeichnete Sichel darf nicht viel weiter reichen als ihre
-## Trefferzone. Sie spannte 222 Grad, geschnitten wurde in 80 -- zwei Drittel
-## der sichtbaren Klinge waren eine Luege, und genau deshalb blieben Halme
-## stehen, ueber die sie hinwegzugehen schien. Gesehen hat man das erst, als
-## die Zone einblendbar war; diese Zahl haelt es fest.
-func test_the_drawn_blade_matches_what_it_cuts() -> void:
-	var bild := TextureLoader.load_texture(
-		"res://assets/art/sichel.png").get_image()
-	var mitte := Vector2(bild.get_width(), bild.get_height()) * 0.5
-	var winkel: Array[float] = []
-	for y in bild.get_height():
-		for x in bild.get_width():
-			if bild.get_pixel(x, y).a > 0.0:
-				winkel.append((Vector2(x, y) + Vector2(0.5, 0.5) - mitte).angle())
-	assert_true(winkel.size() > 50, "die Sichel ist fast leer")
-	winkel.sort()
-	# Die groesste Luecke im Kreis ist die Seite, an der die Sichel offen ist.
-	var luecke := winkel[0] + TAU - winkel[winkel.size() - 1]
-	for i in winkel.size() - 1:
-		luecke = maxf(luecke, winkel[i + 1] - winkel[i])
-	var spanne := TAU - luecke
-	assert_almost_eq(spanne, Reeds.spanne(), 0.08,
-		"die Klinge spannt %.0f Grad, die Regel rechnet mit %.0f"
-			% [rad_to_deg(spanne), rad_to_deg(Reeds.spanne())])
+## Die Spitze der gezeichneten Klinge liegt genau auf der Reichweite. Daran
+## haengt, dass der blasse Kreis in der Entwickleransicht die Wahrheit sagt --
+## und dass "Reichweite" ueberhaupt etwas Messbares bedeutet.
+func test_the_tip_sits_exactly_on_the_reach() -> void:
+	var skala := 2.16
+	var halb := float(Reeds.klinge_groesse().x) * 0.5 * skala
+	for weit in [110.0, 170.0, 230.0]:
+		var bahn := Reeds.klinge_bahn(weit, skala)
+		assert_almost_eq(bahn + halb, weit, 0.001,
+			"bei Reichweite %.0f endet das Bild auf %.0f" % [weit, bahn + halb])
+	# Und es schneidet dort auch wirklich noch: das aeusserste Pixel auf der
+	# Achse darf nur um die Rundung der Spitze hinter der Reichweite liegen.
+	var weit := 200.0
+	var aussen := -1.0
+	for i in 200:
+		var r := weit - float(i) * 0.5
+		if Reeds.trifft(Vector2(r, 0.0), Vector2.ZERO, 0.0, weit, skala):
+			aussen = r
+			break
+	assert_true(aussen > 0.0, "auf der Achse schneidet gar nichts")
+	assert_true(weit - aussen < 5.0 * skala,
+		"das aeusserste schneidende Pixel liegt %.0f vor der Reichweite"
+			% (weit - aussen))
 
 ## Die Klinge waechst NICHT mit der Reichweite, sie kreist weiter aussen.
 ##
@@ -525,13 +516,14 @@ func test_the_blade_keeps_the_world_pixel_size() -> void:
 		for i in 40:
 			schnitt._process(0.05)
 		var reichweite := Game.scythe_reach()
-		assert_almost_eq(schnitt._sichel.scale.x, schnitt.SKALA, 0.001,
+		assert_almost_eq(schnitt._klinge.scale.x, schnitt.SKALA, 0.001,
 			"bei Reichweite %.0f ist die Klinge skaliert" % reichweite)
-		var bahn: float = (schnitt._sichel.position - schnitt._hand).length()
-		var schneide: float = bahn + schnitt.SICHEL_RADIUS * schnitt.SKALA
-		assert_almost_eq(schneide, reichweite, 1.0,
-			"die Schneide liegt auf %.0f, die Reichweite ist %.0f"
-				% [schneide, reichweite])
+		var bahn: float = (schnitt._klinge.position - schnitt._hand).length()
+		var spitze: float = bahn + float(Reeds.klinge_groesse().x) * 0.5 \
+			* schnitt.SKALA
+		assert_almost_eq(spitze, reichweite, 1.0,
+			"die Spitze liegt auf %.0f, die Reichweite ist %.0f"
+				% [spitze, reichweite])
 	Game.upgrade_levels[&"scythe_reach"] = 0
 	schnitt.free()
 
@@ -583,14 +575,12 @@ func test_it_really_is_the_blade_that_does_the_cutting() -> void:
 	schnitt.starte()
 	for i in 40:
 		schnitt._process(0.02)
-	var radius: float = schnitt.SICHEL_RADIUS * schnitt.SKALA
-	var bahn: float = (schnitt._sichel.position - schnitt._hand).length()
-	assert_true(bahn > radius,
-		"die Bahn (%.0f) ist nicht weiter als die Klinge gross (%.0f) -- der"
-			% [bahn, radius] + " Test kann die beiden Faelle nicht trennen")
-	# Mitten durch den Bauch der Klinge.
-	var mittig := radius * (1.0
-		+ (Reeds.KLINGE_SCHNITT - Reeds.KLINGE_VERSATZ)) * 0.5
+	var lang: float = float(Reeds.klinge_groesse().x) * schnitt.SKALA
+	var reichweite := Game.scythe_reach()
+	var bahn: float = (schnitt._klinge.position - schnitt._hand).length()
+	assert_true(bahn > lang * 0.5,
+		"die Bahn (%.0f) ist nicht weiter als die halbe Klinge (%.0f) -- der"
+			% [bahn, lang * 0.5] + " Test kann die beiden Faelle nicht trennen")
 	var schluessel: Array = schnitt._halme.keys()
 	assert_true(schluessel.size() >= 2, "zu wenige Halme zum Pruefen")
 	var getroffen: Sprite2D = schnitt._halme[schluessel[0]]
@@ -600,12 +590,12 @@ func test_it_really_is_the_blade_that_does_the_cutting() -> void:
 		schnitt._halme.erase(schluessel[i])
 		weg.get_parent().remove_child(weg)
 		weg.free()
-	# Auf der Kreisbahn der KLINGENMITTE -- dort kommt die Klinge vorbei.
-	getroffen.position = schnitt._hand + Vector2(bahn + mittig, 0.0)
+	# Auf der Bahn der KLINGE -- dort kommt sie vorbei.
+	getroffen.position = schnitt._hand + Vector2(reichweite - lang * 0.3, 0.0)
 	# Und dort, wo eine Zone um die HAND treffen wuerde: nah an der Hand, weit
 	# weg von jeder Klinge.
-	verschont.position = schnitt._hand + Vector2(mittig, 0.0)
-	for i in 50:
+	verschont.position = schnitt._hand + Vector2(lang * 0.3, 0.0)
+	for i in 60:
 		schnitt._ziel = schnitt._hand
 		schnitt._process(0.02)
 	assert_true(int(getroffen.get_meta(&"leben")) < schnitt._noetig,
