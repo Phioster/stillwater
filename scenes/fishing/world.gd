@@ -389,6 +389,9 @@ func _process(delta: float) -> void:
 	_update_visitors(delta)
 	if _rain != null:
 		_rain.visible = Game.ctx.raining
+	# Die Ringe auf dem Wasser haengen an derselben Quelle wie der Regen
+	# selbst, nicht an einer zweiten Abfrage.
+	_water_view.regnet = Game.ctx.raining
 	# Bei Regen zieht der Himmel grau zu. Die Ueberblendung kommt von den
 	# Wolken, damit Himmelfarbe und Bewoelkung nicht getrennt voneinander
 	# umschalten -- ein Wetter, eine Uhr.
