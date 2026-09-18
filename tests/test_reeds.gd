@@ -237,6 +237,26 @@ func test_the_three_cutting_stages_really_differ() -> void:
 # haben das Bild stattdessen verschoben -- gedreht, dann zeilenweise geschert
 # -- und beide sahen falsch aus, das zweite wie verrutschte Bildzeilen.
 
+## Wie viele Pixel der SILHOUETTE sich zwischen zwei Stellungen aendern.
+##
+## Verglichen wird nur, ob ein Pixel gesetzt ist -- nicht seine Farbe. In der
+## CI werden die Bilder importiert und dabei VRAM-komprimiert, auf diesem
+## Geraet nicht (dort gibt es keinen Import-Cache). Ein Vergleich auf exakte
+## Farbe zaehlte deshalb in der CI Unterschiede mit, die es gar nicht gibt --
+## der Test war lokal gruen und dort rot.
+##
+## Gezaehlt wird nur die OBERSTE Zeile des Blattes: das ist der ungeschnittene
+## Horst, und nur der wiegt sich am Ufer.
+func _silhouetten_unterschied(bild: Image, a: int, b: int) -> int:
+	var anders := 0
+	for y in Reeds.HALM_H:
+		for x in Reeds.HALM_B:
+			var links := bild.get_pixel(a * Reeds.HALM_B + x, y).a > 0.0
+			var rechts := bild.get_pixel(b * Reeds.HALM_B + x, y).a > 0.0
+			if links != rechts:
+				anders += 1
+	return anders
+
 ## Das Bild darf sich nicht in Spruengen aendern. Mit sechs Stellungen
 ## wechselten je Schritt rund 390 von 770 Pixeln -- mehr als die halbe Pflanze
 ## auf einmal, und genau das ruckelt. Mit den feinen Zwischenstellungen sind
@@ -245,27 +265,21 @@ func test_the_three_cutting_stages_really_differ() -> void:
 func test_a_pose_change_never_redraws_a_quarter_of_the_clump() -> void:
 	var bild := TextureLoader.load_texture(
 		"res://assets/art/schilf_horst.png").get_image()
-	var hoehe := bild.get_height()
 	var gefuellt := 0
-	for y in hoehe:
+	for y in Reeds.HALM_H:
 		for x in Reeds.HALM_B:
 			if bild.get_pixel(x, y).a > 0.0:
 				gefuellt += 1
 	assert_true(gefuellt > 100, "die erste Stellung ist fast leer")
 	var groesste := 0
 	for stellung in Reeds.WIND_BILDER - 1:
-		var anders := 0
-		for y in hoehe:
-			for x in Reeds.HALM_B:
-				if bild.get_pixel(stellung * Reeds.HALM_B + x, y) \
-						!= bild.get_pixel((stellung + 1) * Reeds.HALM_B + x, y):
-					anders += 1
+		var anders := _silhouetten_unterschied(bild, stellung, stellung + 1)
 		assert_true(anders > 0,
 			"Stellung %d und %d sind dasselbe Bild" % [stellung, stellung + 1])
 		groesste = maxi(groesste, anders)
 	var anteil := float(groesste) / float(gefuellt)
-	assert_true(anteil <= 0.25,
-		"ein Wechsel malt bis zu %.0f%% der Pflanze neu" % (anteil * 100.0))
+	assert_true(anteil <= 0.20,
+		"ein Wechsel aendert bis zu %.0f%% der Pflanze" % (anteil * 100.0))
 
 ## Und er darf nicht rasen. Gemessen wird, wie viele Pixel sich je Sekunde
 ## aendern -- das ist Tempo MAL Schrittweite, also die Zahl, die beides
@@ -277,13 +291,7 @@ func test_the_wind_does_not_race() -> void:
 	# Wie viel sich je Schritt aendert, einmal vorab ausgerechnet.
 	var kosten: Array[int] = []
 	for stellung in Reeds.WIND_BILDER - 1:
-		var anders := 0
-		for y in bild.get_height():
-			for x in Reeds.HALM_B:
-				if bild.get_pixel(stellung * Reeds.HALM_B + x, y) \
-						!= bild.get_pixel((stellung + 1) * Reeds.HALM_B + x, y):
-					anders += 1
-		kosten.append(anders)
+		kosten.append(_silhouetten_unterschied(bild, stellung, stellung + 1))
 	const SCHRITTE := 3000
 	const DT := 0.02
 	var summe := 0
@@ -295,9 +303,9 @@ func test_the_wind_does_not_race() -> void:
 			summe += kosten[mini(vorher, vorher + schritt)]
 			vorher += schritt
 	var je_sekunde := float(summe) / (float(SCHRITTE) * DT)
-	assert_true(je_sekunde <= 800.0,
+	assert_true(je_sekunde <= 550.0,
 		"es aendern sich %.0f Pixel je Sekunde -- das rast" % je_sekunde)
-	assert_true(je_sekunde >= 100.0,
+	assert_true(je_sekunde >= 60.0,
 		"es aendern sich nur %.0f Pixel je Sekunde -- das steht" % je_sekunde)
 
 ## Und er nutzt alle gezeichneten Stellungen. Wer nur zwischen zweien hin und
