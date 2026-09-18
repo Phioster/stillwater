@@ -339,6 +339,21 @@ func dev_clear_bait() -> int:
 	state_changed.emit()
 	return zahl
 
+## Setzt EINEN Ausbau auf Stufe 0 zurueck. Einzeln und nicht alles auf
+## einmal: beim Ausprobieren will man einen Regler wieder am Anfang haben,
+## ohne den ganzen Spielstand zu verlieren. Gibt die vorige Stufe zurueck.
+func dev_reset_upgrade(id: StringName) -> int:
+	if not Database.upgrades.has(id):
+		return 0
+	var vorher := int(upgrade_levels.get(id, 0))
+	upgrade_levels[id] = 0
+	# Kapazitaeten und Rutenkraft haengen an den Stufen und werden sonst erst
+	# beim naechsten Laden neu gesetzt.
+	apply_upgrades()
+	state_changed.emit()
+	progress_changed.emit()
+	return vorher
+
 ## Laesst das Schilf sofort wieder stehen, statt zwei Stunden zu warten.
 func dev_grow_reeds() -> void:
 	reeds.cut_slot = -1

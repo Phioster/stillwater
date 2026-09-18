@@ -523,3 +523,32 @@ func test_the_blade_keeps_the_world_pixel_size() -> void:
 				% [schneide, reichweite])
 	Game.upgrade_levels[&"scythe_reach"] = 0
 	schnitt.free()
+
+## Ausbaustufen lassen sich EINZELN zuruecksetzen -- beim Ausprobieren will
+## man einen Regler wieder am Anfang haben, nicht den Spielstand verlieren.
+func test_a_single_upgrade_can_be_reset_without_touching_the_others() -> void:
+	Game.new_game()
+	for id in Database.upgrades:
+		Game.upgrade_levels[id] = 4
+	Game.apply_upgrades()
+	assert_eq(Game.dev_reset_upgrade(&"scythe_reach"), 4,
+		"er meldet die falsche vorige Stufe")
+	assert_eq(int(Game.upgrade_levels[&"scythe_reach"]), 0,
+		"die Stufe steht noch")
+	for id in Database.upgrades:
+		if id == &"scythe_reach":
+			continue
+		assert_eq(int(Game.upgrade_levels[id]), 4,
+			"%s wurde mit zurueckgesetzt" % id)
+	# Und die abgeleiteten Werte muessen mitgehen, nicht erst beim Laden.
+	Game.dev_reset_upgrade(&"fish_inventory")
+	var u: UpgradeData = Database.upgrades[&"fish_inventory"]
+	assert_eq(Game.ctx.inventory.capacity, int(u.value_at(0)),
+		"die Kistengroesse haengt noch an der alten Stufe")
+
+## Ein unbekannter Ausbau darf nichts kaputtmachen.
+func test_resetting_an_unknown_upgrade_does_nothing() -> void:
+	Game.new_game()
+	Game.upgrade_levels[&"rod_power"] = 3
+	assert_eq(Game.dev_reset_upgrade(&"gibt_es_nicht"), 0)
+	assert_eq(int(Game.upgrade_levels[&"rod_power"]), 3)

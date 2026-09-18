@@ -71,6 +71,13 @@ func _dev_bereich() -> void:
 		refresh())
 	add_child(schilf)
 
+	# Ausbaustufen einzeln zurueck. Nicht alles auf einmal: zum Ausprobieren
+	# will man EINEN Regler wieder am Anfang haben, nicht den Spielstand
+	# verlieren.
+	add_child(_title("Ausbau zurücksetzen"))
+	for id in Database.upgrades:
+		add_child(_stufe_zurueck(id))
+
 	var zurueck := TapButton.new()
 	zurueck.custom_minimum_size = Vector2(0, 88)
 	zurueck.text = "Alles zurück auf Spielregeln"
@@ -91,6 +98,21 @@ func _dev_bereich() -> void:
 	dev_hint.text = "„Spielregeln“ heißt: das Spiel entscheidet wie sonst. Ein Wechsel auf „da“ oder „weg“ spielt Ankunft beziehungsweise Abgang ab und wird nicht gespeichert. Die drei Aufräumknöpfe darüber wirken dagegen sofort und bleiben — was weg ist, ist weg."
 	dev_hint.modulate = Palette.get_color(&"reed_light")
 	add_child(dev_hint)
+
+## Ein Ausbau, mit seiner Stufe im Text. Ohne die Zahl weiss man nicht, ob
+## der Knopf noch etwas zu tun hat.
+func _stufe_zurueck(id: StringName) -> Control:
+	var u: UpgradeData = Database.upgrades[id]
+	var stufe := int(Game.upgrade_levels.get(id, 0))
+	var b := TapButton.new()
+	b.custom_minimum_size = Vector2(0, 72)
+	b.text = "%s — Stufe %d" % [u.display_name, stufe]
+	b.disabled = stufe <= 0
+	b.tapped.connect(func() -> void:
+		Game.dev_reset_upgrade(id)
+		SaveManager.save()
+		refresh())
+	return b
 
 ## Ein Knopf, der etwas leert und sagt, wie viel es war. Ohne die Zahl weiss
 ## man nicht, ob er etwas getan hat oder schon leer war.
