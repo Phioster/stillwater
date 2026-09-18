@@ -23,18 +23,24 @@ class Trefferzone extends Node2D:
 	var winkel := 0.0
 	var reichweite := 0.0
 
+	var tiefe := 0.0
+
 	func _draw() -> void:
 		if reichweite <= 0.0:
 			return
 		var halb := Reeds.SEKTOR * 0.5
 		var kraeftig := Color(1.0, 0.33, 0.28, 0.9)
-		# Der ganze Kreis blass: so sieht man, was die Klinge NICHT trifft.
+		var innen := maxf(reichweite - tiefe, 0.0)
+		# Die ganze Bahn blass: so sieht man, wo die Klinge gleich sein wird.
 		draw_arc(mitte, reichweite, 0.0, TAU, 48, Color(1.0, 0.33, 0.28, 0.22),
 			1.0)
+		draw_arc(mitte, innen, 0.0, TAU, 48, Color(1.0, 0.33, 0.28, 0.22), 1.0)
+		# Und kraeftig der RING-Ausschnitt, in dem wirklich geschnitten wird.
 		draw_arc(mitte, reichweite, winkel - halb, winkel + halb, 24,
 			kraeftig, 2.0)
+		draw_arc(mitte, innen, winkel - halb, winkel + halb, 24, kraeftig, 2.0)
 		for kante in [-halb, halb]:
-			draw_line(mitte,
+			draw_line(mitte + Vector2(innen, 0.0).rotated(winkel + kante),
 				mitte + Vector2(reichweite, 0.0).rotated(winkel + kante),
 				kraeftig, 2.0)
 
@@ -188,6 +194,7 @@ func _process(delta: float) -> void:
 		_zone.mitte = _hand
 		_zone.winkel = _winkel
 		_zone.reichweite = reichweite
+		_zone.tiefe = Reeds.KLINGE_PIXEL * SKALA
 		_zone.queue_redraw()
 	if not _laeuft:
 		queue_redraw()
@@ -214,7 +221,8 @@ func _schneide(delta: float, reichweite: float) -> void:
 		if pause > 0.0:
 			s.set_meta(&"pause", pause - delta)
 			continue
-		if not Reeds.trifft(s.position, _hand, _winkel, reichweite):
+		if not Reeds.trifft(s.position, _hand, _winkel, reichweite,
+				Reeds.KLINGE_PIXEL * SKALA):
 			continue
 		var leben: int = int(s.get_meta(&"leben")) - 1
 		s.set_meta(&"leben", leben)

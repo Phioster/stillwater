@@ -25,6 +25,10 @@ const SCHNEIDE: float = 1.0
 ## Wie breit die Schneide trifft, im Bogenmass. Ein voller Kreis waere ein
 ## Rasenmaeher; der Reiz ist, dass die Klinge vorbeikommen MUSS.
 const SEKTOR: float = 1.40
+## Wie tief die Klinge nach innen reicht, in ihren eigenen Pixeln -- die Dicke
+## ihres Bauchs (tools/sichel_bauen.py). Mal dem Weltmassstab ergibt das den
+## Ring, in dem geschnitten wird.
+const KLINGE_PIXEL: float = 8.0
 ## Zwei Treffer derselben Umdrehung auf denselben Halm zaehlen als einer.
 const TREFFER_PAUSE: float = 0.10
 
@@ -103,12 +107,20 @@ func fund(halme: int, rng: RandomNumberGenerator) -> StringName:
 
 ## Trifft die Sichel diesen Halm? Getrennt vom Zeichnen, damit die Tests
 ## nachrechnen koennen -- am fertigen Bild ginge das nicht.
-static func trifft(halm: Vector2, klinge: Vector2, winkel: float,
-		reichweite: float) -> bool:
-	var d := halm - klinge
-	if d.length() > reichweite:
+static func trifft(halm: Vector2, hand: Vector2, winkel: float,
+		reichweite: float, tiefe: float = -1.0, sektor: float = -1.0) -> bool:
+	var t := tiefe if tiefe >= 0.0 else KLINGE_PIXEL * 2.16
+	var k := sektor if sektor >= 0.0 else SEKTOR
+	var d := halm - hand
+	var weit := d.length()
+	if weit > reichweite:
 		return false
-	return absf(wrapf(d.angle() - winkel, -PI, PI)) <= SEKTOR * 0.5
+	# Nur der RING, in dem die Klinge kreist. Vorher galt der ganze Keil von
+	# der Hand bis zum Rand -- alles dazwischen wurde von nichts Sichtbarem
+	# geschnitten, und mit weiterer Bahn fiel das immer mehr auf.
+	if t > 0.0 and weit < reichweite - t:
+		return false
+	return absf(wrapf(d.angle() - winkel, -PI, PI)) <= k * 0.5
 
 func to_dict() -> Dictionary:
 	return {"cut_slot": cut_slot}

@@ -107,31 +107,65 @@ func test_a_find_stays_rare_however_much_is_cut() -> void:
 ## Die Sichel muss vorbeikommen: was hinter ihr steht, wird nicht geschnitten,
 ## auch wenn es nah genug ist. Ein voller Kreis waere ein Rasenmaeher.
 func test_the_blade_only_cuts_in_front_of_its_edge() -> void:
-	var mitte := Vector2(400.0, 300.0)
+	var hand := Vector2(400.0, 300.0)
 	var reichweite := 50.0
-	# Genau vor der Schneide, dicht dran.
-	assert_true(Reeds.trifft(mitte + Vector2(30.0, 0.0), mitte, 0.0, reichweite))
-	# Genauso nah, aber hinter ihr.
-	assert_false(Reeds.trifft(mitte + Vector2(-30.0, 0.0), mitte, 0.0, reichweite),
-		"die Sichel schneidet nach hinten")
-	# Direkt vor ihr, aber ausserhalb der Reichweite.
-	assert_false(Reeds.trifft(mitte + Vector2(70.0, 0.0), mitte, 0.0, reichweite),
-		"die Sichel greift weiter, als sie reicht")
+	var tiefe := 20.0
+	# Im Ring und genau vor der Schneide.
+	assert_true(Reeds.trifft(hand + Vector2(45.0, 0.0), hand, 0.0, reichweite,
+		tiefe))
+	# Genauso weit, aber hinter ihr.
+	assert_false(Reeds.trifft(hand + Vector2(-45.0, 0.0), hand, 0.0,
+		reichweite, tiefe), "die Sichel schneidet nach hinten")
+	# Direkt vor ihr, aber weiter als sie reicht.
+	assert_false(Reeds.trifft(hand + Vector2(70.0, 0.0), hand, 0.0, reichweite,
+		tiefe), "die Sichel greift weiter, als sie reicht")
 	# Am Rand des Ausschnitts, drinnen und knapp draussen.
 	var knapp_drin := Reeds.SEKTOR * 0.5 - 0.02
 	var knapp_raus := Reeds.SEKTOR * 0.5 + 0.02
-	assert_true(Reeds.trifft(mitte + Vector2(30.0, 0.0).rotated(knapp_drin),
-		mitte, 0.0, reichweite))
-	assert_false(Reeds.trifft(mitte + Vector2(30.0, 0.0).rotated(knapp_raus),
-		mitte, 0.0, reichweite))
+	assert_true(Reeds.trifft(hand + Vector2(45.0, 0.0).rotated(knapp_drin),
+		hand, 0.0, reichweite, tiefe))
+	assert_false(Reeds.trifft(hand + Vector2(45.0, 0.0).rotated(knapp_raus),
+		hand, 0.0, reichweite, tiefe))
+
+## Und sie schneidet NUR DA, WO SIE IST. Zwischen Hand und Klinge passiert
+## nichts mehr -- vorher galt der ganze Keil bis zur Hand, und alles darin
+## wurde von nichts Sichtbarem geschnitten.
+func test_nothing_is_cut_between_the_hand_and_the_blade() -> void:
+	var hand := Vector2(400.0, 300.0)
+	var reichweite := 50.0
+	var tiefe := 20.0
+	for weit in [0.0, 5.0, 15.0, 29.0]:
+		assert_false(Reeds.trifft(hand + Vector2(weit, 0.0), hand, 0.0,
+			reichweite, tiefe),
+			"bei %f von der Hand wird geschnitten, die Klinge ist bei %f"
+				% [weit, reichweite])
+	# Und am inneren Rand des Rings faengt es an.
+	assert_true(Reeds.trifft(hand + Vector2(31.0, 0.0), hand, 0.0, reichweite,
+		tiefe), "am inneren Rand des Rings wird nicht geschnitten")
 
 ## Die Klinge dreht sich, also dreht sich auch, was sie trifft.
 func test_the_cut_sector_turns_with_the_blade() -> void:
-	var mitte := Vector2(400.0, 300.0)
-	var ziel := mitte + Vector2(0.0, 30.0)
-	assert_false(Reeds.trifft(ziel, mitte, 0.0, 50.0))
-	assert_true(Reeds.trifft(ziel, mitte, PI * 0.5, 50.0),
+	var hand := Vector2(400.0, 300.0)
+	var ziel := hand + Vector2(0.0, 45.0)
+	assert_false(Reeds.trifft(ziel, hand, 0.0, 50.0, 20.0))
+	assert_true(Reeds.trifft(ziel, hand, PI * 0.5, 50.0, 20.0),
 		"gedreht trifft sie ihr Ziel nicht")
+
+## Der Ring darf nicht tiefer sein als die Klinge dick ist -- sonst schnitte
+## sie wieder, wo nichts gezeichnet ist.
+func test_the_cut_ring_is_no_deeper_than_the_drawn_blade() -> void:
+	var bild := TextureLoader.load_texture(
+		"res://assets/art/sichel.png").get_image()
+	var mitte := bild.get_height() / 2
+	# Am Bauch, also waagerecht durch die Mitte nach rechts.
+	var dick := 0
+	for x in range(mitte, bild.get_width()):
+		if bild.get_pixel(x, mitte).a > 0.0:
+			dick += 1
+	assert_true(dick > 2, "die Klinge ist am Bauch nur %d Pixel dick" % dick)
+	assert_true(Reeds.KLINGE_PIXEL <= float(dick),
+		"der Ring ist %.0f Pixel tief, die Klinge nur %d dick"
+			% [Reeds.KLINGE_PIXEL, dick])
 
 # --- Was ein Schnitt einbringt --------------------------------------------
 
