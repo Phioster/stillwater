@@ -398,8 +398,9 @@ func test_the_drawn_poses_lean_further_and_further() -> void:
 			% [mitten[mitten.size() - 1], mitten[0]])
 
 ## Die eingeblendete Trefferzone muss dieselbe sein, nach der auch wirklich
-## geschnitten wird. Ein Hilfsbild, das etwas anderes zeigt als die Regel,
-## ist schlimmer als keins -- man sucht dann den Fehler an der falschen Stelle.
+## geschnitten wird -- und sie liegt auf der KLINGE, nicht um die Hand. Zwei
+## Anlaeufe davor zogen sie um die Hand, und ein Kreis um die Hand kann einen
+## Kreis um die Klingenmitte nur an einer Stelle beruehren.
 func test_the_shown_hitbox_is_the_one_that_cuts() -> void:
 	Game.new_game()
 	Game.dev_scythe_box = true
@@ -410,20 +411,31 @@ func test_the_shown_hitbox_is_the_one_that_cuts() -> void:
 	schnitt.starte()
 	schnitt._process(0.05)
 	assert_true(schnitt._zone.visible, "die Zone wird nicht gezeigt")
-	assert_almost_eq(schnitt._zone.reichweite, Game.scythe_reach(), 0.001,
-		"die gezeigte Reichweite ist nicht die, mit der geschnitten wird")
+	assert_true(schnitt._zone.mitte.is_equal_approx(schnitt._sichel.position),
+		"die Zone liegt nicht auf der Klinge")
+	var radius: float = schnitt.SICHEL_RADIUS * schnitt.SKALA
+	assert_almost_eq(schnitt._zone.reichweite, radius, 0.001,
+		"die gezeigte Zone ist nicht so gross wie die Klinge")
+	assert_almost_eq(schnitt._zone.tiefe, Reeds.KLINGE_PIXEL * schnitt.SKALA,
+		0.001, "die gezeigte Tiefe ist nicht die Dicke der Klinge")
 	assert_almost_eq(schnitt._zone.winkel, schnitt._winkel, 0.001,
 		"die gezeigte Richtung ist nicht die der Klinge")
-	# Und an der Kante der gezeichneten Zone muss die Regel kippen.
+	# Und an den Kanten der gezeichneten Zone muss die Regel kippen.
 	var mitte: Vector2 = schnitt._zone.mitte
+	var tiefe: float = schnitt._zone.tiefe
 	var halb := Reeds.SEKTOR * 0.5
-	var r: float = schnitt._zone.reichweite
-	var drin := mitte + Vector2(r * 0.9, 0.0).rotated(schnitt._winkel + halb - 0.02)
-	var raus := mitte + Vector2(r * 0.9, 0.0).rotated(schnitt._winkel + halb + 0.02)
-	assert_true(Reeds.trifft(drin, mitte, schnitt._winkel, r),
-		"innerhalb der gezeigten Zone wird nicht geschnitten")
-	assert_false(Reeds.trifft(raus, mitte, schnitt._winkel, r),
-		"ausserhalb der gezeigten Zone wird trotzdem geschnitten")
+	var mittig := radius - tiefe * 0.5
+	for probe in [
+		[Vector2(mittig, 0.0).rotated(schnitt._winkel + halb - 0.02), true],
+		[Vector2(mittig, 0.0).rotated(schnitt._winkel + halb + 0.02), false],
+		[Vector2(radius - tiefe * 0.2, 0.0).rotated(schnitt._winkel), true],
+		[Vector2(radius - tiefe * 1.5, 0.0).rotated(schnitt._winkel), false],
+		[Vector2(radius * 1.2, 0.0).rotated(schnitt._winkel), false],
+	]:
+		var stelle: Vector2 = mitte + (probe[0] as Vector2)
+		assert_eq(Reeds.trifft(stelle, mitte, schnitt._winkel, radius, tiefe),
+			probe[1] as bool,
+			"bei %s stimmt Bild und Regel nicht ueberein" % str(probe[0]))
 	Game.dev_scythe_box = false
 	schnitt.free()
 
@@ -552,3 +564,53 @@ func test_resetting_an_unknown_upgrade_does_nothing() -> void:
 	Game.upgrade_levels[&"rod_power"] = 3
 	assert_eq(Game.dev_reset_upgrade(&"gibt_es_nicht"), 0)
 	assert_eq(int(Game.upgrade_levels[&"rod_power"]), 3)
+
+## Und es muss auch WIRKLICH die Klinge sein, die schneidet -- nicht nur im
+## Bild. Ein Versuch, bei dem die Zone auf der Klinge lag und geschnitten
+## weiter um die Hand wurde, ist durch alle anderen Zusicherungen gerutscht:
+## die pruefen die Regel, nicht die Verdrahtung.
+##
+## Geprueft wird bei VOLLER Reichweite. Auf Stufe 0 sitzt die Klinge fast auf
+## der Hand, da tun beide Verdrahtungen dasselbe -- der erste Anlauf dieses
+## Tests war deshalb ebenfalls blind.
+func test_it_really_is_the_blade_that_does_the_cutting() -> void:
+	Game.new_game()
+	var u: UpgradeData = Database.upgrades[&"scythe_reach"]
+	Game.upgrade_levels[&"scythe_reach"] = u.max_level
+	var tree := Engine.get_main_loop() as SceneTree
+	var schnitt: Control = load("res://scenes/fishing/reed_cut.tscn").instantiate()
+	tree.root.add_child(schnitt)
+	await tree.process_frame
+	schnitt.starte()
+	for i in 40:
+		schnitt._process(0.02)
+	var radius: float = schnitt.SICHEL_RADIUS * schnitt.SKALA
+	var tiefe: float = Reeds.KLINGE_PIXEL * schnitt.SKALA
+	var bahn: float = (schnitt._sichel.position - schnitt._hand).length()
+	assert_true(bahn > radius,
+		"die Bahn (%.0f) ist nicht weiter als die Klinge gross (%.0f) -- der"
+			% [bahn, radius] + " Test kann die beiden Faelle nicht trennen")
+	var mittig := radius - tiefe * 0.5
+	var schluessel: Array = schnitt._halme.keys()
+	assert_true(schluessel.size() >= 2, "zu wenige Halme zum Pruefen")
+	var getroffen: Sprite2D = schnitt._halme[schluessel[0]]
+	var verschont: Sprite2D = schnitt._halme[schluessel[1]]
+	for i in range(2, schluessel.size()):
+		var weg: Sprite2D = schnitt._halme[schluessel[i]]
+		schnitt._halme.erase(schluessel[i])
+		weg.get_parent().remove_child(weg)
+		weg.free()
+	# Auf der Kreisbahn der KLINGENMITTE -- dort kommt die Klinge vorbei.
+	getroffen.position = schnitt._hand + Vector2(bahn + mittig, 0.0)
+	# Und dort, wo eine Zone um die HAND treffen wuerde: nah an der Hand, weit
+	# weg von jeder Klinge.
+	verschont.position = schnitt._hand + Vector2(mittig, 0.0)
+	for i in 50:
+		schnitt._ziel = schnitt._hand
+		schnitt._process(0.02)
+	assert_true(int(getroffen.get_meta(&"leben")) < schnitt._noetig,
+		"der Halm auf der Klingenbahn bekam keinen Treffer")
+	assert_eq(int(verschont.get_meta(&"leben")), schnitt._noetig,
+		"der Halm bei der Hand wurde geschnitten, obwohl dort keine Klinge ist")
+	Game.upgrade_levels[&"scythe_reach"] = 0
+	schnitt.free()

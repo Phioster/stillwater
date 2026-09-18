@@ -24,6 +24,8 @@ class Trefferzone extends Node2D:
 	var reichweite := 0.0
 
 	var tiefe := 0.0
+	## Wo die Hand steht -- dazu die blasse Bahn, auf der die Klinge kreist.
+	var bahn := Vector2.ZERO
 
 	func _draw() -> void:
 		if reichweite <= 0.0:
@@ -31,11 +33,11 @@ class Trefferzone extends Node2D:
 		var halb := Reeds.SEKTOR * 0.5
 		var kraeftig := Color(1.0, 0.33, 0.28, 0.9)
 		var innen := maxf(reichweite - tiefe, 0.0)
-		# Die ganze Bahn blass: so sieht man, wo die Klinge gleich sein wird.
-		draw_arc(mitte, reichweite, 0.0, TAU, 48, Color(1.0, 0.33, 0.28, 0.22),
-			1.0)
-		draw_arc(mitte, innen, 0.0, TAU, 48, Color(1.0, 0.33, 0.28, 0.22), 1.0)
-		# Und kraeftig der RING-Ausschnitt, in dem wirklich geschnitten wird.
+		# Blass die Bahn um die Hand: so sieht man, wo die Klinge gleich sein
+		# wird und was der Ausbau an Reichweite gebracht hat.
+		draw_arc(bahn, (mitte - bahn).length(), 0.0, TAU, 48,
+			Color(1.0, 0.33, 0.28, 0.22), 1.0)
+		# Und kraeftig der Bogen der Klinge selbst -- die Trefferform.
 		draw_arc(mitte, reichweite, winkel - halb, winkel + halb, 24,
 			kraeftig, 2.0)
 		draw_arc(mitte, innen, winkel - halb, winkel + halb, 24, kraeftig, 2.0)
@@ -191,10 +193,12 @@ func _process(delta: float) -> void:
 	_sichel.scale = Vector2(SKALA, SKALA)
 	_zone.visible = Game.dev_scythe_box
 	if _zone.visible:
-		_zone.mitte = _hand
+		# Um die KLINGE, nicht um die Hand -- sie ist die Trefferform.
+		_zone.mitte = _sichel.position
 		_zone.winkel = _winkel
-		_zone.reichweite = reichweite
+		_zone.reichweite = SICHEL_RADIUS * SKALA
 		_zone.tiefe = Reeds.KLINGE_PIXEL * SKALA
+		_zone.bahn = _hand
 		_zone.queue_redraw()
 	if not _laeuft:
 		queue_redraw()
@@ -221,8 +225,8 @@ func _schneide(delta: float, reichweite: float) -> void:
 		if pause > 0.0:
 			s.set_meta(&"pause", pause - delta)
 			continue
-		if not Reeds.trifft(s.position, _hand, _winkel, reichweite,
-				Reeds.KLINGE_PIXEL * SKALA):
+		if not Reeds.trifft(s.position, _sichel.position, _winkel,
+				SICHEL_RADIUS * SKALA, Reeds.KLINGE_PIXEL * SKALA):
 			continue
 		var leben: int = int(s.get_meta(&"leben")) - 1
 		s.set_meta(&"leben", leben)
