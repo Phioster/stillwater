@@ -459,3 +459,33 @@ func test_the_drawn_blade_matches_what_it_cuts() -> void:
 	assert_true(spanne >= Reeds.SEKTOR,
 		"die Klinge spannt nur %.0f Grad, geschnitten wird in %.0f"
 			% [rad_to_deg(spanne), rad_to_deg(Reeds.SEKTOR)])
+
+## Die Klinge waechst NICHT mit der Reichweite, sie kreist weiter aussen.
+##
+## Skaliert war ein Klingenpixel voll ausgebaut 6,2 Punkte gross, waehrend die
+## ganze uebrige Welt mit 2,16 zeichnet -- fast dreimal so grob wie alles
+## daneben. Gepruefte Zusicherung: der Massstab bleibt der der Welt, UND die
+## Schneide liegt trotzdem immer genau auf der Reichweite.
+func test_the_blade_keeps_the_world_pixel_size() -> void:
+	Game.new_game()
+	var tree := Engine.get_main_loop() as SceneTree
+	var schnitt: Control = load("res://scenes/fishing/reed_cut.tscn").instantiate()
+	tree.root.add_child(schnitt)
+	await tree.process_frame
+	schnitt.starte()
+	var u: UpgradeData = Database.upgrades[&"scythe_reach"]
+	for stufe in [0, u.max_level / 2, u.max_level]:
+		Game.upgrade_levels[&"scythe_reach"] = stufe
+		# Zweimal, damit die Hand am Ziel angekommen ist.
+		for i in 40:
+			schnitt._process(0.05)
+		var reichweite := Game.scythe_reach()
+		assert_almost_eq(schnitt._sichel.scale.x, schnitt.SKALA, 0.001,
+			"bei Reichweite %.0f ist die Klinge skaliert" % reichweite)
+		var bahn: float = (schnitt._sichel.position - schnitt._hand).length()
+		var schneide: float = bahn + schnitt.SICHEL_RADIUS * schnitt.SKALA
+		assert_almost_eq(schneide, reichweite, 1.0,
+			"die Schneide liegt auf %.0f, die Reichweite ist %.0f"
+				% [schneide, reichweite])
+	Game.upgrade_levels[&"scythe_reach"] = 0
+	schnitt.free()

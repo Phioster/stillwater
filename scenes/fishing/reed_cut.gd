@@ -46,9 +46,14 @@ const HALB_B := 62.0
 const HALB_H := 34.0
 ## Wie Steg, Figur und Schwimmer -- ein Pixel ist ein Pixel.
 const SKALA := 2.16
-## Der aeussere Radius der gezeichneten Sichel in ihren eigenen Pixeln. Die
-## Klinge wird darueber auf die Reichweite skaliert, damit man SIEHT, was der
-## Ausbau gebracht hat.
+## Der aeussere Radius der gezeichneten Sichel in ihren eigenen Pixeln.
+##
+## Die Klinge wird NICHT auf die Reichweite skaliert. Das war sie bis
+## 2026-09-18, und voll ausgebaut war ein Klingenpixel dann 6,2 Punkte gross,
+## waehrend die ganze uebrige Welt mit 2,16 zeichnet -- fast dreimal so grob
+## wie alles daneben. Stattdessen KREIST sie weiter aussen: ihre Schneide
+## liegt immer genau auf der Reichweite, und der Ausbau ist an ihrer Bahn zu
+## sehen statt an ihrer Groesse.
 const SICHEL_RADIUS := 21.0
 
 var _schilf: Texture2D
@@ -66,6 +71,8 @@ var _karte_text: RichTextLabel
 var _halme: Dictionary = {}
 var _winkel := 0.0
 var _ziel := Vector2.ZERO
+## Wo die Hand steht -- die Klinge kreist darum.
+var _hand := Vector2.ZERO
 var _zeit := 0.0
 var _seit_nachwuchs := 0.0
 var _wind := 0.0
@@ -114,6 +121,7 @@ func starte() -> void:
 	# Sekunden fuer nichts und erfaehrt es erst am Ende.
 	_warnung.visible = Game.bait_used() >= Game.bait_capacity()
 	_ziel = _beet_mitte()
+	_hand = _ziel
 	_sichel.position = _ziel
 	visible = true
 	Audio.play(&"cast")
@@ -166,14 +174,18 @@ func _process(delta: float) -> void:
 		return
 	_winkel = wrapf(_winkel + Game.scythe_speed() * TAU * delta, -PI, PI)
 	var reichweite := Game.scythe_reach()
-	# Die Klinge zieht dem Finger NACH, statt an ihm zu kleben: ohne das
-	# springt sie bei jedem Antippen quer durchs Bild.
-	_sichel.position = _sichel.position.lerp(_ziel, clampf(delta * 18.0, 0.0, 1.0))
+	# Die Hand zieht dem Finger NACH, statt an ihm zu kleben: ohne das springt
+	# sie bei jedem Antippen quer durchs Bild.
+	_hand = _hand.lerp(_ziel, clampf(delta * 18.0, 0.0, 1.0))
+	# Die Klinge kreist um die Hand, und zwar so weit draussen, dass ihre
+	# Schneide genau auf der Reichweite liegt.
+	_sichel.position = _hand + Vector2(maxf(reichweite - SICHEL_RADIUS * SKALA,
+		0.0), 0.0).rotated(_winkel)
 	_sichel.rotation = _winkel
-	_sichel.scale = Vector2.ONE * (reichweite / SICHEL_RADIUS)
+	_sichel.scale = Vector2(SKALA, SKALA)
 	_zone.visible = Game.dev_scythe_box
 	if _zone.visible:
-		_zone.mitte = _sichel.position
+		_zone.mitte = _hand
 		_zone.winkel = _winkel
 		_zone.reichweite = reichweite
 		_zone.queue_redraw()
@@ -202,7 +214,7 @@ func _schneide(delta: float, reichweite: float) -> void:
 		if pause > 0.0:
 			s.set_meta(&"pause", pause - delta)
 			continue
-		if not Reeds.trifft(s.position, _sichel.position, _winkel, reichweite):
+		if not Reeds.trifft(s.position, _hand, _winkel, reichweite):
 			continue
 		var leben: int = int(s.get_meta(&"leben")) - 1
 		s.set_meta(&"leben", leben)
