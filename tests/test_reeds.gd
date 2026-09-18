@@ -281,24 +281,68 @@ func test_the_developer_switch_makes_the_reeds_stand_again() -> void:
 # haben das Bild stattdessen verschoben -- gedreht, dann zeilenweise geschert
 # -- und beide sahen falsch aus, das zweite wie verrutschte Bildzeilen.
 
-## Er steht nicht still, aber er zappelt auch nicht. Jeder Wechsel ist ein
-## ganzes neues Bild und damit sichtbar; sieben je Sekunde lasen sich als
-## Zittern. Das ist die Zahl, an der sich die Beschwerde messen laesst.
-func test_the_reeds_change_pose_slowly() -> void:
-	const SCHRITTE := 6000
-	const DT := 0.01
-	var wechsel := 0
+## Das Bild darf sich nicht in Spruengen aendern. Mit sechs Stellungen
+## wechselten je Schritt rund 390 von 770 Pixeln -- mehr als die halbe Pflanze
+## auf einmal, und genau das ruckelt. Mit den feinen Zwischenstellungen sind
+## es unter hundert. Das ist, was "interpolieren" in Pixelgrafik heisst:
+## mehr gezeichnete Bilder, kein Ueberblenden.
+func test_a_pose_change_never_redraws_a_quarter_of_the_clump() -> void:
+	var bild := TextureLoader.load_texture(
+		"res://assets/art/schilf_wind.png").get_image()
+	var hoehe := bild.get_height()
+	var gefuellt := 0
+	for y in hoehe:
+		for x in Reeds.HALM_B:
+			if bild.get_pixel(x, y).a > 0.0:
+				gefuellt += 1
+	assert_true(gefuellt > 100, "die erste Stellung ist fast leer")
+	var groesste := 0
+	for stellung in Reeds.WIND_BILDER - 1:
+		var anders := 0
+		for y in hoehe:
+			for x in Reeds.HALM_B:
+				if bild.get_pixel(stellung * Reeds.HALM_B + x, y) \
+						!= bild.get_pixel((stellung + 1) * Reeds.HALM_B + x, y):
+					anders += 1
+		assert_true(anders > 0,
+			"Stellung %d und %d sind dasselbe Bild" % [stellung, stellung + 1])
+		groesste = maxi(groesste, anders)
+	var anteil := float(groesste) / float(gefuellt)
+	assert_true(anteil <= 0.25,
+		"ein Wechsel malt bis zu %.0f%% der Pflanze neu" % (anteil * 100.0))
+
+## Und er darf nicht rasen. Gemessen wird, wie viele Pixel sich je Sekunde
+## aendern -- das ist Tempo MAL Schrittweite, also die Zahl, die beides
+## zusammenfasst. Mit dem schnellen Flattern von damals lag sie bei ueber
+## 2500 und sah aus wie Zittern.
+func test_the_wind_does_not_race() -> void:
+	var bild := TextureLoader.load_texture(
+		"res://assets/art/schilf_wind.png").get_image()
+	# Wie viel sich je Schritt aendert, einmal vorab ausgerechnet.
+	var kosten: Array[int] = []
+	for stellung in Reeds.WIND_BILDER - 1:
+		var anders := 0
+		for y in bild.get_height():
+			for x in Reeds.HALM_B:
+				if bild.get_pixel(stellung * Reeds.HALM_B + x, y) \
+						!= bild.get_pixel((stellung + 1) * Reeds.HALM_B + x, y):
+					anders += 1
+		kosten.append(anders)
+	const SCHRITTE := 3000
+	const DT := 0.02
+	var summe := 0
 	var vorher := ReedPatch.stellung(0.0, Reeds.WIND_BILDER)
 	for i in range(1, SCHRITTE):
 		var jetzt := ReedPatch.stellung(float(i) * DT, Reeds.WIND_BILDER)
-		if jetzt != vorher:
-			wechsel += 1
-		vorher = jetzt
-	var je_sekunde := float(wechsel) / (float(SCHRITTE) * DT)
-	assert_true(je_sekunde <= 2.5,
-		"der Horst wechselt %.2f mal je Sekunde -- das zittert" % je_sekunde)
-	assert_true(je_sekunde >= 0.4,
-		"der Horst wechselt nur %.2f mal je Sekunde -- das steht" % je_sekunde)
+		while jetzt != vorher:
+			var schritt := 1 if jetzt > vorher else -1
+			summe += kosten[mini(vorher, vorher + schritt)]
+			vorher += schritt
+	var je_sekunde := float(summe) / (float(SCHRITTE) * DT)
+	assert_true(je_sekunde <= 800.0,
+		"es aendern sich %.0f Pixel je Sekunde -- das rast" % je_sekunde)
+	assert_true(je_sekunde >= 100.0,
+		"es aendern sich nur %.0f Pixel je Sekunde -- das steht" % je_sekunde)
 
 ## Und er nutzt alle gezeichneten Stellungen. Wer nur zwischen zweien hin und
 ## her springt, haette sich die anderen sparen koennen.
@@ -322,15 +366,20 @@ func test_the_wind_does_not_repeat_after_one_gust() -> void:
 	assert_true(erste != zweite,
 		"nach einer Boe faengt dasselbe Bild wieder von vorn an")
 
-## Die gezeichneten Stellungen muessen sich der Reihe nach weiter neigen --
-## sonst springt der Horst beim Wechsel, statt sich zu biegen. Gemessen am
-## Schwerpunkt des oberen Drittels, wo die Halme sich bewegen.
+## Die gezeichneten Stellungen muessen sich der Reihe nach weiter neigen und
+## duerfen nie zurueckgehen -- sonst springt der Horst beim Wechsel hin und
+## her, statt sich zu biegen.
+##
+## Gemessen am Schwerpunkt des oberen Drittels, aber NICHT streng steigend:
+## bei den feinen Zwischenstellungen aendert sich manchmal nur der untere
+## Teil des Halms, und dann bleibt die Spitze stehen. Das ist richtig so -- so
+## laeuft eine Biegung vom Fuss nach oben.
 func test_the_drawn_poses_lean_further_and_further() -> void:
 	var blatt := TextureLoader.load_texture("res://assets/art/schilf_wind.png")
 	assert_true(blatt != null, "das Windblatt fehlt")
 	var bild := blatt.get_image()
 	var drittel := bild.get_height() / 3
-	var vorher := -9999.0
+	var mitten: Array[float] = []
 	for stellung in Reeds.WIND_BILDER:
 		var summe := 0.0
 		var zahl := 0
@@ -340,8 +389,11 @@ func test_the_drawn_poses_lean_further_and_further() -> void:
 					summe += float(x - stellung * Reeds.HALM_B)
 					zahl += 1
 		assert_true(zahl > 0, "Stellung %d ist oben leer" % stellung)
-		var mitte := summe / float(zahl)
-		assert_true(mitte > vorher,
-			"Stellung %d neigt sich nicht weiter als die davor (%.2f vs %.2f)"
-				% [stellung, mitte, vorher])
-		vorher = mitte
+		mitten.append(summe / float(zahl))
+	for i in mitten.size() - 1:
+		assert_true(mitten[i + 1] >= mitten[i] - 0.001,
+			"Stellung %d neigt sich zurueck (%.2f nach %.2f)"
+				% [i + 1, mitten[i], mitten[i + 1]])
+	assert_true(mitten[mitten.size() - 1] > mitten[0] + 1.0,
+		"die letzte Stellung steht kaum anders als die erste (%.2f zu %.2f)"
+			% [mitten[mitten.size() - 1], mitten[0]])

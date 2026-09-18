@@ -45,16 +45,27 @@ HALME = ((-11, 24, -3, 4), (11, 26, 3, 3), (-8, 31, -3, 5), (8, 29, 3, 4),
          (-4, 38, -2, 3), (5, 36, 2, 2), (-9, 43, -2, 1), (9, 41, 2, 2),
          (-3, 49, -1, 0), (3, 47, 1, 1), (0, 52, 0, 0))
 
-## Windbilder: wie weit die Spitzen in diesem Bild geneigt stehen, in Pixeln.
-## Der Wind draengt in eine Richtung, deshalb reicht die Reihe weiter nach
-## rechts als nach links.
+## Windbilder: die Spitzen neigen sich von WIND_VON bis WIND_BIS, in
+## WIND_SCHRITT-Stufen. Gebrochene Werte sind keine Spielerei -- halm() rundet
+## je Bildzeile, eine Neigung von 1,2 biegt den Halm also an einer anderen
+## Stelle als 1,0 und ergibt ein wirklich anderes Bild.
+##
+## Zwischenstellungen sind das, was in Pixelgrafik "interpolieren" heisst.
+## Mit sechs Stellungen aenderten sich je Wechsel rund 390 Pixel -- mehr als
+## die halbe Pflanze auf einmal, und das ruckelt. Mit den feinen Stufen sind
+## es rund 100.
 ##
 ## Gezeichnete Bilder und KEIN verschobenes Bild: der Horst wurde vorher
 ## zeilenweise geschert, und weil dabei ganze waagerechte Baender gemeinsam
 ## ruecken, lief quer durch die Halme eine Naht. Das sah aus wie die
 ## verrutschten Bildzeilen eines alten Fernsehers, nicht wie Wind. Hier bewegt
 ## sich jeder Halm als durchgehende Linie, weil er neu gemalt wird.
-WIND = (-1, 0, 1, 2, 3, 4)
+##
+## Der Wind draengt in eine Richtung, deshalb reicht die Reihe weiter nach
+## rechts als nach links.
+WIND_VON = -1.0
+WIND_BIS = 4.0
+WIND_SCHRITT = 0.2
 
 SICHEL = 44
 SICHEL_VERSATZ = 0.34
@@ -132,29 +143,55 @@ def sichel():
     return bild
 
 
+def ein_horst(neigen, hoechster):
+    """Der Horst in EINER Windstellung."""
+    teil = Image.new("RGBA", (HORST_B, HORST_H), (0, 0, 0, 0))
+    px = teil.load()
+    rng = random.Random(SAAT)
+    belegt = set()
+    for dx, hoehe, neigung, fuss in HALME:
+        # Hohe Halme geben mehr nach als kurze -- ein Stummel im selben Wind
+        # bleibt fast gerade.
+        schilf_bauen.halm(px, HORST_B // 2 + dx, hoehe,
+                          neigung + neigen * hoehe / hoechster, rng, belegt,
+                          kolben=hoehe >= 34, fuss=fuss)
+    return teil
+
+
+def windstellungen():
+    """Alle VERSCHIEDENEN Stellungen der Reihe nach.
+
+    Die feinen Stufen ergeben nicht jedes Mal ein neues Bild -- zwei
+    Neigungen koennen auf dasselbe Pixelraster fallen. Doppelte werden
+    weggelassen: sie kosteten Platz und wuerden im Spiel nur bedeuten, dass
+    eine Stellung laenger steht.
+    """
+    hoechster = max(h for _, h, _, _ in HALME)
+    raus = []
+    letzte = None
+    n = int(round((WIND_BIS - WIND_VON) / WIND_SCHRITT)) + 1
+    for i in range(n):
+        teil = ein_horst(WIND_VON + i * WIND_SCHRITT, hoechster)
+        roh = teil.tobytes()
+        if roh != letzte:
+            raus.append(teil)
+            letzte = roh
+    return raus
+
+
 def wind():
-    """Der volle Horst in mehreren Windstellungen, nebeneinander."""
-    bild = Image.new("RGBA", (HORST_B * len(WIND), HORST_H), (0, 0, 0, 0))
+    """Alle Windstellungen nebeneinander auf einem Blatt."""
     alt = (schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS)
     schilf_bauen.BREITE = HORST_B
     schilf_bauen.HOEHE = HORST_H
     schilf_bauen.FUSS = HORST_H - 1
-    hoechster = max(h for _, h, _, _ in HALME)
     try:
-        for i, neigen in enumerate(WIND):
-            teil = Image.new("RGBA", (HORST_B, HORST_H), (0, 0, 0, 0))
-            px = teil.load()
-            rng = random.Random(SAAT)
-            belegt = set()
-            for dx, hoehe, neigung, fuss in HALME:
-                # Hohe Halme geben mehr nach als kurze -- ein Stummel im
-                # selben Wind bleibt fast gerade.
-                zu = int(round(neigen * hoehe / hoechster))
-                schilf_bauen.halm(px, HORST_B // 2 + dx, hoehe, neigung + zu,
-                                  rng, belegt, kolben=hoehe >= 34, fuss=fuss)
-            bild.paste(teil, (i * HORST_B, 0))
+        teile = windstellungen()
     finally:
         schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS = alt
+    bild = Image.new("RGBA", (HORST_B * len(teile), HORST_H), (0, 0, 0, 0))
+    for i, teil in enumerate(teile):
+        bild.paste(teil, (i * HORST_B, 0))
     return bild
 
 

@@ -40,7 +40,7 @@ const HALM_STUFEN: int = 3
 ## Wie viele GEZEICHNETE Windstellungen der Horst am Ufer hat
 ## (tools/sichel_bauen.py: WIND). Gezeichnet und nicht verschoben -- ein
 ## geschertes Bild sah aus wie verrutschte Bildzeilen.
-const WIND_BILDER: int = 6
+const WIND_BILDER: int = 26
 
 const HALME_JE_KOEDER: int = 6
 ## Wie wahrscheinlich im Schilf etwas Besonderes liegt. Waechst mit der Ernte,
