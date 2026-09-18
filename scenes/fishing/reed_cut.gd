@@ -272,6 +272,20 @@ func _draw() -> void:
 
 ## Anzeige. Alles per Anker gesetzt und nichts aus size gerechnet: in _ready()
 ## ist die noch (0,0), die erste Groesse kommt mit dem Layout-Durchlauf.
+## Schrift, die UEBER der Welt steht und nicht auf dem Sandpanel: weiss mit
+## DUNKLEM Umriss. Das Theme macht es genau andersherum -- dunkle Tinte, heller
+## Umriss --, weil es fuer die Panels gemacht ist; ueber dem Nachtwasser war
+## "HALME" dadurch kaum zu lesen. Dieselbe Behandlung wie
+## scenes/effects/pop_text.gd, das als einziges sonst ueber der Welt steht.
+func _ueber_der_welt(l: Label, groesse: int) -> Label:
+	l.add_theme_font_size_override(&"font_size", groesse)
+	l.add_theme_color_override(&"font_color", Color.WHITE)
+	l.add_theme_color_override(&"font_outline_color",
+		Palette.get_color(&"shadow"))
+	l.add_theme_constant_override(&"outline_size",
+		maxi(4, groesse / UiTheme.SCHRIFT_GROESSE * UiTheme.OUTLINE * 2))
+	return l
+
 func _baue_hud() -> void:
 	var hud := Control.new()
 	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -286,18 +300,16 @@ func _baue_hud() -> void:
 	kopf.offset_top = 18.0
 	kopf.add_theme_constant_override(&"separation", 0)
 	hud.add_child(kopf)
-	_zaehler = Label.new()
+	_zaehler = _ueber_der_welt(Label.new(), UiTheme.SCHRIFT_GROESSE * 3)
 	_zaehler.text = "0"
-	_zaehler.add_theme_font_size_override(&"font_size", UiTheme.SCHRIFT_GROESSE * 3)
-	_zaehler.add_theme_constant_override(&"outline_size", UiTheme.OUTLINE * 3)
 	kopf.add_child(_zaehler)
-	var unterschrift := Label.new()
+	var unterschrift := _ueber_der_welt(Label.new(), UiTheme.SCHRIFT_GROESSE)
 	unterschrift.text = "HALME"
-	unterschrift.modulate = Palette.get_color(&"reed_light")
 	kopf.add_child(unterschrift)
-	_warnung = Label.new()
+	_warnung = _ueber_der_welt(Label.new(), UiTheme.SCHRIFT_GROESSE)
 	_warnung.text = "KÖDERTASCHE VOLL"
-	_warnung.modulate = Palette.get_color(&"accent")
+	_warnung.add_theme_color_override(&"font_color",
+		Palette.get_color(&"accent"))
 	_warnung.visible = false
 	kopf.add_child(_warnung)
 

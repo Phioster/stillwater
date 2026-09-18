@@ -68,8 +68,22 @@ WIND_BIS = 4.0
 WIND_SCHRITT = 0.2
 
 SICHEL = 44
-SICHEL_VERSATZ = 0.34
-SICHEL_RADIUS = 0.92
+## Ausschnittkreis: Mitte um VERSATZ nach links, Radius RADIUS. Zusammen
+## bestimmen sie, wie dick der Bauch ist UND wie weit die Sichel um den Kreis
+## reicht.
+##
+## Sie spannte 222 Grad, ihre Trefferzone aber nur 80 (Reeds.SEKTOR) -- zwei
+## Drittel der sichtbaren Klinge schnitten gar nicht, und genau deshalb blieben
+## Halme stehen, ueber die sie hinwegzugehen schien. Aufgefallen ist es erst,
+## als die Trefferzone einblendbar war. Jetzt spannt sie rund 100 Grad: die
+## Spitzen greifen noch etwas weiter als die Zone, der Bauch trifft.
+##
+## Der Ausschnittkreis ist dabei GROESSER als die Sichel selbst und liegt weit
+## links daneben -- nur ein flacher Kreis schneidet einen kurzen Bogen heraus.
+## Ein kleiner Ausschnitt dicht an der Mitte gibt den Vollmond-Sichel, die um
+## fast den ganzen Kreis reicht.
+SICHEL_VERSATZ = 6.63
+SICHEL_RADIUS = 7.25
 
 
 def farbe(name):

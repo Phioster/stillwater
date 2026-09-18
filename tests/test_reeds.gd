@@ -392,3 +392,70 @@ func test_the_shown_hitbox_is_the_one_that_cuts() -> void:
 		"ausserhalb der gezeigten Zone wird trotzdem geschnitten")
 	Game.dev_scythe_box = false
 	schnitt.free()
+
+## Die Anzeige im Schilfschneiden steht UEBER der Welt, nicht auf dem
+## Sandpanel. Das Theme faerbt Beschriftungen dunkel und umrandet sie hell --
+## fuer die Panels richtig, ueber dem Nachtwasser unlesbar. Genau so war
+## "HALME" kaum zu erkennen.
+func test_the_reed_hud_is_written_for_the_dark_world() -> void:
+	Game.new_game()
+	var tree := Engine.get_main_loop() as SceneTree
+	var schnitt: Control = load("res://scenes/fishing/reed_cut.tscn").instantiate()
+	tree.root.add_child(schnitt)
+	await tree.process_frame
+	var gefunden := 0
+	for l in _labels(schnitt):
+		if not l.has_theme_color_override(&"font_color"):
+			continue
+		gefunden += 1
+		var schrift: Color = l.get_theme_color(&"font_color")
+		var umriss: Color = l.get_theme_color(&"font_outline_color")
+		assert_true(_helligkeit(schrift) > _helligkeit(umriss) + 0.25,
+			"%s steht dunkel auf hellem Umriss (%.2f gegen %.2f)"
+				% [l.text, _helligkeit(schrift), _helligkeit(umriss)])
+		assert_true(l.get_theme_constant(&"outline_size") >= 4,
+			"%s hat kaum Umriss" % l.text)
+	assert_true(gefunden >= 3,
+		"nur %d Beschriftungen gefunden -- der Test sucht falsch" % gefunden)
+	schnitt.free()
+
+func _labels(n: Node) -> Array[Label]:
+	var raus: Array[Label] = []
+	if n is Label:
+		raus.append(n as Label)
+	for k in n.get_children():
+		raus.append_array(_labels(k))
+	return raus
+
+func _helligkeit(c: Color) -> float:
+	return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+
+## Die gezeichnete Sichel darf nicht viel weiter reichen als ihre
+## Trefferzone. Sie spannte 222 Grad, geschnitten wurde in 80 -- zwei Drittel
+## der sichtbaren Klinge waren eine Luege, und genau deshalb blieben Halme
+## stehen, ueber die sie hinwegzugehen schien. Gesehen hat man das erst, als
+## die Zone einblendbar war; diese Zahl haelt es fest.
+func test_the_drawn_blade_matches_what_it_cuts() -> void:
+	var bild := TextureLoader.load_texture(
+		"res://assets/art/sichel.png").get_image()
+	var mitte := Vector2(bild.get_width(), bild.get_height()) * 0.5
+	var winkel: Array[float] = []
+	for y in bild.get_height():
+		for x in bild.get_width():
+			if bild.get_pixel(x, y).a > 0.0:
+				winkel.append((Vector2(x, y) + Vector2(0.5, 0.5) - mitte).angle())
+	assert_true(winkel.size() > 50, "die Sichel ist fast leer")
+	winkel.sort()
+	# Die groesste Luecke im Kreis ist die Seite, an der die Sichel offen ist.
+	var luecke := winkel[0] + TAU - winkel[winkel.size() - 1]
+	for i in winkel.size() - 1:
+		luecke = maxf(luecke, winkel[i + 1] - winkel[i])
+	var spanne := TAU - luecke
+	assert_true(spanne <= Reeds.SEKTOR * 1.6,
+		"die Klinge spannt %.0f Grad, geschnitten wird in %.0f"
+			% [rad_to_deg(spanne), rad_to_deg(Reeds.SEKTOR)])
+	# Und sie darf auch nicht SCHMALER sein als die Zone -- dann traefe sie
+	# Halme, die sie gar nicht beruehrt.
+	assert_true(spanne >= Reeds.SEKTOR,
+		"die Klinge spannt nur %.0f Grad, geschnitten wird in %.0f"
+			% [rad_to_deg(spanne), rad_to_deg(Reeds.SEKTOR)])
