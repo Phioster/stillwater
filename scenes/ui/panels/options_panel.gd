@@ -53,6 +53,9 @@ func _dev_bereich() -> void:
 		refresh())
 	add_child(pose)
 
+	add_child(_toggle("Trefferzone der Sense zeigen", Game.dev_scythe_box,
+		func(on: bool) -> void: Game.dev_scythe_box = on))
+
 	# Aufraeumen. Beim Ausprobieren ist nach kurzer Zeit alles voll, und dann
 	# laesst sich nichts mehr pruefen, ohne neu anzufangen.
 	add_child(_leeren("Fischkiste leeren", func() -> int:
@@ -75,6 +78,7 @@ func _dev_bereich() -> void:
 		Game.dev_raven = -1
 		Game.dev_trader = -1
 		Game.dev_rain = -1
+		Game.dev_scythe_box = false
 		if Game.ctx != null:
 			Game.ctx.inventory.dev_full = false
 			if Game.sim.state == FishingSim.State.INVENTORY_FULL:

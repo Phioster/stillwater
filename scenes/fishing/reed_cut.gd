@@ -13,6 +13,32 @@ extends Control
 
 signal beendet
 
+## Zeigt, wo die Sense wirklich trifft: der Kreisausschnitt vor ihrer
+## Schneide. Die gezeichnete Klinge ist breiter als ihre Trefferzone -- ohne
+## das Bild sieht man nicht, warum ein Halm stehen bleibt, an dem sie
+## vorbeizugehen scheint. Eigener Knoten, weil er UEBER Halmen und Klinge
+## liegen muss; _draw der Wurzel malt hinter ihre Kinder.
+class Trefferzone extends Node2D:
+	var mitte := Vector2.ZERO
+	var winkel := 0.0
+	var reichweite := 0.0
+
+	func _draw() -> void:
+		if reichweite <= 0.0:
+			return
+		var halb := Reeds.SEKTOR * 0.5
+		var kraeftig := Color(1.0, 0.33, 0.28, 0.9)
+		# Der ganze Kreis blass: so sieht man, was die Klinge NICHT trifft.
+		draw_arc(mitte, reichweite, 0.0, TAU, 48, Color(1.0, 0.33, 0.28, 0.22),
+			1.0)
+		draw_arc(mitte, reichweite, winkel - halb, winkel + halb, 24,
+			kraeftig, 2.0)
+		for kante in [-halb, halb]:
+			draw_line(mitte,
+				mitte + Vector2(reichweite, 0.0).rotated(winkel + kante),
+				kraeftig, 2.0)
+
+
 ## Der Zellabstand. Gross genug, dass die Halme sich nicht gegenseitig
 ## verdecken -- sie sind so hoch wie die am Ufer, und das sind ueber hundert
 ## Punkte auf dem Schirm.
@@ -30,7 +56,9 @@ var _sichel_bild: Texture2D
 
 var _halme_ebene: Node2D
 var _sichel: Sprite2D
+var _zone: Trefferzone
 var _zaehler: Label
+var _warnung: Label
 var _uhr: ProgressBar
 var _karte: PanelContainer
 var _karte_text: RichTextLabel
@@ -40,6 +68,7 @@ var _winkel := 0.0
 var _ziel := Vector2.ZERO
 var _zeit := 0.0
 var _seit_nachwuchs := 0.0
+var _wind := 0.0
 var _geschnitten := 0
 var _laeuft := false
 var _noetig := 5
@@ -60,6 +89,9 @@ func _ready() -> void:
 	_sichel = Sprite2D.new()
 	_sichel.texture = _sichel_bild
 	add_child(_sichel)
+	_zone = Trefferzone.new()
+	_zone.visible = false
+	add_child(_zone)
 	_baue_hud()
 
 ## Beginnt eine Runde. Die Zaehigkeit kommt aus der Zone, die Schaerfe aus
@@ -77,6 +109,10 @@ func starte() -> void:
 	_geschnitten = 0
 	_laeuft = true
 	_karte.visible = false
+	# Bei voller Tasche bringt das Schneiden nur noch Funde. Das gehoert VOR
+	# die Runde, nicht auf die Abrechnung danach -- sonst maeht man achtzehn
+	# Sekunden fuer nichts und erfaehrt es erst am Ende.
+	_warnung.visible = Game.bait_used() >= Game.bait_capacity()
 	_ziel = _beet_mitte()
 	_sichel.position = _ziel
 	visible = true
@@ -101,13 +137,18 @@ func _saee() -> void:
 		var s := Sprite2D.new()
 		s.texture = _schilf
 		s.region_enabled = true
-		s.region_rect = Rect2(0.0, 0.0, float(Reeds.HALM_B), float(_schilf.get_height()))
+		s.region_rect = Rect2(0.0, 0.0, float(Reeds.HALM_B), float(Reeds.HALM_H))
 		s.scale = Vector2(SKALA, SKALA)
 		# Der Fuss des Halms sitzt auf der Zelle, nicht seine Mitte.
-		s.offset = Vector2(0.0, -float(_schilf.get_height()) * 0.5)
+		s.offset = Vector2(0.0, -float(Reeds.HALM_H) * 0.5)
 		s.position = _zelle_pos(z.x, z.y)
 		s.set_meta(&"leben", _noetig)
 		s.set_meta(&"pause", 0.0)
+		s.set_meta(&"stufe", 0)
+		# Jeder Halm bringt seine eigene Zeit mit, sonst wiegt sich das ganze
+		# Beet im Gleichschritt -- und das sieht aus wie eine Tapete.
+		s.set_meta(&"wind", _rng.randf() * 100.0)
+		s.set_meta(&"stellung", -1)
 		_halme_ebene.add_child(s)
 		_halme[z] = s
 		return
@@ -130,15 +171,23 @@ func _process(delta: float) -> void:
 	_sichel.position = _sichel.position.lerp(_ziel, clampf(delta * 18.0, 0.0, 1.0))
 	_sichel.rotation = _winkel
 	_sichel.scale = Vector2.ONE * (reichweite / SICHEL_RADIUS)
+	_zone.visible = Game.dev_scythe_box
+	if _zone.visible:
+		_zone.mitte = _sichel.position
+		_zone.winkel = _winkel
+		_zone.reichweite = reichweite
+		_zone.queue_redraw()
 	if not _laeuft:
 		queue_redraw()
 		return
+	_wind += delta
 	_zeit = maxf(0.0, _zeit - delta)
 	_seit_nachwuchs += delta
 	while _seit_nachwuchs >= Reeds.NACHWUCHS:
 		_seit_nachwuchs -= Reeds.NACHWUCHS
 		_saee()
 	_schneide(delta, reichweite)
+	_wiege()
 	_zaehler.text = "%d" % _geschnitten
 	_uhr.value = _zeit / Reeds.DAUER * 100.0
 	if _zeit <= 0.0:
@@ -161,14 +210,28 @@ func _schneide(delta: float, reichweite: float) -> void:
 		if leben > 0:
 			# Der Halm wird kuerzer, statt nur zu blinken: sonst weiss man
 			# nicht, ob man ihn schon hat.
-			var stufe := clampi(int(floor(float(_noetig - leben)
-				/ float(_noetig) * float(Reeds.HALM_STUFEN))), 0, Reeds.HALM_STUFEN - 1)
-			s.region_rect.position.x = float(stufe * Reeds.HALM_B)
+			s.set_meta(&"stufe", clampi(int(floor(float(_noetig - leben)
+				/ float(_noetig) * float(Reeds.HALM_STUFEN))),
+				0, Reeds.HALM_STUFEN - 1))
+			s.set_meta(&"stellung", -1)
 			continue
 		_geschnitten += 1
 		Audio.play(&"rod", 0.04)
 		_halme.erase(z)
 		s.queue_free()
+
+## Jeder Halm im Beet wiegt sich wie der am Ufer -- aber jeder zu seiner
+## eigenen Zeit. Neu gesetzt wird nur, wenn sich die Stellung wirklich
+## aendert; dazwischen steht das Bild still, und das soll es auch.
+func _wiege() -> void:
+	for s in _halme.values():
+		var neu := ReedPatch.stellung(_wind + float(s.get_meta(&"wind")),
+			Reeds.WIND_BILDER)
+		if neu == int(s.get_meta(&"stellung")):
+			continue
+		s.set_meta(&"stellung", neu)
+		s.region_rect.position = Vector2(float(neu * Reeds.HALM_B),
+			float(int(s.get_meta(&"stufe")) * Reeds.HALM_H))
 
 func _beende() -> void:
 	_laeuft = false
@@ -176,12 +239,15 @@ func _beende() -> void:
 	var zeilen: Array[String] = ["[b]%d Halme[/b]" % int(e["halme"])]
 	var b: BaitData = Database.baits.get(e["bait"])
 	var name: String = b.display_name if b != null else String(e["bait"])
+	# Erst was es gab, dann warum es nicht mehr war. Vorher standen
+	# "Zu wenig für einen Köder" und "Die Ködertasche ist voll" zusammen da --
+	# das zweite war der Grund, das erste damit schlicht falsch.
 	if int(e["got"]) > 0:
 		zeilen.append("%d × %s" % [int(e["got"]), name])
-	else:
-		zeilen.append("Zu wenig für einen Köder")
 	if int(e["got"]) < int(e["wanted"]):
 		zeilen.append("Die Ködertasche ist voll")
+	elif int(e["got"]) == 0:
+		zeilen.append("Zu wenig für einen Köder")
 	if String(e["find"]) != "":
 		var c: ConsumableData = Database.consumables.get(e["find"])
 		zeilen.append("Im Schilf lag: %s" % (c.display_name if c != null
@@ -229,6 +295,11 @@ func _baue_hud() -> void:
 	unterschrift.text = "HALME"
 	unterschrift.modulate = Palette.get_color(&"reed_light")
 	kopf.add_child(unterschrift)
+	_warnung = Label.new()
+	_warnung.text = "KÖDERTASCHE VOLL"
+	_warnung.modulate = Palette.get_color(&"accent")
+	_warnung.visible = false
+	kopf.add_child(_warnung)
 
 	_uhr = ProgressBar.new()
 	_uhr.show_percentage = false

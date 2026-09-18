@@ -112,7 +112,6 @@ const WAVE_SCALE := 7.0
 const SCHILF_KNOPF_X := 0.80
 ## Der Horst laeuft im Massstab der Figur, wie das Uferband daneben.
 const SCHILF_KNOPF_SKALA := ANGLER_SCALE
-const SCHILF_HORST_H := 62.0
 const WAVE_BIAS := 9.5
 ## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
@@ -257,9 +256,12 @@ func _ready() -> void:
 	# Am Ufer steht der volle Horst in seinen Windstellungen -- ein anderes
 	# Blatt als das geschnittene Schilf im Minispiel.
 	_schilf_knopf = ReedPatch.new()
+	# Oberste Zeile des Blattes: der ungeschnittene Horst in seinen
+	# Windstellungen. Die Zeilen darunter sind die geschnittenen Stufen und
+	# gehoeren ins Minispiel.
 	_schilf_knopf.setze(
-		TextureLoader.load_texture("res://assets/art/schilf_wind.png"),
-		Vector2(float(Reeds.HALM_B), SCHILF_HORST_H), Reeds.WIND_BILDER,
+		TextureLoader.load_texture("res://assets/art/schilf_horst.png"),
+		Vector2(float(Reeds.HALM_B), float(Reeds.HALM_H)), Reeds.WIND_BILDER,
 		SCHILF_KNOPF_SKALA)
 	_schilf_knopf.visible = false
 	$Visitors.add_child(_schilf_knopf)

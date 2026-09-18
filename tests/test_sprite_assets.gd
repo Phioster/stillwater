@@ -59,10 +59,12 @@ func _expected_size(filename: String) -> Vector2i:
 	# Stummel. Die Sichel ist quadratisch, ihr Kreis fuellt das Bild
 	# (tools/sichel_bauen.py). Das UFERBAND heisst schilf.png und ist ein
 	# anderes Blatt -- die beiden nicht verwechseln.
+	# Ein Blatt fuer beides: Spalten sind Windstellungen, Zeilen die
+	# Schnittstufen. Das Ufer nimmt die oberste Zeile, das Minispiel die zur
+	# jeweiligen Stufe (tools/sichel_bauen.py).
 	if filename == "schilf_horst.png":
-		return Vector2i(Reeds.HALM_B * Reeds.HALM_STUFEN, 62)
-	if filename == "schilf_wind.png":
-		return Vector2i(Reeds.HALM_B * Reeds.WIND_BILDER, 62)
+		return Vector2i(Reeds.HALM_B * Reeds.WIND_BILDER,
+			Reeds.HALM_H * Reeds.HALM_STUFEN)
 	if filename == "sichel.png":
 		return Vector2i(44, 44)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).

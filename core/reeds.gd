@@ -36,8 +36,9 @@ const ZEILEN: int = 7
 ## Das Schilfbild hat drei Halme nebeneinander: voll, angeschnitten, Stummel.
 ## Ein Halm, der nach jedem Treffer gleich aussieht, gibt keine Rueckmeldung.
 const HALM_B: int = 34
+const HALM_H: int = 62
 const HALM_STUFEN: int = 3
-## Wie viele GEZEICHNETE Windstellungen der Horst am Ufer hat
+## Wie viele GEZEICHNETE Windstellungen der Horst hat
 ## (tools/sichel_bauen.py: WIND). Gezeichnet und nicht verschoben -- ein
 ## geschertes Bild sah aus wie verrutschte Bildzeilen.
 const WIND_BILDER: int = 26

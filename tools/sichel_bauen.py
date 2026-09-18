@@ -83,32 +83,68 @@ def farbe(name):
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + (255,)
 
 
+def _neigungen(hoechster):
+    """Die Neigungen, die wirklich verschiedene Bilder ergeben.
+
+    Die feinen Stufen fallen nicht jedes Mal auf ein neues Pixelraster.
+    Gemessen wird am VOLLEN Halm; die geschnittenen Stufen bekommen dieselbe
+    Liste, damit alle drei Zeilen des Blattes spaltenweise zusammenpassen.
+    """
+    raus = []
+    letzte = None
+    n = int(round((WIND_BIS - WIND_VON) / WIND_SCHRITT)) + 1
+    for i in range(n):
+        neigen = WIND_VON + i * WIND_SCHRITT
+        roh = _eine_stufe(0, neigen, hoechster).tobytes()
+        if roh != letzte:
+            raus.append(neigen)
+            letzte = roh
+    return raus
+
+
+def _eine_stufe(stufe, neigen, hoechster):
+    """Der Horst in einer Schnittstufe und einer Windstellung."""
+    teil = Image.new("RGBA", (HORST_B, HORST_H), (0, 0, 0, 0))
+    px = teil.load()
+    # Fuer jede Stufe derselbe Samen: so bleibt ein Halm derselbe Halm, nur
+    # gekappt, statt bei jedem Treffer die Farbe zu wechseln.
+    rng = random.Random(SAAT)
+    belegt = set()
+    for dx, hoehe, neigung, fuss in HALME:
+        gekappt = max(3, int(round(hoehe * RESTE[stufe])))
+        # Hohe Halme geben mehr nach als kurze -- ein Stummel im selben Wind
+        # bleibt fast gerade.
+        schilf_bauen.halm(px, HORST_B // 2 + dx, gekappt,
+                          neigung + neigen * gekappt / hoechster, rng, belegt,
+                          kolben=gekappt >= 34, fuss=fuss)
+    return teil
+
+
 def horst():
-    bild = Image.new("RGBA", (HORST_B * STUFEN, HORST_H), (0, 0, 0, 0))
-    # schilf_bauen zeichnet auf sein eigenes Blattmass. Hier wird es kurz auf
-    # das des Horsts gesetzt und danach zurueckgegeben -- sonst kachelt _setz
-    # ueber die falsche Breite und schneidet an der falschen Hoehe ab.
+    """Ein Blatt: Spalten sind Windstellungen, Zeilen die Schnittstufen.
+
+    Beides in EINEM Blatt, weil es dieselbe Pflanze ist. Das Ufer nimmt die
+    oberste Zeile (ungeschnitten), das Minispiel die Zeile zur jeweiligen
+    Stufe -- und dort wiegt sich jeder Halm fuer sich, weil jeder seine
+    eigene Zeit mitbringt.
+    """
     alt = (schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS)
     schilf_bauen.BREITE = HORST_B
     schilf_bauen.HOEHE = HORST_H
     schilf_bauen.FUSS = HORST_H - 1
     try:
+        hoechster = max(h for _, h, _, _ in HALME)
+        neigungen = _neigungen(hoechster)
+        bild = Image.new("RGBA",
+                         (HORST_B * len(neigungen), HORST_H * STUFEN),
+                         (0, 0, 0, 0))
         for stufe in range(STUFEN):
-            # Jede Stufe auf ihr EIGENES Blatt: _setz kachelt umlaufend, auf
-            # dem gemeinsamen Blatt wuechse ein Halm in die Nachbarstufe hinein.
-            teil = Image.new("RGBA", (HORST_B, HORST_H), (0, 0, 0, 0))
-            px = teil.load()
-            # Fuer jede Stufe derselbe Samen: so bleibt ein Halm derselbe
-            # Halm, nur gekappt, statt bei jedem Treffer die Farbe zu wechseln.
-            rng = random.Random(SAAT)
-            belegt = set()
-            for dx, hoehe, neigung, fuss in HALME:
-                gekappt = max(3, int(round(hoehe * RESTE[stufe])))
-                schilf_bauen.halm(px, HORST_B // 2 + dx, gekappt, neigung, rng,
-                                  belegt, kolben=gekappt >= 34, fuss=fuss)
-            bild.paste(teil, (stufe * HORST_B, 0))
+            for i, neigen in enumerate(neigungen):
+                bild.paste(_eine_stufe(stufe, neigen, hoechster),
+                           (i * HORST_B, stufe * HORST_H))
     finally:
         schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS = alt
+    print("  %d Windstellungen x %d Schnittstufen" % (len(neigungen), STUFEN))
     return bild
 
 
@@ -143,62 +179,9 @@ def sichel():
     return bild
 
 
-def ein_horst(neigen, hoechster):
-    """Der Horst in EINER Windstellung."""
-    teil = Image.new("RGBA", (HORST_B, HORST_H), (0, 0, 0, 0))
-    px = teil.load()
-    rng = random.Random(SAAT)
-    belegt = set()
-    for dx, hoehe, neigung, fuss in HALME:
-        # Hohe Halme geben mehr nach als kurze -- ein Stummel im selben Wind
-        # bleibt fast gerade.
-        schilf_bauen.halm(px, HORST_B // 2 + dx, hoehe,
-                          neigung + neigen * hoehe / hoechster, rng, belegt,
-                          kolben=hoehe >= 34, fuss=fuss)
-    return teil
-
-
-def windstellungen():
-    """Alle VERSCHIEDENEN Stellungen der Reihe nach.
-
-    Die feinen Stufen ergeben nicht jedes Mal ein neues Bild -- zwei
-    Neigungen koennen auf dasselbe Pixelraster fallen. Doppelte werden
-    weggelassen: sie kosteten Platz und wuerden im Spiel nur bedeuten, dass
-    eine Stellung laenger steht.
-    """
-    hoechster = max(h for _, h, _, _ in HALME)
-    raus = []
-    letzte = None
-    n = int(round((WIND_BIS - WIND_VON) / WIND_SCHRITT)) + 1
-    for i in range(n):
-        teil = ein_horst(WIND_VON + i * WIND_SCHRITT, hoechster)
-        roh = teil.tobytes()
-        if roh != letzte:
-            raus.append(teil)
-            letzte = roh
-    return raus
-
-
-def wind():
-    """Alle Windstellungen nebeneinander auf einem Blatt."""
-    alt = (schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS)
-    schilf_bauen.BREITE = HORST_B
-    schilf_bauen.HOEHE = HORST_H
-    schilf_bauen.FUSS = HORST_H - 1
-    try:
-        teile = windstellungen()
-    finally:
-        schilf_bauen.BREITE, schilf_bauen.HOEHE, schilf_bauen.FUSS = alt
-    bild = Image.new("RGBA", (HORST_B * len(teile), HORST_H), (0, 0, 0, 0))
-    for i, teil in enumerate(teile):
-        bild.paste(teil, (i * HORST_B, 0))
-    return bild
-
-
 def main():
     os.makedirs(KUNST, exist_ok=True)
     for name, bild in (("schilf_horst.png", horst()),
-                       ("schilf_wind.png", wind()),
                        ("sichel.png", sichel())):
         bild.save(os.path.join(KUNST, name))
         print("%s  %dx%d" % (name, bild.width, bild.height))

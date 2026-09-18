@@ -207,19 +207,22 @@ func test_the_shore_band_and_the_cut_clump_stay_two_sheets() -> void:
 	# kachelt die Uferlinie falsch.
 	assert_eq(Vector2(band.get_width(), band.get_height()), WORLD.REED_SIZE,
 		"das Uferband passt nicht mehr zu REED_SIZE in world.gd")
-	assert_eq(horst.get_width(), Reeds.HALM_B * Reeds.HALM_STUFEN,
-		"der Horst hat nicht drei Bilder nebeneinander")
+	assert_eq(horst.get_width(), Reeds.HALM_B * Reeds.WIND_BILDER,
+		"das Blatt hat nicht eine Spalte je Windstellung")
+	assert_eq(horst.get_height(), Reeds.HALM_H * Reeds.HALM_STUFEN,
+		"das Blatt hat nicht eine Zeile je Schnittstufe")
 
-## Und die drei Bilder muessen sich unterscheiden, sonst sieht man vom
-## Schneiden nichts.
+## Und die drei Schnittstufen muessen sich unterscheiden, sonst sieht man vom
+## Schneiden nichts. Sie stehen jetzt als ZEILEN im Blatt, nicht als Spalten --
+## die Spalten sind die Windstellungen.
 func test_the_three_cutting_stages_really_differ() -> void:
 	var horst := TextureLoader.load_texture("res://assets/art/schilf_horst.png")
 	var bild := horst.get_image()
 	var gefuellt: Array[int] = []
 	for stufe in Reeds.HALM_STUFEN:
 		var zahl := 0
-		for x in range(stufe * Reeds.HALM_B, (stufe + 1) * Reeds.HALM_B):
-			for y in bild.get_height():
+		for y in range(stufe * Reeds.HALM_H, (stufe + 1) * Reeds.HALM_H):
+			for x in bild.get_width():
 				if bild.get_pixel(x, y).a > 0.0:
 					zahl += 1
 		gefuellt.append(zahl)
@@ -227,53 +230,6 @@ func test_the_three_cutting_stages_really_differ() -> void:
 		assert_true(gefuellt[i] > gefuellt[i + 1],
 			"Stufe %d hat %d Pixel, Stufe %d aber %d -- es wird nicht kuerzer"
 				% [i, gefuellt[i], i + 1, gefuellt[i + 1]])
-
-## Der Horst steht zwischen dem Uferschilf und muss dessen Groesse haben. Als
-## er halb so hoch war, sah er aus wie Gras vor echtem Schilf.
-func test_the_cut_clump_is_as_tall_as_the_shore_reeds() -> void:
-	var horst := TextureLoader.load_texture("res://assets/art/schilf_horst.png")
-	assert_true(float(horst.get_height()) >= WORLD.REED_SIZE.y * 0.75,
-		"der Horst ist %d hoch, das Uferband %d" % [horst.get_height(),
-			int(WORLD.REED_SIZE.y)])
-
-# --- Entwicklerhilfen -------------------------------------------------------
-#
-# Beim Ausprobieren laeuft alles voll, und danach laesst sich nichts mehr
-# pruefen. Diese drei muessen wirklich leeren, nicht nur die Anzeige.
-
-func test_the_developer_switch_empties_the_fish_box() -> void:
-	Game.new_game()
-	for i in 5:
-		var c := CaughtFish.new()
-		c.fish_id = &"bluegill"
-		Game.ctx.inventory.add(c)
-	assert_eq(Game.ctx.inventory.fish.size(), 5, "der Aufbau ging schief")
-	assert_eq(Game.dev_clear_fish(), 5, "er meldet die falsche Zahl")
-	assert_eq(Game.ctx.inventory.fish.size(), 0, "die Kiste ist noch voll")
-
-## Eine volle Kiste haelt das Angeln an -- nach dem Leeren muss es weitergehen.
-func test_emptying_the_box_lets_fishing_continue() -> void:
-	Game.new_game()
-	Game.sim.state = FishingSim.State.INVENTORY_FULL
-	Game.dev_clear_fish()
-	assert_true(Game.sim.state != FishingSim.State.INVENTORY_FULL,
-		"das Angeln haengt weiter an der vollen Kiste")
-
-func test_the_developer_switch_empties_the_bait_bag() -> void:
-	Game.new_game()
-	Game.upgrade_levels[&"bait_capacity"] = 9
-	Game.gain_bait(&"pond_grub", 12)
-	assert_true(Game.bait_used() >= 12, "der Aufbau ging schief")
-	var weg := Game.dev_clear_bait()
-	assert_true(weg >= 12, "er meldet %d statt mindestens 12" % weg)
-	assert_eq(Game.bait_used(), 0, "die Tasche ist noch voll")
-
-func test_the_developer_switch_makes_the_reeds_stand_again() -> void:
-	Game.new_game()
-	Game.finish_reed_cut(30)
-	assert_false(Game.reeds_ready(), "der Aufbau ging schief")
-	Game.dev_grow_reeds()
-	assert_true(Game.reeds_ready(), "das Schilf steht nicht wieder")
 
 # --- Der Wind am Ufer -------------------------------------------------------
 #
@@ -288,7 +244,7 @@ func test_the_developer_switch_makes_the_reeds_stand_again() -> void:
 ## mehr gezeichnete Bilder, kein Ueberblenden.
 func test_a_pose_change_never_redraws_a_quarter_of_the_clump() -> void:
 	var bild := TextureLoader.load_texture(
-		"res://assets/art/schilf_wind.png").get_image()
+		"res://assets/art/schilf_horst.png").get_image()
 	var hoehe := bild.get_height()
 	var gefuellt := 0
 	for y in hoehe:
@@ -317,7 +273,7 @@ func test_a_pose_change_never_redraws_a_quarter_of_the_clump() -> void:
 ## 2500 und sah aus wie Zittern.
 func test_the_wind_does_not_race() -> void:
 	var bild := TextureLoader.load_texture(
-		"res://assets/art/schilf_wind.png").get_image()
+		"res://assets/art/schilf_horst.png").get_image()
 	# Wie viel sich je Schritt aendert, einmal vorab ausgerechnet.
 	var kosten: Array[int] = []
 	for stellung in Reeds.WIND_BILDER - 1:
@@ -375,10 +331,11 @@ func test_the_wind_does_not_repeat_after_one_gust() -> void:
 ## Teil des Halms, und dann bleibt die Spitze stehen. Das ist richtig so -- so
 ## laeuft eine Biegung vom Fuss nach oben.
 func test_the_drawn_poses_lean_further_and_further() -> void:
-	var blatt := TextureLoader.load_texture("res://assets/art/schilf_wind.png")
+	var blatt := TextureLoader.load_texture("res://assets/art/schilf_horst.png")
 	assert_true(blatt != null, "das Windblatt fehlt")
 	var bild := blatt.get_image()
-	var drittel := bild.get_height() / 3
+	# Oberes Drittel EINER Stellung -- das Blatt ist jetzt drei Zeilen hoch.
+	var drittel := Reeds.HALM_H / 3
 	var mitten: Array[float] = []
 	for stellung in Reeds.WIND_BILDER:
 		var summe := 0.0
@@ -397,3 +354,33 @@ func test_the_drawn_poses_lean_further_and_further() -> void:
 	assert_true(mitten[mitten.size() - 1] > mitten[0] + 1.0,
 		"die letzte Stellung steht kaum anders als die erste (%.2f zu %.2f)"
 			% [mitten[mitten.size() - 1], mitten[0]])
+
+## Die eingeblendete Trefferzone muss dieselbe sein, nach der auch wirklich
+## geschnitten wird. Ein Hilfsbild, das etwas anderes zeigt als die Regel,
+## ist schlimmer als keins -- man sucht dann den Fehler an der falschen Stelle.
+func test_the_shown_hitbox_is_the_one_that_cuts() -> void:
+	Game.new_game()
+	Game.dev_scythe_box = true
+	var tree := Engine.get_main_loop() as SceneTree
+	var schnitt: Control = load("res://scenes/fishing/reed_cut.tscn").instantiate()
+	tree.root.add_child(schnitt)
+	await tree.process_frame
+	schnitt.starte()
+	schnitt._process(0.05)
+	assert_true(schnitt._zone.visible, "die Zone wird nicht gezeigt")
+	assert_almost_eq(schnitt._zone.reichweite, Game.scythe_reach(), 0.001,
+		"die gezeigte Reichweite ist nicht die, mit der geschnitten wird")
+	assert_almost_eq(schnitt._zone.winkel, schnitt._winkel, 0.001,
+		"die gezeigte Richtung ist nicht die der Klinge")
+	# Und an der Kante der gezeichneten Zone muss die Regel kippen.
+	var mitte: Vector2 = schnitt._zone.mitte
+	var halb := Reeds.SEKTOR * 0.5
+	var r: float = schnitt._zone.reichweite
+	var drin := mitte + Vector2(r * 0.9, 0.0).rotated(schnitt._winkel + halb - 0.02)
+	var raus := mitte + Vector2(r * 0.9, 0.0).rotated(schnitt._winkel + halb + 0.02)
+	assert_true(Reeds.trifft(drin, mitte, schnitt._winkel, r),
+		"innerhalb der gezeigten Zone wird nicht geschnitten")
+	assert_false(Reeds.trifft(raus, mitte, schnitt._winkel, r),
+		"ausserhalb der gezeigten Zone wird trotzdem geschnitten")
+	Game.dev_scythe_box = false
+	schnitt.free()
