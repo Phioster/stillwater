@@ -23,25 +23,30 @@ signal tapped
 ##    dadurch biegt sich der Halm, statt starr zu kippen. Das ist der
 ##    groesste Unterschied -- vorher schwang jede Reihe im selben Takt und nur
 ##    der Ausschlag wuchs nach oben, also kippte der Horst als Brett.
-## 2. Es liegen ZWEI Schwingungen uebereinander: eine lange Boe und ein
-##    kurzes Flattern darauf. Weil ihre Perioden nicht ineinander aufgehen,
-##    wiederholt sich das Bild fuers Auge nie.
+## 2. Es liegen ZWEI Schwingungen uebereinander. Weil ihre Perioden nicht
+##    ineinander aufgehen, wiederholt sich das Bild fuers Auge nie. BEIDE
+##    sind langsam: die zweite war zuerst ein schnelles Flattern, und weil
+##    jeder Versatz ein ganzer Pixel ist, sprang die Spitze damit siebenmal
+##    je Sekunde. Das las sich als Zittern, nicht als Wind.
 ## 3. Der Wind DRAENGT IN EINE RICHTUNG und laesst zurueckfedern, statt
 ##    symmetrisch nach beiden Seiten zu ziehen. Der Horst steht deshalb auch
 ##    in Ruhe leicht geneigt.
 ##
 ## Alles bleibt in ganzen Pixeln -- gedreht waere er das einzige weiche Ding
 ## im Bild.
-const BOE := 0.51
-const FLATTERN := 1.73
-## Wie stark das Flattern gegenueber der Boe zu Wort kommt.
-const FLATTER_ANTEIL := 0.32
+## Die beiden Boen, in Schwingungen je Sekunde. 0,17 sind knapp sechs
+## Sekunden je Zug -- gemessen daran, wie oft die Spitze dabei ueberhaupt
+## springt (rund anderthalb Mal je Sekunde statt sieben).
+const BOE := 0.17
+const ZWEITE_BOE := 0.29
+## Wie stark die zweite gegenueber der ersten zu Wort kommt.
+const ZWEIT_ANTEIL := 0.28
 ## Wie viele Sekunden die Spitze dem Fuss nachhinkt. Daran haengt, ob sich der
-## Halm biegt oder kippt. Bei 0,35 blieb das Profil praktisch immer glatt --
-## der Horst neigte sich nur. Bei 0,9 liegt fast eine halbe Boe dazwischen:
-## die Spitze zieht noch nach links, waehrend die Mitte schon nach rechts
-## geht, und das ist der Knick, der es wie einen Halm aussehen laesst.
-const NACHLAUF := 0.9
+## Halm biegt oder kippt. Er waechst mit der Boe mit: bei den langsamen
+## Boen braucht es 2,2 Sekunden, damit die Spitze noch nach links zieht,
+## waehrend die Mitte schon nach rechts geht. Das ist der Knick, der es wie
+## einen Halm aussehen laesst.
+const NACHLAUF := 2.2
 ## Wie weit der Wind in seine Richtung draengt. 0 waere symmetrisch.
 const DRANG := 0.35
 ## Spitzenausschlag in Bildpixeln.
@@ -73,8 +78,8 @@ static func versatz(reihe: int, hoehe: int, zeit: float) -> int:
 	var t := 1.0 - float(reihe) / float(hoehe - 1)
 	# Die Bewegung laeuft nach oben: je hoeher, desto spaeter kommt sie an.
 	var spaet := zeit - t * NACHLAUF
-	var wind := (1.0 - FLATTER_ANTEIL) * sin(spaet * BOE * TAU) \
-		+ FLATTER_ANTEIL * sin(spaet * FLATTERN * TAU + 1.7)
+	var wind := (1.0 - ZWEIT_ANTEIL) * sin(spaet * BOE * TAU) \
+		+ ZWEIT_ANTEIL * sin(spaet * ZWEITE_BOE * TAU + 1.7)
 	# In eine Richtung draengen, in die andere nur zurueckfedern.
 	wind = (wind + DRANG) / (1.0 + DRANG)
 	# Nach oben zunehmend, unten steht der Halm im Boden fest. Der Exponent

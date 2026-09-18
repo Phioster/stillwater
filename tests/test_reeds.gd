@@ -367,3 +367,24 @@ func test_the_bands_stay_few() -> void:
 		meiste = maxi(meiste, ReedPatch.baender(HORST_H, float(schritt) * 0.05).size())
 	assert_true(meiste <= int(ReedPatch.AUSSCHLAG) * 2 + 4,
 		"%d Baender fuer %.0f Pixel Ausschlag" % [meiste, ReedPatch.AUSSCHLAG])
+
+## Es darf nicht zappeln. Jeder Versatz ist ein GANZER Pixel und damit
+## sichtbar; sieben Spruenge je Sekunde lasen sich als Zittern, nicht als
+## Wind. Das war die eigentliche Beschwerde, und es ist die Zahl, an der man
+## sie messen kann.
+func test_the_clump_does_not_twitch() -> void:
+	const SCHRITTE := 6000
+	const DT := 0.01
+	var spruenge := 0
+	var vorher := ReedPatch.versatz(0, HORST_H, 0.0)
+	for i in range(1, SCHRITTE):
+		var jetzt := ReedPatch.versatz(0, HORST_H, float(i) * DT)
+		if jetzt != vorher:
+			spruenge += 1
+		vorher = jetzt
+	var je_sekunde := float(spruenge) / (float(SCHRITTE) * DT)
+	assert_true(je_sekunde <= 2.5,
+		"die Spitze springt %.2f mal je Sekunde -- das zittert" % je_sekunde)
+	# Aber stehen soll sie auch nicht.
+	assert_true(je_sekunde >= 0.4,
+		"die Spitze springt nur %.2f mal je Sekunde -- das steht" % je_sekunde)
