@@ -14,10 +14,40 @@ extends Control
 
 signal tapped
 
-## Wie schnell er sich wiegt und wie weit die Spitze hoechstens ausschlaegt,
-## in Bildpixeln. Zwei ist genug: bei drei sieht es nach Sturm aus.
-const TEMPO := 1.5
-const AUSSCHLAG := 2.0
+## Wind statt Uhrwerk.
+##
+## Eine einzelne Sinuswelle sah mechanisch aus, und zwar aus drei Gruenden,
+## die echtes Gras alle anders macht:
+##
+## 1. Die Bewegung LAEUFT DEN HALM HINAUF. Die Spitze hinkt dem Fuss nach,
+##    dadurch biegt sich der Halm, statt starr zu kippen. Das ist der
+##    groesste Unterschied -- vorher schwang jede Reihe im selben Takt und nur
+##    der Ausschlag wuchs nach oben, also kippte der Horst als Brett.
+## 2. Es liegen ZWEI Schwingungen uebereinander: eine lange Boe und ein
+##    kurzes Flattern darauf. Weil ihre Perioden nicht ineinander aufgehen,
+##    wiederholt sich das Bild fuers Auge nie.
+## 3. Der Wind DRAENGT IN EINE RICHTUNG und laesst zurueckfedern, statt
+##    symmetrisch nach beiden Seiten zu ziehen. Der Horst steht deshalb auch
+##    in Ruhe leicht geneigt.
+##
+## Alles bleibt in ganzen Pixeln -- gedreht waere er das einzige weiche Ding
+## im Bild.
+const BOE := 0.51
+const FLATTERN := 1.73
+## Wie stark das Flattern gegenueber der Boe zu Wort kommt.
+const FLATTER_ANTEIL := 0.32
+## Wie viele Sekunden die Spitze dem Fuss nachhinkt. Daran haengt, ob sich der
+## Halm biegt oder kippt. Bei 0,35 blieb das Profil praktisch immer glatt --
+## der Horst neigte sich nur. Bei 0,9 liegt fast eine halbe Boe dazwischen:
+## die Spitze zieht noch nach links, waehrend die Mitte schon nach rechts
+## geht, und das ist der Knick, der es wie einen Halm aussehen laesst.
+const NACHLAUF := 0.9
+## Wie weit der Wind in seine Richtung draengt. 0 waere symmetrisch.
+const DRANG := 0.35
+## Spitzenausschlag in Bildpixeln.
+const AUSSCHLAG := 4.0
+## Wie schnell der Ausschlag nach unten abnimmt.
+const POTENZ := 1.6
 
 var _bild: Texture2D
 var _ausschnitt := Rect2()
@@ -41,7 +71,16 @@ static func versatz(reihe: int, hoehe: int, zeit: float) -> int:
 		return 0
 	# reihe 0 ist oben. Unten null, oben voll.
 	var t := 1.0 - float(reihe) / float(hoehe - 1)
-	return int(round(sin(zeit * TEMPO) * AUSSCHLAG * t * t))
+	# Die Bewegung laeuft nach oben: je hoeher, desto spaeter kommt sie an.
+	var spaet := zeit - t * NACHLAUF
+	var wind := (1.0 - FLATTER_ANTEIL) * sin(spaet * BOE * TAU) \
+		+ FLATTER_ANTEIL * sin(spaet * FLATTERN * TAU + 1.7)
+	# In eine Richtung draengen, in die andere nur zurueckfedern.
+	wind = (wind + DRANG) / (1.0 + DRANG)
+	# Nach oben zunehmend, unten steht der Halm im Boden fest. Der Exponent
+	# ist gemessen, nicht gewaehlt: bei 2 bewegt sich die Mitte in ganzen
+	# Pixeln fast nie, und ohne Mitte gibt es keinen Knick.
+	return int(round(wind * AUSSCHLAG * pow(t, POTENZ)))
 
 ## Die Zeilen zu Baendern gleichen Versatzes zusammenfassen: bei zwei Pixeln
 ## Ausschlag sind das eine Handvoll statt sechzig Zeichenbefehlen -- und

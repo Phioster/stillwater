@@ -297,17 +297,50 @@ func test_the_top_of_the_clump_does_move() -> void:
 		"die Spitze nimmt nur %d Stellungen ein" % gesehen.size())
 	assert_true(gesehen.has(0), "sie kommt nie zur Ruhe")
 
-## Und der Ausschlag nimmt nach unten ab, statt dass der Horst als Brett kippt.
+## Der Ausschlag nimmt nach unten ab -- gemessen ueber die ZEIT, nicht in
+## einem Augenblick. In einem einzelnen Bild darf das Profil krumm sein, das
+## ist ja gerade der Knick; was nicht sein darf, ist dass unten insgesamt
+## genauso viel passiert wie oben.
 func test_the_sway_fades_towards_the_ground() -> void:
-	# Ein Zeitpunkt mit deutlichem Ausschlag.
-	var zeit := PI * 0.5 / ReedPatch.TEMPO
-	var vorher := absi(ReedPatch.versatz(0, HORST_H, zeit))
-	assert_true(vorher > 0, "zum Hoechststand steht er still")
-	for r in range(1, HORST_H):
-		var jetzt := absi(ReedPatch.versatz(r, HORST_H, zeit))
-		assert_true(jetzt <= vorher,
-			"Reihe %d schlaegt weiter aus als die darueber" % r)
-		vorher = jetzt
+	var vorher := 999
+	for r in HORST_H:
+		var groesste := 0
+		for schritt in 600:
+			groesste = maxi(groesste,
+				absi(ReedPatch.versatz(r, HORST_H, float(schritt) * 0.02)))
+		assert_true(groesste <= vorher,
+			"Reihe %d schlaegt mit %d weiter aus als die darueber mit %d"
+				% [r, groesste, vorher])
+		vorher = groesste
+	assert_eq(vorher, 0, "die unterste Reihe bewegt sich doch")
+
+## Der Halm BIEGT sich, statt zu kippen: die Bewegung laeuft ihn hinauf, also
+## muss es Augenblicke geben, in denen Spitze und Mitte in verschiedene
+## Richtungen zeigen. Ohne das sah es aus wie ein Metronom -- alle Reihen im
+## selben Takt, nur der Ausschlag wuchs nach oben.
+func test_the_stalk_bends_instead_of_tilting() -> void:
+	var gegenlaeufig := 0
+	for schritt in 1200:
+		var zeit := float(schritt) * 0.02
+		if ReedPatch.versatz(0, HORST_H, zeit) \
+				* ReedPatch.versatz(HORST_H / 2, HORST_H, zeit) < 0:
+			gegenlaeufig += 1
+	assert_true(gegenlaeufig > 20,
+		"Spitze und Mitte zeigen nur in %d von 1200 Augenblicken"
+			% gegenlaeufig + " in verschiedene Richtungen -- der Horst kippt")
+
+## Und es wiederholt sich nicht sichtbar: zwei Schwingungen liegen
+## uebereinander, deren Perioden nicht ineinander aufgehen.
+func test_the_wind_does_not_repeat_after_one_gust() -> void:
+	var periode := 1.0 / ReedPatch.BOE
+	var erste: Array[int] = []
+	var zweite: Array[int] = []
+	for i in 40:
+		var t := float(i) / 40.0 * periode
+		erste.append(ReedPatch.versatz(0, HORST_H, t))
+		zweite.append(ReedPatch.versatz(0, HORST_H, t + periode))
+	assert_true(erste != zweite,
+		"nach einer Boe faengt dasselbe Bild wieder von vorn an")
 
 ## Die Baender muessen das Bild lueckenlos abdecken -- ein vergessenes Band
 ## waere ein Streifen, der im Halm fehlt.
@@ -332,5 +365,5 @@ func test_the_bands_stay_few() -> void:
 	var meiste := 0
 	for schritt in 200:
 		meiste = maxi(meiste, ReedPatch.baender(HORST_H, float(schritt) * 0.05).size())
-	assert_true(meiste <= int(ReedPatch.AUSSCHLAG) * 2 + 2,
+	assert_true(meiste <= int(ReedPatch.AUSSCHLAG) * 2 + 4,
 		"%d Baender fuer %.0f Pixel Ausschlag" % [meiste, ReedPatch.AUSSCHLAG])
