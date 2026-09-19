@@ -154,6 +154,15 @@ def horst():
     return bild
 
 
+## Die Farben, die zur SCHNEIDE gehoeren. Der Rest des Bildes -- Holzgriff,
+## Nieten, Umriss -- wird gezeichnet, schneidet aber nicht.
+##
+## Getrennt wird hier und nicht im Spiel, weil die Farben nur hier exakt sind:
+## in der CI kommt das PNG verlustbehaftet an, eine Farbabfrage zur Laufzeit
+## traefe dort andere Pixel als auf diesem Geraet.
+STAHL = ("rod_steel", "rod_shine", "rod_shadow", "silver")
+
+
 def klinge():
     """Das rohe Messer gespiegelt und auf seinen Umriss beschnitten."""
     bild = Image.open(ROH_MESSER).convert("RGBA")
@@ -161,10 +170,54 @@ def klinge():
     return bild.crop(bild.getbbox())
 
 
+def schneide(messer):
+    """Dasselbe Bild, aber nur der Stahl -- das ist die Trefferform.
+
+    Gleiche Groesse wie klinge.png, damit beide dieselben Koordinaten haben:
+    core/reeds.gd rechnet einen Halm in Bildpunkte um und schlaegt hier nach.
+
+    Nur das GROESSTE zusammenhaengende Stahlstueck zaehlt. Die Nieten im Griff
+    sind aus demselben Metall wie die Klinge, und ohne diesen Schritt haetten
+    zwei einzelne Pixel mitten im Holz geschnitten.
+    """
+    stahl = {farbe(n) for n in STAHL}
+    px = messer.load()
+    ist = [[px[x, y] in stahl for y in range(messer.height)]
+           for x in range(messer.width)]
+    gesehen = set()
+    groesste = []
+    for sx in range(messer.width):
+        for sy in range(messer.height):
+            if (sx, sy) in gesehen or not ist[sx][sy]:
+                continue
+            stapel, teil = [(sx, sy)], []
+            gesehen.add((sx, sy))
+            while stapel:
+                x, y = stapel.pop()
+                teil.append((x, y))
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    n = (x + dx, y + dy)
+                    if n in gesehen or not (0 <= n[0] < messer.width
+                                            and 0 <= n[1] < messer.height):
+                        continue
+                    gesehen.add(n)
+                    if ist[n[0]][n[1]]:
+                        stapel.append(n)
+            if len(teil) > len(groesste):
+                groesste = teil
+    raus = Image.new("RGBA", messer.size, (0, 0, 0, 0))
+    out = raus.load()
+    for x, y in groesste:
+        out[x, y] = px[x, y]
+    return raus
+
+
 def main():
     os.makedirs(KUNST, exist_ok=True)
+    messer = klinge()
     for name, bild in (("schilf_horst.png", horst()),
-                       ("klinge.png", klinge())):
+                       ("klinge.png", messer),
+                       ("klinge_schneide.png", schneide(messer))):
         bild.save(os.path.join(KUNST, name))
         print("%s  %dx%d" % (name, bild.width, bild.height))
 

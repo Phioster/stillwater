@@ -151,7 +151,7 @@ func test_what_is_cut_turns_with_the_knife() -> void:
 ## Vier Anlaeufe davor rechneten die Form nach, statt sie zu benutzen, und
 ## drei davon rechneten eine andere. Am Bild sah man es jedes Mal sofort.
 func test_every_drawn_pixel_cuts_and_no_other() -> void:
-	var bild := TextureLoader.load_texture(Reeds.KLINGE_BILD).get_image()
+	var bild := TextureLoader.load_texture(Reeds.SCHNEIDE_BILD).get_image()
 	if bild.is_compressed():
 		bild.decompress()
 	if bild.get_format() != Image.FORMAT_RGBA8:
@@ -174,7 +174,7 @@ func test_every_drawn_pixel_cuts_and_no_other() -> void:
 				gemalt += 1
 			if Reeds.trifft(stelle, hand, winkel, weit, skala) != ist:
 				daneben += 1
-	assert_true(gemalt > 200, "die Klinge ist fast leer")
+	assert_true(gemalt > 100, "die Schneide ist fast leer")
 	assert_eq(daneben, 0,
 		"%d von %d Bildpunkten schneiden anders, als sie aussehen"
 			% [daneben, bild.get_width() * bild.get_height()])
@@ -482,19 +482,104 @@ func test_the_tip_sits_exactly_on_the_reach() -> void:
 		var bahn := Reeds.klinge_bahn(weit, skala)
 		assert_almost_eq(bahn + halb, weit, 0.001,
 			"bei Reichweite %.0f endet das Bild auf %.0f" % [weit, bahn + halb])
-	# Und es schneidet dort auch wirklich noch: das aeusserste Pixel auf der
-	# Achse darf nur um die Rundung der Spitze hinter der Reichweite liegen.
-	var weit := 200.0
+	# Und es schneidet dort auch wirklich noch. Wie weit die Schneide auf der
+	# Mittellinie reicht, steht im Bild -- nicht in einer geratenen Toleranz.
+	var g := Reeds.klinge_groesse()
+	var letzte := -1
+	for x in g.x:
+		if Reeds.maske().get_bit(x, g.y / 2):
+			letzte = x
+	assert_true(letzte >= 0, "auf der Mittellinie ist gar keine Schneide")
+	var reichweite := 200.0
+	# Die Mitte des letzten schneidenden Bildpunkts.
+	var erwartet := reichweite - (float(g.x - letzte) - 0.5) * skala
 	var aussen := -1.0
-	for i in 200:
-		var r := weit - float(i) * 0.5
-		if Reeds.trifft(Vector2(r, 0.0), Vector2.ZERO, 0.0, weit, skala):
+	for i in 400:
+		var r := reichweite - float(i) * 0.25
+		if Reeds.trifft(Vector2(r, 0.0), Vector2.ZERO, 0.0, reichweite, skala):
 			aussen = r
 			break
 	assert_true(aussen > 0.0, "auf der Achse schneidet gar nichts")
-	assert_true(weit - aussen < 5.0 * skala,
-		"das aeusserste schneidende Pixel liegt %.0f vor der Reichweite"
-			% (weit - aussen))
+	assert_almost_eq(aussen, erwartet, skala,
+		"das aeusserste schneidende Pixel liegt auf %.0f, das Bild sagt %.0f"
+			% [aussen, erwartet])
+
+## Die Klinge darf nicht ueber Halme HINWEGSPRINGEN. Sie ist quer nur rund
+## sieben Grad breit, dreht sich bei vollem Tempo aber um sechsunddreissig
+## Grad je Bild -- ohne diesen Schwung war schnelles Kreisen gemessen
+## SCHLECHTER als langsames, der Ausbau wirkte also verkehrt herum. Aufgefallen
+## ist es erst, als tools/reichweite_messen.gd zwei Tempostufen verglich.
+func test_the_blade_does_not_jump_over_a_stalk() -> void:
+	var hand := Vector2.ZERO
+	var weit := 150.0
+	var skala := 2.16
+	var g := Reeds.klinge_groesse()
+	var stahl := Reeds.schneide_bereich()
+	# Ein Halm mitten auf der Bahn der Schneide.
+	var halm := Vector2(weit - (float(g.x) - (stahl.x + stahl.y) * 0.5) * skala,
+		0.0)
+	# Ein Bild bei vollem Tempo -- weit mehr, als die Klinge breit ist.
+	assert_false(Reeds.trifft(halm, hand, -0.3, weit, skala),
+		"am Anfang des Bildes steht die Klinge schon auf dem Halm")
+	assert_false(Reeds.trifft(halm, hand, 0.3, weit, skala),
+		"am Ende des Bildes steht die Klinge schon auf dem Halm")
+	assert_true(Reeds.trifft_im_schwung(halm, hand, -0.3, 0.3, weit, skala),
+		"die Klinge ist ueber den Halm hinweggesprungen")
+	# Und was ausserhalb des durchfahrenen Fensters steht, trifft sie nicht.
+	assert_false(Reeds.trifft_im_schwung(halm, hand, 1.0, 1.6, weit, skala),
+		"sie trifft einen Halm, an dem sie in diesem Bild gar nicht vorbeikam")
+
+## Auch ueber die Naht bei PI hinweg: der Winkel waechst unbegrenzt, der des
+## Halms liegt aber immer zwischen -PI und PI.
+func test_the_swing_works_across_the_seam() -> void:
+	var hand := Vector2.ZERO
+	var weit := 150.0
+	var skala := 2.16
+	var g := Reeds.klinge_groesse()
+	var stahl := Reeds.schneide_bereich()
+	var r := weit - (float(g.x) - (stahl.x + stahl.y) * 0.5) * skala
+	# Ein Halm bei PI, und eine Klinge, die in der siebten Umdrehung dort
+	# vorbeikommt.
+	var halm := Vector2(-r, 0.0)
+	var runde := TAU * 7.0
+	assert_true(Reeds.trifft_im_schwung(halm, hand, runde + PI - 0.3,
+		runde + PI + 0.3, weit, skala),
+		"nach mehreren Umdrehungen findet sie den Halm nicht mehr")
+
+## Nur der STAHL schneidet. Der Holzgriff faehrt mit, trifft aber nicht --
+## sonst maehte das Messer mit dem Knauf, und das sieht man ihm nicht an.
+func test_only_the_steel_cuts_not_the_handle() -> void:
+	var messer := TextureLoader.load_texture(Reeds.KLINGE_BILD).get_image()
+	var stahl := TextureLoader.load_texture(Reeds.SCHNEIDE_BILD).get_image()
+	if messer.is_compressed():
+		messer.decompress()
+	if stahl.is_compressed():
+		stahl.decompress()
+	assert_eq(Vector2i(stahl.get_width(), stahl.get_height()),
+		Vector2i(messer.get_width(), messer.get_height()),
+		"Messer und Schneide haben verschiedene Masse, dann zeigen ihre"
+			+ " Bildpunkte nicht auf dieselbe Stelle")
+	var ganz := 0
+	var schneidet := 0
+	for y in messer.get_height():
+		for x in messer.get_width():
+			var m := messer.get_pixel(x, y).a > Reeds.MASKE_SCHWELLE
+			var t := stahl.get_pixel(x, y).a > Reeds.MASKE_SCHWELLE
+			if m:
+				ganz += 1
+			if t:
+				schneidet += 1
+			assert_false(t and not m,
+				"bei %d,%d schneidet etwas, das gar nicht gemalt ist" % [x, y])
+	assert_true(schneidet < ganz,
+		"die Schneide ist so gross wie das ganze Messer -- der Griff"
+			+ " schneidet mit")
+	# Und der Griff sitzt innen: die Schneide faengt erst weiter aussen an.
+	var bereich := Reeds.schneide_bereich()
+	assert_true(bereich.x > 0.0,
+		"die Schneide beginnt schon am Griffende (%f)" % bereich.x)
+	assert_almost_eq(bereich.y, float(messer.get_width()), 0.001,
+		"die Schneide reicht nicht bis zur Spitze")
 
 ## Die Klinge waechst NICHT mit der Reichweite, sie kreist weiter aussen.
 ##
@@ -595,6 +680,12 @@ func test_it_really_is_the_blade_that_does_the_cutting() -> void:
 	# Und dort, wo eine Zone um die HAND treffen wuerde: nah an der Hand, weit
 	# weg von jeder Klinge.
 	verschont.position = schnitt._hand + Vector2(lang * 0.3, 0.0)
+	# Beide Zaehler zurueck auf Anfang: die zwei standen vorher irgendwo im
+	# Beet und haben dort schon Treffer kassiert. Ohne das misst der Test die
+	# alte Stelle mit -- genau daran ist er hier einmal falsch rot geworden.
+	for h in [getroffen, verschont]:
+		h.set_meta(&"leben", schnitt._noetig)
+		h.set_meta(&"pause", 0.0)
 	for i in 60:
 		schnitt._ziel = schnitt._hand
 		schnitt._process(0.02)

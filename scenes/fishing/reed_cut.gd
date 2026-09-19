@@ -57,10 +57,6 @@ class Schweif extends Node2D:
 	## Wie lange sie nachleuchtet.
 	const NACHLEUCHTEN := 0.13
 	const DECKUNG := 0.40
-	## Welcher Teil des Messers die Spur zieht -- die Schneide vorn, nicht
-	## der Griff.
-	const ANTEIL := 0.55
-
 	var innen := 0.0
 	var aussen := 0.0
 
@@ -239,6 +235,7 @@ func _process(delta: float) -> void:
 		return
 	# Nicht gewickelt: der Schweif haengt an aufeinanderfolgenden Winkeln,
 	# und ein Sprung von PI auf -PI zoege ihn einmal ums ganze Bild.
+	var vorher := _winkel
 	_winkel += Game.scythe_speed() * TAU * delta
 	var reichweite := Game.scythe_reach()
 	# Die Hand zieht dem Finger NACH, statt an ihm zu kleben: ohne das springt
@@ -250,9 +247,11 @@ func _process(delta: float) -> void:
 		0.0).rotated(_winkel)
 	_klinge.rotation = _winkel
 	_klinge.scale = Vector2(SKALA, SKALA)
-	var lang := float(Reeds.klinge_groesse().x) * SKALA
-	_schweif.innen = reichweite - lang * Schweif.ANTEIL
-	_schweif.aussen = reichweite
+	# Der Schweif laeuft hinter der SCHNEIDE her, nicht hinter dem Griff.
+	var g := Reeds.klinge_groesse()
+	var stahl := Reeds.schneide_bereich()
+	_schweif.innen = reichweite - (float(g.x) - stahl.x) * SKALA
+	_schweif.aussen = reichweite - (float(g.x) - stahl.y) * SKALA
 	_schweif.melde(_hand, _winkel, _zeit_gesamt)
 	_zeit_gesamt += delta
 	_zone.visible = Game.dev_scythe_box
@@ -271,7 +270,7 @@ func _process(delta: float) -> void:
 	while _seit_nachwuchs >= Reeds.NACHWUCHS:
 		_seit_nachwuchs -= Reeds.NACHWUCHS
 		_saee()
-	_schneide(delta, reichweite)
+	_schneide(delta, reichweite, vorher)
 	_wiege()
 	_zaehler.text = "%d" % _geschnitten
 	_uhr.value = _zeit / Reeds.DAUER * 100.0
@@ -281,14 +280,17 @@ func _process(delta: float) -> void:
 
 ## Wer unter der Klinge steht, bekommt einen Treffer -- unter der Klinge
 ## selbst, nicht unter irgendeinem Kreis um sie herum.
-func _schneide(delta: float, reichweite: float) -> void:
+func _schneide(delta: float, reichweite: float, vorher: float) -> void:
 	for z in _halme.keys():
 		var s: Sprite2D = _halme[z]
 		var pause: float = s.get_meta(&"pause")
 		if pause > 0.0:
 			s.set_meta(&"pause", pause - delta)
 			continue
-		if not Reeds.trifft(s.position, _hand, _winkel, reichweite, SKALA):
+		# Ueber den ganzen Bogen dieses Bildes, nicht nur an seinem Ende --
+		# sonst springt die Klinge bei hohem Tempo ueber Halme hinweg.
+		if not Reeds.trifft_im_schwung(s.position, _hand, vorher, _winkel,
+				reichweite, SKALA):
 			continue
 		var leben: int = int(s.get_meta(&"leben")) - 1
 		s.set_meta(&"leben", leben)

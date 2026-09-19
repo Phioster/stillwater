@@ -22,15 +22,19 @@ const DAUER: float = 18.0
 ## Reichweite ist der Abstand der SPITZE von der Hand, das Messer haengt also
 ## mit dem Griff nach innen darunter. Sie muss deshalb mindestens so gross
 ## sein wie das Messer lang ist, sonst raggt der Griff auf der anderen Seite
-## wieder heraus. Tempo und Reichweite sind gegenueber der Sichel angehoben:
-## die traf ueber einen breiten Bogen und landete je Vorbeifahrt zwei Treffer,
-## das schmale Messer nur einen.
-const DREHUNG: float = 3.0
+## wieder heraus. Das Tempo ist das am Geraet
+## eingestellte: 3,0 war als Ausgleich fuer die schmalere Klinge gedacht und
+## fuehlte sich fuer den Anfang zu hektisch an.
+const DREHUNG: float = 2.0
 const REICHWEITE: float = 110.0
 const SCHNEIDE: float = 1.0
 ## Das Bild der Klinge. Ihre MASKE ist die Trefferform -- Masse stehen
 ## deshalb nirgends mehr, sie kommen aus dem Bild (tools/schilfschneiden_bauen.py).
 const KLINGE_BILD: String = "res://assets/art/klinge.png"
+## Und dasselbe Bild nur mit dem Stahl. NUR die Schneide trifft, der Holzgriff
+## faehrt bloss mit -- getrennt schon beim Bauen, weil die Farben nur dort
+## exakt sind (tools/schilfschneiden_bauen.py).
+const SCHNEIDE_BILD: String = "res://assets/art/klinge_schneide.png"
 ## Ab welcher Deckung ein Bildpunkt als Klinge zaehlt. Steht hier und nicht in
 ## der Voreinstellung, weil die Tests dieselbe Grenze brauchen: in der CI wird
 ## das PNG verlustbehaftet importiert, und mit zwei Grenzen liefen Regel und
@@ -126,7 +130,7 @@ static var _maske_groesse: Vector2i = Vector2i.ZERO
 static func maske() -> BitMap:
 	if _maske != null:
 		return _maske
-	var bild := TextureLoader.load_texture(KLINGE_BILD).get_image()
+	var bild := TextureLoader.load_texture(SCHNEIDE_BILD).get_image()
 	# In der CI wird das PNG komprimiert importiert, auf diesem Geraet nicht.
 	if bild.is_compressed():
 		bild.decompress()
@@ -137,9 +141,30 @@ static func maske() -> BitMap:
 	_maske.create_from_image_alpha(bild, MASKE_SCHWELLE)
 	return _maske
 
+## Die Masse des Klingenbildes. Schneide- und Messerbild sind gleich gross --
+## nur so zeigen beide auf dieselben Bildpunkte.
 static func klinge_groesse() -> Vector2i:
 	maske()
 	return _maske_groesse
+
+## Von wo bis wo der Stahl im Bild sitzt, in Bildpunkten. Daran haengt der
+## Schweif: er soll hinter der Schneide herlaufen, nicht hinter dem Griff.
+static var _bereich: Vector2 = Vector2.ZERO
+
+static func schneide_bereich() -> Vector2:
+	if _bereich != Vector2.ZERO:
+		return _bereich
+	var g := klinge_groesse()
+	var von := g.x
+	var bis := 0
+	for x in g.x:
+		for y in g.y:
+			if maske().get_bit(x, y):
+				von = mini(von, x)
+				bis = maxi(bis, x + 1)
+				break
+	_bereich = Vector2(float(von), float(bis))
+	return _bereich
 
 ## Wie weit die Mitte des Klingenbildes von der Hand weg sitzt: so weit, dass
 ## ihre SPITZE genau auf der Reichweite liegt. Der Ausbau bewegt also ihre
@@ -165,6 +190,27 @@ static func trifft(halm: Vector2, hand: Vector2, winkel: float,
 	if ix >= g.x or iy >= g.y:
 		return false
 	return maske().get_bit(ix, iy)
+
+## Trifft die Klinge den Halm IRGENDWO auf ihrem Weg von "von" nach "bis"?
+##
+## Der Punkttest allein reichte nicht. Die Klinge ist quer nur rund sieben
+## Grad breit, dreht sich bei vollem Tempo aber um sechsunddreissig Grad je
+## Bild -- sie sprang also ueber Halme hinweg, ohne sie zu beruehren, und umso
+## oefter, je schneller sie war. Gemessen war schnelles Kreisen deshalb
+## SCHLECHTER als langsames, also genau andersherum als der Ausbau verspricht.
+##
+## Geprueft wird an dem Winkel des Fensters, der dem Halm am naechsten liegt:
+## trifft sie dort nicht, trifft sie ihn auf dem ganzen Weg nicht.
+static func trifft_im_schwung(halm: Vector2, hand: Vector2, von: float,
+		bis: float, reichweite: float, skala: float) -> bool:
+	var d := halm - hand
+	if d.is_zero_approx():
+		return trifft(halm, hand, bis, reichweite, skala)
+	var theta := d.angle()
+	# In das durchfahrene Fenster schieben, dann auf dessen Raender begrenzen.
+	theta += TAU * roundf(((von + bis) * 0.5 - theta) / TAU)
+	var winkel := clampf(theta, minf(von, bis), maxf(von, bis))
+	return trifft(halm, hand, winkel, reichweite, skala)
 
 func to_dict() -> Dictionary:
 	return {"cut_slot": cut_slot}

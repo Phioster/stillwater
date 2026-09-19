@@ -64,7 +64,7 @@ func _expected_size(filename: String) -> Vector2i:
 	# Das Messer kommt von PixelLab und wird nur gespiegelt und beschnitten,
 	# seine Groesse steht also im Bild. Genau die haelt diese Zeile fest --
 	# aendert sie sich, aendert sich auch die Trefferform.
-	if filename == "klinge.png":
+	if filename == "klinge.png" or filename == "klinge_schneide.png":
 		return Vector2i(44, 8)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).
 	if filename == "bobber.png":
