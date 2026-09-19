@@ -14,7 +14,7 @@ extends RefCounted
 
 ## Zwei Stunden -- zwischen Haendler (eine) und Rabe (vier).
 const INTERVAL: float = 7200.0
-const DAUER: float = 18.0
+const DAUER: float = 20.0
 
 ## Grundwerte der Klinge. Das ist ein Spielanfang, kein Rasenmaeher -- was
 ## darueber hinausgeht, kommt aus dem Ausbau.
