@@ -248,12 +248,16 @@ func test_a_thrown_ring_fades_away() -> void:
 	var w: WaterView = load("res://scenes/fishing/water_view.gd").new()
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.root.add_child(w)
-	w.setze(PackedVector2Array([Vector2(0.0, 0.0), Vector2(1280.0, 0.0)]),
-		1280.0, 320.0, 0.0)
+	var punkte := PackedVector2Array([Vector2(0.0, 0.0), Vector2(1280.0, 0.0)])
+	w.setze(punkte, 1280.0, 320.0, 0.0)
 	w.regnet = false
 	w.wirf_ring(0.5, 0.4)
-	for i in 120:
-		w._process(0.05)
+	assert_true(w.ring_rechtecke(w._laeufe()).size() > 0,
+		"der geworfene Ring erscheint nicht, bevor er verblassen kann")
+	# Die Uhr treiben wie in test_no_ring_leaves_the_water: kein _process
+	# noetig, setze() traegt die Zeit direkt.
+	for schritt in 120:
+		w.setze(punkte, 1280.0, 320.0, float(schritt) * 0.05)
 	assert_eq(w.ring_rechtecke(w._laeufe()).size(), 0,
 		"der geworfene Ring bleibt liegen")
 	w.free()

@@ -81,12 +81,6 @@ func setze(punkte: PackedVector2Array, breite: float, unterkante: float,
 	_zeit = zeit
 	queue_redraw()
 
-## Laesst _zeit auch ohne world.gd weiterlaufen -- world.gd ueberschreibt sie
-## danach ohnehin per setze(), aber ein geworfener Ring muss altern koennen,
-## auch wenn gerade kein Regen die Uhr mitzieht.
-func _process(delta: float) -> void:
-	_zeit += delta
-
 ## Ein Ring vom flitschenden Stein: anteil_x wie bei ring_zustand, tiefe von 0
 ## an der Wasserkante bis RING_FELD ganz vorn.
 func wirf_ring(anteil_x: float, tiefe: float) -> void:
