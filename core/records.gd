@@ -19,10 +19,13 @@ var orbs_tapped: int = 0
 var potions_drunk: int = 0
 var quests_done: int = 0
 var casts: int = 0
+## Der beste je geworfene Stein -- die einzige Spur, die der Zeitvertreib
+## im Spielstand hinterlassen darf.
+var best_skips: int = 0
 
 const FIELDS := ["started_unix", "playtime", "fish_caught", "shiny_caught",
 	"fish_escaped", "fish_sold", "coins_earned", "coins_spent", "orbs_tapped",
-	"potions_drunk", "quests_done", "casts"]
+	"potions_drunk", "quests_done", "casts", "best_skips"]
 
 func to_dict() -> Dictionary:
 	var out: Dictionary = {}

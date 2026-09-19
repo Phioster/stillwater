@@ -420,3 +420,24 @@ func test_a_version_2_save_passes_through_unchanged() -> void:
 	var d := SaveManager.migrate(raw)
 	assert_almost_eq(float(d["fish_inventory"][0]["weight_dev"]), 1.5)
 	assert_eq(d["journal"]["entries"]["bluegill"]["caught_ranks"], [2, 4])
+
+## Der Bestwert muss einen echten Speicherzyklus ueberleben -- ohne einen
+## gemeldeten Wurf vorher waere ein fehlendes Feld in FIELDS unsichtbar.
+func test_best_skips_survives_a_save_roundtrip() -> void:
+	Game.new_game()
+	Game.melde_wurf(7)
+	var blob := SaveManager.serialize()
+	Game.new_game()
+	SaveManager.deserialize(blob)
+	assert_eq(Game.records.best_skips, 7, "der Bestwert geht beim Speichern verloren")
+
+## Ein Spielstand von vor dem Steineflitschen laedt weiter -- Records
+## ueberspringt fehlende Felder. Zaehlt nur zusammen mit dem Roundtrip-Test
+## oben: allein waere er tautologisch, weil ein neues Spiel schon bei 0 steht.
+func test_an_old_save_without_best_skips_still_loads() -> void:
+	Game.new_game()
+	var blob := SaveManager.serialize()
+	blob["records"].erase("best_skips")
+	SaveManager.deserialize(blob)
+	assert_eq(Game.records.best_skips, 0,
+		"ein alter Stand bekommt keinen sauberen Anfangswert")

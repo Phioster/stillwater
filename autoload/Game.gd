@@ -160,6 +160,13 @@ func _dispatch(events: Array) -> void:
 	if not events.is_empty():
 		state_changed.emit()
 
+## Meldet einen geflitschten Stein. Aendert NICHTS am Spielstand ausser dem
+## Bestwert -- sonst waere es keine Ablenkung mehr, sondern eine Aufgabe.
+func melde_wurf(spruenge: int) -> void:
+	if spruenge > records.best_skips:
+		records.best_skips = spruenge
+		state_changed.emit()
+
 # --- Upgrades -------------------------------------------------------------
 
 func upgrade_cost(id: StringName) -> int:

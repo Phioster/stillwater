@@ -55,6 +55,11 @@ const RING_FLACH := 0.34
 const RING_FELD := 0.92
 const RING_DECKUNG := 0.5
 
+## Kantenlaenge des fliegenden Steins in Wasserpixeln. Er wird hier gezeichnet
+## und nicht in stone_throw.gd: der Knoten dort haengt ueber der ganzen Szene
+## und legte den Stein ueber den Schwimmer, von hier aus geht das nicht.
+const STEIN_KANTE := 2
+
 var _punkte := PackedVector2Array()
 var _breite: float = 0.0
 var _unterkante: float = 0.0
@@ -66,6 +71,19 @@ var _krone := Color.WHITE
 var _hell := Color.WHITE
 var _tief := Color.BLACK
 
+## Ausdruecklich gesetzte Ringe -- vom flitschenden Stein. Je Eintrag
+## [anteil_x, tiefe, geburt]. Getrennt von den Regenringen, weil die aus der
+## Uhr abgeleitet sind und keinen Platz fuer Fremdes haben.
+var _geworfen: Array = []
+
+## Der fliegende Stein, solange einer unterwegs ist. hoehe ist sein Bogen
+## ueber der Aufsetzstelle, in Wasserpixeln.
+var _stein_da := false
+var _stein_x := 0.0
+var _stein_tiefe := 0.0
+var _stein_hoehe := 0.0
+var _stein_blitzt := false
+
 ## Die Oberflaeche als Punktfolge (dieselbe wie die Wellenlinie), die Weite
 ## der Flaeche und die laufende Zeit fuer die Drift.
 func setze(punkte: PackedVector2Array, breite: float, unterkante: float,
@@ -74,6 +92,27 @@ func setze(punkte: PackedVector2Array, breite: float, unterkante: float,
 	_breite = breite
 	_unterkante = unterkante
 	_zeit = zeit
+	queue_redraw()
+
+## Ein Ring vom flitschenden Stein: anteil_x wie bei ring_zustand, tiefe von 0
+## an der Wasserkante bis RING_FELD ganz vorn.
+func wirf_ring(anteil_x: float, tiefe: float) -> void:
+	_geworfen.append([clampf(anteil_x, 0.0, 1.0),
+		clampf(tiefe, 0.0, RING_FELD), _zeit])
+
+## Wo der Stein gerade fliegt. Er liegt an derselben Stelle wie sein kuenftiger
+## Ring, nur um hoehe darueber -- beide gehen durch ring_mitte().
+func zeige_stein(anteil_x: float, tiefe: float, hoehe: float,
+		blitzt: bool) -> void:
+	_stein_da = true
+	_stein_x = clampf(anteil_x, 0.0, 1.0)
+	_stein_tiefe = clampf(tiefe, 0.0, RING_FELD)
+	_stein_hoehe = maxf(hoehe, 0.0)
+	_stein_blitzt = blitzt
+	queue_redraw()
+
+func stein_weg() -> void:
+	_stein_da = false
 	queue_redraw()
 
 func faerbe(krone: Color, hell: Color, tief: Color) -> void:
@@ -134,6 +173,7 @@ func _draw() -> void:
 			draw_rect(Rect2(x0, tief_y, w, _unterkante - tief_y), _tief)
 	_striche(laeufe)
 	_ringe(laeufe)
+	_stein(laeufe)
 
 ## Kurze waagerechte Striche, die mit der Welle mitgehen: ihre Zeile zaehlt ab
 ## der Oberflaeche, nicht ab dem Bildrand. Sie treiben nach rechts, tiefere
@@ -250,6 +290,31 @@ static func _halbbreite(rx: int, dy: int, nenner: float) -> int:
 		return 0
 	return int(round(float(rx) * sqrt(q)))
 
+## Der Stein als gemaltes Quadrat -- ein Pixelbild wuerde hier gedreht oder
+## geschert werden, und das saehe aus wie ein Bildfehler.
+func _stein(laeufe: Array) -> void:
+	var r := stein_rechteck(laeufe)
+	if r.size.x <= 0.0:
+		return
+	# Beim Treffer dieselbe Farbe wie das goldene Band: die Rueckmeldung liest
+	# sich ohne Erklaerung, weil man sie schon am Balken gesehen hat.
+	var ton := &"rod_brass" if _stein_blitzt else &"stone_light"
+	draw_rect(r, Palette.get_color(ton))
+
+## Wo der Stein gerade steht. Ein leeres Rechteck, wenn keiner fliegt oder dort
+## kein Wasser im Bild liegt -- getrennt vom Zeichnen wie ring_rechtecke().
+func stein_rechteck(laeufe: Array) -> Rect2:
+	if not _stein_da:
+		return Rect2()
+	# Durch dieselbe Ortsrechnung wie sein kuenftiger Ring: sonst liesse sich
+	# der Stein dort aufsetzen, wo kein Ring erscheint.
+	var ort := _ring_mitte(laeufe, _stein_x, _stein_tiefe, _stein_hoehe * PIXEL)
+	if ort == Vector2.INF:
+		return Rect2()
+	var kante := PIXEL * float(STEIN_KANTE)
+	# Wie die Ringe: nie halb unter dem Bildrand.
+	return Rect2(ort.x, minf(ort.y, _unterkante - kante), kante, kante)
+
 func _ringe(laeufe: Array) -> void:
 	var c := _krone
 	for eintrag in ring_rechtecke(laeufe):
@@ -260,31 +325,69 @@ func _ringe(laeufe: Array) -> void:
 ## Regen macht es genauso (Rain.strich): nur so laesst sich nachrechnen, dass
 ## kein Ring ueber der Welle liegt -- am fertigen Bild ginge das nicht.
 func ring_rechtecke(laeufe: Array) -> Array:
+	# Abgelaufene wegraeumen, bevor irgendetwas anderes passiert -- hinter dem
+	# Ausstieg unten waere die Liste eine Sitzung lang gewachsen.
+	while not _geworfen.is_empty() and _zeit - float(_geworfen[0][2]) > RING_LEBEN:
+		_geworfen.remove_at(0)
 	var stapel: Array = []
-	if not regnet or laeufe.is_empty():
+	if laeufe.is_empty():
 		return stapel
-	for i in RINGE:
-		var z := ring_zustand(i, _zeit)
-		var x := snappedf(float(z[0]) * _breite, PIXEL)
-		var rx := ring_radius(z[1], z[2])
-		var ry := int(round(float(rx) * RING_FLACH))
-		# Nicht die Kante unter der Mitte, sondern die TIEFSTE unter der ganzen
-		# Breite des Rings: in einem Wellental gemessen, ragte seine Flanke
-		# sonst durch den Kamm daneben.
-		var oben := _oberflaeche_hoechste(laeufe, x, float(rx) * PIXEL)
-		if oben == INF:
-			continue
-		# Der Ring liegt AUF dem Wasser: nie ueber der Welle -- da waere er in
-		# der Luft -- und nie halb unter dem Bildrand.
-		var hoch := oben + PIXEL * float(KRONE + ry)
-		var tief := _unterkante - PIXEL * float(ry + 1)
-		if tief <= hoch:
-			continue
-		var y := clampf(snappedf(oben + float(z[1]) * (_unterkante - oben), PIXEL),
-			hoch, tief)
-		var deckung := ring_deckung(z[2])
-		for lauf in ring_form(rx, ry):
-			stapel.append([Rect2(x + float(lauf[0]) * PIXEL,
-				y + float(lauf[1]) * PIXEL, float(lauf[2]) * PIXEL, PIXEL),
-				deckung])
+	if regnet:
+		for i in RINGE:
+			var z := ring_zustand(i, _zeit)
+			_ring_rechteck(stapel, laeufe, float(z[0]), float(z[1]), float(z[2]))
+	for eintrag in _geworfen:
+		var alter := (_zeit - float(eintrag[2])) / RING_LEBEN
+		_ring_rechteck(stapel, laeufe, float(eintrag[0]), float(eintrag[1]),
+			alter)
 	return stapel
+
+## Ein Ring als Rechtecke, an der Welle abgeschnitten. Regen und Stein gehen
+## durch dieselbe Rechnung -- zwei Wege waeren zwei Formen.
+func _ring_rechteck(stapel: Array, laeufe: Array, anteil_x: float,
+		tiefe: float, alter: float) -> void:
+	var rx := ring_radius(tiefe, alter)
+	var ry := int(round(float(rx) * RING_FLACH))
+	var ort := _ring_ort(laeufe, anteil_x, tiefe, rx, ry)
+	if ort == Vector2.INF:
+		return
+	var deckung := ring_deckung(alter)
+	for lauf in ring_form(rx, ry):
+		stapel.append([Rect2(ort.x + float(lauf[0]) * PIXEL,
+			ort.y + float(lauf[1]) * PIXEL, float(lauf[2]) * PIXEL, PIXEL),
+			deckung])
+
+## Die Mitte eines Rings dieser Groesse. Die EINZIGE Ortsrechnung dieser
+## Ansicht: Regenring, Steinring, fliegender Stein und die aufsteigende Zahl
+## kommen alle hier durch. Vector2.INF, wenn davon nichts ins Bild passt.
+func _ring_ort(laeufe: Array, anteil_x: float, tiefe: float, rx: int,
+		ry: int, hoehe: float = 0.0) -> Vector2:
+	var x := snappedf(anteil_x * _breite, PIXEL)
+	# Nicht die Kante unter der Mitte, sondern die TIEFSTE unter der ganzen
+	# Breite des Rings: in einem Wellental gemessen, ragte seine Flanke
+	# sonst durch den Kamm daneben.
+	var oben := _oberflaeche_hoechste(laeufe, x, float(rx) * PIXEL)
+	if oben == INF:
+		return Vector2.INF
+	# Der Ring liegt AUF dem Wasser: nie ueber der Welle -- da waere er in
+	# der Luft -- und nie halb unter dem Bildrand.
+	var hoch := oben + PIXEL * float(KRONE + ry)
+	var tief := _unterkante - PIXEL * float(ry + 1)
+	if tief <= hoch:
+		return Vector2.INF
+	# hoehe hebt den Stein im Flug ab -- durch DIESE Klemmung, damit auch der
+	# Bogen nicht ueber der Welle endet.
+	return Vector2(x, clampf(
+		snappedf(oben + tiefe * (_unterkante - oben) - hoehe, PIXEL),
+		hoch, tief))
+
+## Wo ein Ring aufschlaegt, bevor er waechst -- fuer alles, was sich an dieser
+## Stelle ausrichtet, ohne selbst ein Ring zu sein.
+func ring_mitte(anteil_x: float, tiefe: float) -> Vector2:
+	return _ring_mitte(_laeufe(), anteil_x, tiefe)
+
+func _ring_mitte(laeufe: Array, anteil_x: float, tiefe: float,
+		hoehe: float = 0.0) -> Vector2:
+	var rx := ring_radius(tiefe, 0.0)
+	return _ring_ort(laeufe, anteil_x, tiefe, rx,
+		int(round(float(rx) * RING_FLACH)), hoehe)
