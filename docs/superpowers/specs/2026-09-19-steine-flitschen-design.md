@@ -114,8 +114,15 @@ Reine Zahl, kein Gegenstand:
 | 0,15 bis 1,0 | 1 bis 6, linear |
 | im goldenen Band | zusätzlich +2, also bis 8 |
 
-Der Stein blitzt kurz auf, wenn das Band getroffen wurde. Sonst gibt es keine
-Rückmeldung, keine Zahl auf dem Schirm, keinen Ton außer dem Aufsetzen.
+Der Stein blitzt kurz auf, wenn das Band getroffen wurde. Ist er versunken,
+steigt an seiner letzten Stelle **die Zahl der Sprünge** auf und verblasst —
+über `scenes/effects/pop_text.gd`, denselben Weg, den auch der Fang nimmt. Der
+Text ist schon für Schrift über dem Wasser eingestellt (heller Fond, dunkler
+Umriss) und räumt sich nach 1,1 Sekunden selbst weg.
+
+Das ist die einzige Zahl, und sie ist flüchtig: kein Zähler, keine Bestenliste
+am Bildrand, nichts, was stehenbleibt. Ohne sie weiß man nicht, ob der Wurf gut
+war — mit einer bleibenden wäre es eine Aufgabe.
 
 Der **beste Wurf** wird still mitgezählt: ein Eintrag in `Records.FIELDS`
 (`best_skips`). `Records.load_dict` überspringt fehlende Felder, alte
@@ -159,7 +166,10 @@ Stein fliegt zu Ende; der Kampf trägt sich ohnehin von allein ab
 | `scenes/fishing/water_view.gd` | Einzelne Ringe auf Zuruf. |
 | `scenes/fishing/world.gd` | Kieselhaufen setzen und anbinden. |
 | `core/records.gd` | Ein Eintrag in `FIELDS`. |
-| `tools/kiesel_bauen.py` (neu) | Erzeugt `assets/art/kiesel.png` (Haufen) und `assets/art/ladebalken.png` (die Sichelform) aus den Zahlen oben. |
+| `tools/kiesel_bauen.py` (neu) | Erzeugt `assets/art/ladebalken.png` (die Sichelform) aus den Zahlen oben und beschneidet den Kieselhaufen aus `assets/source/steine/kiesel.png` auf `assets/art/kiesel.png`. |
+
+Der Kieselhaufen kommt wie das Messer von PixelLab, mit der Spielpalette als
+Zwangspalette erzeugt, und liegt roh unter `assets/source/steine/kiesel.png`.
 
 ## Was geprüft wird
 
@@ -172,6 +182,8 @@ Stein fliegt zu Ende; der Kampf trägt sich ohnehin von allein ab
   Lehre wie bei der Klinge: **die Form, die man sieht, ist die Form, mit der
   gerechnet wird** (siehe `core/reeds.gd`).
 - Ein Wurf ändert weder Münzen, Köder, Erfahrung noch Inventar.
+- Die Sprungzahl wird angezeigt und räumt sich selbst wieder weg — nach ihrer
+  Lebenszeit hängt kein Knoten mehr im Baum.
 - Beim Anbiss verschwindet der Balken, ohne zu werfen.
 - Ein alter Spielstand ohne `best_skips` lädt.
 - Die Ringe des Steins verdrängen die Regenringe nicht.
