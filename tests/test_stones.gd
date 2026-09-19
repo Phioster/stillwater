@@ -286,6 +286,12 @@ func test_the_flying_stone_is_drawn_on_the_water() -> void:
 	var vorn := w.stein_rechteck(w._laeufe())
 	assert_true(vorn.position.y + vorn.size.y <= 720.0 + 0.001,
 		"der Stein haengt bei %f unter dem Bildrand" % vorn.position.y)
+	# Und nie darueber: ein uebertriebener Bogen wird geklemmt, statt den Stein
+	# in den Himmel zu heben. Heute reicht die Marge, aber nur zufaellig.
+	w.zeige_stein(0.7, Stones.TIEFE_VON, 400.0, false)
+	var luft := w.stein_rechteck(w._laeufe())
+	assert_true(luft.position.y >= 400.0,
+		"der Stein steht bei %f ueber der Wellenlinie" % luft.position.y)
 	w.stein_weg()
 	assert_eq(w.stein_rechteck(w._laeufe()).size.x, 0.0,
 		"der Stein bleibt nach dem Versinken liegen")

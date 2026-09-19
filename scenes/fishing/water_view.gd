@@ -308,14 +308,12 @@ func stein_rechteck(laeufe: Array) -> Rect2:
 		return Rect2()
 	# Durch dieselbe Ortsrechnung wie sein kuenftiger Ring: sonst liesse sich
 	# der Stein dort aufsetzen, wo kein Ring erscheint.
-	var ort := _ring_mitte(laeufe, _stein_x, _stein_tiefe)
+	var ort := _ring_mitte(laeufe, _stein_x, _stein_tiefe, _stein_hoehe * PIXEL)
 	if ort == Vector2.INF:
 		return Rect2()
 	var kante := PIXEL * float(STEIN_KANTE)
 	# Wie die Ringe: nie halb unter dem Bildrand.
-	var y := minf(snappedf(ort.y - _stein_hoehe * PIXEL, PIXEL),
-		_unterkante - kante)
-	return Rect2(ort.x, y, kante, kante)
+	return Rect2(ort.x, minf(ort.y, _unterkante - kante), kante, kante)
 
 func _ringe(laeufe: Array) -> void:
 	var c := _krone
@@ -363,7 +361,7 @@ func _ring_rechteck(stapel: Array, laeufe: Array, anteil_x: float,
 ## Ansicht: Regenring, Steinring, fliegender Stein und die aufsteigende Zahl
 ## kommen alle hier durch. Vector2.INF, wenn davon nichts ins Bild passt.
 func _ring_ort(laeufe: Array, anteil_x: float, tiefe: float, rx: int,
-		ry: int) -> Vector2:
+		ry: int, hoehe: float = 0.0) -> Vector2:
 	var x := snappedf(anteil_x * _breite, PIXEL)
 	# Nicht die Kante unter der Mitte, sondern die TIEFSTE unter der ganzen
 	# Breite des Rings: in einem Wellental gemessen, ragte seine Flanke
@@ -377,7 +375,10 @@ func _ring_ort(laeufe: Array, anteil_x: float, tiefe: float, rx: int,
 	var tief := _unterkante - PIXEL * float(ry + 1)
 	if tief <= hoch:
 		return Vector2.INF
-	return Vector2(x, clampf(snappedf(oben + tiefe * (_unterkante - oben), PIXEL),
+	# hoehe hebt den Stein im Flug ab -- durch DIESE Klemmung, damit auch der
+	# Bogen nicht ueber der Welle endet.
+	return Vector2(x, clampf(
+		snappedf(oben + tiefe * (_unterkante - oben) - hoehe, PIXEL),
 		hoch, tief))
 
 ## Wo ein Ring aufschlaegt, bevor er waechst -- fuer alles, was sich an dieser
@@ -385,7 +386,8 @@ func _ring_ort(laeufe: Array, anteil_x: float, tiefe: float, rx: int,
 func ring_mitte(anteil_x: float, tiefe: float) -> Vector2:
 	return _ring_mitte(_laeufe(), anteil_x, tiefe)
 
-func _ring_mitte(laeufe: Array, anteil_x: float, tiefe: float) -> Vector2:
+func _ring_mitte(laeufe: Array, anteil_x: float, tiefe: float,
+		hoehe: float = 0.0) -> Vector2:
 	var rx := ring_radius(tiefe, 0.0)
 	return _ring_ort(laeufe, anteil_x, tiefe, rx,
-		int(round(float(rx) * RING_FLACH)))
+		int(round(float(rx) * RING_FLACH)), hoehe)
