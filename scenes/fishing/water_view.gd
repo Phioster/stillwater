@@ -66,6 +66,11 @@ var _krone := Color.WHITE
 var _hell := Color.WHITE
 var _tief := Color.BLACK
 
+## Ausdruecklich gesetzte Ringe -- vom flitschenden Stein. Je Eintrag
+## [anteil_x, tiefe, geburt]. Getrennt von den Regenringen, weil die aus der
+## Uhr abgeleitet sind und keinen Platz fuer Fremdes haben.
+var _geworfen: Array = []
+
 ## Die Oberflaeche als Punktfolge (dieselbe wie die Wellenlinie), die Weite
 ## der Flaeche und die laufende Zeit fuer die Drift.
 func setze(punkte: PackedVector2Array, breite: float, unterkante: float,
@@ -75,6 +80,18 @@ func setze(punkte: PackedVector2Array, breite: float, unterkante: float,
 	_unterkante = unterkante
 	_zeit = zeit
 	queue_redraw()
+
+## Laesst _zeit auch ohne world.gd weiterlaufen -- world.gd ueberschreibt sie
+## danach ohnehin per setze(), aber ein geworfener Ring muss altern koennen,
+## auch wenn gerade kein Regen die Uhr mitzieht.
+func _process(delta: float) -> void:
+	_zeit += delta
+
+## Ein Ring vom flitschenden Stein: anteil_x wie bei ring_zustand, tiefe von 0
+## an der Wasserkante bis RING_FELD ganz vorn.
+func wirf_ring(anteil_x: float, tiefe: float) -> void:
+	_geworfen.append([clampf(anteil_x, 0.0, 1.0),
+		clampf(tiefe, 0.0, RING_FELD), _zeit])
 
 func faerbe(krone: Color, hell: Color, tief: Color) -> void:
 	_krone = krone
@@ -261,30 +278,45 @@ func _ringe(laeufe: Array) -> void:
 ## kein Ring ueber der Welle liegt -- am fertigen Bild ginge das nicht.
 func ring_rechtecke(laeufe: Array) -> Array:
 	var stapel: Array = []
-	if not regnet or laeufe.is_empty():
+	if laeufe.is_empty():
 		return stapel
-	for i in RINGE:
-		var z := ring_zustand(i, _zeit)
-		var x := snappedf(float(z[0]) * _breite, PIXEL)
-		var rx := ring_radius(z[1], z[2])
-		var ry := int(round(float(rx) * RING_FLACH))
-		# Nicht die Kante unter der Mitte, sondern die TIEFSTE unter der ganzen
-		# Breite des Rings: in einem Wellental gemessen, ragte seine Flanke
-		# sonst durch den Kamm daneben.
-		var oben := _oberflaeche_hoechste(laeufe, x, float(rx) * PIXEL)
-		if oben == INF:
-			continue
-		# Der Ring liegt AUF dem Wasser: nie ueber der Welle -- da waere er in
-		# der Luft -- und nie halb unter dem Bildrand.
-		var hoch := oben + PIXEL * float(KRONE + ry)
-		var tief := _unterkante - PIXEL * float(ry + 1)
-		if tief <= hoch:
-			continue
-		var y := clampf(snappedf(oben + float(z[1]) * (_unterkante - oben), PIXEL),
-			hoch, tief)
-		var deckung := ring_deckung(z[2])
-		for lauf in ring_form(rx, ry):
-			stapel.append([Rect2(x + float(lauf[0]) * PIXEL,
-				y + float(lauf[1]) * PIXEL, float(lauf[2]) * PIXEL, PIXEL),
-				deckung])
+	if regnet:
+		for i in RINGE:
+			var z := ring_zustand(i, _zeit)
+			_ring_rechteck(stapel, laeufe, float(z[0]), float(z[1]), float(z[2]))
+	# Abgelaufene wegraeumen, bevor gezeichnet wird -- sonst waechst die
+	# Liste eine Sitzung lang.
+	while not _geworfen.is_empty() and _zeit - float(_geworfen[0][2]) > RING_LEBEN:
+		_geworfen.remove_at(0)
+	for eintrag in _geworfen:
+		var alter := (_zeit - float(eintrag[2])) / RING_LEBEN
+		_ring_rechteck(stapel, laeufe, float(eintrag[0]), float(eintrag[1]),
+			alter)
 	return stapel
+
+## Ein Ring als Rechtecke, an der Welle abgeschnitten. Regen und Stein gehen
+## durch dieselbe Rechnung -- zwei Wege waeren zwei Formen.
+func _ring_rechteck(stapel: Array, laeufe: Array, anteil_x: float,
+		tiefe: float, alter: float) -> void:
+	var x := snappedf(anteil_x * _breite, PIXEL)
+	var rx := ring_radius(tiefe, alter)
+	var ry := int(round(float(rx) * RING_FLACH))
+	# Nicht die Kante unter der Mitte, sondern die TIEFSTE unter der ganzen
+	# Breite des Rings: in einem Wellental gemessen, ragte seine Flanke
+	# sonst durch den Kamm daneben.
+	var oben := _oberflaeche_hoechste(laeufe, x, float(rx) * PIXEL)
+	if oben == INF:
+		return
+	# Der Ring liegt AUF dem Wasser: nie ueber der Welle -- da waere er in
+	# der Luft -- und nie halb unter dem Bildrand.
+	var hoch := oben + PIXEL * float(KRONE + ry)
+	var tief := _unterkante - PIXEL * float(ry + 1)
+	if tief <= hoch:
+		return
+	var y := clampf(snappedf(oben + tiefe * (_unterkante - oben), PIXEL),
+		hoch, tief)
+	var deckung := ring_deckung(alter)
+	for lauf in ring_form(rx, ry):
+		stapel.append([Rect2(x + float(lauf[0]) * PIXEL,
+			y + float(lauf[1]) * PIXEL, float(lauf[2]) * PIXEL, PIXEL),
+			deckung])

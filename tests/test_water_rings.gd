@@ -226,3 +226,34 @@ func test_the_world_switches_the_rings_with_the_rain() -> void:
 	world._process(0.016)
 	assert_true(wasser.regnet, "kein Ring im Regen")
 	world.free()
+
+## Der Stein macht seine eigenen Ringe, und die duerfen die Regenringe nicht
+## verdraengen -- es sind zwei Quellen fuer dieselbe Zeichnung.
+func test_a_thrown_ring_appears_without_rain() -> void:
+	var w: WaterView = load("res://scenes/fishing/water_view.gd").new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(w)
+	w.setze(PackedVector2Array([Vector2(0.0, 0.0), Vector2(1280.0, 0.0)]),
+		1280.0, 320.0, 0.0)
+	w.regnet = false
+	assert_eq(w.ring_rechtecke(w._laeufe()).size(), 0,
+		"ohne Regen und ohne Wurf liegen Ringe auf dem Wasser")
+	w.wirf_ring(0.5, 0.4)
+	assert_true(w.ring_rechtecke(w._laeufe()).size() > 0,
+		"der geworfene Ring erscheint nicht")
+	w.free()
+
+## Und ein alter Ring verschwindet wieder von selbst.
+func test_a_thrown_ring_fades_away() -> void:
+	var w: WaterView = load("res://scenes/fishing/water_view.gd").new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(w)
+	w.setze(PackedVector2Array([Vector2(0.0, 0.0), Vector2(1280.0, 0.0)]),
+		1280.0, 320.0, 0.0)
+	w.regnet = false
+	w.wirf_ring(0.5, 0.4)
+	for i in 120:
+		w._process(0.05)
+	assert_eq(w.ring_rechtecke(w._laeufe()).size(), 0,
+		"der geworfene Ring bleibt liegen")
+	w.free()
