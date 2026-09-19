@@ -66,6 +66,12 @@ func _expected_size(filename: String) -> Vector2i:
 	# aendert sie sich, aendert sich auch die Trefferform.
 	if filename == "klinge.png" or filename == "klinge_schneide.png":
 		return Vector2i(44, 8)
+	# Der Ladebalken haelt NUR den Umriss -- Fuellung und goldenes Band malt
+	# stone_throw.gd zur Laufzeit durch seine Maske. Eine Form, ein Bild.
+	if filename == "ladebalken.png":
+		return Vector2i(38, 56)
+	if filename == "kiesel.png":
+		return Vector2i(39, 14)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).
 	if filename == "bobber.png":
 		return Vector2i(10, 13)
