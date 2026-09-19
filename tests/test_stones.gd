@@ -78,3 +78,39 @@ func test_more_charge_is_never_worse() -> void:
 		var s := Stones.spruenge(float(i) / 100.0, false)
 		assert_true(s >= vorher, "bei Ladung %f faellt die Zahl" % (float(i) / 100.0))
 		vorher = s
+
+## Der gezeichnete Balken ist die Form, mit der gerechnet wird. Bei der
+## Klinge hat genau das vier Anlaeufe gekostet, weil die Form zweimal
+## gerechnet wurde -- hier gibt es sie von Anfang an nur einmal.
+func test_the_bar_is_its_own_shape() -> void:
+	var g := Stones.balken_groesse()
+	assert_true(g.x > 8 and g.y > 8, "der Balken ist leer")
+	var gemalt := 0
+	for y in g.y:
+		for x in g.x:
+			if Stones.maske().get_bit(x, y):
+				gemalt += 1
+	assert_true(gemalt > 200, "der Balken hat fast keine Flaeche")
+
+## Oben ist er breit, unten laeuft er spitz aus -- das ist die Form aus der
+## Vorlage, und daran haengt, dass sich das Fuellen von unten gut liest.
+func test_the_bar_is_wide_on_top_and_pointed_below() -> void:
+	var g := Stones.balken_groesse()
+	var oben := 0
+	var unten := 0
+	for x in g.x:
+		if Stones.maske().get_bit(x, 0):
+			oben += 1
+		if Stones.maske().get_bit(x, g.y - 1):
+			unten += 1
+	assert_true(oben > unten,
+		"oben %d Punkte breit, unten %d -- die Spitze sitzt falsch"
+			% [oben, unten])
+
+## Gefuellt wird von UNTEN nach oben: Zeile 0 ist oben im Bild.
+func test_the_bar_fills_from_the_bottom() -> void:
+	var g := Stones.balken_groesse()
+	assert_true(Stones.gefuellt(g.y - 1, 0.5), "unten ist bei halb leer")
+	assert_false(Stones.gefuellt(0, 0.5), "oben ist bei halb schon voll")
+	assert_true(Stones.gefuellt(0, 1.0), "voll ist oben nicht gefuellt")
+	assert_false(Stones.gefuellt(g.y - 1, 0.0), "leer ist unten gefuellt")
