@@ -290,8 +290,10 @@ func test_the_flying_stone_is_drawn_on_the_water() -> void:
 	# in den Himmel zu heben. Heute reicht die Marge, aber nur zufaellig.
 	w.zeige_stein(0.7, Stones.TIEFE_VON, 400.0, false)
 	var luft := w.stein_rechteck(w._laeufe())
-	assert_true(luft.position.y >= 400.0,
-		"der Stein steht bei %f ueber der Wellenlinie" % luft.position.y)
+	# Gemessen wird seine Unterkante: der Stein SITZT auf dem Wasser, sein
+	# Koerper steht darueber.
+	assert_true(luft.position.y + luft.size.y >= 400.0,
+		"der Stein sitzt bei %f ueber der Wellenlinie" % luft.position.y)
 	w.stein_weg()
 	assert_eq(w.stein_rechteck(w._laeufe()).size.x, 0.0,
 		"der Stein bleibt nach dem Versinken liegen")
@@ -306,7 +308,7 @@ func test_the_throw_reports_its_flight_and_its_hit() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.root.add_child(wurf)
 	var gemeldet: Array = []
-	wurf.flug.connect(func(x, tiefe, hoehe, blitzt):
+	wurf.flug.connect(func(x, tiefe, hoehe, blitzt, _deckung):
 		gemeldet.append([x, tiefe, hoehe, blitzt]))
 	var endete := [false]
 	wurf.flug_endet.connect(func(): endete[0] = true)
@@ -330,6 +332,37 @@ func test_the_throw_reports_its_flight_and_its_hit() -> void:
 	assert_true(endete[0], "das Ende des Fluges wird nicht gemeldet")
 	wurf.free()
 
+## Beim letzten Aufsetzer verschwindet der Stein nicht, er geht unter -- und
+## erst danach steigt die Zahl auf, damit sie dort steht, wo er blieb.
+func test_the_last_skip_sinks_the_stone_before_the_number_rises() -> void:
+	Game.new_game()
+	var wurf := StoneThrow.new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(wurf)
+	var tiefste := [0.0]
+	var deckung := [1.0]
+	wurf.flug.connect(func(_x, _t, hoehe, _b, d):
+		tiefste[0] = minf(tiefste[0], hoehe)
+		deckung[0] = d)
+	var zahl_kam := [false]
+	wurf.geworfen.connect(func(_s, _x, _t): zahl_kam[0] = true)
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
+	wurf._zeit = 2.0
+	wurf._wert = 1.0
+	wurf.wirf()
+	for i in 300:
+		wurf._process(0.01)
+		if wurf._sinkt:
+			break
+	assert_true(wurf._sinkt, "der Stein sinkt nach dem letzten Aufsetzer nicht")
+	assert_false(zahl_kam[0], "die Zahl kommt, bevor der Stein unten ist")
+	for i in 100:
+		wurf._process(0.01)
+	assert_true(tiefste[0] < 0.0, "der Stein sinkt nicht unter die Oberflaeche")
+	assert_true(deckung[0] <= 0.0, "der Stein bleibt beim Sinken sichtbar")
+	assert_true(zahl_kam[0], "nach dem Sinken kam keine Zahl")
+	wurf.free()
+
 ## Und ohne Bandtreffer blitzt gar nichts -- sonst waere die Rueckmeldung keine.
 func test_a_miss_never_makes_the_stone_flash() -> void:
 	Game.new_game()
@@ -337,7 +370,7 @@ func test_a_miss_never_makes_the_stone_flash() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.root.add_child(wurf)
 	var blitze := [0]
-	wurf.flug.connect(func(_x, _t, _h, blitzt):
+	wurf.flug.connect(func(_x, _t, _h, blitzt, _d):
 		if blitzt:
 			blitze[0] += 1)
 	wurf.starte(Vector2(200.0, 200.0), 0.3)

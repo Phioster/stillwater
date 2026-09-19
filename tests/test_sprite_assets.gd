@@ -72,6 +72,10 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(38, 56)
 	if filename == "kiesel.png":
 		return Vector2i(39, 14)
+	# Der mittlere Stein aus dem Haufen, flachgedrueckt -- water_view.gd
+	# rechnet seine Groesse aus dem Bild, hier steht sie nur fest.
+	if filename == "wurfstein.png":
+		return Vector2i(11, 5)
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).
 	if filename == "bobber.png":
 		return Vector2i(10, 13)

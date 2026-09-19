@@ -97,10 +97,75 @@ def kiesel():
     return zu
 
 
+## Wie flach der geworfene Stein wird. Ein Flitschstein ist eine Scheibe --
+## ungestaucht sah der ausgeschnittene Brocken aus wie ein Findling in der
+## Luft.
+WURFSTEIN_GROESSE = (11, 5)
+
+
+def wurfstein():
+    """Ein einzelner Stein aus dem Haufen, flachgedrueckt.
+
+    Der Umriss trennt die drei Steine sauber voneinander, der mittlere laesst
+    sich also fuellen und freistellen. Er wird als einziges Bild hier
+    verkleinert -- ein Stein in der Luft darf nicht so gross sein wie der
+    Haufen, aus dem er kommt.
+    """
+    haufen = kiesel()
+    px = haufen.load()
+    umriss = farbe("outline")[:3]
+    # Fuellung ab einem Punkt im mittleren Stein, dann sein Umriss dazu.
+    koerper = set()
+    stapel = [(haufen.width // 2, haufen.height // 2)]
+    while stapel:
+        x, y = stapel.pop()
+        if not (0 <= x < haufen.width and 0 <= y < haufen.height):
+            continue
+        if (x, y) in koerper:
+            continue
+        q = px[x, y]
+        if q[3] == 0 or q[:3] == umriss:
+            continue
+        koerper.add((x, y))
+        stapel += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    stein = set(koerper)
+    for x, y in koerper:
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                n = (x + dx, y + dy)
+                if not (0 <= n[0] < haufen.width and 0 <= n[1] < haufen.height):
+                    continue
+                if px[n][3] and px[n][:3] == umriss:
+                    stein.add(n)
+    x0 = min(p[0] for p in stein)
+    y0 = min(p[1] for p in stein)
+    x1 = max(p[0] for p in stein)
+    y1 = max(p[1] for p in stein)
+    frei = Image.new("RGBA", (x1 - x0 + 1, y1 - y0 + 1), (0, 0, 0, 0))
+    for x, y in stein:
+        frei.putpixel((x - x0, y - y0), px[x, y])
+    klein = frei.resize(WURFSTEIN_GROESSE, Image.BOX)
+    erlaubt = [farbe(n)[:3] for n in KIESEL_FARBEN]
+    kp = klein.load()
+    for y in range(klein.height):
+        for x in range(klein.width):
+            q = kp[x, y]
+            # Halbe Deckung gibt es im Spiel nicht -- entweder Stein oder Luft.
+            if q[3] < 128:
+                kp[x, y] = (0, 0, 0, 0)
+                continue
+            kp[x, y] = min(erlaubt,
+                           key=lambda c: sum((c[i] - q[i]) ** 2
+                                             for i in range(3))) + (255,)
+    print("  wurfstein %dx%d" % klein.size)
+    return klein
+
+
 def main():
     os.makedirs(KUNST, exist_ok=True)
     for name, bild in (("ladebalken.png", ladebalken()),
-                       ("kiesel.png", kiesel())):
+                       ("kiesel.png", kiesel()),
+                       ("wurfstein.png", wurfstein())):
         bild.save(os.path.join(KUNST, name))
         print("%s  %dx%d" % (name, bild.width, bild.height))
 

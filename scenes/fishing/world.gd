@@ -741,8 +741,8 @@ func _on_stone_skip(anteil_x: float, tiefe: float) -> void:
 ## Der Stein gehoert ins Wasserbild: von dort aus kann er den Schwimmer nicht
 ## ueberdecken, aus StoneThrow heraus schon.
 func _on_stone_flight(anteil_x: float, tiefe: float, hoehe: float,
-		blitzt: bool) -> void:
-	_water_view.zeige_stein(anteil_x, tiefe, hoehe, blitzt)
+		blitzt: bool, deckung: float) -> void:
+	_water_view.zeige_stein(anteil_x, tiefe, hoehe, blitzt, deckung)
 
 func _on_stone_gone() -> void:
 	_water_view.stein_weg()

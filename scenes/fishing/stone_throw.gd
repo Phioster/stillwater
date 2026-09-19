@@ -21,7 +21,8 @@ signal aufsetzer(anteil_x: float, tiefe: float)
 ## Wo der Stein gerade fliegt. tiefe ist die Stelle im Wasserfeld wie beim
 ## Aufsetzer, hoehe der Bogen darueber in Wasserpixeln, blitzt das kurze
 ## Aufleuchten nach einem Treffer im goldenen Band.
-signal flug(anteil_x: float, tiefe: float, hoehe: float, blitzt: bool)
+signal flug(anteil_x: float, tiefe: float, hoehe: float, blitzt: bool,
+	deckung: float)
 ## Der Stein ist weg -- ab hier zeichnet ihn niemand mehr.
 signal flug_endet
 ## Der Stein ist versunken: Sprungzahl und die Stelle, an der er es tat.
@@ -35,6 +36,11 @@ const BOGEN_HOCH := 6.0
 ## Wie lange der Stein nach einem Treffer im Band aufleuchtet. Kurz: es ist
 ## eine Rueckmeldung, kein zweiter Effekt.
 const BLITZ_DAUER := 0.3
+## Wie lange der Stein nach dem letzten Aufsetzer untergeht, und wie tief er
+## dabei sinkt. Ohne das verschwindet er im Sprung, und der letzte Aufsetzer
+## sieht aus wie ein Aussetzer.
+const SINKEN := 0.35
+const SINK_TIEF := 4.0
 ## Wie lange der Balken nach dem Start keinen Wurf annimmt. Godot schickt zu
 ## jeder Beruehrung noch einen Mausklick hinterher -- ohne die Sperre wirft
 ## derselbe Tipp, der den Balken oeffnet, ihn sofort wieder leer.
@@ -48,6 +54,8 @@ var _balken_pos := Vector2.ZERO
 
 ## Der Flug, nachdem geworfen wurde.
 var _fliegt := false
+## Der Nachlauf danach: der Stein ist aufgekommen und geht unter.
+var _sinkt := false
 ## Zeit seit dem letzten Aufsetzer (der Bogen) und seit dem Wurf (das Blitzen).
 var _flug_zeit := 0.0
 var _flug_alter := 0.0
@@ -74,6 +82,7 @@ func starte(bei: Vector2, von_x: float) -> void:
 		return
 	_balken_pos = bei
 	_start_x = clampf(von_x, 0.0, 1.0)
+	_sinkt = false
 	_zeit = 0.0
 	_wert = 0.0
 	_laeuft = true
@@ -130,6 +139,9 @@ func wirf() -> void:
 func _flug(delta: float) -> void:
 	_flug_zeit += delta
 	_flug_alter += delta
+	if _sinkt:
+		_sinken()
+		return
 	while _offen > 0 and _flug_zeit >= SPRUNG_ABSTAND:
 		_flug_zeit -= SPRUNG_ABSTAND
 		var ort := Stones.aufsetzer_ort(_start_x, maxi(_gesamt, 1) - _offen)
@@ -138,12 +150,24 @@ func _flug(delta: float) -> void:
 		aufsetzer.emit(ort.x, ort.y)
 		_offen -= 1
 	if _offen <= 0:
-		_fliegt = false
-		visible = false
-		flug_endet.emit()
-		geworfen.emit(_gesamt, _letzt_x, _letzt_tiefe)
+		_sinkt = true
+		_flug_zeit = 0.0
+		_sinken()
 		return
 	_melde_flug()
+
+## Der letzte Aufsetzer ist kein Sprung mehr: der Stein geht an Ort und Stelle
+## unter. Erst danach steigt die Zahl auf, damit sie dort steht, wo er blieb.
+func _sinken() -> void:
+	var p := clampf(_flug_zeit / SINKEN, 0.0, 1.0)
+	flug.emit(_letzt_x, _letzt_tiefe, -SINK_TIEF * p, false, 1.0 - p)
+	if p < 1.0:
+		return
+	_fliegt = false
+	_sinkt = false
+	visible = false
+	flug_endet.emit()
+	geworfen.emit(_gesamt, _letzt_x, _letzt_tiefe)
 
 ## Zwischen zwei Aufsetzern: waagerecht und in der Tiefe gleichmaessig, darueber
 ## ein Bogen, der an beiden Enden auf null zurueckgeht.
@@ -155,7 +179,7 @@ func _melde_flug() -> void:
 		else Vector2(_start_x, ziel.y)
 	var p := clampf(_flug_zeit / SPRUNG_ABSTAND, 0.0, 1.0)
 	flug.emit(lerpf(von.x, ziel.x, p), lerpf(von.y, ziel.y, p),
-		BOGEN_HOCH * sin(p * PI), _treffer and _flug_alter < BLITZ_DAUER)
+		BOGEN_HOCH * sin(p * PI), _treffer and _flug_alter < BLITZ_DAUER, 1.0)
 
 func _draw() -> void:
 	if not _laeuft:

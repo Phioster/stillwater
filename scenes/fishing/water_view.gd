@@ -58,7 +58,7 @@ const RING_DECKUNG := 0.5
 ## Kantenlaenge des fliegenden Steins in Wasserpixeln. Er wird hier gezeichnet
 ## und nicht in stone_throw.gd: der Knoten dort haengt ueber der ganzen Szene
 ## und legte den Stein ueber den Schwimmer, von hier aus geht das nicht.
-const STEIN_KANTE := 2
+const STEIN_BILD := "res://assets/art/wurfstein.png"
 
 var _punkte := PackedVector2Array()
 var _breite: float = 0.0
@@ -83,6 +83,9 @@ var _stein_x := 0.0
 var _stein_tiefe := 0.0
 var _stein_hoehe := 0.0
 var _stein_blitzt := false
+## Faellt beim Sinken auf null -- der Stein verschwindet nicht, er geht unter.
+var _stein_deckung := 1.0
+var _stein_bild: Texture2D = null
 
 ## Die Oberflaeche als Punktfolge (dieselbe wie die Wellenlinie), die Weite
 ## der Flaeche und die laufende Zeit fuer die Drift.
@@ -103,13 +106,22 @@ func wirf_ring(anteil_x: float, tiefe: float) -> void:
 ## Wo der Stein gerade fliegt. Er liegt an derselben Stelle wie sein kuenftiger
 ## Ring, nur um hoehe darueber -- beide gehen durch ring_mitte().
 func zeige_stein(anteil_x: float, tiefe: float, hoehe: float,
-		blitzt: bool) -> void:
+		blitzt: bool, deckung: float = 1.0) -> void:
 	_stein_da = true
 	_stein_x = clampf(anteil_x, 0.0, 1.0)
 	_stein_tiefe = clampf(tiefe, 0.0, RING_FELD)
-	_stein_hoehe = maxf(hoehe, 0.0)
+	# Negativ heisst unter der Oberflaeche -- so sinkt er am Ende ab.
+	_stein_hoehe = hoehe
 	_stein_blitzt = blitzt
+	_stein_deckung = clampf(deckung, 0.0, 1.0)
 	queue_redraw()
+
+## Das Steinbild, einmal geladen. Seine Groesse ist die gezeichnete Groesse --
+## es gibt keine zweite Zahl daneben, die davon abweichen koennte.
+func stein_bild() -> Texture2D:
+	if _stein_bild == null:
+		_stein_bild = TextureLoader.load_texture(STEIN_BILD)
+	return _stein_bild
 
 func stein_weg() -> void:
 	_stein_da = false
@@ -298,8 +310,9 @@ func _stein(laeufe: Array) -> void:
 		return
 	# Beim Treffer dieselbe Farbe wie das goldene Band: die Rueckmeldung liest
 	# sich ohne Erklaerung, weil man sie schon am Balken gesehen hat.
-	var ton := &"rod_brass" if _stein_blitzt else &"stone_light"
-	draw_rect(r, Palette.get_color(ton))
+	var ton := Palette.get_color(&"rod_brass") if _stein_blitzt else Color.WHITE
+	ton.a = _stein_deckung
+	draw_texture_rect(stein_bild(), r, false, ton)
 
 ## Wo der Stein gerade steht. Ein leeres Rechteck, wenn keiner fliegt oder dort
 ## kein Wasser im Bild liegt -- getrennt vom Zeichnen wie ring_rechtecke().
@@ -308,12 +321,17 @@ func stein_rechteck(laeufe: Array) -> Rect2:
 		return Rect2()
 	# Durch dieselbe Ortsrechnung wie sein kuenftiger Ring: sonst liesse sich
 	# der Stein dort aufsetzen, wo kein Ring erscheint.
+	var bild := stein_bild()
+	if bild == null:
+		return Rect2()
 	var ort := _ring_mitte(laeufe, _stein_x, _stein_tiefe, _stein_hoehe * PIXEL)
 	if ort == Vector2.INF:
 		return Rect2()
-	var kante := PIXEL * float(STEIN_KANTE)
-	# Wie die Ringe: nie halb unter dem Bildrand.
-	return Rect2(ort.x, minf(ort.y, _unterkante - kante), kante, kante)
+	var mass := Vector2(bild.get_width(), bild.get_height()) * PIXEL
+	# Er sitzt MIT seiner Unterkante auf dem Aufsetzpunkt, mittig darueber --
+	# sonst laege der Ring an seiner Ecke statt unter ihm.
+	return Rect2(snappedf(ort.x - mass.x * 0.5, PIXEL),
+		minf(ort.y - mass.y, _unterkante - mass.y), mass.x, mass.y)
 
 func _ringe(laeufe: Array) -> void:
 	var c := _krone
