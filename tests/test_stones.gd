@@ -164,3 +164,14 @@ func test_a_bite_closes_the_bar_without_throwing() -> void:
 	assert_false(wurf._laeuft, "der Balken laeuft im Kampf weiter")
 	assert_false(wurf.visible, "der Balken bleibt im Kampf sichtbar")
 	wurf.free()
+
+## Der beste Wurf wird still mitgezaehlt -- und nur er.
+func test_the_best_throw_is_remembered() -> void:
+	Game.new_game()
+	assert_eq(Game.records.best_skips, 0, "ein neues Spiel kennt schon Wuerfe")
+	Game.melde_wurf(5)
+	assert_eq(Game.records.best_skips, 5)
+	Game.melde_wurf(3)
+	assert_eq(Game.records.best_skips, 5, "ein schlechterer Wurf zaehlt mit")
+	Game.melde_wurf(8)
+	assert_eq(Game.records.best_skips, 8, "ein besserer Wurf zaehlt nicht")

@@ -719,5 +719,9 @@ func _on_pebbles_pressed() -> void:
 func _on_stone_skip(anteil_x: float, tiefe: float) -> void:
 	_water_view.wirf_ring(anteil_x, tiefe)
 
-func _on_stone_thrown(_spruenge: int, _stelle: Vector2) -> void:
-	pass
+## Der Stein ist versunken. Mehr passiert nicht -- kein Ertrag, nur der
+## Bestwert und eine Zahl, die sich selbst wieder wegraeumt.
+func _on_stone_thrown(spruenge: int, stelle: Vector2) -> void:
+	Game.melde_wurf(spruenge)
+	var text := "%d" % spruenge if spruenge > 0 else "plumps"
+	$Effects._spawn_text(text, stelle, Palette.get_color(&"foam"))
