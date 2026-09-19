@@ -165,6 +165,7 @@ func _dispatch(events: Array) -> void:
 func melde_wurf(spruenge: int) -> void:
 	if spruenge > records.best_skips:
 		records.best_skips = spruenge
+		state_changed.emit()
 
 # --- Upgrades -------------------------------------------------------------
 

@@ -25,6 +25,13 @@ const PLUMPS: float = 0.15
 const GRUND_MAX: int = 6
 const BAND_BONUS: int = 2
 
+## Wie nah ein Aufsetzer an den rechten Bildrand darf. Weiter draussen
+## halbiert clip_contents seinen Ring -- und zwar den des besten Wurfs.
+const RAND: float = 0.03
+## Von wo bis wohin die Aufsetzer ins Bild wandern, als Anteil der Wasserhoehe.
+const TIEFE_VON: float = 0.15
+const TIEFE_BIS: float = 0.80
+
 ## Dreieckig, nicht sinusfoermig: gleichmaessig hoch, gleichmaessig runter.
 ## Ein Sinus verweilt an den Enden, und dann haengt der Balken oben fest.
 static func ladung(zeit: float) -> float:
@@ -48,6 +55,19 @@ static func spruenge(wert: float, getroffen: bool) -> int:
 	var grund := clampi(1 + int(round(anteil * float(GRUND_MAX - 1))),
 		1, GRUND_MAX)
 	return grund + (BAND_BONUS if getroffen else 0)
+
+## Wo der nummer-te Aufsetzer liegt: (anteil_x, tiefe). Schrittweite und
+## Tiefenschritt kommen aus dem verbleibenden Platz und der Hoechstzahl der
+## Spruenge, nicht aus festen Zahlen -- sonst fielen beim besten moeglichen
+## Wurf die letzten beiden Aufsetzer am Bildrand aufeinander.
+static func aufsetzer_ort(start_x: float, nummer: int) -> Vector2:
+	var hoechste := GRUND_MAX + BAND_BONUS
+	var von := clampf(start_x, 0.0, 1.0 - RAND)
+	var schritt := (1.0 - RAND - von) / float(hoechste)
+	var tiefe := TIEFE_VON + (TIEFE_BIS - TIEFE_VON) \
+		* float(nummer) / float(hoechste - 1)
+	return Vector2(clampf(von + float(nummer + 1) * schritt, 0.0, 1.0 - RAND),
+		clampf(tiefe, TIEFE_VON, TIEFE_BIS))
 
 const BALKEN_BILD: String = "res://assets/art/ladebalken.png"
 ## Ab welcher Deckung ein Bildpunkt zum Balken zaehlt. Steht hier und nicht
@@ -75,11 +95,18 @@ static func balken_groesse() -> Vector2i:
 	maske()
 	return _groesse
 
+## Wo diese Bildzeile im Balken liegt, von unten gemessen. Fuellkante und
+## goldenes Band lesen dieselbe Zahl -- zwei Rechnungen drifteten lautlos
+## auseinander.
+static func zeilen_anteil(zeile: int) -> float:
+	var g := balken_groesse()
+	if g.y <= 0:
+		return 1.0
+	return 1.0 - (float(zeile) + 0.5) / float(g.y)
+
 ## Ob diese Bildzeile bei diesem Ladestand gefuellt ist. Zeile 0 ist oben,
 ## gefuellt wird von unten.
 static func gefuellt(zeile: int, wert: float) -> bool:
-	var g := balken_groesse()
-	if g.y <= 0:
+	if balken_groesse().y <= 0:
 		return false
-	var von_unten := 1.0 - (float(zeile) + 0.5) / float(g.y)
-	return von_unten <= wert
+	return zeilen_anteil(zeile) <= wert

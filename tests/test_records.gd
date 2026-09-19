@@ -105,6 +105,17 @@ func test_the_page_shows_the_numbers() -> void:
 		text += l + "\n"
 	assert_true("77" in text, "die Fangzahl steht nicht auf der Seite")
 	assert_true("Gespielt" in text, "die Spielzeit fehlt")
+	# Der beste Steinwurf taucht NUR hier auf -- im Spiel selbst bleibt die
+	# Sprungzahl fluechtig.
+	assert_true("Bester Steinwurf" in text, "der beste Steinwurf fehlt")
+	assert_true("noch keiner" in text,
+		"ohne Wurf steht statt \"noch keiner\" etwas anderes da")
+	Game.melde_wurf(7)
+	panel.refresh()
+	text = ""
+	for l in _labels(panel):
+		text += l + "\n"
+	assert_true("7 Sprünge" in text, "der Bestwert steht nicht auf der Seite")
 	m.free()
 
 func _labels(node: Node) -> Array[String]:

@@ -84,6 +84,12 @@ func _spawn_burst(pos: Vector2, shiny: bool) -> void:
 	else:
 		burst.setup_splash(pos)
 
+## Der Weg fuer die Geschwisterknoten: world.gd laesst hier die Sprungzahl des
+## geflitschten Steins aufsteigen. Ueber _spawn_text ginge es auch, aber das
+## bricht lautlos, sobald sich hier drinnen etwas aendert.
+func zeige_text(txt: String, pos: Vector2, farbe: Color) -> void:
+	_spawn_text(txt, pos, farbe)
+
 func _spawn_text(txt: String, pos: Vector2, color: Color) -> void:
 	var pop: Control = POP_TEXT_SCENE.instantiate()
 	add_child(pop)

@@ -117,6 +117,12 @@ const SCHILF_KNOPF_SKALA := ANGLER_SCALE
 ## Links neben dem Schilf -- der Steg steht ganz links, das Schilf ganz
 ## rechts, dazwischen ist Platz.
 const KIESEL_X := 0.62
+## Luft zwischen Kieselhaufen und Ladebalken: der Balken steht ueber dem
+## Haufen, nicht darauf.
+const BALKEN_LUFT := 12.0
+## Wie weit die Sprungzahl ueber der Aufsetzstelle steht. Genau darauf laege
+## sie im Ring, den derselbe Aufsetzer gerade schlaegt.
+const WURF_ZAHL_HOCH := 30.0
 const WAVE_BIAS := 9.5
 ## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
@@ -282,6 +288,8 @@ func _ready() -> void:
 	_wurf = StoneThrow.new()
 	add_child(_wurf)
 	_wurf.aufsetzer.connect(_on_stone_skip)
+	_wurf.flug.connect(_on_stone_flight)
+	_wurf.flug_endet.connect(_on_stone_gone)
 	_wurf.geworfen.connect(_on_stone_thrown)
 
 	_rain = Rain.new()
@@ -712,16 +720,45 @@ func _on_reeds_pressed() -> void:
 func _on_pebbles_pressed() -> void:
 	if Game.sim.state == FishingSim.State.FIGHT:
 		return
-	# Der Balken steht ueber dem Haufen, nicht darauf.
+	_wurf.starte(_balken_stelle())
+
+## Wo der Ladebalken steht. Auch der Rueckfall der Sprungzahl liest hier -- die
+## Stelle wird einmal gerechnet.
+func _balken_stelle() -> Vector2:
 	var hoch := float(Stones.balken_groesse().y) * StoneThrow.SKALA
-	_wurf.starte(_kiesel.position + Vector2(0.0, -hoch - 12.0))
+	return _kiesel.position + Vector2(0.0, -hoch - BALKEN_LUFT)
 
 func _on_stone_skip(anteil_x: float, tiefe: float) -> void:
 	_water_view.wirf_ring(anteil_x, tiefe)
 
+## Der Stein gehoert ins Wasserbild: von dort aus kann er den Schwimmer nicht
+## ueberdecken, aus StoneThrow heraus schon.
+func _on_stone_flight(anteil_x: float, tiefe: float, hoehe: float,
+		blitzt: bool) -> void:
+	_water_view.zeige_stein(anteil_x, tiefe, hoehe, blitzt)
+
+func _on_stone_gone() -> void:
+	_water_view.stein_weg()
+
 ## Der Stein ist versunken. Mehr passiert nicht -- kein Ertrag, nur der
 ## Bestwert und eine Zahl, die sich selbst wieder wegraeumt.
-func _on_stone_thrown(spruenge: int, stelle: Vector2) -> void:
+func _on_stone_thrown(spruenge: int, anteil_x: float, tiefe: float) -> void:
 	Game.melde_wurf(spruenge)
+	# Im Kampf gehoert die Flaeche ueber dem Wasser den Orbs: die Zahl laege
+	# mitten in ihrem Streufeld. Der Bestwert zaehlt trotzdem.
+	if Game.sim.state == FishingSim.State.FIGHT:
+		return
 	var text := "%d" % spruenge if spruenge > 0 else "plumps"
-	$Effects._spawn_text(text, stelle, Palette.get_color(&"foam"))
+	$Effects.zeige_text(text, _wurf_zahl_stelle(anteil_x, tiefe),
+		Palette.get_color(&"foam"))
+
+## Die Zahl steigt dort auf, wo der Stein versunken ist. WaterView rechnet die
+## Stelle, umgerechnet wird ueber die Knoten selbst -- eine feste Zahl waere
+## geraten. Ohne Wasser an dieser Stelle bleibt der alte Ort am Balken.
+func _wurf_zahl_stelle(anteil_x: float, tiefe: float) -> Vector2:
+	var ort := _water_view.ring_mitte(anteil_x, tiefe)
+	if ort == Vector2.INF:
+		return _balken_stelle()
+	var welt := _water_view.to_global(ort)
+	return $Effects.get_global_transform().affine_inverse() * welt \
+		- Vector2(0.0, WURF_ZAHL_HOCH)

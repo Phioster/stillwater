@@ -25,6 +25,10 @@ func refresh() -> void:
 	add_child(_line("Fangpunkte getroffen", str(r.orbs_tapped)))
 	add_child(_line("Aufträge erfüllt", str(r.quests_done)))
 	add_child(_line("Tränke getrunken", str(r.potions_drunk)))
+	# Die einzige Spur, die der Zeitvertreib hinterlässt — und nur hier.
+	var steinwurf := "%d Sprünge" % r.best_skips if r.best_skips > 0 \
+		else "noch keiner"
+	add_child(_line("Bester Steinwurf", steinwurf))
 
 	add_child(_title("Münzen"))
 	add_child(_line("Eingenommen", _grouped(r.coins_earned)))
