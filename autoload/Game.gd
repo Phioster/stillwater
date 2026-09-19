@@ -161,8 +161,7 @@ func _dispatch(events: Array) -> void:
 		state_changed.emit()
 
 ## Meldet einen geflitschten Stein. Aendert NICHTS am Spielstand ausser dem
-## Bestwert -- kein Ertrag ist die Bedingung dafuer, dass das ein
-## Zeitvertreib bleibt und keine Aufgabe wird.
+## Bestwert -- sonst waere es keine Ablenkung mehr, sondern eine Aufgabe.
 func melde_wurf(spruenge: int) -> void:
 	if spruenge > records.best_skips:
 		records.best_skips = spruenge

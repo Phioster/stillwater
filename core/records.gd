@@ -19,7 +19,7 @@ var orbs_tapped: int = 0
 var potions_drunk: int = 0
 var quests_done: int = 0
 var casts: int = 0
-## Der beste je geworfene Stein -- der einzige Spur, die der Zeitvertreib
+## Der beste je geworfene Stein -- die einzige Spur, die der Zeitvertreib
 ## im Spielstand hinterlassen darf.
 var best_skips: int = 0
 
