@@ -39,8 +39,8 @@ const BLITZ_DAUER := 0.3
 ## Wie lange der Stein nach dem letzten Aufsetzer untergeht, und wie tief er
 ## dabei sinkt. Ohne das verschwindet er im Sprung, und der letzte Aufsetzer
 ## sieht aus wie ein Aussetzer.
-const SINKEN := 0.35
-const SINK_TIEF := 4.0
+const SINKEN := 0.22
+const SINK_TIEF := 6.0
 ## Wie lange der Balken nach dem Start keinen Wurf annimmt. Godot schickt zu
 ## jeder Beruehrung noch einen Mausklick hinterher -- ohne die Sperre wirft
 ## derselbe Tipp, der den Balken oeffnet, ihn sofort wieder leer.
@@ -160,7 +160,11 @@ func _flug(delta: float) -> void:
 ## unter. Erst danach steigt die Zahl auf, damit sie dort steht, wo er blieb.
 func _sinken() -> void:
 	var p := clampf(_flug_zeit / SINKEN, 0.0, 1.0)
-	flug.emit(_letzt_x, _letzt_tiefe, -SINK_TIEF * p, false, 1.0 - p)
+	# Nicht gleichmaessig: erst der Einschlag, dann laeuft er im Wasser aus.
+	# Mit gleicher Geschwindigkeit sah das Absinken aus wie ein Fahrstuhl.
+	var tiefe := 1.0 - pow(1.0 - p, 3.0)
+	flug.emit(_letzt_x, _letzt_tiefe, -SINK_TIEF * tiefe, false,
+		pow(1.0 - p, 2.0))
 	if p < 1.0:
 		return
 	_fliegt = false

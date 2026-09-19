@@ -9,15 +9,21 @@
 class_name Stones
 extends RefCounted
 
-## Ein voller Weg der Ladung: hoch und wieder runter.
-const ZYKLUS: float = 1.8
+## Ein voller Weg der Ladung: hoch und wieder runter. Schnell genug, dass ein
+## guter Wurf Treffsicherheit braucht -- gemuetlich war er beliebig oft
+## wiederholbar und damit keine Leistung.
+const ZYKLUS: float = 1.1
 ## Wie lange das Band fuer EINEN Weg braucht. Deutlich langsamer als die
 ## Ladung, sonst faengt man es nur zufaellig.
-const BAND_WEG: float = 5.5
+const BAND_WEG: float = 3.0
 ## Hoehe des Bandes als Anteil der Balkenhoehe.
 const BAND_HOEHE: float = 0.12
-const BAND_UNTEN: float = 0.25
-const BAND_OBEN: float = 0.85
+## Das Band liegt im oberen Drittel (seine Unterkante bei 0,66) und nirgends
+## sonst. Nur so passt der Bonus zur Zahl: wer ihn bekommt, hat auch schon
+## fast voll geladen -- tief unten waere ein Bandtreffer eine Belohnung fuer
+## einen schwachen Wurf gewesen.
+const BAND_UNTEN: float = 0.72
+const BAND_OBEN: float = 0.94
 
 ## Darunter plumpst der Stein nur.
 const PLUMPS: float = 0.15
