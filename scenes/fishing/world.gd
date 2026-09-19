@@ -26,6 +26,8 @@ signal reeds_tapped
 @onready var _trader: TextureButton = $Visitors/Trader
 var _rain: Rain = null
 var _schilf_knopf: ReedPatch = null
+var _kiesel: PebblePile = null
+var _wurf: StoneThrow = null
 var _rabe_besuch: Visitor = null
 var _baer_besuch: Visitor = null
 
@@ -112,6 +114,9 @@ const WAVE_SCALE := 7.0
 const SCHILF_KNOPF_X := 0.80
 ## Der Horst laeuft im Massstab der Figur, wie das Uferband daneben.
 const SCHILF_KNOPF_SKALA := ANGLER_SCALE
+## Links neben dem Schilf -- der Steg steht ganz links, das Schilf ganz
+## rechts, dazwischen ist Platz.
+const KIESEL_X := 0.62
 const WAVE_BIAS := 9.5
 ## Wie weit die Uferfarbe ins Gras hinaufreicht. Die Farbkante des skalierten
 ## Hintergrundbilds liegt nicht exakt auf 84/180 -- ohne Reserve blitzte dort
@@ -267,6 +272,18 @@ func _ready() -> void:
 	$Visitors.add_child(_schilf_knopf)
 	_schilf_knopf.tapped.connect(_on_reeds_pressed)
 
+	_kiesel = PebblePile.new()
+	_kiesel.setze(TextureLoader.load_texture("res://assets/art/kiesel.png"),
+		SCHILF_KNOPF_SKALA)
+	_kiesel.visible = false
+	$Visitors.add_child(_kiesel)
+	_kiesel.tapped.connect(_on_pebbles_pressed)
+
+	_wurf = StoneThrow.new()
+	add_child(_wurf)
+	_wurf.aufsetzer.connect(_on_stone_skip)
+	_wurf.geworfen.connect(_on_stone_thrown)
+
 	_rain = Rain.new()
 	add_child(_rain)
 	_rain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -341,6 +358,11 @@ func _place_background(water_y: float) -> void:
 		# Rechts aussen: Steg und Figur stehen links, dort waere er im Weg.
 		_schilf_knopf.position = Vector2(size.x * SCHILF_KNOPF_X,
 			schilf_fuss - _schilf_knopf.size.y)
+	if _kiesel != null:
+		_kiesel.position = Vector2(size.x * KIESEL_X,
+			schilf_fuss - _kiesel.size.y)
+		# Anders als das Schilf gibt es keine Reifezeit -- Steine sind immer da.
+		_kiesel.visible = true
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
@@ -684,3 +706,18 @@ func _on_reeds_pressed() -> void:
 		return
 	Audio.click()
 	reeds_tapped.emit()
+
+## Ein Tipp auf die Kiesel nimmt einen Stein auf. Im Kampf nicht -- dort
+## gehoert der Finger den Orbs.
+func _on_pebbles_pressed() -> void:
+	if Game.sim.state == FishingSim.State.FIGHT:
+		return
+	# Der Balken steht ueber dem Haufen, nicht darauf.
+	var hoch := float(Stones.balken_groesse().y) * StoneThrow.SKALA
+	_wurf.starte(_kiesel.position + Vector2(0.0, -hoch - 12.0))
+
+func _on_stone_skip(anteil_x: float, tiefe: float) -> void:
+	_water_view.wirf_ring(anteil_x, tiefe)
+
+func _on_stone_thrown(_spruenge: int, _stelle: Vector2) -> void:
+	pass

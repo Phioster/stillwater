@@ -114,3 +114,53 @@ func test_the_bar_fills_from_the_bottom() -> void:
 	assert_false(Stones.gefuellt(0, 0.5), "oben ist bei halb schon voll")
 	assert_true(Stones.gefuellt(0, 1.0), "voll ist oben nicht gefuellt")
 	assert_false(Stones.gefuellt(g.y - 1, 0.0), "leer ist unten gefuellt")
+
+## Der Balken laeuft erst, wenn man ihn startet, und ein zweiter Tipp wirft.
+func test_the_bar_runs_only_after_it_is_started() -> void:
+	var wurf := StoneThrow.new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(wurf)
+	await tree.process_frame
+	assert_false(wurf._laeuft, "der Balken laeuft ungefragt")
+	wurf.starte(Vector2(200.0, 200.0))
+	assert_true(wurf._laeuft, "der Balken laeuft nach dem Start nicht")
+	wurf._process(0.1)
+	assert_true(wurf._zeit > 0.0, "die Zeit steht still")
+	wurf.free()
+
+## Ein Wurf aendert nichts am Spielstand -- das ist die wichtigste
+## Zusicherung des ganzen Zeitvertreibs.
+func test_a_throw_changes_nothing_in_the_save() -> void:
+	Game.new_game()
+	var muenzen := Game.coins
+	var koeder := Game.bait_used()
+	var stufe: int = Game.ctx.player_level
+	var fische: int = Game.ctx.inventory.fish.size()
+	var wurf := StoneThrow.new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(wurf)
+	await tree.process_frame
+	wurf.starte(Vector2(200.0, 200.0))
+	for i in 30:
+		wurf._process(0.05)
+	wurf.wirf()
+	assert_eq(Game.coins, muenzen, "ein Wurf kostet oder bringt Muenzen")
+	assert_eq(Game.bait_used(), koeder, "ein Wurf aendert die Koeder")
+	assert_eq(Game.ctx.player_level, stufe, "ein Wurf gibt Erfahrung")
+	assert_eq(Game.ctx.inventory.fish.size(), fische,
+		"ein Wurf aendert das Inventar")
+	wurf.free()
+
+## Und beim Anbiss verschwindet der Balken, ohne zu werfen.
+func test_a_bite_closes_the_bar_without_throwing() -> void:
+	Game.new_game()
+	var wurf := StoneThrow.new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(wurf)
+	await tree.process_frame
+	wurf.starte(Vector2(200.0, 200.0))
+	Game.sim.state = FishingSim.State.FIGHT
+	wurf._process(0.05)
+	assert_false(wurf._laeuft, "der Balken laeuft im Kampf weiter")
+	assert_false(wurf.visible, "der Balken bleibt im Kampf sichtbar")
+	wurf.free()
