@@ -168,8 +168,10 @@ Stein fliegt zu Ende; der Kampf trägt sich ohnehin von allein ab
 | `core/records.gd` | Ein Eintrag in `FIELDS`. |
 | `tools/kiesel_bauen.py` (neu) | Erzeugt `assets/art/ladebalken.png` (die Sichelform) aus den Zahlen oben und beschneidet den Kieselhaufen aus `assets/source/steine/kiesel.png` auf `assets/art/kiesel.png`. |
 
-Der Kieselhaufen kommt wie das Messer von PixelLab, mit der Spielpalette als
-Zwangspalette erzeugt, und liegt roh unter `assets/source/steine/kiesel.png`.
+Der Kieselhaufen kommt wie das Messer von PixelLab und liegt roh unter
+`assets/source/steine/kiesel.png` — 39 × 14 Bildpunkte, am Schirm 84 × 30.
+Das genauere Modell nimmt keine Zwangspalette, die Farben werden deshalb beim
+Bauen auf die vier neutralen Grautöne eingerastet.
 
 ## Was geprüft wird
 
