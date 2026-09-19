@@ -114,9 +114,10 @@ const WAVE_SCALE := 7.0
 const SCHILF_KNOPF_X := 0.80
 ## Der Horst laeuft im Massstab der Figur, wie das Uferband daneben.
 const SCHILF_KNOPF_SKALA := ANGLER_SCALE
-## Links neben dem Schilf -- der Steg steht ganz links, das Schilf ganz
-## rechts, dazwischen ist Platz.
-const KIESEL_X := 0.62
+## Wo der Kieselhaufen auf dem Steg liegt, in Stegpixeln von links -- hinter
+## der Anglerin (ANGLER_ON_DECK 187), nicht im Gras: dort sah er aus wie ein
+## Fremdkoerper zwischen den Halmen.
+const KIESEL_ON_DECK := 140.0
 ## Luft zwischen Kieselhaufen und Ladebalken: der Balken steht ueber dem
 ## Haufen, nicht darauf.
 const BALKEN_LUFT := 12.0
@@ -333,6 +334,14 @@ func _layout() -> void:
 	# Der Schwimmer haengt am ENDE des Stegs, nicht an einem Bruchteil der
 	# Bildbreite: die Schnur lief sonst je nach Seitenverhaeltnis quer ueber
 	# die Planken. So beginnt sie immer erst hinter dem Steg.
+	if _kiesel != null:
+		# Auf den Planken, nicht im Gras -- und die Steine liegen mit ihrer
+		# untersten Zeile auf der Deckoberkante.
+		_kiesel.position = Vector2(
+			_dock.position.x + KIESEL_ON_DECK * DOCK_SCALE,
+			deck_y + DECK_IM_BILD * DOCK_SCALE - _kiesel.size.y)
+		# Anders als das Schilf gibt es keine Reifezeit -- Steine sind immer da.
+		_kiesel.visible = true
 	var dock_right := _dock.position.x + DOCK_W * DOCK_SCALE
 	_bobber_home = Vector2(min(dock_right + BOBBER_OFF_DOCK * DOCK_SCALE, size.x * 0.75),
 		water_y + size.y * BOBBER_BELOW_WATER)
@@ -366,11 +375,6 @@ func _place_background(water_y: float) -> void:
 		# Rechts aussen: Steg und Figur stehen links, dort waere er im Weg.
 		_schilf_knopf.position = Vector2(size.x * SCHILF_KNOPF_X,
 			schilf_fuss - _schilf_knopf.size.y)
-	if _kiesel != null:
-		_kiesel.position = Vector2(size.x * KIESEL_X,
-			schilf_fuss - _kiesel.size.y)
-		# Anders als das Schilf gibt es keine Reifezeit -- Steine sind immer da.
-		_kiesel.visible = true
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
@@ -720,7 +724,10 @@ func _on_reeds_pressed() -> void:
 func _on_pebbles_pressed() -> void:
 	if Game.sim.state == FishingSim.State.FIGHT:
 		return
-	_wurf.starte(_balken_stelle())
+	# Geworfen wird von der Stegkante, nicht vom Haufen: die ersten Aufsetzer
+	# laegen sonst neben den Pfosten statt auf dem offenen Wasser.
+	_wurf.starte(_balken_stelle(),
+		(_dock.position.x + DOCK_W * DOCK_SCALE) / maxf(size.x, 1.0))
 
 ## Wo der Ladebalken steht. Auch der Rueckfall der Sprungzahl liest hier -- die
 ## Stelle wird einmal gerechnet.

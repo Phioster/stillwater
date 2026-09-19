@@ -193,7 +193,7 @@ func test_the_bar_runs_only_after_it_is_started() -> void:
 	tree.root.add_child(wurf)
 	await tree.process_frame
 	assert_false(wurf._laeuft, "der Balken laeuft ungefragt")
-	wurf.starte(Vector2(200.0, 200.0))
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	assert_true(wurf._laeuft, "der Balken laeuft nach dem Start nicht")
 	wurf._process(0.1)
 	assert_true(wurf._zeit > 0.0, "die Zeit steht still")
@@ -217,7 +217,7 @@ func test_a_throw_changes_nothing_in_the_save() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.root.add_child(wurf)
 	await tree.process_frame
-	wurf.starte(Vector2(200.0, 200.0))
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	for i in 30:
 		wurf._process(0.05)
 	wurf.wirf()
@@ -235,7 +235,7 @@ func test_a_bite_closes_the_bar_without_throwing() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.root.add_child(wurf)
 	await tree.process_frame
-	wurf.starte(Vector2(200.0, 200.0))
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	Game.sim.state = FishingSim.State.FIGHT
 	wurf._process(0.05)
 	assert_false(wurf._laeuft, "der Balken laeuft im Kampf weiter")
@@ -310,7 +310,7 @@ func test_the_throw_reports_its_flight_and_its_hit() -> void:
 		gemeldet.append([x, tiefe, hoehe, blitzt]))
 	var endete := [false]
 	wurf.flug_endet.connect(func(): endete[0] = true)
-	wurf.starte(Vector2(200.0, 200.0))
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	# Die Ladung auf die Mitte des Bandes legen, statt sie zu treffen: geprueft
 	# wird die Rueckmeldung, nicht das Zielen.
 	wurf._zeit = 2.0
@@ -340,7 +340,7 @@ func test_a_miss_never_makes_the_stone_flash() -> void:
 	wurf.flug.connect(func(_x, _t, _h, blitzt):
 		if blitzt:
 			blitze[0] += 1)
-	wurf.starte(Vector2(200.0, 200.0))
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	# Volle Ladung, das Band steht bei dieser Zeit tief -- also kein Treffer.
 	wurf._zeit = 2.0
 	wurf._wert = 1.0
@@ -349,6 +349,28 @@ func test_a_miss_never_makes_the_stone_flash() -> void:
 	for i in 100:
 		wurf._process(0.01)
 	assert_eq(blitze[0], 0, "der Stein blitzt ohne Treffer im Band")
+	wurf.free()
+
+## Derselbe Tipp darf den Balken nicht oeffnen und sofort wieder leer werfen.
+## Godot schickt zu jeder Beruehrung noch einen Mausklick hinterher, und der
+## kam frueher im selben Bild an -- am Geraet gab es dadurch nur "plumps".
+func test_the_tap_that_opens_the_bar_cannot_throw_it() -> void:
+	Game.new_game()
+	var wurf := StoneThrow.new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(wurf)
+	await tree.process_frame
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
+	var klick := InputEventMouseButton.new()
+	klick.button_index = MOUSE_BUTTON_LEFT
+	klick.pressed = true
+	wurf._gui_input(klick)
+	assert_true(wurf._laeuft,
+		"der Tipp, der den Balken oeffnet, wirft ihn sofort wieder")
+	# Nach der Sperre nimmt derselbe Klick den Wurf an.
+	wurf._process(StoneThrow.SCHARF_AB + 0.01)
+	wurf._gui_input(klick)
+	assert_false(wurf._laeuft, "nach der Sperre wirft der Balken nicht mehr")
 	wurf.free()
 
 ## Ein zweiter Tipp waehrend des Fluges darf ihn nicht abbrechen: sonst
@@ -362,14 +384,14 @@ func test_a_second_tap_does_not_cut_the_flight_short() -> void:
 	wurf.aufsetzer.connect(func(_x, _t): aufsetzer[0] += 1)
 	var zahlen := [-1]
 	wurf.geworfen.connect(func(spruenge, _x, _t): zahlen[0] = spruenge)
-	wurf.starte(Vector2(200.0, 200.0))
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	wurf._zeit = 2.0
 	wurf._wert = 1.0
 	wurf.wirf()
 	var erwartet := Stones.spruenge(1.0, false)
 	wurf._process(0.2)
 	# Der Kieselhaufen ist waehrend des Fluges wieder ansprechbar.
-	wurf.starte(Vector2(200.0, 200.0))
+	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	assert_false(wurf._laeuft, "der Balken startet mitten im Flug neu")
 	for i in 100:
 		wurf._process(0.01)

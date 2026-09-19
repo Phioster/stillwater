@@ -35,6 +35,10 @@ const BOGEN_HOCH := 6.0
 ## Wie lange der Stein nach einem Treffer im Band aufleuchtet. Kurz: es ist
 ## eine Rueckmeldung, kein zweiter Effekt.
 const BLITZ_DAUER := 0.3
+## Wie lange der Balken nach dem Start keinen Wurf annimmt. Godot schickt zu
+## jeder Beruehrung noch einen Mausklick hinterher -- ohne die Sperre wirft
+## derselbe Tipp, der den Balken oeffnet, ihn sofort wieder leer.
+const SCHARF_AB := 0.15
 
 var _zeit := 0.0
 var _wert := 0.0
@@ -61,12 +65,15 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 
-func starte(bei: Vector2) -> void:
+## bei ist die linke obere Ecke des Balkens, von_x der Anteil der Breite, an
+## dem der Stein ins Wasser geht -- die Stegkante, nicht der Kieselhaufen.
+func starte(bei: Vector2, von_x: float) -> void:
 	# Ein fliegender Stein laesst sich nicht nachladen: der zweite Tipp haette
 	# sonst die offenen Aufsetzer verschluckt, ohne dass je eine Zahl kommt.
 	if _fliegt:
 		return
 	_balken_pos = bei
+	_start_x = clampf(von_x, 0.0, 1.0)
 	_zeit = 0.0
 	_wert = 0.0
 	_laeuft = true
@@ -82,7 +89,7 @@ func schliesse() -> void:
 	queue_redraw()
 
 func _gui_input(event: InputEvent) -> void:
-	if not _laeuft:
+	if not _laeuft or _zeit < SCHARF_AB:
 		return
 	var tipp := event is InputEventScreenTouch \
 		and (event as InputEventScreenTouch).pressed
@@ -113,7 +120,6 @@ func wirf() -> void:
 	_offen = maxi(_gesamt, 1)
 	_flug_zeit = 0.0
 	_flug_alter = 0.0
-	_start_x = clampf(_balken_pos.x / maxf(size.x, 1.0), 0.0, 1.0)
 	_letzt_x = _start_x
 	_letzt_tiefe = Stones.TIEFE_VON
 	_fliegt = true
