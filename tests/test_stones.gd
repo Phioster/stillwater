@@ -318,8 +318,12 @@ func test_the_throw_reports_its_flight_and_its_hit() -> void:
 	wurf._zeit = 2.0
 	wurf._wert = Stones.band_mitte(2.0)
 	wurf.wirf()
-	for i in 200:
+	# Bis der Flug wirklich vorbei ist, statt eine feste Bildzahl zu raten --
+	# sonst haengt der Test an SPRUNG_ABSTAND und SINKEN.
+	for i in 500:
 		wurf._process(0.01)
+		if endete[0]:
+			break
 	assert_true(gemeldet.size() > 20,
 		"der Flug wurde nur %d mal gemeldet" % gemeldet.size())
 	assert_true(bool(gemeldet[0][3]), "der Stein blitzt nach dem Treffer nicht")
@@ -426,8 +430,10 @@ func test_a_second_tap_does_not_cut_the_flight_short() -> void:
 	# Der Kieselhaufen ist waehrend des Fluges wieder ansprechbar.
 	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	assert_false(wurf._laeuft, "der Balken startet mitten im Flug neu")
-	for i in 100:
+	for i in 500:
 		wurf._process(0.01)
+		if zahlen[0] >= 0:
+			break
 	assert_eq(aufsetzer[0], erwartet,
 		"es kamen %d statt %d Aufsetzer" % [aufsetzer[0], erwartet])
 	assert_eq(zahlen[0], erwartet, "die Sprungzahl kam nicht")

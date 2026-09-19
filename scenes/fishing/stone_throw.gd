@@ -29,8 +29,9 @@ signal flug_endet
 signal geworfen(spruenge: int, anteil_x: float, tiefe: float)
 
 const SKALA := 2.16
-## Abstand zwischen zwei Aufsetzern.
-const SPRUNG_ABSTAND := 0.13
+## Abstand zwischen zwei Aufsetzern. Der Flug ist das, was man sich ansieht --
+## bei 0,13 s war er vorbei, bevor man die Spruenge mitzaehlen konnte.
+const SPRUNG_ABSTAND := 0.20
 ## Wie hoch der Stein zwischen zwei Aufsetzern steigt, in Wasserpixeln.
 const BOGEN_HOCH := 6.0
 ## Wie lange der Stein nach einem Treffer im Band aufleuchtet. Kurz: es ist

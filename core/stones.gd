@@ -11,8 +11,9 @@ extends RefCounted
 
 ## Ein voller Weg der Ladung: hoch und wieder runter. Schnell genug, dass ein
 ## guter Wurf Treffsicherheit braucht -- gemuetlich war er beliebig oft
-## wiederholbar und damit keine Leistung.
-const ZYKLUS: float = 1.1
+## wiederholbar und damit keine Leistung. Bei 0,8 s bleiben fuer die volle
+## Punktzahl noch 68 ms je Zyklus.
+const ZYKLUS: float = 0.8
 ## Wie lange das Band fuer EINEN Weg braucht. Deutlich langsamer als die
 ## Ladung, sonst faengt man es nur zufaellig.
 const BAND_WEG: float = 3.0
