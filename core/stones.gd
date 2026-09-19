@@ -14,11 +14,14 @@ extends RefCounted
 ## wiederholbar und damit keine Leistung. Bei 0,8 s bleiben fuer die volle
 ## Punktzahl noch 68 ms je Zyklus.
 const ZYKLUS: float = 0.8
-## Wie lange das Band fuer EINEN Weg braucht. Deutlich langsamer als die
-## Ladung, sonst faengt man es nur zufaellig.
-const BAND_WEG: float = 3.0
-## Hoehe des Bandes als Anteil der Balkenhoehe.
-const BAND_HOEHE: float = 0.12
+## Wie lange das Band fuer EINEN Weg braucht. Immer noch langsamer als die
+## Ladung -- sonst faengt man es nur zufaellig --, aber nicht mehr so langsam,
+## dass man es beim Aufladen einfach abwarten kann.
+const BAND_WEG: float = 1.6
+## Hoehe des Bandes als Anteil der Balkenhoehe. Gemessen: bei 0,12 brachte die
+## beste Taktik in vier von fuenf Wuerfen die volle Punktzahl, hier in einem
+## von sechs.
+const BAND_HOEHE: float = 0.07
 ## Das Band liegt im oberen Drittel (seine Unterkante bei 0,66) und nirgends
 ## sonst. Nur so passt der Bonus zur Zahl: wer ihn bekommt, hat auch schon
 ## fast voll geladen -- tief unten waere ein Bandtreffer eine Belohnung fuer
