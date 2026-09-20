@@ -48,6 +48,10 @@ const SINK_TIEF := 6.0
 const SCHARF_AB := 0.15
 
 var _zeit := 0.0
+## Zeitversatz des goldenen Bandes, je Aufnahme neu gewuerfelt. Ohne ihn faengt
+## es jedes Mal an derselben Stelle an und laeuft in dieselbe Richtung los --
+## dann uebt man den Wurf einmal ein und wiederholt ihn beliebig.
+var _band_versatz := 0.0
 var _wert := 0.0
 var _laeuft := false
 ## Wo der Balken gezeichnet wird -- der Knoten selbst deckt die ganze Szene.
@@ -84,6 +88,8 @@ func starte(bei: Vector2, von_x: float) -> void:
 	_balken_pos = bei
 	_start_x = clampf(von_x, 0.0, 1.0)
 	_sinkt = false
+	# Ueber den GANZEN Weg gewuerfelt: das trifft Stelle und Richtung zugleich.
+	_band_versatz = randf() * Stones.BAND_WEG * 2.0
 	_zeit = 0.0
 	_wert = 0.0
 	_laeuft = true
@@ -121,11 +127,16 @@ func _process(delta: float) -> void:
 	elif _fliegt:
 		_flug(delta)
 
+## Die Uhr, nach der sich das Band richtet. Zeichnung und Regel fragen
+## dieselbe -- zwei waeren zwei Baender.
+func _band_zeit() -> float:
+	return _zeit + _band_versatz
+
 ## Wirft den Stein mit dem gerade anliegenden Ladestand.
 func wirf() -> void:
 	if not _laeuft:
 		return
-	_treffer = Stones.im_band(_wert, _zeit)
+	_treffer = Stones.im_band(_wert, _band_zeit())
 	_gesamt = Stones.spruenge(_wert, _treffer)
 	_offen = maxi(_gesamt, 1)
 	_flug_zeit = 0.0
@@ -190,7 +201,7 @@ func _draw() -> void:
 	if not _laeuft:
 		return
 	var g := Stones.balken_groesse()
-	var band := Stones.band_mitte(_zeit)
+	var band := Stones.band_mitte(_band_zeit())
 	var leer := Palette.get_color(&"peat_dark")
 	var voll := Palette.get_color(&"torch")
 	var gold := Palette.get_color(&"rod_brass")

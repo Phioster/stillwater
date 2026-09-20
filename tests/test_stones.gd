@@ -316,7 +316,7 @@ func test_the_throw_reports_its_flight_and_its_hit() -> void:
 	# Die Ladung auf die Mitte des Bandes legen, statt sie zu treffen: geprueft
 	# wird die Rueckmeldung, nicht das Zielen.
 	wurf._zeit = 2.0
-	wurf._wert = Stones.band_mitte(2.0)
+	wurf._wert = Stones.band_mitte(wurf._band_zeit())
 	wurf.wirf()
 	# Bis der Flug wirklich vorbei ist, statt eine feste Bildzahl zu raten --
 	# sonst haengt der Test an SPRUNG_ABSTAND und SINKEN.
@@ -379,6 +379,8 @@ func test_a_miss_never_makes_the_stone_flash() -> void:
 			blitze[0] += 1)
 	wurf.starte(Vector2(200.0, 200.0), 0.3)
 	# Volle Ladung, das Band steht bei dieser Zeit tief -- also kein Treffer.
+	# Der Versatz wird hier festgehalten, sonst wuerfelt jeder Lauf neu.
+	wurf._band_versatz = 0.0
 	wurf._zeit = 2.0
 	wurf._wert = 1.0
 	assert_false(Stones.im_band(1.0, 2.0), "die volle Ladung liegt im Band")
@@ -408,6 +410,22 @@ func test_the_tap_that_opens_the_bar_cannot_throw_it() -> void:
 	wurf._process(StoneThrow.SCHARF_AB + 0.01)
 	wurf._gui_input(klick)
 	assert_false(wurf._laeuft, "nach der Sperre wirft der Balken nicht mehr")
+	wurf.free()
+
+## Das Band faengt nicht jedes Mal an derselben Stelle an. Sonst uebt man den
+## Wurf einmal ein und wiederholt ihn danach beliebig.
+func test_the_band_starts_somewhere_else_every_time() -> void:
+	var wurf := StoneThrow.new()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.root.add_child(wurf)
+	await tree.process_frame
+	var stellen := {}
+	for i in 30:
+		wurf.starte(Vector2(200.0, 200.0), 0.3)
+		stellen[snappedf(Stones.band_mitte(wurf._band_zeit()), 0.01)] = true
+		wurf.schliesse()
+	assert_true(stellen.size() > 5,
+		"das Band startet immer wieder an denselben %d Stellen" % stellen.size())
 	wurf.free()
 
 ## Ein zweiter Tipp waehrend des Fluges darf ihn nicht abbrechen: sonst
