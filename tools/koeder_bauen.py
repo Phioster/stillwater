@@ -60,6 +60,77 @@ MADE = [
 TOENE = {"h": HELL, "m": MITTE, "s": SCHATTEN}
 
 
+## Die uebrigen Koeder am Haken, ebenso von Hand gesetzt und von der Seite,
+## Kopf rechts. Jeder braucht eine eigene Silhouette -- bei zehn Pixeln Breite
+## ist die Form das Einzige, woran man sie auseinanderhaelt.
+HAKEN = {
+    # Schlank, oliv, drei Schwanzfaeden links, Beinchen unten.
+    "mayfly_nymph": ([
+        "t.......",
+        ".tmhmhhh",
+        "t.mmmmhs",
+        "...s.s..",
+    ], {"t": (0x4a, 0x4a, 0x22), "h": (0xb5, 0xb0, 0x4a),
+        "m": (0x8a, 0x86, 0x33), "s": (0x5e, 0x5a, 0x24)}),
+    # Gekruemmt, graugruen, Fuehler nach oben.
+    "river_shrimp": ([
+        "......a",
+        ".hhmm.a",
+        "hmmmmmh",
+        "s.mmmss",
+        "..s.s..",
+    ], {"a": (0x6b, 0x7a, 0x70), "h": (0xc9, 0xd6, 0xc8),
+        "m": (0x93, 0xa8, 0x98), "s": (0x62, 0x74, 0x68)}),
+    # Lang und dunkel, orangener Streifen an der Seite.
+    "bog_leech": ([
+        ".mmmmmmmm.",
+        "dmoooooomd",
+        ".dddddddd.",
+    ], {"m": (0x5a, 0x22, 0x2c), "o": (0xc8, 0x6a, 0x2a),
+        "d": (0x2e, 0x12, 0x18)}),
+    # Hell, eisblau, ein kaltes Auge vorn.
+    "frost_krill": ([
+        ".......a",
+        ".hhhmme.",
+        "hmmmmmm.",
+        ".s.s.s..",
+    ], {"a": (0x8f, 0xb8, 0xd8), "h": (0xe8, 0xf4, 0xfb),
+        "m": (0xa9, 0xd0, 0xe8), "s": (0x6f, 0x98, 0xb8),
+        "e": (0x3a, 0x7c, 0xd8)}),
+    # Die Form der Teichmade, aber verkohlt mit Glut zwischen den Ringen.
+    "ember_grub": ([
+        ".dodod..",
+        "ddododg.",
+        "ddododgg",
+        ".ododo..",
+    ], {"d": (0x3a, 0x2c, 0x2a), "o": (0xf0, 0x8a, 0x24),
+        "g": (0xff, 0xd0, 0x5a)}),
+    # Zwei helle Fluegel ueber einem kleinen Leib.
+    "cloud_moth": ([
+        ".ww.ww.",
+        "wwwwwwb",
+        ".wbbbbb",
+        "..b.b..",
+    ], {"w": (0xf2, 0xf6, 0xfa), "b": (0x9c, 0xb8, 0xd8)}),
+    # Ein Haeufchen violetter Eier, je ein goldener Punkt darin.
+    "star_roe": ([
+        ".vv.vv.",
+        "vgvvvgv",
+        ".vvgvv.",
+    ], {"v": (0x6a, 0x3c, 0xb0), "g": (0xf0, 0xc0, 0x5a)}),
+}
+
+
+def haken_bauen(zeilen, toene):
+    kern = Image.new("RGBA", (len(zeilen[0]), len(zeilen)), (0, 0, 0, 0))
+    px = kern.load()
+    for y, zeile in enumerate(zeilen):
+        for x, z in enumerate(zeile):
+            if z in toene:
+                px[x, y] = toene[z] + (255,)
+    return umranden(kern)
+
+
 def umranden(bild):
     """Einen geschlossenen Umriss um alles Sichtbare legen.
 
@@ -112,8 +183,9 @@ def schwimmer_bauen():
 
 
 def main():
-    for name, bild in (("bobber", schwimmer_bauen()),
-                       ("bait_pond_grub", made_bauen())):
+    bilder = [("bobber", schwimmer_bauen()), ("bait_pond_grub", made_bauen())]
+    bilder += [("bait_" + kid, haken_bauen(*HAKEN[kid])) for kid in HAKEN]
+    for name, bild in bilder:
         pfad = os.path.join(ZIEL, "%s.png" % name)
         bild.save(pfad)
         px = bild.load()

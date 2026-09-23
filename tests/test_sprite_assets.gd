@@ -82,8 +82,15 @@ func _expected_size(filename: String) -> Vector2i:
 	# Schwimmer und Koeder laufen im Massstab der Figur (tools/koeder_bauen.py).
 	if filename == "bobber.png":
 		return Vector2i(10, 13)
-	if filename == "bait_pond_grub.png":
-		return Vector2i(10, 6)
+	if filename.begins_with("bait_icon_"):
+		return Vector2i(32, 32)
+	# Hakenbilder, von Hand gesetzt in tools/koeder_bauen.py (Kern + Umriss).
+	var haken := {"pond_grub": Vector2i(10, 6), "mayfly_nymph": Vector2i(10, 6),
+		"river_shrimp": Vector2i(9, 7), "bog_leech": Vector2i(12, 5),
+		"frost_krill": Vector2i(10, 6), "ember_grub": Vector2i(10, 6),
+		"cloud_moth": Vector2i(9, 6), "star_roe": Vector2i(9, 5)}
+	if filename.begins_with("bait_"):
+		return haken.get(filename.trim_prefix("bait_").trim_suffix(".png"), Vector2i(-1, -1))
 	# Kachelbares Uferschilf im Massstab der Figur (tools/schilf_bauen.py).
 	if filename == "schilf.png":
 		return Vector2i(192, 72)

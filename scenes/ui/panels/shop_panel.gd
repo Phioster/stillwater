@@ -27,7 +27,21 @@ func _row(b: BaitData) -> Control:
 
 	var owned := "unbegrenzt" if b.unlimited else "%d Stück" % int(Game.ctx.bait_counts.get(b.id, 0))
 	var active := "  ← aktiv" if Game.ctx.bait.id == b.id else ""
-	box.add_child(zeile("%s  (%s)%s" % [b.display_name, owned, active]))
+	# Bild links neben dem Namen, wie bei den Traenken.
+	var kopf := HBoxContainer.new()
+	kopf.add_theme_constant_override("separation", 12)
+	var bild := TextureRect.new()
+	bild.texture = TextureLoader.load_texture("res://assets/art/bait_icon_%s.png" % b.id)
+	bild.custom_minimum_size = Vector2(BuffBar.ICON, BuffBar.ICON)
+	bild.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bild.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bild.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	kopf.add_child(bild)
+	var name := zeile("%s  (%s)%s" % [b.display_name, owned, active])
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	kopf.add_child(name)
+	box.add_child(kopf)
 
 	# Was der Köder verspricht, steht auf dem Köder. Das ist der eigentliche
 	# Gewinn der Rangtabelle: eine verschobene Verteilung ließe sich gar
