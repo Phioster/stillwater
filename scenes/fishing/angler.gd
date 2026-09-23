@@ -311,7 +311,7 @@ func _process(delta: float) -> void:
 				rute_zug()
 			_schuebe = Game.sim.rod_hits
 			zug_schritt(delta)
-			_weg_pose(atem, ZUG_WEG, _zug_stelle())
+			_weg_pose(atem, ZUG_WEG, _zug_stelle(), true)
 		FishingSim.State.INVENTORY_FULL:
 			# Doest: Rute quer im Schoss statt hochgehalten, Auge zu. Zustand
 			# 11 ist die elfte Armhaltung (siehe tools/rute_anheften.py).
@@ -368,6 +368,7 @@ func _on_bite(_fish: FishData) -> void:
 	_zug_halt = 0.0
 	_zitter = 0.0
 	_schuebe = 0
+	_pump_zaehler = 0
 	_weg_pose(breath_at(_idle_time / BREATH_TIME), ZUG_WEG, _zug_stelle())
 
 func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
@@ -383,20 +384,27 @@ func _on_escaped(_f: FishData) -> void:
 ## 9-8-7-6 entlang der Wurfreihe, sonst tauchte die Rute vor jedem Hochreissen
 ## erst ab.
 const ZUG_WEG: Array[int] = [8, 9, 7, 6]
-## Nach dem Kampf: wieder runter ueber 9 in die Ruhehaltung (Wurfbild 0).
-const ABSETZ_WEG: Array[int] = [0, 9, 7, 6]
-## So lange bleibt die Rute nach einem Tipp oben. Wer weiter tippt, haelt sie.
+## Nach dem Kampf: ueber die Schulter (5) rausziehen, dann ueber 9 in die
+## Ruhehaltung (Wurfbild 0).
+const ABSETZ_WEG: Array[int] = [0, 9, 7, 6, 5]
+## Tipp: schneller, harter Ruck. Wer weiter tippt, haelt die Rute oben.
 const ZUG_HALT: float = 0.35
-## Ohne Tipp zieht die Rute allein, einmal je Rutenschub (jede Sekunde): nur
-## halb hoch und kurz, damit dazwischen noch gezittert wird und der Tipp der
-## staerkere Zug bleibt.
-const RUTE_ZUG: float = 0.5
-const RUTE_HALT: float = 0.1
 const ZUG_HOCH: float = 0.12
 const ZUG_RUNTER: float = 0.3
-## Nach dem Kampf bleibt die Rute so lange ganz oben, wie eingeholt wird
-## (world.gd REEL_TIME) -- wie Cornerpond, bei Fang und Flucht.
-const EINHOL_HALT: float = 0.6
+## Rutenschub (jede Sekunde): nur halb hoch und kurz ...
+const RUTE_ZUG: float = 0.5
+const RUTE_HALT: float = 0.1
+## ... und jeder dritte wird ein Pumpen: langsam ganz hoch, halten, langsam
+## wieder runter -- wie beim echten Drill.
+const PUMP_JEDER: int = 3
+const PUMP_HOCH: float = 0.35
+const PUMP_HALT: float = 0.5
+const PUMP_RUNTER: float = 0.6
+## Rausziehen: die Halt-Zeit laeuft ab dem Start, also inklusive Hochreissen.
+## Kurz, damit die Rute schon nach vorn kommt, waehrend der Fisch ankommt
+## (world.gd REEL_TIME) -- sonst haengt er hinter ihrem Kopf.
+const EINHOL_HALT: float = 0.28
+const ABSETZ_RUNTER: float = 0.45
 ## Der letzte Schritt von der Kampfhaltung in die Ruhe.
 const RUHE_ZEIT: float = 0.15
 ## Ein Zupfer des Fischs; der Ausschlag wird je Zupfer neu gezogen, sonst
@@ -407,28 +415,41 @@ const ZITTER_MIN: float = 0.3
 var _zug: float = 0.0
 var _zug_halt: float = 0.0
 var _zug_ziel: float = 1.0
+var _hoch_zeit: float = ZUG_HOCH
+var _runter_zeit: float = ZUG_RUNTER
 var _schuebe: int = 0
+var _pump_zaehler: int = 0
 var _zitter: float = 0.0
 var _zitter_weite: float = 1.0
 var _absetzen: bool = false
 var _ruhe: float = 0.0
 
-func zug_tipp() -> void:
-	_zug_ziel = 1.0
-	_zug_halt = ZUG_HALT
+func _ziehen(ziel: float, halt: float, hoch: float, runter: float) -> void:
+	_zug_ziel = ziel
+	_zug_halt = halt
+	_hoch_zeit = hoch
+	_runter_zeit = runter
 
+func zug_tipp() -> void:
+	_ziehen(1.0, ZUG_HALT, ZUG_HOCH, ZUG_RUNTER)
+
+## Ein Rutenschub unterbricht keinen laufenden Zug nach ganz oben und reisst
+## eine sinkende Rute nicht wieder hoch.
 func rute_zug() -> void:
-	if _zug_halt > 0.0 and _zug_ziel > RUTE_ZUG:
+	if (_zug_halt > 0.0 and _zug_ziel > RUTE_ZUG) or _zug > RUTE_ZUG:
 		return
-	_zug_ziel = RUTE_ZUG
-	_zug_halt = RUTE_HALT
+	_pump_zaehler += 1
+	if _pump_zaehler % PUMP_JEDER == 0:
+		_ziehen(1.0, PUMP_HALT, PUMP_HOCH, PUMP_RUNTER)
+	else:
+		_ziehen(RUTE_ZUG, RUTE_HALT, ZUG_HOCH, ZUG_RUNTER)
 
 func zug_schritt(delta: float) -> void:
 	if _zug_halt > 0.0:
-		_zug = move_toward(_zug, _zug_ziel, delta / ZUG_HOCH)
+		_zug = move_toward(_zug, _zug_ziel, delta / _hoch_zeit)
 		_zug_halt = maxf(0.0, _zug_halt - delta)
 	else:
-		_zug = move_toward(_zug, 0.0, delta / ZUG_RUNTER)
+		_zug = move_toward(_zug, 0.0, delta / _runter_zeit)
 	_zitter += delta / ZITTER_TAKT
 	if _zitter >= 1.0:
 		_zitter = fmod(_zitter, 1.0)
@@ -449,25 +470,24 @@ func zug_bild(zug: float, zupf: float) -> int:
 func absetzen_beginnen() -> void:
 	_absetzen = true
 	_ruhe = 0.0
-	_zug_ziel = 1.0
-	_zug_halt = EINHOL_HALT
+	_ziehen(1.0, EINHOL_HALT, ZUG_HOCH, ABSETZ_RUNTER)
 
-## Ohne Fisch kein Zittern mehr: ganz hoch, oben halten, waehrend eingeholt
-## wird, dann ueber 9 in die Ruhe.
+## Ohne Fisch kein Zittern mehr: ueber die Schulter reissen, dann ueber 9 in
+## die Ruhe.
 func absetz_schritt(delta: float) -> void:
 	if _zug_halt > 0.0:
-		_zug = move_toward(_zug, _zug_ziel, delta / ZUG_HOCH)
+		_zug = move_toward(_zug, _zug_ziel, delta / _hoch_zeit)
 		_zug_halt = maxf(0.0, _zug_halt - delta)
 	elif _zug > 0.0:
-		_zug = move_toward(_zug, 0.0, delta / ZUG_RUNTER)
+		_zug = move_toward(_zug, 0.0, delta / _runter_zeit)
 	else:
 		_ruhe = move_toward(_ruhe, 1.0, delta / RUHE_ZEIT)
-	var stelle := 1.0 + 2.0 * smoothstep(0.0, 1.0, _zug) \
+	var stelle := 1.0 + 3.0 * smoothstep(0.0, 1.0, _zug) \
 		- smoothstep(0.0, 1.0, _ruhe)
 	_weg_pose(breath_at(_idle_time / BREATH_TIME), ABSETZ_WEG, stelle)
 
 func absetz_dauer() -> float:
-	return ZUG_HOCH + EINHOL_HALT + ZUG_RUNTER + RUHE_ZEIT
+	return ZUG_HOCH + EINHOL_HALT + ABSETZ_RUNTER + RUHE_ZEIT
 
 func _weg_bild(weg: Array[int], stelle: float) -> int:
 	var a := clampi(int(floor(stelle)), 0, weg.size() - 1)
@@ -487,10 +507,13 @@ func weg_werte(weg: Array[int], stelle: float) -> Vector3i:
 		int(round(lerpf(AnglerParts.CAST_HEAD[i], AnglerParts.CAST_HEAD[j], k))),
 		int(round(lerpf(AnglerParts.CAST_LEGS[i], AnglerParts.CAST_LEGS[j], k))))
 
-## Die Rute hat nur gezeichnete Winkel: sie nimmt das naehere Bild.
-func _weg_pose(atem: Vector2i, weg: Array[int], stelle: float) -> void:
+## Die Rute hat nur gezeichnete Winkel: sie nimmt das naehere Bild. Im Kampf
+## bleiben die Beine auf Bild 9 -- sonst treten sie bei jedem Zupfer mit.
+func _weg_pose(atem: Vector2i, weg: Array[int], stelle: float,
+		beine_fest: bool = false) -> void:
 	var w := weg_werte(weg, stelle)
-	set_pose(atem.x, atem.y + w.x, w.y, w.z, &"open", _weg_bild(weg, stelle) + 1)
+	var bein := int(AnglerParts.CAST_LEGS[9]) if beine_fest else w.z
+	set_pose(atem.x, atem.y + w.x, w.y, bein, &"open", _weg_bild(weg, stelle) + 1)
 
 ## Die Rutenspitze in Weltkoordinaten -- fuer das aktuelle Bild. Beim Wurf
 ## liegt sie tiefer als im Ruhebild; eine Konstante in der Welt konnte das

@@ -97,8 +97,32 @@ func test_nach_dem_kampf_geht_die_rute_ganz_hoch() -> void:
 	var a := _angler()
 	a.absetzen_beginnen()
 	var t := 0.0
-	while t < a.ZUG_HOCH + a.EINHOL_HALT - 0.05:
+	while t < a.EINHOL_HALT - 0.02:
 		a.absetz_schritt(0.02)
 		t += 0.02
-	assert_eq(a._arm, 7, "Wurfbild 6 = ganz oben")
+	assert_eq(a._arm, 6, "Wurfbild 5 = ueber die Schulter")
+	a.free()
+
+## Jeder dritte Rutenschub pumpt: ganz hoch, langsamer als ein Tipp.
+func test_jeder_dritte_rutenschub_pumpt() -> void:
+	var a := _angler()
+	for n in 2:
+		a.rute_zug()
+		for i in 60:
+			a.zug_schritt(0.02)
+		assert_almost_eq(a._zug, 0.0, 0.001, "Schub %d ist ein Zupfer" % (n + 1))
+	a.rute_zug()
+	a.zug_schritt(a.ZUG_HOCH)
+	assert_true(a._zug < 0.5, "Pumpen ist langsamer als ein Tipp")
+	# 0,12 + 0,28 s: oben, und die Haltezeit (0,5 s) laeuft noch.
+	for i in 14:
+		a.zug_schritt(0.02)
+	assert_almost_eq(a._zug, 1.0, 0.001, "Pumpen geht ganz hoch")
+	a.free()
+
+## Beim Zupfen bleiben die Beine still.
+func test_die_beine_zappeln_nicht_mit() -> void:
+	var a := _angler()
+	a._weg_pose(Vector2i.ZERO, a.ZUG_WEG, 0.0, true)
+	assert_eq(a._bein, int(AnglerParts.CAST_LEGS[9]))
 	a.free()
