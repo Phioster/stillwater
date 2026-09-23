@@ -7,7 +7,6 @@ extends Control
 signal visitor_tapped
 ## Jemand hat das reife Schilf angetippt -- main.gd oeffnet dann das
 ## Schilfschneiden. Die Welt kennt das Minispiel nicht und soll es nicht kennen.
-signal reeds_tapped
 
 @onready var orb_area: Control = $CatchView.spawn_area
 @onready var _bobber: Sprite2D = $Bobber
@@ -25,7 +24,6 @@ signal reeds_tapped
 @onready var _raven: TextureButton = $Visitors/Raven
 @onready var _trader: TextureButton = $Visitors/Trader
 var _rain: Rain = null
-var _schilf_knopf: ReedPatch = null
 var _kiesel: PebblePile = null
 var _wurf: StoneThrow = null
 var _rabe_besuch: Visitor = null
@@ -103,11 +101,8 @@ const WAVE_SCALE := 7.0
 ## -- genau die vorhergesagte Kante wurde sichtbar. Zurueck auf den sicheren
 ## Wert: dass die Pfosten bis an die Welle reichen, loest jetzt die
 ## Zeichenreihenfolge in world.tscn, nicht dieser Abstand.
-## Wo der antippbare Schilfhorst steht, als Anteil der Weltbreite, und wie
-## gross er ist. Rechts aussen -- Steg und Figur stehen links.
-const SCHILF_KNOPF_X := 0.80
-## Der Horst laeuft im Massstab der Figur, wie das Uferband daneben.
-const SCHILF_KNOPF_SKALA := ANGLER_SCALE
+## Die Kiesel laufen im Massstab der Figur, wie das Uferband daneben.
+const KIESEL_SKALA := ANGLER_SCALE
 ## Wo der Kieselhaufen auf dem Steg liegt, in Stegpixeln von links -- hinter
 ## der Anglerin (ANGLER_ON_DECK 187), nicht im Gras: dort sah er aus wie ein
 ## Fremdkoerper zwischen den Halmen.
@@ -268,26 +263,9 @@ func _ready() -> void:
 	_seam.region_enabled = true
 	_seam.scale = Vector2(BOBBER_SCALE, BOBBER_SCALE)
 	_setup_visitors()
-	# Das reife Schilf: ein einzelner dichter Horst am Ufer, antippbar. Er
-	# steht unter $Visitors, damit er in derselben Ebene liegt wie Rabe und
-	# Haendler -- vor dem Hintergrund, hinter Steg und Figur.
-	# Am Ufer steht der volle Horst in seinen Windstellungen -- ein anderes
-	# Blatt als das geschnittene Schilf im Minispiel.
-	_schilf_knopf = ReedPatch.new()
-	# Oberste Zeile des Blattes: der ungeschnittene Horst in seinen
-	# Windstellungen. Die Zeilen darunter sind die geschnittenen Stufen und
-	# gehoeren ins Minispiel.
-	_schilf_knopf.setze(
-		TextureLoader.load_texture("res://assets/art/schilf_horst.png"),
-		Vector2(float(Reeds.HALM_B), float(Reeds.HALM_H)), Reeds.WIND_BILDER,
-		SCHILF_KNOPF_SKALA)
-	_schilf_knopf.visible = false
-	$Visitors.add_child(_schilf_knopf)
-	_schilf_knopf.tapped.connect(_on_reeds_pressed)
-
 	_kiesel = PebblePile.new()
 	_kiesel.setze(TextureLoader.load_texture("res://assets/art/kiesel.png"),
-		SCHILF_KNOPF_SKALA)
+		KIESEL_SKALA)
 	_kiesel.visible = false
 	$Visitors.add_child(_kiesel)
 	_kiesel.tapped.connect(_on_pebbles_pressed)
@@ -388,10 +366,6 @@ func _place_background(water_y: float) -> void:
 	var schilf_fuss := water_y - BG_REED_ROW * s
 	_reeds.region_rect = Rect2(0.0, 0.0, size.x / REED_SCALE, REED_SIZE.y)
 	_reeds.position = Vector2(0.0, schilf_fuss - REED_SIZE.y * REED_SCALE)
-	if _schilf_knopf != null:
-		# Rechts aussen: Steg und Figur stehen links, dort waere er im Weg.
-		_schilf_knopf.position = Vector2(size.x * SCHILF_KNOPF_X,
-			schilf_fuss - _schilf_knopf.size.y)
 
 ## Der Wurfklang haengt am Zustandswechsel, nicht an einem Ereignis: die
 ## Simulation schickt fuer den Wurf keins, und im Offline-Nachlauf duerfte
@@ -481,7 +455,6 @@ func _process(delta: float) -> void:
 	# Die Ringe auf dem Wasser haengen an derselben Quelle wie der Regen
 	# selbst, nicht an einer zweiten Abfrage.
 	_water_view.regnet = Game.ctx.raining
-	_update_schilf(delta)
 	# Bei Regen zieht der Himmel grau zu. Die Ueberblendung kommt von den
 	# Wolken, damit Himmelfarbe und Bewoelkung nicht getrennt voneinander
 	# umschalten -- ein Wetter, eine Uhr.
@@ -788,25 +761,6 @@ func _on_raven_pressed() -> void:
 func _on_trader_pressed() -> void:
 	Audio.click()
 	visitor_tapped.emit()
-
-## Der Schilfhorst ist nur da, wenn er reif ist, und wiegt sich dann leicht.
-## Er steht selten genug, dass er auffallen darf (GAME_DESIGN.md, "Auffaellig
-## nur, was selten ist") -- aber wiegen, nicht blinken.
-func _update_schilf(_delta: float) -> void:
-	if _schilf_knopf == null:
-		return
-	var reif := Game.reeds_ready()
-	_schilf_knopf.visible = reif
-	if not reif:
-		return
-	# Das Wiegen macht der Horst selbst: er rueckt ganze Pixelreihen,
-	# ReedPatch.versatz() -- gedreht waere er das einzige weiche Ding im Bild.
-
-func _on_reeds_pressed() -> void:
-	if not Game.reeds_ready():
-		return
-	Audio.click()
-	reeds_tapped.emit()
 
 ## Ein Tipp auf die Kiesel nimmt einen Stein auf. Im Kampf nicht -- dort
 ## gehoert der Finger den Orbs.

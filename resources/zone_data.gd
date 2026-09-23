@@ -27,6 +27,5 @@ extends Resource
 ## Zaehigkeit ist die Fortschrittsachse des Schilfschneidens: sie steigt mit
 ## der Zone, die Schaerfe der Klinge kommt aus dem Ausbau.
 @export var reed_baits: Array[StringName] = []
-@export var reed_toughness: int = 5
 @export var unlock_cost: int = 0
 @export var unlock_level: int = 1

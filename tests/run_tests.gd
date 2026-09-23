@@ -60,7 +60,6 @@ const SUITES := [
 	"res://tests/test_character_layers.gd",
 	"res://tests/test_clouds.gd",
 	"res://tests/test_rain.gd",
-	"res://tests/test_reeds.gd",
 	"res://tests/test_stones.gd",
 	"res://tests/test_panel_width.gd",
 	"res://tests/test_water_rings.gd",

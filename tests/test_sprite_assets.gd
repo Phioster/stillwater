@@ -58,17 +58,6 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(48 * 8, 48)
 	if filename == "orb.png":
 		return Vector2i(16, 16)
-	# Der schneidbare Horst: Spalten sind Windstellungen, Zeilen die
-	# Schnittstufen (tools/schilfschneiden_bauen.py). Das UFERBAND heisst
-	# schilf.png und ist ein anderes Blatt -- die beiden nicht verwechseln.
-	if filename == "schilf_horst.png":
-		return Vector2i(Reeds.HALM_B * Reeds.WIND_BILDER,
-			Reeds.HALM_H * Reeds.HALM_STUFEN)
-	# Das Messer kommt von PixelLab und wird nur gespiegelt und beschnitten,
-	# seine Groesse steht also im Bild. Genau die haelt diese Zeile fest --
-	# aendert sie sich, aendert sich auch die Trefferform.
-	if filename == "klinge.png" or filename == "klinge_schneide.png":
-		return Vector2i(44, 8)
 	# Der Ladebalken haelt NUR den Umriss -- Fuellung und goldenes Band malt
 	# stone_throw.gd zur Laufzeit durch seine Maske. Eine Form, ein Bild.
 	if filename == "ladebalken.png":

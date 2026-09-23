@@ -31,7 +31,6 @@ bite_time_min = 34.0
 bite_time_max = 58.0
 fight_window = 30.0
 reed_baits = Array[StringName]([&"star_roe", &"cloud_moth", &"frost_krill"])
-reed_toughness = 42
 rarity_weights = {
 &"common": 24.0,
 &"uncommon": 28.0,

@@ -53,23 +53,12 @@ func _dev_bereich() -> void:
 		refresh())
 	add_child(pose)
 
-	add_child(_toggle("Trefferzone der Klinge zeigen", Game.dev_scythe_box,
-		func(on: bool) -> void: Game.dev_scythe_box = on))
-
 	# Aufraeumen. Beim Ausprobieren ist nach kurzer Zeit alles voll, und dann
 	# laesst sich nichts mehr pruefen, ohne neu anzufangen.
 	add_child(_leeren("Fischkiste leeren", func() -> int:
 		return Game.dev_clear_fish()))
 	add_child(_leeren("Ködertasche leeren", func() -> int:
 		return Game.dev_clear_bait()))
-	var schilf := TapButton.new()
-	schilf.custom_minimum_size = Vector2(0, 88)
-	schilf.text = "Schilf sofort stehen lassen"
-	schilf.tapped.connect(func() -> void:
-		Game.dev_grow_reeds()
-		SaveManager.save()
-		refresh())
-	add_child(schilf)
 
 	# Ausbaustufen einzeln zurueck. Nicht alles auf einmal: zum Ausprobieren
 	# will man EINEN Regler wieder am Anfang haben, nicht den Spielstand
@@ -85,7 +74,6 @@ func _dev_bereich() -> void:
 		Game.dev_raven = -1
 		Game.dev_trader = -1
 		Game.dev_rain = -1
-		Game.dev_scythe_box = false
 		if Game.ctx != null:
 			Game.ctx.inventory.dev_full = false
 			if Game.sim.state == FishingSim.State.INVENTORY_FULL:
@@ -95,7 +83,7 @@ func _dev_bereich() -> void:
 
 	var dev_hint := Label.new()
 	dev_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dev_hint.text = "„Spielregeln“ heißt: das Spiel entscheidet wie sonst. Ein Wechsel auf „da“ oder „weg“ spielt Ankunft beziehungsweise Abgang ab und wird nicht gespeichert. Die drei Aufräumknöpfe darüber wirken dagegen sofort und bleiben — was weg ist, ist weg."
+	dev_hint.text = "„Spielregeln“ heißt: das Spiel entscheidet wie sonst. Ein Wechsel auf „da“ oder „weg“ spielt Ankunft beziehungsweise Abgang ab und wird nicht gespeichert. Die Aufräumknöpfe darüber wirken dagegen sofort und bleiben — was weg ist, ist weg."
 	dev_hint.modulate = Palette.get_color(&"reed_light")
 	add_child(dev_hint)
 

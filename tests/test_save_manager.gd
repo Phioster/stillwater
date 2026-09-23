@@ -441,3 +441,15 @@ func test_an_old_save_without_best_skips_still_loads() -> void:
 	SaveManager.deserialize(blob)
 	assert_eq(Game.records.best_skips, 0,
 		"ein alter Stand bekommt keinen sauberen Anfangswert")
+
+## Ein Spielstand von vor dem 2026-09-24 traegt noch Schilf und Sensen-
+## Ausbau. Er muss sich weiter laden lassen -- die Reste werden ignoriert.
+func test_ein_alter_stand_mit_schilf_laedt_noch() -> void:
+	Game.new_game()
+	var d: Dictionary = SaveManager.serialize()
+	d["reeds"] = {"cut_slot": 248638}
+	d["upgrade_levels"]["scythe_reach"] = 3
+	d["last_seen_unix"] = Time.get_unix_time_from_system() + 3600.0
+	SaveManager.deserialize(d)
+	assert_true(Game.ctx != null)
+	assert_false(Database.upgrades.has(&"scythe_reach"), "die Sense ist noch im Laden")

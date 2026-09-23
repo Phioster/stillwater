@@ -26,7 +26,6 @@ var upgrade_levels: Dictionary = {}
 var settings := Settings.new()
 var buffs := Buffs.new()
 var visitors := Visitors.new()
-var reeds := Reeds.new()
 var quests := Quests.new()
 var records := Records.new()
 ## Wie viele Traenke jeder Sorte im Vorrat sind.
@@ -53,9 +52,6 @@ var paused: bool = false
 var dev_raven: int = -1
 var dev_trader: int = -1
 var dev_rain: int = -1
-## Zeichnet die Trefferzone der Klinge mit. Am Bild sieht man sonst nicht,
-## warum ein Halm stehen bleibt, an dem die Klinge vorbeizugehen scheint.
-var dev_scythe_box: bool = false
 
 ## Beschleunigt die Simulation für Entwicklung/Debug. Im Release 1 ungenutzt.
 var time_scale: float = 1.0
@@ -68,10 +64,8 @@ func new_game() -> void:
 	rng = StillRNG.new(randi())
 	sim = FishingSim.new()
 	coins = 0
-	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0, &"trader": 0, &"quests": 0,
-		&"scythe_edge": 0, &"scythe_reach": 0, &"scythe_speed": 0}
+	upgrade_levels = {&"rod_power": 0, &"orb_power": 0, &"fish_inventory": 0, &"favorite_inventory": 0, &"bait_capacity": 0, &"trader": 0, &"quests": 0}
 	visitors = Visitors.new()
-	reeds = Reeds.new()
 	quests = Quests.new()
 	records = Records.new()
 	# Beutel und Wirkungen gehoeren zum Spielstand, nicht zum Programm: ohne
@@ -291,38 +285,9 @@ func gain_bait(id: StringName, amount: int) -> int:
 	state_changed.emit()
 	return zahl
 
-## Eine Schilfrunde abrechnen. Gibt heraus, was es gab -- die Anzeige liest
-## daraus ihre Karte, statt dieselbe Rechnung ein zweites Mal zu machen.
-func finish_reed_cut(halme: int) -> Dictionary:
-	var now := Time.get_unix_time_from_system()
-	reeds.cut(now)
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	var art := reeds.koeder_art(ctx.zone, rng)
-	var wollte := Reeds.koeder_aus(halme)
-	var bekam := gain_bait(art, wollte)
-	var gefunden := reeds.fund(halme, rng)
-	if gefunden != &"":
-		consumable_counts[gefunden] = consumable_count(gefunden) + 1
-	Audio.play(&"coin")
-	state_changed.emit()
-	progress_changed.emit()
-	return {"halme": halme, "bait": art, "wanted": wollte, "got": bekam,
-		"find": gefunden}
-
-## Die Klinge, wie sie gerade schneidet: Grundwert plus Ausbau.
-func scythe_edge() -> float:
-	return upgrade_value(&"scythe_edge")
-
-func scythe_reach() -> float:
-	return upgrade_value(&"scythe_reach")
-
-func scythe_speed() -> float:
-	return upgrade_value(&"scythe_speed")
-
 ## --- Entwicklerhilfen zum Leeren --------------------------------------------
 ##
-## Beim Ausprobieren laeuft alles voll: Kiste, Ködertasche, Schilf geschnitten.
+## Beim Ausprobieren laeuft alles voll: Kiste, Ködertasche.
 ## Danach laesst sich nichts mehr pruefen, ohne einen neuen Spielstand
 ## anzufangen. Diese drei raeumen gezielt auf -- und sie speichern sofort,
 ## damit ein Absturz nicht alles zurueckbringt.
@@ -363,14 +328,6 @@ func dev_reset_upgrade(id: StringName) -> int:
 	state_changed.emit()
 	progress_changed.emit()
 	return vorher
-
-## Laesst das Schilf sofort wieder stehen, statt zwei Stunden zu warten.
-func dev_grow_reeds() -> void:
-	reeds.cut_slot = -1
-	state_changed.emit()
-
-func reeds_ready() -> bool:
-	return reeds.ready_at(Time.get_unix_time_from_system())
 
 func buy_bait(id: StringName, amount: int) -> bool:
 	var b: BaitData = Database.baits.get(id)

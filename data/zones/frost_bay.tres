@@ -31,7 +31,6 @@ bite_time_min = 32.0
 bite_time_max = 54.0
 fight_window = 24.0
 reed_baits = Array[StringName]([&"frost_krill", &"river_shrimp", &"bog_leech"])
-reed_toughness = 17
 rarity_weights = {
 &"common": 38.0,
 &"uncommon": 32.0,

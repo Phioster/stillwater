@@ -31,7 +31,6 @@ bite_time_min = 36.0
 bite_time_max = 60.0
 fight_window = 26.0
 reed_baits = Array[StringName]([&"ember_grub", &"bog_leech", &"pond_grub"])
-reed_toughness = 24
 rarity_weights = {
 &"common": 32.0,
 &"uncommon": 32.0,
