@@ -82,12 +82,6 @@ const ANGLER_ON_DECK := 187.0
 ## Wie weit hinter dem Stegende der Schwimmer liegt, in Stegpixeln. Halbiert
 ## mit dem Massstab: 120 alte Stegpixel sind 60 neue.
 const BOBBER_OFF_DOCK := 60.0
-## Wie weit UNTER der Wasserlinie der Schwimmer liegt, als Bruchteil der
-## Bildhoehe. Er wird vom Steg hinaus geworfen, liegt also weit draussen --
-## und weit draussen heisst in dieser Ansicht NAH AN DER WASSERLINIE, nicht
-## tief unten im Vordergrundwasser. Vorher stand hier 0.14; damit sass er
-## gut hundert Punkte unter der Kante, mitten im Wasser statt darauf.
-const BOBBER_BELOW_WATER := 0.04
 ## Die Angler-Ebenen haben centered = false: ihr Ursprung ist die obere linke
 ## Ecke, nicht die Mitte. Alle Offsets zaehlen deshalb von dort.
 ## Sie SITZT auf dem Steg, sie steht nicht darauf: massgeblich ist der Rocksaum
@@ -365,7 +359,9 @@ func _layout() -> void:
 		_kiesel.visible = true
 	var dock_right := _dock.position.x + DOCK_W * DOCK_SCALE
 	_bobber_home = Vector2(min(dock_right + BOBBER_OFF_DOCK * DOCK_SCALE, size.x * 0.75),
-		water_y + size.y * BOBBER_BELOW_WATER)
+		# Auf der gezeichneten Wellenlinie, nicht auf einer eigenen: die lag
+		# einmal 19 Punkte tiefer, und er trieb im Wasser statt darauf.
+		water_y + WAVE_BIAS)
 	_bobber_mitte = _bobber_home
 	_bobber.position = _bobber_home
 

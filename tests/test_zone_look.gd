@@ -270,3 +270,12 @@ func test_die_schnur_endet_an_der_wasseroberflaeche() -> void:
 	assert_eq(w._schnur_ende(Vector2(500, 340), linie), Vector2(500, 300), "unter Wasser")
 	assert_eq(w._schnur_ende(Vector2(500, 280), linie), Vector2(500, 280), "ueber Wasser")
 	w.free()
+
+## Der Schwimmer schwimmt auf der GEZEICHNETEN Wellenlinie. Seine eigene
+## Wasserlinie lag 19 Punkte darunter, weil die Welle (WAVE_BIAS) verschoben
+## wurde und er nicht -- er trieb sichtbar im Wasser statt darauf.
+func test_der_schwimmer_liegt_auf_der_gezeichneten_welle() -> void:
+	var w := _cast_world()
+	var water_y: float = w.size.y * w.WATERLINE
+	assert_almost_eq(w._bobber_home.y, water_y + w.WAVE_BIAS, 0.5)
+	w.free()
