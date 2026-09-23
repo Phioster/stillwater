@@ -394,8 +394,9 @@ const ZUG_RUNTER: float = 0.3
 ## Rutenschub (jede Sekunde): nur halb hoch und kurz ...
 const RUTE_ZUG: float = 0.5
 const RUTE_HALT: float = 0.1
-## ... und jeder dritte wird ein Pumpen: langsam ganz hoch, halten, langsam
-## wieder runter -- wie beim echten Drill.
+## ... und der ERSTE und danach jeder dritte wird ein Pumpen: langsam ganz
+## hoch, halten, langsam wieder runter -- wie beim echten Drill. Der erste,
+## weil ein Rang-E-Fisch am Weiher schon nach zwei Schueben draussen ist.
 const PUMP_JEDER: int = 3
 const PUMP_HOCH: float = 0.35
 const PUMP_HALT: float = 0.5
@@ -439,7 +440,7 @@ func rute_zug() -> void:
 	if (_zug_halt > 0.0 and _zug_ziel > RUTE_ZUG) or _zug > RUTE_ZUG:
 		return
 	_pump_zaehler += 1
-	if _pump_zaehler % PUMP_JEDER == 0:
+	if (_pump_zaehler - 1) % PUMP_JEDER == 0:
 		_ziehen(1.0, PUMP_HALT, PUMP_HOCH, PUMP_RUNTER)
 	else:
 		_ziehen(RUTE_ZUG, RUTE_HALT, ZUG_HOCH, ZUG_RUNTER)

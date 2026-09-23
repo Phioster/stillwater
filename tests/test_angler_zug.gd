@@ -72,6 +72,10 @@ func test_jede_zwischenstellung_hat_ein_blatt() -> void:
 ## Ein Tipp bleibt der staerkere Zug.
 func test_ein_rutenschub_hebt_nur_halb() -> void:
 	var a := _angler()
+	# Der erste Schub pumpt; erst der zweite ist ein Halbzug.
+	a.rute_zug()
+	for i in 150:
+		a.zug_schritt(0.02)
 	a.rute_zug()
 	for i in 10:
 		a.zug_schritt(0.01)
@@ -103,21 +107,25 @@ func test_nach_dem_kampf_geht_die_rute_ganz_hoch() -> void:
 	assert_eq(a._arm, 6, "Wurfbild 5 = ueber die Schulter")
 	a.free()
 
-## Jeder dritte Rutenschub pumpt: ganz hoch, langsamer als ein Tipp.
-func test_jeder_dritte_rutenschub_pumpt() -> void:
+## Der erste Rutenschub pumpt -- sonst sieht man es nie: ein Rang-E-Fisch am
+## Weiher (7 LP, Rute 4) ist nach zwei Schueben draussen. Danach jeder dritte.
+func test_der_erste_und_jeder_dritte_rutenschub_pumpt() -> void:
 	var a := _angler()
-	for n in 2:
+	for n in 4:
 		a.rute_zug()
-		for i in 60:
+		# 0,12 + 0,28 s: ein Pumpen ist oben, und seine Haltezeit laeuft noch.
+		a.zug_schritt(a.ZUG_HOCH)
+		var nach_tipp_zeit: float = a._zug
+		for i in 14:
 			a.zug_schritt(0.02)
-		assert_almost_eq(a._zug, 0.0, 0.001, "Schub %d ist ein Zupfer" % (n + 1))
-	a.rute_zug()
-	a.zug_schritt(a.ZUG_HOCH)
-	assert_true(a._zug < 0.5, "Pumpen ist langsamer als ein Tipp")
-	# 0,12 + 0,28 s: oben, und die Haltezeit (0,5 s) laeuft noch.
-	for i in 14:
-		a.zug_schritt(0.02)
-	assert_almost_eq(a._zug, 1.0, 0.001, "Pumpen geht ganz hoch")
+		var pumpt := n % 3 == 0
+		if pumpt:
+			assert_true(nach_tipp_zeit < 0.5, "Schub %d: Pumpen ist langsamer als ein Tipp" % (n + 1))
+			assert_almost_eq(a._zug, 1.0, 0.001, "Schub %d pumpt ganz hoch" % (n + 1))
+		else:
+			assert_true(a._zug <= a.RUTE_ZUG + 0.001, "Schub %d ist ein Halbzug" % (n + 1))
+		for i in 100:
+			a.zug_schritt(0.02)
 	a.free()
 
 ## Beim Zupfen bleiben die Beine still.
