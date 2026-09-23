@@ -48,22 +48,23 @@ Bild gewesen.
 
 ### `tools/traenke_bauen.py`
 
-- Schneidet jedes Grundbild auf **24×24** um seinen Inhalt zu (passt der
-  Inhalt nicht hinein, bricht das Skript mit Meldung ab statt zu skalieren).
-- Färbt die Flüssigkeit um: Pixel mit rotem Farbton und Sättigung über
-  0,35 bekommen Farbton und Sättigung der Wirkung, die **Helligkeit bleibt**
-  — dieselbe Regel wie `palette_swap.gdshader`.
+- Behält die Grundbilder in **32×32** (Nachtrag nach der Erzeugung: sie
+  füllen die Fläche fast ganz, ein Zuschnitt auf 24 ginge nur mit Skalieren).
+- Färbt die Flüssigkeit um: Sättigung über 0,3 und Farbton pink bis tiefrot
+  (h > 0,9, oder h < 0,03 bei s > 0,8 oder v > 0,85 — so bleibt das braune
+  Korkholz draussen). Farbton und Sättigung der Wirkung, die **Helligkeit
+  bleibt** — dieselbe Regel wie `palette_swap.gdshader`.
 - Schreibt `assets/art/potion_<id>.png`, eine Zeile je Trank.
 
 | Wirkung | Farbe |
 |---|---|
-| Schimmer | Perlflieder `#d8c8f0` |
+| Schimmer | Perlrosa `#e890c8` (Flieder war zu blass) |
 | Lockstoff | Moosgrün `#6fae4f` |
 | Erfahrung | Türkis `#4fb8c8` |
 | Handel | Gold `accent` `#f0c05a` |
 | Selten / Episch / Legendär | Farbe aus `data/rarities/<id>.tres` |
 
-Anzeige im Spiel doppelt groß (48 Punkte), im 2er-Raster der Schrift.
+Anzeige im Spiel doppelt groß (**64 Punkte**, vom Nutzer gewählt), im 2er-Raster der Schrift.
 Geladen wird nach Namensregel wie bei den Fischen
 (`res://assets/art/potion_%s.png`), kein neues Feld in `ConsumableData`.
 
@@ -89,7 +90,7 @@ Geladen wird nach Namensregel wie bei den Fischen
 
 - Sitzt links unter der Kopfzeile, wo bisher die Fanganzeige stand. Bleibt
   auch bei offenem Menü sichtbar (das Menü hängt rechts).
-- Je laufendem Trank ein Eintrag: Bild (48 Punkte), darunter die Restzeit
+- Je laufendem Trank ein Eintrag: Bild (64 Punkte), darunter die Restzeit
   `m:ss`, darunter ein dünner Balken, der von voll nach leer läuft
   (`remaining / duration`).
 - Reihenfolge: die Reihenfolge in `Game.buffs.active`, also nach dem
@@ -104,7 +105,7 @@ Geladen wird nach Namensregel wie bei den Fischen
 
 ## 3. Tests
 
-- Jeder Trank in `Database` hat `assets/art/potion_<id>.png`, 24×24, nicht
+- Jeder Trank in `Database` hat `assets/art/potion_<id>.png`, 32×32, nicht
   leer (Silhouette prüfen, nicht Farben — Farbwerte unterscheiden sich
   zwischen CI-Import und Gerät).
 - Trankreihe: zeigt genau die aktiven Tränke in Trinkreihenfolge, Restzeit

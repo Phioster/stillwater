@@ -52,7 +52,7 @@ Eigenschaft `menu_offen`, die `main.gd::show_tab` über `world.gd` verteilt.
   - senkblei: `teardrop-shaped lead fishing sinker on a short line, game item icon`
 
   Mit `get_image` abholen, nach `assets/source/potions/` speichern.
-- [ ] **Step 2: Prüfen.** Jedes Bild: Inhalt ≤ 24×24 (Bounding Box von
+- [ ] **Step 2: Prüfen.** Jedes Bild: Inhalt ≤ 32×32 (Bounding Box von
   `alpha > 0`), bei den vier Flaschen ist die Flüssigkeit sichtbar rot.
   Verfehlt eins das, mit anderem `seed` neu erzeugen (höchstens zweimal je Bild).
 - [ ] **Step 3: Eine Palette.** Alle sieben in EINEM `reduce_colors`-Aufruf
@@ -76,7 +76,7 @@ git commit -m "Traenke: sieben Grundbilder aus PixelLab"
 
 **Interfaces:**
 - Consumes: `assets/source/potions/*.png` aus Task 1.
-- Produces: `res://assets/art/potion_<id>.png`, 24×24, für jede Kennung in
+- Produces: `res://assets/art/potion_<id>.png`, 32×32, für jede Kennung in
   `data/consumables/`.
 
 - [ ] **Step 1: Python-Test schreiben** — `tools/tests/test_traenke_bauen.py`:
@@ -90,18 +90,19 @@ from tools import traenke_bauen as tb
 
 
 class TestZuschneiden(unittest.TestCase):
-    def test_inhalt_landet_mittig_auf_24(self):
+    def test_inhalt_landet_mittig_auf_32(self):
         bild = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
         for x in range(10, 20):
             for y in range(5, 25):
                 bild.putpixel((x, y), (200, 10, 10, 255))
         aus = tb.zuschneiden(bild)
-        self.assertEqual(aus.size, (24, 24))
-        self.assertEqual(aus.getbbox(), (7, 2, 17, 22))
+        self.assertEqual(aus.size, (32, 32))
+        self.assertEqual(aus.getbbox(), (11, 6, 21, 26))
 
     def test_zu_grosser_inhalt_bricht_ab(self):
         bild = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
-        for x in range(0, 30):
+        bild = Image.new("RGBA", (40, 40), (0, 0, 0, 0))
+        for x in range(0, 38):
             bild.putpixel((x, 10), (200, 10, 10, 255))
         with self.assertRaises(ValueError):
             tb.zuschneiden(bild)
@@ -111,12 +112,12 @@ class TestFaerben(unittest.TestCase):
     def test_rot_wird_zur_zielfarbe_helligkeit_bleibt(self):
         bild = Image.new("RGBA", (2, 1), (0, 0, 0, 0))
         bild.putpixel((0, 0), (200, 20, 20, 255))   # Fluessigkeit
-        bild.putpixel((1, 0), (90, 90, 90, 255))    # Glas, grau
+        bild.putpixel((1, 0), (90, 60, 49, 255))    # Korkholz, braun
         aus = tb.faerben(bild, "#4fb8c8")
         r, g, b, a = aus.getpixel((0, 0))
         self.assertTrue(b > r and g > r, "Tuerkis erwartet, bekam %s" % ((r, g, b),))
         self.assertEqual(max(r, g, b), 200, "Helligkeit muss bleiben")
-        self.assertEqual(aus.getpixel((1, 0)), (90, 90, 90, 255))
+        self.assertEqual(aus.getpixel((1, 0)), (90, 60, 49, 255))
 
 
 class TestTabelle(unittest.TestCase):
@@ -151,7 +152,7 @@ from PIL import Image
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QUELLE = os.path.join(WURZEL, "assets", "source", "potions")
 ZIEL = os.path.join(WURZEL, "assets", "art")
-GROESSE = 24
+GROESSE = 32
 
 
 def seltenheit(rid):
@@ -161,7 +162,7 @@ def seltenheit(rid):
     return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
 
 
-SCHIMMER, LOCKSTOFF, ERFAHRUNG, HANDEL = "#d8c8f0", "#6fae4f", "#4fb8c8", "#f0c05a"
+SCHIMMER, LOCKSTOFF, ERFAHRUNG, HANDEL = "#e890c8", "#6fae4f", "#4fb8c8", "#f0c05a"
 
 ## Kennung -> (Grundbild, Farbe oder None fuer "nicht faerben").
 TRAENKE = {
@@ -181,7 +182,7 @@ TRAENKE = {
 
 
 def zuschneiden(bild):
-    """Inhalt mittig auf 24x24 -- nie skalieren, sonst verschwimmen die Pixel."""
+    """Inhalt mittig auf 32x32 -- nie skalieren, sonst verschwimmen die Pixel."""
     box = bild.getchannel("A").getbbox()
     b, h = box[2] - box[0], box[3] - box[1]
     if b > GROESSE or h > GROESSE:
@@ -192,8 +193,11 @@ def zuschneiden(bild):
 
 
 def _ist_fluessigkeit(r, g, b):
-    h, s, _ = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-    return s > 0.35 and (h < 0.05 or h > 0.93)
+    """Pink bis tiefrot. Reines Rot nur kraeftig oder hell -- Korkholz liegt knapp daneben."""
+    h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+    if s <= 0.3:
+        return False
+    return h > 0.9 or (h < 0.03 and (s > 0.8 or v > 0.85))
 
 
 def faerben(bild, farbe):
@@ -249,10 +253,10 @@ func test_jeder_trank_hat_ein_bild() -> void:
 		if tex == null:
 			continue
 		var img := tex.get_image()
-		assert_eq(img.get_size(), Vector2i(24, 24), "%s: falsche Groesse" % id)
+		assert_eq(img.get_size(), Vector2i(32, 32), "%s: falsche Groesse" % id)
 		var voll := 0
-		for y in 24:
-			for x in 24:
+		for y in 32:
+			for x in 32:
 				if img.get_pixel(x, y).a > 0.0:
 					voll += 1
 		assert_true(voll > 40, "%s: fast leer (%d Pixel)" % [id, voll])
@@ -448,7 +452,7 @@ git commit -m "Fang- und Kampfanzeige oben mittig, bei offenem Menue ausgeblende
   `potion_<id>.png` aus Task 2.
 - Produces: `class_name BuffBar extends HBoxContainer`; `signal tapped`;
   `func refresh() -> void`; `static func zeit(sekunden: float) -> String`;
-  `const ICON: int = 48`; `const EINTRAG_BREITE: float = 56.0`;
+  `const ICON: int = 64`; `const EINTRAG_BREITE: float = 64.0`;
   `main.gd::BUFF_TOP: float = 132.0`; `main.gd::FISH_SUB_POTION := 2`.
 
 - [ ] **Step 1: Test** — `tests/test_buff_bar.gd` (in `run_tests.gd` eintragen):
@@ -505,8 +509,8 @@ extends HBoxContainer
 
 signal tapped
 
-const ICON: int = 48
-const EINTRAG_BREITE: float = 56.0
+const ICON: int = 64
+const EINTRAG_BREITE: float = 64.0
 
 var _takt: float = 0.0
 
@@ -663,7 +667,7 @@ func test_der_beutel_zeigt_das_bild() -> void:
 
 
 - [ ] **Step 2: Rot**, dann in `_row(c)` die Titelzeile in eine `HBoxContainer`
-  mit einem `TextureRect` (48×48, `EXPAND_IGNORE_SIZE`, `TEXTURE_FILTER_NEAREST`,
+  mit einem `TextureRect` (64×64, `EXPAND_IGNORE_SIZE`, `TEXTURE_FILTER_NEAREST`,
   `potion_<id>.png`) vor dem `title`-Label packen.
 - [ ] **Step 3: Grün** — `bash tools/test.sh`, `rc=0`.
 - [ ] **Step 4: Commit**
