@@ -37,7 +37,7 @@ func _row(id: StringName) -> Control:
 			have += 1
 
 	var title := Label.new()
-	title.text = "%s  (im Inventar: %d)" % [f.display_name, have]
+	title.text = "%s  (in der Kiste: %d)" % [f.display_name, have]
 	title.modulate = Game.ctx.rarity_of(f).color
 	box.add_child(title)
 

@@ -1,13 +1,6 @@
-## Der Trankbeutel: was man hat und was gerade wirkt.
-##
-## Er steht bei den Fischen und nicht im Laden, weil er zum Inventar gehört
-## und nicht zum Sortiment: gekauft wird hier NICHT. Tränke kommen vom
-## Waschbär-Händler und aus dem Paket des Raben — genau wie in der Referenz,
-## deren Laden nur Ausbau und Köder führt. Das macht aus einem Trank ein
-## Fundstück statt einer Ware aus dem Automaten.
-##
-## Umgeschaltet wird nach Trankart, mit demselben Knopfraster wie das Journal
-## für die Zonen.
+## Die Tränke: was man hat und was gerade wirkt. Steht in der Ausrüstung,
+## nicht im Laden -- gekauft wird hier NICHT. Tränke kommen vom Händler und
+## aus dem Paket des Raben.
 extends PanelBase
 
 const ALL: StringName = &"alle"
@@ -34,7 +27,7 @@ func refresh() -> void:
 	add_child(_switch(owned))
 
 	var header := Label.new()
-	header.text = "Beutel"
+	header.text = "Vorrat"
 	header.modulate = Palette.get_color(&"accent")
 	add_child(header)
 
@@ -65,7 +58,7 @@ func _key(c: ConsumableData) -> StringName:
 func _label(key: StringName) -> String:
 	return GROUP_LABELS.get(key, OTHER)
 
-## Nur Kategorien, in denen wirklich etwas liegt. Ein Beutel soll zeigen, was
+## Nur Kategorien, in denen wirklich etwas liegt. Der Vorrat soll zeigen, was
 ## drin ist, und nicht sechs leere Fächer.
 func _switch(owned: Array[ConsumableData]) -> Control:
 	var keys: Array = [ALL]

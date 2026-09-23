@@ -28,7 +28,7 @@ func show_summary(summary: Dictionary) -> void:
 	lines.append("Du warst %s weg." % _duration(float(summary.get("elapsed", 0.0))))
 	lines.append("Gefangen: %d Fische" % caught)
 	lines.append("Erhalten: %d XP" % int(summary.get("xp", 0)))
-	lines.append("Im Inventar liegen etwa %d Münzen." % int(summary.get("potential_coins", 0)))
+	lines.append("In der Fischkiste liegen etwa %d Münzen." % int(summary.get("potential_coins", 0)))
 	var discovered: Array = summary.get("discovered", [])
 	if not discovered.is_empty():
 		lines.append("Neu entdeckt: %d Arten" % discovered.size())

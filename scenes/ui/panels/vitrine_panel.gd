@@ -35,5 +35,5 @@ func refresh() -> void:
 	if not any:
 		var empty := Label.new()
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty.text = "Noch leer. Tippe im Inventar auf den Stern, um einen Fisch hierher zu legen."
+		empty.text = "Noch leer. Tippe in der Kiste auf den Stern, um einen Fisch hierher zu legen."
 		add_child(empty)

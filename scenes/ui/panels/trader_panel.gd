@@ -43,7 +43,7 @@ func _row(c: ConsumableData) -> Control:
 	var sold := Game.visitors.sold_out(c.id)
 
 	var title := Label.new()
-	title.text = "%s  (im Beutel: %d)" % [c.display_name, Game.consumable_count(c.id)]
+	title.text = "%s  (vorrätig: %d)" % [c.display_name, Game.consumable_count(c.id)]
 	box.add_child(title)
 
 	var desc := Label.new()
