@@ -245,3 +245,19 @@ func test_nach_der_flucht_haengt_kein_fisch() -> void:
 	w._process(0.0)
 	assert_false(w._haken_fisch.visible)
 	w.free()
+
+## Fanganzeige und Kampfleiste stehen oben mittig. Die Rutenspitze reicht beim
+## Ausholen bis y~106, nur wenige Punkte unter die Karte -- nachgerechnet, nicht
+## geschaetzt, und hier festgehalten, falls Rute oder Figur wandern.
+func test_die_rute_bleibt_unter_der_fanganzeige() -> void:
+	var w := _cast_world()
+	var toast = load("res://scenes/ui/catch_toast.gd")
+	var view = load("res://scenes/fishing/catch_view.gd")
+	var unterkante: float = maxf(toast.OBEN + toast.MASS.y, view.OBEN + view.MASS.y)
+	var a = w._angler
+	for arm in AnglerPose.ROD_STATES:
+		a._arm = arm
+		var tip: Vector2 = a.rod_tip()
+		assert_true(tip.y > unterkante,
+			"Zustand %d: Rutenspitze bei y=%d, die Karte endet bei %d" % [arm, tip.y, unterkante])
+	w.free()

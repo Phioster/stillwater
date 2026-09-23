@@ -24,12 +24,10 @@ var focus_point: Vector2 = Vector2.ZERO
 ## sonst im Himmel oder im Schilf. world.gd meldet es jedes Bild.
 var water_line: float = 0.0
 
-## Die Anzeige steht LINKS unter der Kopfzeile, nicht mittig im Bild.
-## Mittig geriet sie zwischen die Anglerin (der Zopf reicht bis dort hinauf)
-## und das Seitenpanel, das rechts darueber liegt, sobald es offen ist --
-## beides verdeckte sie. Links ist die einzige Spalte, die immer frei bleibt.
 @onready var _panel: PanelContainer = $Panel
-## Kampfleiste oben mittig, wie die Fanganzeige; beide zeigen sich nie gleichzeitig.
+## Kampfleiste oben mittig im Himmel, wie die Fanganzeige; beide zeigen sich
+## nie gleichzeitig. Bei offenem Menue weg (main.gd::show_tab). Die Rute
+## reicht knapp darunter -- test_zone_look haelt den Abstand fest.
 const MASS := Vector2(360.0, 80.0)
 const OBEN: float = 16.0
 var menu_offen: bool = false
