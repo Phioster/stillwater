@@ -401,6 +401,9 @@ func _fishes() -> void:
 	ids.sort()
 	for id in ids:
 		var f: FishData = database.fish[id]
+		# Echte Bilder kommen aus tools/fische_bauen.py -- nicht ueberschreiben.
+		if FileAccess.file_exists("res://assets/source/fische/%s.png" % f.id):
+			continue
 		var h := int(String(f.id).hash())
 		var hue := float(absi(h) % 1000) / 1000.0
 		var body := Color.from_hsv(hue, 0.35, 0.72)

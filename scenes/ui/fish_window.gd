@@ -3,8 +3,9 @@
 ## aus FishRoll, Raritaet aus SimContext.rarity_of().
 extends Control
 
-## Ganzzahliger Faktor, damit die 32x16-Sprites scharf bleiben.
-const ICON_SCALE := 8.0
+## Ganzzahliger Faktor auf die 48x24-Bilder, damit sie scharf bleiben.
+const ICON_SCALE := 5.0
+const ICON_SIZE := Vector2(48.0, 24.0)
 
 @onready var _scrim: ColorRect = $Scrim
 @onready var _panel: PanelContainer = $Panel
@@ -58,8 +59,10 @@ func open(id: StringName) -> void:
 	var suffix := "" if known else "_silhouette"
 	_icon.texture = TextureLoader.load_texture("res://assets/art/fish_%s%s.png" % [id, suffix])
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_icon.stretch_mode = TextureRect.STRETCH_SCALE
-	_icon.custom_minimum_size = Vector2(32.0, 16.0) * ICON_SCALE
+	# Seitenverhaeltnis halten: solange nicht alle Zonen neue Bilder haben,
+	# gibt es noch alte 32x16-Fische.
+	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icon.custom_minimum_size = ICON_SIZE * ICON_SCALE
 
 	if not known:
 		_name_label.text = "???"

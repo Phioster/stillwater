@@ -186,9 +186,9 @@ const BAIT_HANG := 12.0
 ## Schwimmer steigt erst steil auf und kommt dann zur Rutenspitze.
 const REEL_TIME := 0.5
 const REEL_RISE := 1.5
-## Der Fisch am Haken, kleiner als der Schwimmermassstab -- sonst haengt ein
-## Riese an der Rute. Die letzte Zeit der Pause blendet er aus.
-const HOOK_FISH_SCALE := 1.5
+## Wie lang der Fisch am Haken auf dem Schirm ist -- fest, egal wie gross sein
+## Bild ist (alte Fische 32, neue 48 Pixel breit). Sonst haengt ein Riese dran.
+const HOOK_FISH_LEN := 48.0
 const HOOK_FISH_FADE := 0.3
 ## Fallback, solange nicht jeder Koeder ein eigenes Bild hat.
 const BAIT_FALLBACK := &"pond_grub"
@@ -298,7 +298,6 @@ func _ready() -> void:
 		_haken_fisch = Sprite2D.new()
 		_haken_fisch.name = &"HakenFisch"
 		_haken_fisch.rotation = PI * 0.5
-		_haken_fisch.scale = Vector2(HOOK_FISH_SCALE, HOOK_FISH_SCALE)
 		_haken_fisch.visible = false
 		_bait.add_sibling(_haken_fisch)
 
@@ -657,13 +656,15 @@ func _update_haken_fisch(wasserlinie: float) -> void:
 	# Bild) oben am Haken. Deshalb ein eigener Schnitt statt _schneide.
 	var tex := _haken_fisch.texture.get_size()
 	var oben := _haken().y
-	var sichtbar := floorf(clampf((wasserlinie - oben) / HOOK_FISH_SCALE,
+	var skala := HOOK_FISH_LEN / maxf(tex.x, 1.0)
+	_haken_fisch.scale = Vector2(skala, skala)
+	var sichtbar := floorf(clampf((wasserlinie - oben) / skala,
 		0.0, tex.x))
 	_haken_fisch.visible = sichtbar >= 1.0
 	_haken_fisch.region_enabled = true
 	_haken_fisch.region_rect = Rect2(0.0, 0.0, sichtbar, tex.y)
 	_haken_fisch.position = Vector2(_haken().x,
-		oben + sichtbar * 0.5 * HOOK_FISH_SCALE)
+		oben + sichtbar * 0.5 * skala)
 	_haken_fisch.modulate.a = clampf(
 		(Game.sim.timer - FishingSim.CAST_TIME) / HOOK_FISH_FADE, 0.0, 1.0)
 
