@@ -17,3 +17,13 @@ func test_jeder_trank_hat_ein_bild() -> void:
 				if img.get_pixel(x, y).a > 0.0:
 					voll += 1
 		assert_true(voll > 40, "%s: fast leer (%d Pixel)" % [id, voll])
+
+func test_der_beutel_zeigt_das_bild() -> void:
+	Game.new_game()
+	Game.consumable_counts[&"wert_trank"] = 1
+	var p = load("res://scenes/ui/panels/potion_panel.gd").new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(p)
+	p.refresh()
+	var bilder: Array = p.find_children("*", "TextureRect", true, false)
+	assert_true(bilder.size() >= 1, "kein Trankbild im Beutel")
+	p.free()

@@ -115,10 +115,23 @@ func _row(c: ConsumableData) -> Control:
 	var box := VBoxContainer.new()
 
 	var owned := Game.consumable_count(c.id)
+	var kopf := HBoxContainer.new()
+	kopf.add_theme_constant_override("separation", 12)
+	box.add_child(kopf)
+	var bild := TextureRect.new()
+	bild.texture = TextureLoader.load_texture("res://assets/art/potion_%s.png" % c.id)
+	bild.custom_minimum_size = Vector2(BuffBar.ICON, BuffBar.ICON)
+	bild.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bild.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bild.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	kopf.add_child(bild)
 	var title := Label.new()
 	var running := "  ← wirkt" if Game.buffs.is_active(c.id) else ""
 	title.text = "%s  (%d)%s" % [c.display_name, owned, running]
-	box.add_child(title)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	kopf.add_child(title)
 
 	var desc := Label.new()
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
