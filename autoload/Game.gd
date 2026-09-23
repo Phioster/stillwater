@@ -10,6 +10,8 @@ signal progress_changed
 signal bite(fish: FishData)
 signal caught(fish_caught: CaughtFish, fish: FishData, discovered: bool, record: bool)
 signal escaped(fish: FishData)
+## Ein Tipp im Kampf -- die Anglerin reisst dann die Rute hoch.
+signal fight_tapped
 signal level_up(level: int)
 signal inventory_full
 signal coins_changed(value: int)
@@ -135,6 +137,7 @@ func tap() -> void:
 		return
 	if sim.state == FishingSim.State.FIGHT:
 		records.orbs_tapped += 1
+		fight_tapped.emit()
 	_dispatch(sim.tap(ctx))
 
 func _dispatch(events: Array) -> void:

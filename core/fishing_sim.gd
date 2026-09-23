@@ -7,6 +7,9 @@ enum State { IDLE, CASTING, WAITING, FIGHT, INVENTORY_FULL }
 
 const CAST_TIME: float = 1.0
 const ESCAPE_COOLDOWN: float = 2.0
+## Nach dem Fang: Zeit, die Rute abzusetzen, bevor ausgeholt wird. Liegt in
+## der Simulationsuhr, damit Figur und Schwimmerflug an derselben Uhr haengen.
+const LAND_PAUSE: float = 0.8
 ## Die Rute schlaegt in Schueben statt kontinuierlich: ein stiller Abzug ist
 ## nicht zu sehen, ein Treffer alle ROD_INTERVAL Sekunden schon.
 const ROD_INTERVAL: float = 1.0
@@ -193,7 +196,7 @@ func _land(ctx: SimContext, events: Array) -> void:
 		events.append({"type": "inventory_full"})
 	else:
 		state = State.CASTING
-		timer = CAST_TIME
+		timer = CAST_TIME + LAND_PAUSE
 
 func _escape(events: Array) -> void:
 	events.append({"type": "escaped", "fish": hooked})

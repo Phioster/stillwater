@@ -345,3 +345,14 @@ func test_a_stronger_rod_moves_the_line() -> void:
 	sim.tick(11.1, ctx, StillRNG.new(1))
 	assert_eq(sim.hooked_rank, 5)
 	assert_false(sim.needs_hands, "mit starker Rute schafft sie auch Rang S")
+
+## Nach dem Fang geht die Rute erst runter, dann wird geworfen. Die Pause
+## steht in der Simulationsuhr, damit Figur und Schwimmerflug an derselben
+## Uhr haengen.
+func test_nach_dem_fang_eine_kurze_pause_vor_dem_wurf() -> void:
+	var sim := FishingSim.new()
+	var ctx := _ctx(1.0, 100, 0)
+	var events := sim.tick(11.0 + 2.5, ctx, StillRNG.new(1))
+	assert_true("caught" in _types(events))
+	assert_eq(sim.state, FishingSim.State.CASTING)
+	assert_true(sim.timer > FishingSim.CAST_TIME, "ohne Pause bleibt keine Zeit zum Absetzen")
