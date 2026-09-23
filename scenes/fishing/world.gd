@@ -635,6 +635,11 @@ func _on_caught(_c: CaughtFish, fish: FishData, _discovered: bool, _record: bool
 	_water.disturb_at(_bobber_fraction(), CATCH_KICK)
 	einholen_beginnen(fish)
 
+## Das offene Menue deckt die rechte Haelfte -- Fang- und Kampfanzeige weichen.
+func set_menu_open(offen: bool) -> void:
+	$CatchToast.menu_offen = offen
+	$CatchView.menu_offen = offen
+
 func _on_escaped(_fish: FishData) -> void:
 	_water.disturb_at(_bobber_fraction(), CATCH_KICK)
 	einholen_beginnen(null)

@@ -3,16 +3,16 @@
 extends PanelContainer
 
 const SHOW_SECONDS: float = 3.0
-## Wo die Karte sitzt. Sie stand mittig im Bild und geriet damit hinter den
-## Zopf der Anglerin und unter das Seitenpanel, sobald das offen war. Links
-## unter der Kopfzeile ist die einzige Spalte, die immer frei bleibt -- und
-## dort steht auch schon die Kampfanzeige (catch_view.tscn), die beiden
-## zeigen sich nie gleichzeitig.
-##
-## Diese Werte stehen HIER und nicht in catch_toast.tscn, weil _ready() sie
-## ohnehin setzen muss: die Anker einer Szenenwurzel ueberleben den Export
-## nicht. tests/test_ui_theme.gd haelt beide Stellen zusammen.
-const RECT := Rect2(16.0, 132.0, 360.0, 86.0)
+## Oben mittig in der Welt; bei offenem Menue ausgeblendet, weil es die rechte
+## Haelfte zudeckt. Mass im Code: Anker der Szenenwurzel ueberleben den Export nicht.
+const MASS := Vector2(360.0, 86.0)
+const OBEN: float = 16.0
+
+var menu_offen: bool = false:
+	set(v):
+		menu_offen = v
+		_zeigen()
+var _hat_fang: bool = false
 
 @onready var _line1: Label = $Box/Line1
 @onready var _line2: Label = $Box/Line2
@@ -20,12 +20,12 @@ const RECT := Rect2(16.0, 132.0, 360.0, 86.0)
 
 func _ready() -> void:
 	# Siehe catch_view.gd: Anker der Szenenwurzel ueberleben den Export nicht.
-	anchor_left = 0.0
-	anchor_right = 0.0
-	offset_left = RECT.position.x
-	offset_right = RECT.position.x + RECT.size.x
-	offset_top = RECT.position.y
-	offset_bottom = RECT.position.y + RECT.size.y
+	anchor_left = 0.5
+	anchor_right = 0.5
+	offset_left = -MASS.x * 0.5
+	offset_right = MASS.x * 0.5
+	offset_top = OBEN
+	offset_bottom = OBEN + MASS.y
 	# Ein langer Fischname darf die Karte nicht breiter ziehen -- ein Container
 	# wird nicht schmaler als sein Inhalt, und dann stuende sie wieder unter
 	# dem Menue. Lieber umbrechen.
@@ -62,8 +62,13 @@ func show_catch(c: CaughtFish, fish: FishData, discovered: bool, record: bool) -
 	elif record:
 		second += "  ▲ neuer Rekord"
 	_line2.text = second
-	visible = true
+	_hat_fang = true
+	_zeigen()
 	_timer.start()
 
 func _hide() -> void:
-	visible = false
+	_hat_fang = false
+	_zeigen()
+
+func _zeigen() -> void:
+	visible = _hat_fang and not menu_offen

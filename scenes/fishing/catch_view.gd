@@ -29,6 +29,10 @@ var water_line: float = 0.0
 ## und das Seitenpanel, das rechts darueber liegt, sobald es offen ist --
 ## beides verdeckte sie. Links ist die einzige Spalte, die immer frei bleibt.
 @onready var _panel: PanelContainer = $Panel
+## Kampfleiste oben mittig, wie die Fanganzeige; beide zeigen sich nie gleichzeitig.
+const MASS := Vector2(360.0, 80.0)
+const OBEN: float = 16.0
+var menu_offen: bool = false
 @onready var _name: Label = $Panel/Box/FishName
 @onready var _health_slot: Control = $Panel/Box/Health
 @onready var _line_slot: Control = $Panel/Box/Line
@@ -53,6 +57,12 @@ func _ready() -> void:
 	# setzen, damit die Ansicht ueberall traegt und nicht davon abhaengt, wer
 	# sie einhaengt.
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_panel.anchor_left = 0.5
+	_panel.anchor_right = 0.5
+	_panel.offset_left = -MASS.x * 0.5
+	_panel.offset_right = MASS.x * 0.5
+	_panel.offset_top = OBEN
+	_panel.offset_bottom = OBEN + MASS.y
 	_health = _fill(_health_slot, Palette.get_color(&"cloth_red"), Palette.get_color(&"accent"))
 	_line = _fill(_line_slot, Palette.get_color(&"foam"), Palette.get_color(&"water_mid"))
 	_panel.visible = false
@@ -65,7 +75,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	var fighting := Game.sim.state == FishingSim.State.FIGHT
-	_panel.visible = fighting
+	_panel.visible = fighting and not menu_offen
 	if not fighting:
 		_clear_orbs()
 		return

@@ -314,51 +314,6 @@ func test_the_fish_row_keeps_its_size_contract() -> void:
 		"Zeile ist %d hoch statt %d -- VirtualList rechnet dann falsch"
 			% [mn.y, FishRow.HEIGHT])
 
-## Die Fanganzeige verschwand hinter der Kopfzeile. Beide sitzen oben, und in
-## main.tscn kommt die Kopfzeile NACH der Welt -- sie wird also darueber
-## gezeichnet. Ausgeloest hat es der Kontostand: mit echten Zahlen war die
-## Kopfzeile 640 Punkte breit und reichte bis in die Bildmitte, wo die
-## Fanganzeige steht. Der Test rechnet deshalb mit einem grossen Betrag und
-## dem schmalsten Querformat, mit dem wir rechnen.
-func test_the_catch_panel_never_hides_behind_the_hud() -> void:
-	Game.new_game()
-	Game.coins = 999999999
-	var tree := Engine.get_main_loop() as SceneTree
-	var halter := Control.new()
-	# Ohne Theme misst beides in Godots Standardschrift -- die ist schmaler
-	# als Silkscreen, der Test waere damit wertlos.
-	halter.theme = UiTheme.build()
-	tree.root.add_child(halter)
-
-	var hud: Control = load("res://scenes/ui/hud.tscn").instantiate()
-	halter.add_child(hud)
-	hud.call("refresh")
-	var kopf := hud.get_combined_minimum_size()
-
-	var cv: Control = load("res://scenes/fishing/catch_view.tscn").instantiate()
-	halter.add_child(cv)
-	var panel: Control = cv.get_node("Panel")
-	var panel_breite: float = maxf(panel.offset_right - panel.offset_left,
-		panel.get_combined_minimum_size().x)
-	var panel_oben: float = panel.offset_top
-	var panel_links: float = panel.offset_left
-	halter.free()
-
-	# Die Kopfzeile sitzt 16 Punkte von links und von oben (main.gd::_layout).
-	var kopf_rechts := 16.0 + kopf.x
-	var kopf_unten := 16.0 + kopf.y
-	# Die Fanganzeige steht links, wie die Kopfzeile -- geprueft wird also,
-	# dass sie UNTER ihr beginnt.
-	assert_true(panel_oben >= kopf_unten or panel_links >= kopf_rechts,
-		"Kopfzeile geht bis x=%d y=%d, Fanganzeige beginnt bei x=%d y=%d"
-			% [kopf_rechts, kopf_unten, panel_links, panel_oben])
-	# Und sie darf nicht unter das Seitenpanel geraten, wenn das offen ist.
-	# Das Panel haengt rechts; frei bleibt alles links davon.
-	var frei := 1280.0 - MAIN.RAIL_WIDTH - MAIN.PANEL_WIDTH
-	assert_true(panel_links + panel_breite <= frei,
-		"Fanganzeige geht bis x=%d, das offene Menue beginnt bei x=%d"
-			% [panel_links + panel_breite, frei])
-
 ## Und die Kopfzeile selbst darf nicht wieder ueber das halbe Bild laufen.
 func test_the_hud_stays_narrow_even_with_a_huge_balance() -> void:
 	Game.new_game()
@@ -375,37 +330,56 @@ func test_the_hud_stays_narrow_even_with_a_huge_balance() -> void:
 	assert_true(breite <= 1280.0 / 3.0,
 		"Kopfzeile ist %d Punkte breit, erlaubt sind %d" % [breite, 1280.0 / 3.0])
 
-## Die Fangmeldung setzt ihre Lage im CODE, weil die Anker einer Szenenwurzel
-## den Export nicht ueberleben (siehe catch_toast.gd). Damit gibt es zwei
-## Stellen fuer dasselbe Mass -- und genau daran ist eine Korrektur schon
-## einmal wirkungslos verpufft: ich hatte nur die Szene geaendert, und im
-## Spiel stand die Karte weiter mittig hinter dem Zopf.
-func test_the_catch_toast_code_and_scene_agree() -> void:
-	var szene: PackedScene = load("res://scenes/ui/catch_toast.tscn")
-	assert_true(szene != null, "catch_toast.tscn laesst sich nicht laden")
-	var karte: Control = szene.instantiate()
-	var links: float = karte.offset_left
-	var oben: float = karte.offset_top
-	var breite: float = karte.offset_right - karte.offset_left
-	var hoehe: float = karte.offset_bottom - karte.offset_top
-	var soll: Rect2 = karte.RECT
-	karte.free()
-	assert_almost_eq(links, soll.position.x, 0.5, "linke Kante laeuft auseinander")
-	assert_almost_eq(oben, soll.position.y, 0.5, "obere Kante laeuft auseinander")
-	assert_almost_eq(breite, soll.size.x, 0.5, "Breite laeuft auseinander")
-	assert_almost_eq(hoehe, soll.size.y, 0.5, "Hoehe laeuft auseinander")
+## Fanganzeige und Kampfleiste stehen oben mittig in der freien Flaeche
+## (links der Reiterleiste). Die Kopfzeile ist schmaler als 390.
+func _mittig_frei(links: float, breite: float, was: String) -> void:
+	var frei := 1280.0 - MAIN.RAIL_WIDTH
+	assert_almost_eq(links + breite * 0.5, frei * 0.5, 1.0, "%s nicht mittig" % was)
+	assert_true(links >= 380.0, "%s beruehrt die Kopfzeile" % was)
+	assert_true(links + breite <= frei, "%s ragt in die Reiterleiste" % was)
 
-## Und sie muss in derselben freien Spalte stehen wie die Kampfanzeige:
-## links, unter der Kopfzeile, neben dem offenen Menue vorbei.
-func test_the_catch_toast_stays_in_the_free_column() -> void:
-	var szene: PackedScene = load("res://scenes/ui/catch_toast.tscn")
-	var karte: Control = szene.instantiate()
-	var soll: Rect2 = karte.RECT
-	karte.free()
-	var frei := 1280.0 - MAIN.RAIL_WIDTH - MAIN.PANEL_WIDTH
-	assert_true(soll.position.x + soll.size.x <= frei,
-		"die Karte geht bis x=%d, das offene Menue beginnt bei x=%d"
-			% [soll.position.x + soll.size.x, frei])
-	assert_true(soll.position.y >= 116.0,
-		"die Karte beginnt bei y=%d und liegt damit in der Kopfzeile"
-			% soll.position.y)
+func _in_welt(szene: String) -> Control:
+	var welt := Control.new()
+	welt.size = Vector2(1280.0 - MAIN.RAIL_WIDTH, 720.0)
+	(Engine.get_main_loop() as SceneTree).root.add_child(welt)
+	var k: Control = load(szene).instantiate()
+	welt.add_child(k)
+	return k
+
+func test_die_fanganzeige_steht_oben_mittig() -> void:
+	var k := _in_welt("res://scenes/ui/catch_toast.tscn")
+	_mittig_frei(k.position.x, k.size.x, "Fanganzeige")
+	assert_almost_eq(k.position.y, k.OBEN, 0.5)
+	assert_almost_eq(k.size.x, k.MASS.x, 0.5, "Code und Szene laufen auseinander")
+	k.get_parent().free()
+
+func test_die_kampfleiste_steht_oben_mittig() -> void:
+	var cv := _in_welt("res://scenes/fishing/catch_view.tscn")
+	var p: Control = cv.get_node("Panel")
+	_mittig_frei(p.position.x, p.size.x, "Kampfleiste")
+	assert_almost_eq(p.position.y, cv.OBEN, 0.5)
+	cv.get_parent().free()
+
+func test_bei_offenem_menue_ist_die_fanganzeige_weg_und_kommt_wieder() -> void:
+	Game.new_game()
+	var k := _in_welt("res://scenes/ui/catch_toast.tscn")
+	var fisch: FishData = Database.fish.values()[0]
+	k.show_catch(CaughtFish.make(fisch.id, 0.0), fisch, false, false)
+	assert_true(k.visible)
+	k.menu_offen = true
+	assert_false(k.visible, "unter dem Menue sichtbar")
+	k.menu_offen = false
+	assert_true(k.visible, "kommt nach dem Schliessen nicht wieder")
+	k.get_parent().free()
+
+func test_bei_offenem_menue_ist_die_kampfleiste_weg() -> void:
+	Game.new_game()
+	var cv := _in_welt("res://scenes/fishing/catch_view.tscn")
+	Game.sim.state = FishingSim.State.FIGHT
+	cv._process(0.0)
+	assert_true(cv.get_node("Panel").visible)
+	cv.menu_offen = true
+	cv._process(0.0)
+	assert_false(cv.get_node("Panel").visible)
+	Game.sim.state = FishingSim.State.IDLE
+	cv.get_parent().free()

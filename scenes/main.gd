@@ -86,6 +86,9 @@ func show_tab(index: int) -> void:
 		Game.close_shop()
 	_tab = index if valid else -1
 	_side.visible = valid
+	var welt := $Row/World
+	if welt.has_method("set_menu_open"):
+		welt.set_menu_open(valid)
 	for i in count:
 		(_panels.get_child(i) as Control).visible = (valid and i == index)
 
