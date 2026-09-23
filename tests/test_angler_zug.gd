@@ -134,3 +134,13 @@ func test_die_beine_zappeln_nicht_mit() -> void:
 	a._weg_pose(Vector2i.ZERO, a.ZUG_WEG, 0.0, true)
 	assert_eq(a._bein, int(AnglerParts.CAST_LEGS[9]))
 	a.free()
+
+## Die Hand steht beim Atmen still, also auch die Rute -- sonst rutscht sie
+## sichtbar in der Faust auf und ab.
+func test_die_rute_atmet_nicht_mit() -> void:
+	var a := _angler()
+	a.set_pose(0, 0, 0, 0, &"open", 0)
+	var vorher: Vector2 = a.rod_tip()
+	a.set_pose(1, 0, 0, 0, &"open", 0)
+	assert_eq(a.rod_tip(), vorher)
+	a.free()

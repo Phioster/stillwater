@@ -205,12 +205,8 @@ def wurfbild(ebenen, koepfe, stab, anker, griff, arm, zustand):
     out.alpha_composite(
         pp.zusammensetzen(ebenen, koepfe, atem, zopf, bein, auge, seit),
         (0, OBEN))
-    ## Die Rute geht mit dem Atem mit -- ein Pixel, wie in
-    ## scenes/fishing/angler.gd::ROD_BREATH. Im Ruhelauf hat der Arm nur einen
-    ## Zustand, die Faust steht also still; ohne diesen Versatz haenge die
-    ## Rute reglos an einer atmenden Figur. Das Fenster wandert nach oben,
-    ## damit die Rute nach unten rutscht.
-    vx, vy = griff[0] - anker[0], griff[1] - anker[1] - atem
+    ## Die Rute atmet nicht mit -- wie scenes/fishing/angler.gd::ROD_BREATH.
+    vx, vy = griff[0] - anker[0], griff[1] - anker[1]
     out.alpha_composite(stab, (0, 0),
                         (vx, vy - OBEN, vx + fp.FRAME, vy + fp.FRAME))
     out.alpha_composite(arm, (0, OBEN))

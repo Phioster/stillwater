@@ -269,14 +269,10 @@ func _place_hat() -> void:
 ## Raster -- groesser als das der Figur, weil sie beim Ausholen weit
 ## hinausragt -- und zehn Bilder: die Ruhe teilt sich eines mit Wurfbild 0.
 ##
-## Ein Pixel Atem: im Ruhelauf hat der Arm nur einen Zustand, die Faust steht
-## also still, und ohne diesen Versatz haengt die Rute reglos an einer
-## atmenden Figur. Weil die Spitze 76 Pixel entfernt liegt, wird aus dem einen
-## Pixel am Griff eine sichtbare Bewegung am Ende.
-##
-## Bei der Does-Pose gilt das NICHT: die Rute liegt auf dem Schoss, nicht in
-## der frei schwebenden Faust -- sie darf mit dem Atem nicht mitwandern.
-const ROD_BREATH: int = 1
+## Kein Atem an der Rute: nur Kopf, Hals und Zopf atmen, die Faust steht
+## still. Mit einem Pixel Atem (bis 2026-09-24) rutschte die Rute sichtbar in
+## der Hand auf und ab -- der Nutzer hat es am Geraet bemaengelt.
+const ROD_BREATH: int = 0
 
 func _rod_atem() -> int:
 	return 0 if _arm == DOES_ARM else _atem * ROD_BREATH

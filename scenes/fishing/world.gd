@@ -463,7 +463,7 @@ func _process(delta: float) -> void:
 	if _line.visible:
 		var spitze: Vector2 = _angler.rod_tip()
 		var gesetzt := clampf(_line_settle / LINE_SETTLE, 0.0, 1.0)
-		var punkte := _schnur(spitze, _bobber_mitte,
+		var punkte := _schnur(spitze, _schnur_ende(_bobber_mitte, wasserlinie),
 			LINE_BELLY_AIR.lerp(LINE_BELLY_WATER, gesetzt))
 		if _haken_fisch.visible:
 			punkte.append(_haken())
@@ -668,6 +668,11 @@ func _einhol_position() -> Vector2:
 	var g := 1.0 - t
 	return g * g * g * _einhol_start + 3.0 * g * g * t * p1 \
 		+ 3.0 * g * t * t * spitze + t * t * t * spitze
+
+## Wo die Schnur ins Wasser geht: am Schwimmer, hoechstens an der Oberflaeche.
+## Zieht der Fisch ihn unter, liefe sie sonst sichtbar durchs Wasser.
+func _schnur_ende(mitte: Vector2, wasserlinie: float) -> Vector2:
+	return Vector2(mitte.x, minf(mitte.y, wasserlinie))
 
 ## Wo der Haken sitzt: da, wo sonst der Koeder haengt.
 func _haken() -> Vector2:

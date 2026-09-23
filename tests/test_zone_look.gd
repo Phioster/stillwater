@@ -261,3 +261,12 @@ func test_die_rute_bleibt_unter_der_fanganzeige() -> void:
 		assert_true(tip.y > unterkante,
 			"Zustand %d: Rutenspitze bei y=%d, die Karte endet bei %d" % [arm, tip.y, unterkante])
 	w.free()
+
+## Zieht der Fisch den Schwimmer unter Wasser, endet die Schnur an der
+## Oberflaeche -- vorher lief sie sichtbar durchs Wasser bis zu seiner Mitte.
+func test_die_schnur_endet_an_der_wasseroberflaeche() -> void:
+	var w := _cast_world()
+	var linie := 300.0
+	assert_eq(w._schnur_ende(Vector2(500, 340), linie), Vector2(500, 300), "unter Wasser")
+	assert_eq(w._schnur_ende(Vector2(500, 280), linie), Vector2(500, 280), "ueber Wasser")
+	w.free()

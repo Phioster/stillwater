@@ -111,7 +111,8 @@ class TestSpielGegenVorschau(unittest.TestCase):
                 aus.alpha_composite(
                     self.rute.crop((r * self.rod_rahmen, 0,
                                     (r + 1) * self.rod_rahmen, self.rod_rahmen)),
-                    (ax - self.rod_griff[0], ay - self.rod_griff[1] + atem))
+                    # Die Rute atmet nicht mit (angler.gd::ROD_BREATH = 0).
+                    (ax - self.rod_griff[0], ay - self.rod_griff[1]))
             x, y, w, h = self.kaesten[name]
             i = tb._index(name, (atem, zopf, seit), bein, auge, arm)
             vx, vy = (x + seit, y + atem) if name in tb.AM_KOPF else (x, y)
