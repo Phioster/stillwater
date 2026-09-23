@@ -21,7 +21,8 @@ FARBEN_JE_ZONE = 64
 SCHATTEN = (0x14, 0x1c, 0x1a)   # Palette: shadow
 
 ## PixelLab hat diese Arten nach rechts schauend gezeichnet.
-SPIEGELN = {"bluegill", "hollowfin", "sunhat_bream"}
+SPIEGELN = {"bluegill", "hollowfin", "sunhat_bream",
+            "peat_warden", "eternal_light", "sky_anchor"}
 
 
 def zonen():
