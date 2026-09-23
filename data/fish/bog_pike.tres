@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"bog_pike"
-display_name = "Moorhecht"
+display_name = "Axolotl"
 zone_id = &"night_moor"
 rarity_id = &"rare"
 base_value = 130
 strength = 88.0
 difficulty = 1.85
 xp = 64
-weight_mean = 5.0
-weight_dev = 1.6
+weight_mean = 0.8
+weight_dev = 0.25

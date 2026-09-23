@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"zenith_wing"
-display_name = "Zenitschwinge"
+display_name = "Wolkenwal"
 zone_id = &"cloud_lake"
 rarity_id = &"legendary"
 base_value = 4400
 strength = 640.0
 difficulty = 3.7
 xp = 2200
-weight_mean = 26.0
-weight_dev = 8.0
+weight_mean = 300.0
+weight_dev = 90.0

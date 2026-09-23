@@ -238,6 +238,17 @@ func test_nach_dem_fang_wird_der_schwimmer_eingeholt() -> void:
 	assert_false(w._haken_fisch.visible, "beim neuen Wurf ist der Fisch weg")
 	w.free()
 
+## Ein Riese haengt in voller Laenge dran, nicht auf Normalfischgroesse
+## geschrumpft -- das Herausziehen eines Wals ist der Witz.
+func test_ein_riese_haengt_in_voller_laenge() -> void:
+	var w := _cast_world()
+	Game.sim.timer = FishingSim.CAST_TIME + FishingSim.LAND_PAUSE
+	w.einholen_beginnen(Database.fish[&"horizon_whale"])
+	w._process(w.REEL_TIME * 2.0)
+	assert_eq(w._haken_fisch.texture.get_size().x, 96.0)
+	assert_eq(w._haken_fisch.scale, Vector2.ONE, "96 Pixel Bild, 96 Punkte lang")
+	w.free()
+
 func test_nach_der_flucht_haengt_kein_fisch() -> void:
 	var w := _cast_world()
 	Game.sim.timer = FishingSim.CAST_TIME + FishingSim.LAND_PAUSE

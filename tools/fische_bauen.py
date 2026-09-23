@@ -2,12 +2,14 @@
 
     python3 -m tools.fische_bauen
 
-Je Art ein Rohbild in assets/source/fische/<id>.png (48x24). Hier wird nur
-gespiegelt (Kopf muss links sein: world.gd haengt den Fisch am Maul auf),
-je Zone auf eine gemeinsame Palette gebracht und die Silhouette gerechnet.
+Je Art ein Rohbild in assets/source/fische/<id>.png: 48x24, die Riesen
+groesser (bis GROSS). Hier wird nur gespiegelt (Kopf muss links sein: world.gd
+haengt den Fisch am Maul auf), je Zone auf eine gemeinsame Palette gebracht und
+die Silhouette gerechnet.
 """
 import glob
 import os
+import random
 import re
 
 from PIL import Image
@@ -15,14 +17,18 @@ from PIL import Image
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QUELLE = os.path.join(WURZEL, "assets", "source", "fische")
 ZIEL = os.path.join(WURZEL, "assets", "art")
-GROESSE = (48, 24)
+## Groesstes erlaubtes Rohbild -- die Wale und die Hydra.
+GROSS = (96, 48)
 ## Farben je Zone -- genug fuer Schuppen und Glanz, wenig genug fuer eine Linie.
 FARBEN_JE_ZONE = 64
 SCHATTEN = (0x14, 0x1c, 0x1a)   # Palette: shadow
 
 ## PixelLab hat diese Arten nach rechts schauend gezeichnet.
 SPIEGELN = {"bluegill", "hollowfin", "sunhat_bream",
-            "peat_warden", "eternal_light", "sky_anchor"}
+            "peat_warden", "eternal_light", "sky_anchor", "black_hole"}
+## Bildfehler kann PixelLab nicht zeichnen; sie kommen hier dazu, NACH der
+## Zonenpalette, damit Magenta und Cyan nicht weggerechnet werden.
+VERZERREN = {"glitch_fish"}
 
 
 def zonen():
@@ -39,8 +45,8 @@ def zonen():
 
 def roh(fid):
     bild = Image.open(os.path.join(QUELLE, fid + ".png")).convert("RGBA")
-    if bild.size != GROESSE:
-        raise ValueError("%s ist %dx%d statt %dx%d" % ((fid,) + bild.size + GROESSE))
+    if bild.width > GROSS[0] or bild.height > GROSS[1]:
+        raise ValueError("%s ist %dx%d, erlaubt bis %dx%d" % ((fid,) + bild.size + GROSS))
     if fid in SPIEGELN:
         bild = bild.transpose(Image.FLIP_LEFT_RIGHT)
     return bild
@@ -48,18 +54,58 @@ def roh(fid):
 
 def gemeinsame_palette(bilder):
     """Alle Bilder einer Zone gemeinsam quantisieren -- eine Palette je Zone."""
-    b, h = GROESSE
-    bogen = Image.new("RGB", (b * len(bilder), h), (0, 0, 0))
-    for i, bild in enumerate(bilder):
-        bogen.paste(bild.convert("RGB"), (i * b, 0))
+    xs = [0]
+    for bild in bilder:
+        xs.append(xs[-1] + bild.width)
+    bogen = Image.new("RGB", (xs[-1], max(b.height for b in bilder)), (0, 0, 0))
+    for x, bild in zip(xs, bilder):
+        bogen.paste(bild.convert("RGB"), (x, 0))
     klein = bogen.quantize(FARBEN_JE_ZONE, method=Image.Quantize.MEDIANCUT)
     zurueck = klein.convert("RGB")
     aus = []
-    for i, bild in enumerate(bilder):
-        stueck = zurueck.crop((i * b, 0, (i + 1) * b, h)).convert("RGBA")
+    for x, bild in zip(xs, bilder):
+        stueck = zurueck.crop((x, 0, x + bild.width, bild.height)).convert("RGBA")
         stueck.putalpha(bild.getchannel("A").point(lambda a: 255 if a > 128 else 0))
         aus.append(stueck)
     return aus
+
+
+def verzerren(bild, saat=7):
+    """Glitch: Farbgeister links/rechts, verschobene Zeilen, ein Stueck
+    fehlende Textur (Magenta-Schachbrett) und Streupixel."""
+    rnd = random.Random(saat)
+    w, h = bild.size
+    aus = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    alpha = bild.getchannel("A")
+    for dx, farbe in ((-2, (255, 40, 200)), (2, (40, 240, 255))):
+        geist = Image.new("RGBA", (w, h), farbe + (0,))
+        geist.putalpha(alpha.point(lambda a: 170 if a > 128 else 0))
+        aus.alpha_composite(geist, (dx, 0))
+    aus.alpha_composite(bild)
+    px = aus.load()
+    neu = aus.copy()
+    np_ = neu.load()
+    y = 0
+    while y < h:
+        band = rnd.randint(1, 3)
+        schub = rnd.choice([0, 0, -4, -3, 3, 5, -6])
+        for yy in range(y, min(h, y + band)):
+            for x in range(w):
+                sx = x - schub
+                np_[x, yy] = px[sx, yy] if 0 <= sx < w else (0, 0, 0, 0)
+        y += band
+    bb = bild.getbbox()
+    cx, cy = bb[0] + (bb[2] - bb[0]) * 55 // 100, bb[1] + 2
+    for yy in range(cy, min(h, cy + 6)):
+        for x in range(cx, min(w, cx + 8)):
+            if np_[x, yy][3] > 0:
+                np_[x, yy] = (255, 0, 220, 255) if (x // 2 + yy // 2) % 2 == 0 else (10, 0, 20, 255)
+    for _ in range(10):
+        x, yy = rnd.randrange(bb[0], bb[2]), rnd.randrange(0, h)
+        np_[x, yy] = rnd.choice([(80, 255, 80, 255), (255, 255, 255, 255), (40, 240, 255, 255)])
+    # Halbdurchsichtige Geisterpixel: das Spiel kennt nur ganz oder gar nicht.
+    neu.putalpha(neu.getchannel("A").point(lambda a: 255 if a > 0 else 0))
+    return neu
 
 
 def silhouette(bild):
@@ -79,6 +125,8 @@ def main():
         if not da:
             continue
         for fid, bild in zip(da, gemeinsame_palette([roh(f) for f in da])):
+            if fid in VERZERREN:
+                bild = verzerren(bild)
             bild.save(os.path.join(ZIEL, "fish_%s.png" % fid))
             silhouette(bild).save(os.path.join(ZIEL, "fish_%s_silhouette.png" % fid))
             fertig += 1

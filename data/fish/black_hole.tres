@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="FishData" format=3]
+
+[ext_resource type="Script" path="res://resources/catch_condition.gd" id="1_cond"]
+[ext_resource type="Script" path="res://resources/fish_data.gd" id="2_fish"]
+[ext_resource type="Script" path="res://resources/level_condition.gd" id="3_lvl"]
+[ext_resource type="Script" path="res://resources/journal_condition.gd" id="4_extra"]
+
+[sub_resource type="Resource" id="Resource_lvl"]
+script = ExtResource("3_lvl")
+min_level = 55
+
+[sub_resource type="Resource" id="Resource_extra"]
+script = ExtResource("4_extra")
+min_species = 100
+
+[resource]
+script = ExtResource("2_fish")
+id = &"black_hole"
+display_name = "Schwarzes Loch"
+zone_id = &"star_lake"
+rarity_id = &"legendary"
+base_value = 20000
+strength = 1400.0
+difficulty = 4.8
+xp = 10000
+weight_mean = 9999.0
+weight_dev = 3000.0
+is_secret = true
+secret_chance = 0.02
+secret_hint = "Wer fast alles gefunden hat, spürt, wie das Wasser nach innen zieht."
+conditions = Array[ExtResource("1_cond")]([SubResource("Resource_lvl"), SubResource("Resource_extra")])

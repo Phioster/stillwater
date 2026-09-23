@@ -15,6 +15,8 @@
 [ext_resource type="Resource" path="res://data/fish/orbit_bleak.tres" id="21_orbit_"]
 [ext_resource type="Resource" path="res://data/fish/clockwork_fish.tres" id="60_clockw"]
 [ext_resource type="Resource" path="res://data/fish/last_light.tres" id="61_last_l"]
+[ext_resource type="Resource" path="res://data/fish/glitch_fish.tres" id="62_glitch"]
+[ext_resource type="Resource" path="res://data/fish/black_hole.tres" id="63_blackh"]
 [ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
 
 [resource]
@@ -26,7 +28,7 @@ shore_key = &"void_low"
 foam_key = &"void_foam"
 water_light_key = &"void_light"
 water_deep_key = &"void_deep"
-fish = Array[ExtResource("1_fish")]([ExtResource("10_spark_"), ExtResource("11_dust_g"), ExtResource("12_comet_"), ExtResource("13_night_"), ExtResource("14_satell"), ExtResource("15_ring_t"), ExtResource("16_void_m"), ExtResource("17_mist_p"), ExtResource("18_star_r"), ExtResource("19_blackf"), ExtResource("20_horizo"), ExtResource("21_orbit_"), ExtResource("60_clockw"), ExtResource("61_last_l")])
+fish = Array[ExtResource("1_fish")]([ExtResource("10_spark_"), ExtResource("11_dust_g"), ExtResource("12_comet_"), ExtResource("13_night_"), ExtResource("14_satell"), ExtResource("15_ring_t"), ExtResource("16_void_m"), ExtResource("17_mist_p"), ExtResource("18_star_r"), ExtResource("19_blackf"), ExtResource("20_horizo"), ExtResource("21_orbit_"), ExtResource("60_clockw"), ExtResource("61_last_l"), ExtResource("62_glitch"), ExtResource("63_blackh")])
 bite_time_min = 34.0
 bite_time_max = 58.0
 fight_window = 30.0

@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"aurora_salmon"
-display_name = "Nordlichtlachs"
+display_name = "Eishydra"
 zone_id = &"frost_bay"
 rarity_id = &"legendary"
 base_value = 1400
 strength = 400.0
 difficulty = 3.1
 xp = 700
-weight_mean = 11.0
-weight_dev = 3.4
+weight_mean = 180.0
+weight_dev = 50.0

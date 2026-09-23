@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"horizon_whale"
-display_name = "Horizontwal"
+display_name = "Sternenwal"
 zone_id = &"star_lake"
 rarity_id = &"legendary"
 base_value = 11000

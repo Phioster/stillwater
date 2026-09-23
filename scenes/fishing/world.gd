@@ -186,8 +186,9 @@ const BAIT_HANG := 12.0
 ## Schwimmer steigt erst steil auf und kommt dann zur Rutenspitze.
 const REEL_TIME := 0.5
 const REEL_RISE := 1.5
-## Wie lang der Fisch am Haken auf dem Schirm ist -- fest, egal wie gross sein
-## Bild ist (alte Fische 32, neue 48 Pixel breit). Sonst haengt ein Riese dran.
+## Wie lang ein normaler Fisch am Haken auf dem Schirm ist. Die alten 32er
+## werden darauf gestreckt; die Riesen (96 breit) haengen doppelt so lang dran
+## -- genau das sollen sie.
 const HOOK_FISH_LEN := 48.0
 const HOOK_FISH_FADE := 0.3
 ## Fallback, solange nicht jeder Koeder ein eigenes Bild hat.
@@ -656,7 +657,7 @@ func _update_haken_fisch(wasserlinie: float) -> void:
 	# Bild) oben am Haken. Deshalb ein eigener Schnitt statt _schneide.
 	var tex := _haken_fisch.texture.get_size()
 	var oben := _haken().y
-	var skala := HOOK_FISH_LEN / maxf(tex.x, 1.0)
+	var skala := HOOK_FISH_LEN / clampf(tex.x, 1.0, HOOK_FISH_LEN)
 	_haken_fisch.scale = Vector2(skala, skala)
 	var sichtbar := floorf(clampf((wasserlinie - oben) / skala,
 		0.0, tex.x))

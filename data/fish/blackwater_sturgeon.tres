@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"blackwater_sturgeon"
-display_name = "Schwarzwasserstör"
+display_name = "Zisternenkrake"
 zone_id = &"deep_cistern"
 rarity_id = &"legendary"
 base_value = 2200
 strength = 470.0
 difficulty = 3.4
 xp = 1100
-weight_mean = 55.0
-weight_dev = 17.0
+weight_mean = 150.0
+weight_dev = 45.0

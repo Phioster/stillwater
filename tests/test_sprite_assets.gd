@@ -44,12 +44,13 @@ func _expected_size(filename: String) -> Vector2i:
 			return Vector2i(-1, -1)
 		var box: Rect2i = AnglerParts.BOX[name]
 		return Vector2i(box.size.x * int(AnglerParts.STATES[name]), box.size.y)
-	# Neue Fische (tools/fische_bauen.py) sind 48x24; wer noch kein Rohbild
-	# hat, ist der alte 32x16-Platzhalter.
+	# Neue Fische (tools/fische_bauen.py) haben die Groesse ihres Rohbilds --
+	# 48x24, die Riesen mehr; ohne Rohbild der alte 32x16-Platzhalter.
 	if filename.begins_with("fish_"):
 		var fid := filename.trim_prefix("fish_").trim_suffix(".png").trim_suffix("_silhouette")
-		if FileAccess.file_exists("res://assets/source/fische/%s.png" % fid):
-			return Vector2i(48, 24)
+		var quelle := "res://assets/source/fische/%s.png" % fid
+		if FileAccess.file_exists(quelle):
+			return Image.load_from_file(quelle).get_size()
 		return Vector2i(32, 16)
 	# Trankbilder: PixelLab-Grundbild, nur umgefaerbt (tools/traenke_bauen.py).
 	if filename.begins_with("potion_"):
