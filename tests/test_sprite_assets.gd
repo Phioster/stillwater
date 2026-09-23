@@ -46,6 +46,9 @@ func _expected_size(filename: String) -> Vector2i:
 		return Vector2i(box.size.x * int(AnglerParts.STATES[name]), box.size.y)
 	if filename.begins_with("fish_"):
 		return Vector2i(32, 16)
+	# Trankbilder: PixelLab-Grundbild, nur umgefaerbt (tools/traenke_bauen.py).
+	if filename.begins_with("potion_"):
+		return Vector2i(32, 32)
 	# Rabe und Waschbaer laufen im Massstab der Figur, nicht gestreckt
 	# (tools/besucher_bauen.py).
 	if filename == "raven.png" or filename == "trader.png":
