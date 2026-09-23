@@ -67,3 +67,26 @@ func test_jede_zwischenstellung_hat_ein_blatt() -> void:
 					"%s bei %f: Zopf %d/%d/%d fehlt" % [weg, p, b.x, b.y + w.x, w.y])
 				assert_true(AnglerParts.LEG_SPREADS.has(w.z), "Bein %d" % w.z)
 	a.free()
+
+## Die Rute zieht auch ohne Tipp -- jeder Rutenschub hebt sie halb, auf 7.
+## Ein Tipp bleibt der staerkere Zug.
+func test_ein_rutenschub_hebt_nur_halb() -> void:
+	var a := _angler()
+	a.rute_zug()
+	for i in 10:
+		a.zug_schritt(0.01)
+	assert_almost_eq(a._zug, a.RUTE_ZUG, 0.001)
+	assert_eq(a.zug_bild(a._zug, 0.0), 7)
+	for i in 100:
+		a.zug_schritt(0.01)
+	assert_almost_eq(a._zug, 0.0, 0.001, "danach wieder runter ins Zittern")
+	a.free()
+
+func test_ein_rutenschub_bremst_keinen_tipp() -> void:
+	var a := _angler()
+	a.zug_tipp()
+	a.rute_zug()
+	for i in 20:
+		a.zug_schritt(0.01)
+	assert_almost_eq(a._zug, 1.0, 0.001)
+	a.free()

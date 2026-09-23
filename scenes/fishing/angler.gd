@@ -307,6 +307,9 @@ func _process(delta: float) -> void:
 			var schwung := clampf((1.0 - left) / CAST_SWING, 0.0, 1.0)
 			_cast_pose(atem, _swing_frame(schwung, n))
 		FishingSim.State.FIGHT:
+			if Game.sim.rod_hits > _schuebe:
+				rute_zug()
+			_schuebe = Game.sim.rod_hits
 			zug_schritt(delta)
 			_weg_pose(atem, ZUG_WEG, _zug_stelle())
 		FishingSim.State.INVENTORY_FULL:
@@ -364,6 +367,7 @@ func _on_bite(_fish: FishData) -> void:
 	_zug = 0.0
 	_zug_halt = 0.0
 	_zitter = 0.0
+	_schuebe = 0
 	_weg_pose(breath_at(_idle_time / BREATH_TIME), ZUG_WEG, _zug_stelle())
 
 func _on_caught(_c: CaughtFish, _f: FishData, _d: bool, _r: bool) -> void:
@@ -383,6 +387,11 @@ const ZUG_WEG: Array[int] = [8, 9, 7, 6]
 const ABSETZ_WEG: Array[int] = [0, 9, 7, 6]
 ## So lange bleibt die Rute nach einem Tipp oben. Wer weiter tippt, haelt sie.
 const ZUG_HALT: float = 0.35
+## Ohne Tipp zieht die Rute allein, einmal je Rutenschub (jede Sekunde): nur
+## halb hoch und kurz, damit dazwischen noch gezittert wird und der Tipp der
+## staerkere Zug bleibt.
+const RUTE_ZUG: float = 0.5
+const RUTE_HALT: float = 0.1
 const ZUG_HOCH: float = 0.12
 const ZUG_RUNTER: float = 0.3
 ## Der letzte Schritt von der Kampfhaltung in die Ruhe.
@@ -394,17 +403,26 @@ const ZITTER_MIN: float = 0.3
 
 var _zug: float = 0.0
 var _zug_halt: float = 0.0
+var _zug_ziel: float = 1.0
+var _schuebe: int = 0
 var _zitter: float = 0.0
 var _zitter_weite: float = 1.0
 var _absetzen: bool = false
 var _ruhe: float = 0.0
 
 func zug_tipp() -> void:
+	_zug_ziel = 1.0
 	_zug_halt = ZUG_HALT
+
+func rute_zug() -> void:
+	if _zug_halt > 0.0 and _zug_ziel > RUTE_ZUG:
+		return
+	_zug_ziel = RUTE_ZUG
+	_zug_halt = RUTE_HALT
 
 func zug_schritt(delta: float) -> void:
 	if _zug_halt > 0.0:
-		_zug = move_toward(_zug, 1.0, delta / ZUG_HOCH)
+		_zug = move_toward(_zug, _zug_ziel, delta / ZUG_HOCH)
 		_zug_halt = maxf(0.0, _zug_halt - delta)
 	else:
 		_zug = move_toward(_zug, 0.0, delta / ZUG_RUNTER)
@@ -434,7 +452,7 @@ func absetzen_beginnen() -> void:
 func absetz_schritt(delta: float) -> void:
 	_zug_halt = minf(_zug_halt, ZUG_HALT)
 	if _zug_halt > 0.0:
-		_zug = move_toward(_zug, 1.0, delta / ZUG_HOCH)
+		_zug = move_toward(_zug, _zug_ziel, delta / ZUG_HOCH)
 		_zug_halt = maxf(0.0, _zug_halt - delta)
 	elif _zug > 0.0:
 		_zug = move_toward(_zug, 0.0, delta / ZUG_RUNTER)
