@@ -12,15 +12,17 @@ extends Control
 ## Bildbreite -- nur die Leiste tut das dauerhaft.
 const PANEL_WIDTH := 520.0
 const RAIL_WIDTH := 140.0
-## Unterreiter der Fischgruppe: Inventar, Vitrine, Beutel, Auftraege, Geheim.
-const FISH_SUB_SECRET := 4
-## Laden-Reiter und darin der Haendler.
+## Reiter und Unterreiter, die von aussen angesprungen werden. Die Reihenfolge
+## steht in TabRail.TABS und in den Kindern von SidePanel/Panels.
+const FISH_TAB := 0
+const GEAR_TAB := 1
+const GEAR_SUB_POTION := 1
 const SHOP_TAB := 2
-const SHOP_SUB_TRADER := 1
+const SHOP_SUB_TRADER := 3
+const JOURNAL_TAB := 3
+const JOURNAL_SUB_SECRET := 1
 ## Die Trankreihe steht, wo frueher die Fanganzeige stand: unter der Kopfzeile.
 const BUFF_TOP := 132.0
-const FISH_TAB := 0
-const FISH_SUB_POTION := 2
 
 var _tab: int = -1
 
@@ -28,8 +30,10 @@ var _tab: int = -1
 @onready var _panels: Control = $SidePanel/Panels
 @onready var _rail = $Row/TabRail
 @onready var _journal_panel = $SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel
-@onready var _secret_panel = $SidePanel/Panels/FishGroup/SecretScroll/SecretPanel
-@onready var _fish_group: TabGroup = $SidePanel/Panels/FishGroup
+@onready var _secret_panel = $SidePanel/Panels/JournalGroup/SecretScroll/SecretPanel
+@onready var _journal_group: TabGroup = $SidePanel/Panels/JournalGroup
+@onready var _gear_group: TabGroup = $SidePanel/Panels/GearGroup
+@onready var _shop_group: TabGroup = $SidePanel/Panels/ShopGroup
 @onready var _fish_window = $FishWindow
 
 func _ready() -> void:
@@ -53,6 +57,9 @@ func _ready() -> void:
 	if not Game.state_changed.is_connected(_update_secret_sub):
 		Game.state_changed.connect(_update_secret_sub)
 	_update_secret_sub()
+	if not Game.state_changed.is_connected(_update_trader_sub):
+		Game.state_changed.connect(_update_trader_sub)
+	_update_trader_sub()
 	_apply_safe_area()
 	if not get_viewport().size_changed.is_connected(_apply_safe_area):
 		get_viewport().size_changed.connect(_apply_safe_area)
@@ -90,6 +97,7 @@ func show_tab(index: int) -> void:
 	# gekauft hat. Deshalb haengt das hier und nicht am Kaufknopf.
 	if _tab == SHOP_TAB and index != SHOP_TAB:
 		Game.close_shop()
+	_update_trader_sub()
 	_tab = index if valid else -1
 	_side.visible = valid
 	var welt := $Row/World
@@ -136,12 +144,12 @@ func _process(delta: float) -> void:
 		g.update(delta)
 
 ## Vor dem ersten Geheimfang soll nichts auf sie hindeuten -- der Unterreiter
-## entsteht erst mit dem Fang. Das war frueher ein eigener Hauptreiter.
+## entsteht erst mit dem Fang.
 func _update_secret_sub() -> void:
-	if _fish_group == null:
+	if _journal_group == null:
 		return
 	var known := Game.ctx != null and Game.ctx.journal.has_any_secret()
-	_fish_group.set_sub_visible(FISH_SUB_SECRET, known)
+	_journal_group.set_sub_visible(JOURNAL_SUB_SECRET, known)
 
 ## Das Schilfschneiden legt sich ueber alles. Waehrenddessen laeuft die
 ## Angel weiter -- es ist eine Nebenbeschaeftigung, keine zweite Partie.
@@ -149,9 +157,16 @@ func _open_reeds() -> void:
 	$ReedCut.starte()
 
 func _open_potions() -> void:
-	_rail.select(FISH_TAB)
-	_fish_group.select_sub(FISH_SUB_POTION)
+	_rail.select(GEAR_TAB)
+	_gear_group.select_sub(GEAR_SUB_POTION)
 
 func _open_trader() -> void:
+	_update_trader_sub()
 	_rail.select(SHOP_TAB)
-	($SidePanel/Panels/ShopGroup as TabGroup).select_sub(SHOP_SUB_TRADER)
+	_shop_group.select_sub(SHOP_SUB_TRADER)
+
+## Der Haendler hat keinen festen Reiter: sein Unterreiter gibt es nur, solange
+## er am Steg steht -- wie Cornerponds Maus, die sich nur beim Antippen oeffnet.
+func _update_trader_sub() -> void:
+	if _shop_group != null:
+		_shop_group.set_sub_visible(SHOP_SUB_TRADER, Game.trader_visible())

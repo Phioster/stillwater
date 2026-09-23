@@ -92,8 +92,11 @@ func test_the_shop_prints_the_promise() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	var m: Control = load("res://scenes/main.tscn").instantiate()
 	tree.root.add_child(m)
-	m.show_tab(2)
-	var panel: PanelBase = m.get_node("SidePanel/Panels/ShopGroup/ShopScroll/ShopPanel")
+	# Die Zusage steht auf jedem Koeder, auch in der Ausruestung -- dort ist die
+	# Teichmade immer da, im Laden erst Koeder ab ihrer Stufe.
+	m.show_tab(m.GEAR_TAB)
+	var panel: PanelBase = m.get_node("SidePanel/Panels/GearGroup/BaitScroll/BaitPanel")
+	panel.refresh()
 	var text := ""
 	for node in _labels(panel):
 		text += node + "\n"

@@ -33,6 +33,7 @@ const SUITES := [
 	"res://tests/test_angler_zug.gd",
 	"res://tests/test_potion_icons.gd",
 	"res://tests/test_buff_bar.gd",
+	"res://tests/test_reiter_aufteilung.gd",
 	"res://tests/test_effects.gd",
 	"res://tests/test_water_surface.gd",
 	"res://tests/test_zone_look.gd",

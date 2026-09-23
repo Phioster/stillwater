@@ -57,7 +57,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("16")
-labels = PackedStringArray("Inventar", "Vitrine", "Beutel", "Aufträge", "Geheim")
+labels = PackedStringArray("Kiste", "Vitrine")
 
 [node name="FishScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
 
@@ -71,61 +71,45 @@ script = ExtResource("5")
 size_flags_horizontal = 3
 script = ExtResource("14")
 
-[node name="PotionScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
-
-[node name="PotionPanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/PotionScroll"]
-size_flags_horizontal = 3
-script = ExtResource("17")
-
-[node name="QuestScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
-
-[node name="QuestPanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/QuestScroll"]
-size_flags_horizontal = 3
-script = ExtResource("19")
-
-[node name="SecretScroll" type="ScrollContainer" parent="SidePanel/Panels/FishGroup"]
-
-[node name="SecretPanel" type="VBoxContainer" parent="SidePanel/Panels/FishGroup/SecretScroll"]
-size_flags_horizontal = 3
-script = ExtResource("13")
-
-[node name="JournalGroup" type="VBoxContainer" parent="SidePanel/Panels"]
+[node name="GearGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("16")
-labels = PackedStringArray("Arten", "Bilanz")
+labels = PackedStringArray("Köder", "Tränke", "Aussehen")
 
-[node name="JournalScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
+[node name="BaitScroll" type="ScrollContainer" parent="SidePanel/Panels/GearGroup"]
 
-[node name="JournalPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/JournalScroll"]
+[node name="BaitPanel" type="VBoxContainer" parent="SidePanel/Panels/GearGroup/BaitScroll"]
 size_flags_horizontal = 3
-script = ExtResource("6")
+script = ExtResource("7")
+nur_kaufen = false
 
-[node name="RecordScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
+[node name="PotionScroll" type="ScrollContainer" parent="SidePanel/Panels/GearGroup"]
 
-[node name="RecordPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/RecordScroll"]
+[node name="PotionPanel" type="VBoxContainer" parent="SidePanel/Panels/GearGroup/PotionScroll"]
 size_flags_horizontal = 3
-script = ExtResource("20")
+script = ExtResource("17")
+
+[node name="LookScroll" type="ScrollContainer" parent="SidePanel/Panels/GearGroup"]
+
+[node name="LookPanel" type="VBoxContainer" parent="SidePanel/Panels/GearGroup/LookScroll"]
+size_flags_horizontal = 3
+script = ExtResource("10")
+modus = "tragen"
 
 [node name="ShopGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("16")
-labels = PackedStringArray("Köder", "Händler", "Kosmetik", "Ausbau")
+labels = PackedStringArray("Köder", "Aussehen", "Ausbau", "Händler")
 
 [node name="ShopScroll" type="ScrollContainer" parent="SidePanel/Panels/ShopGroup"]
 
 [node name="ShopPanel" type="VBoxContainer" parent="SidePanel/Panels/ShopGroup/ShopScroll"]
 size_flags_horizontal = 3
 script = ExtResource("7")
-
-[node name="TraderScroll" type="ScrollContainer" parent="SidePanel/Panels/ShopGroup"]
-
-[node name="TraderPanel" type="VBoxContainer" parent="SidePanel/Panels/ShopGroup/TraderScroll"]
-size_flags_horizontal = 3
-script = ExtResource("18")
 
 [node name="CharacterScroll" type="ScrollContainer" parent="SidePanel/Panels/ShopGroup"]
 
@@ -138,6 +122,49 @@ script = ExtResource("10")
 [node name="UpgradePanel" type="VBoxContainer" parent="SidePanel/Panels/ShopGroup/UpgradeScroll"]
 size_flags_horizontal = 3
 script = ExtResource("8")
+
+[node name="TraderScroll" type="ScrollContainer" parent="SidePanel/Panels/ShopGroup"]
+
+[node name="TraderPanel" type="VBoxContainer" parent="SidePanel/Panels/ShopGroup/TraderScroll"]
+size_flags_horizontal = 3
+script = ExtResource("18")
+
+[node name="JournalGroup" type="VBoxContainer" parent="SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("16")
+labels = PackedStringArray("Arten", "Geheim", "Statistik")
+
+[node name="JournalScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
+
+[node name="JournalPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/JournalScroll"]
+size_flags_horizontal = 3
+script = ExtResource("6")
+
+[node name="SecretScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
+
+[node name="SecretPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/SecretScroll"]
+size_flags_horizontal = 3
+script = ExtResource("13")
+
+[node name="RecordScroll" type="ScrollContainer" parent="SidePanel/Panels/JournalGroup"]
+
+[node name="RecordPanel" type="VBoxContainer" parent="SidePanel/Panels/JournalGroup/RecordScroll"]
+size_flags_horizontal = 3
+script = ExtResource("20")
+
+[node name="QuestGroup" type="VBoxContainer" parent="SidePanel/Panels"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("16")
+
+[node name="QuestScroll" type="ScrollContainer" parent="SidePanel/Panels/QuestGroup"]
+
+[node name="QuestPanel" type="VBoxContainer" parent="SidePanel/Panels/QuestGroup/QuestScroll"]
+size_flags_horizontal = 3
+script = ExtResource("19")
 
 [node name="WorldGroup" type="VBoxContainer" parent="SidePanel/Panels"]
 anchors_preset = 15

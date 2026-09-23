@@ -1,6 +1,10 @@
-## Der Köderladen. Der Grundköder ist gratis und unbegrenzt und steht
-## deshalb nur zur Auswahl, nicht zum Kauf.
+## Die Köderliste, zweimal im Menü: im Laden nur kaufen, in der Ausrüstung
+## nur anlegen. Wie bei Cornerpond -- wer benutzen will, was er hat, muss
+## nicht in den Laden.
 extends PanelBase
+
+## true = Laden (Auffüllen), false = Ausrüstung (Anlegen).
+@export var nur_kaufen: bool = true
 
 func refresh() -> void:
 	clear(self)
@@ -10,6 +14,11 @@ func refresh() -> void:
 
 	for b in Database.baits_in_order():
 		if Game.ctx.player_level < b.unlock_level:
+			continue
+		if nur_kaufen and b.unlimited:
+			continue
+		if not nur_kaufen and not b.unlimited \
+				and int(Game.ctx.bait_counts.get(b.id, 0)) <= 0:
 			continue
 		add_child(_row(b))
 
@@ -44,15 +53,16 @@ func _row(b: BaitData) -> Control:
 
 	var row := HBoxContainer.new()
 
-	var use := TapButton.new()
-	use.text = "Anlegen"
-	use.custom_minimum_size = Vector2(0, 96)
-	use.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	use.disabled = not b.unlimited and int(Game.ctx.bait_counts.get(b.id, 0)) <= 0
-	use.tapped.connect(func() -> void: Game.set_active_bait(b.id))
-	row.add_child(use)
+	if not nur_kaufen:
+		var use := TapButton.new()
+		use.text = "Angelegt" if Game.ctx.bait.id == b.id else "Anlegen"
+		use.custom_minimum_size = Vector2(0, 96)
+		use.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		use.disabled = Game.ctx.bait.id == b.id
+		use.tapped.connect(func() -> void: Game.set_active_bait(b.id))
+		row.add_child(use)
 
-	if not b.unlimited:
+	if nur_kaufen:
 		var amount := Game.bait_refill_amount()
 		var cost := Game.bait_refill_cost(b.id)
 		var buy := TapButton.new()

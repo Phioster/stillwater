@@ -114,12 +114,14 @@ func test_every_tab_label_fits_the_rail() -> void:
 	var platz := breite - 2.0 * float(UiTheme.RAHMEN_SEITE + 2) \
 		- 2.0 * float(UiTheme.KNOPF_RAND)
 	assert_true(platz > 0.0, "die Leiste ist schmaler als ihre Raender")
+	# Gemessen wird, was auf dem Knopf steht -- zeilenweise.
 	for reiter in TabRail.TABS:
-		var w: float = schrift.get_string_size(reiter,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SCHRIFT_GROESSE).x
-		assert_true(w <= platz,
-			"Reiter '%s' ist %d breit, in die Leiste passen %d"
-				% [reiter, w, platz])
+		for zeile in TabRail.anzeige(reiter).split("\n"):
+			var w: float = schrift.get_string_size(zeile,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SCHRIFT_GROESSE).x
+			assert_true(w <= platz,
+				"Reiter '%s' ist %d breit, in die Leiste passen %d"
+					% [zeile, w, platz])
 
 ## Godots Vorgabe fuer den Abstand zwischen zwei Kindern einer HBox. Die
 ## Reiterzeile setzt nichts anderes, also gilt der hier.

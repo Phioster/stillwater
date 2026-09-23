@@ -97,7 +97,7 @@ func test_the_page_shows_the_numbers() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	var m: Control = load("res://scenes/main.tscn").instantiate()
 	tree.root.add_child(m)
-	m.show_tab(1)
+	m.show_tab(m.JOURNAL_TAB)
 	var panel: PanelBase = m.get_node("SidePanel/Panels/JournalGroup/RecordScroll/RecordPanel")
 	panel.refresh()
 	var text := ""

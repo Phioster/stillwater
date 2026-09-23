@@ -67,13 +67,13 @@ func test_the_raven_is_not_affected() -> void:
 # --- Beutel -------------------------------------------------------------------
 
 func _bag(m: Control) -> PanelBase:
-	return m.get_node("SidePanel/Panels/FishGroup/PotionScroll/PotionPanel")
+	return m.get_node("SidePanel/Panels/GearGroup/PotionScroll/PotionPanel")
 
-func test_the_bag_sits_with_the_fish_not_in_the_shop() -> void:
+func test_the_potions_sit_in_the_gear_not_in_the_shop() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	var m: Control = load("res://scenes/main.tscn").instantiate()
 	tree.root.add_child(m)
-	assert_true(m.has_node("SidePanel/Panels/FishGroup/PotionScroll"), "der Beutel fehlt im Inventar")
+	assert_true(m.has_node("SidePanel/Panels/GearGroup/PotionScroll"), "die Traenke fehlen in der Ausruestung")
 	assert_false(m.has_node("SidePanel/Panels/ShopGroup/PotionScroll"), "er haengt noch im Laden")
 	m.free()
 

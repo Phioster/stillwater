@@ -14,7 +14,8 @@ func test_every_tab_has_its_group_in_the_same_order() -> void:
 	var panels: Node = m.get_node("SidePanel/Panels")
 	assert_eq(TabRail.TABS.size(), panels.get_child_count(),
 		"jeder Reiter braucht genau eine Gruppe")
-	var expected := ["FishGroup", "JournalGroup", "ShopGroup", "WorldGroup", "OptionsGroup"]
+	var expected := ["FishGroup", "GearGroup", "ShopGroup", "JournalGroup",
+		"QuestGroup", "WorldGroup", "OptionsGroup"]
 	for i in expected.size():
 		assert_eq(String(panels.get_child(i).name), expected[i],
 			"Reiter %s zeigt auf %s" % [TabRail.TABS[i], panels.get_child(i).name])
@@ -118,7 +119,7 @@ func test_fish_inside_a_zone_are_sorted_by_rarity_then_name() -> void:
 func test_the_journal_shows_one_zone_at_a_time() -> void:
 	Game.new_game()
 	var m := _main()
-	m.show_tab(1)
+	m.show_tab(m.JOURNAL_TAB)
 	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	var shown: Array[StringName] = []
 	for child in _rows_with_fish_id(panel):
@@ -165,7 +166,7 @@ func test_the_ui_carries_its_outline_from_one_theme() -> void:
 func test_the_zone_switcher_holds_every_zone_in_one_tap() -> void:
 	Game.new_game()
 	var m := _main()
-	m.show_tab(1)
+	m.show_tab(m.JOURNAL_TAB)
 	var panel = m.get_node("SidePanel/Panels/JournalGroup/JournalScroll/JournalPanel")
 	var grid: GridContainer = null
 	for child in panel.get_children():
@@ -209,7 +210,7 @@ func test_every_list_still_scrolls_after_the_regrouping() -> void:
 	var found := _scrolls(m.get_node("SidePanel/Panels"))
 	# Die Zahl steht als Literal da, damit eine neue Liste auffaellt und
 	# jemand prueft, ob sie eingerichtet wurde -- nicht damit sie nie wachsen darf.
-	assert_eq(found.size(), 13, "es gibt %d Listen, erwartet waren 13" % found.size())
+	assert_eq(found.size(), 15, "es gibt %d Listen, erwartet waren 15" % found.size())
 	for sc in found:
 		assert_eq(sc.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_AUTO,
 			"%s wurde beim Einrichten uebersehen" % sc.name)
@@ -234,3 +235,20 @@ func _rows_with_fish_id(node: Node) -> Array[Control]:
 	for c in node.get_children():
 		out.append_array(_rows_with_fish_id(c))
 	return out
+
+## Die Beschriftungen SIND die Ordnung, die mit dem Nutzer abgestimmt wurde
+## (docs/superpowers/specs/2026-09-24-reiter-neu-ordnen-design.md).
+func test_die_unterreiter_heissen_wie_abgestimmt() -> void:
+	Game.new_game()
+	var m := _main()
+	var soll := {
+		"FishGroup": ["Kiste", "Vitrine"],
+		"GearGroup": ["Köder", "Tränke", "Aussehen"],
+		"ShopGroup": ["Köder", "Aussehen", "Ausbau", "Händler"],
+		"JournalGroup": ["Arten", "Geheim", "Statistik"],
+	}
+	for g in soll:
+		assert_eq(Array(m.get_node("SidePanel/Panels/" + g).labels), soll[g], g)
+	assert_eq(TabRail.TABS, ["Fische", "Ausrüstung", "Laden", "Journal",
+		"Aufträge", "Orte", "Optionen"])
+	m.free()

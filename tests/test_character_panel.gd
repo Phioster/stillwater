@@ -1,9 +1,10 @@
 extends TestCase
 
-func _panel() -> PanelBase:
+func _panel(modus: String = "kaufen") -> PanelBase:
 	# character_panel.gd ist ein Szenenskript ohne eigenen class_name, deshalb
 	# per load() statt eines bare Bezeichners (wie in test_upgrade_panel.gd).
 	var panel: PanelBase = load("res://scenes/ui/panels/character_panel.gd").new()
+	panel.modus = modus
 	panel.refresh()
 	return panel
 
@@ -21,9 +22,10 @@ func _hat_buttons(panel: PanelBase) -> Container:
 			return (kind as VBoxContainer).get_child(1)
 	return null
 
+## Anziehen geschieht in der Ausruestung (Modus "tragen"), nicht im Laden.
 func test_owned_variant_is_shown_as_a_toggled_wear_button() -> void:
 	Game.new_game()
-	var panel := _panel()
+	var panel := _panel("tragen")
 	var owned_button: Button = _hat_buttons(panel).get_child(0)  # Variante 0, immer frei
 	assert_false(owned_button.disabled)
 	assert_true(owned_button.toggle_mode)

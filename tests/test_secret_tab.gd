@@ -16,7 +16,7 @@ func _secret_id() -> StringName:
 	return &""
 
 func _fish_group(main: Control) -> TabGroup:
-	return main.get_node("SidePanel/Panels/FishGroup")
+	return main.get_node("SidePanel/Panels/JournalGroup")
 
 ## Ueber die Beschriftung gesucht, nicht ueber den Index: der wandert, sobald
 ## ein Unterreiter dazukommt, und der Test pruefte dann stumm den falschen.
@@ -42,9 +42,9 @@ func test_the_secret_tab_is_hidden_until_the_first_catch() -> void:
 func test_the_secret_panel_stays_empty_until_the_first_catch() -> void:
 	Game.new_game()
 	var main := _main()
-	var panel: PanelBase = main.get_node("SidePanel/Panels/FishGroup/SecretScroll/SecretPanel")
-	main.show_tab(0)
-	_fish_group(main).select_sub(4)
+	var panel: PanelBase = main.get_node("SidePanel/Panels/JournalGroup/SecretScroll/SecretPanel")
+	main.show_tab(main.JOURNAL_TAB)
+	_fish_group(main).select_sub(main.JOURNAL_SUB_SECRET)
 	assert_eq(panel.get_child_count(), 0, "leer, solange nichts gefangen ist")
 
 	var id := _secret_id()
@@ -69,7 +69,7 @@ func test_only_caught_secrets_are_listed() -> void:
 	assert_true(ids.size() >= 2, "die Testdaten brauchen mehrere Geheimfische")
 
 	var main := _main()
-	var panel: PanelBase = main.get_node("SidePanel/Panels/FishGroup/SecretScroll/SecretPanel")
+	var panel: PanelBase = main.get_node("SidePanel/Panels/JournalGroup/SecretScroll/SecretPanel")
 	Game.ctx.journal.record(CaughtFish.make(ids[0], 1.0, false), true)
 	panel.refresh()
 	for child in _rows_with_fish_id(panel):

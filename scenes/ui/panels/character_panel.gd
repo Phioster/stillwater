@@ -1,6 +1,9 @@
-## Charakteranpassung. Rein kosmetisch -- keine Wahl hier ändert einen
-## Spielwert, kann aber später eine Fangbedingung erfüllen.
+## Aussehen, zweimal im Menü: im Laden kaufen, in der Ausrüstung anziehen.
+## Rein kosmetisch -- keine Wahl ändert einen Spielwert, kann aber eine
+## Fangbedingung erfüllen.
 extends PanelBase
+
+@export_enum("kaufen", "tragen") var modus: String = "kaufen"
 
 const SLOTS := [
 	{"key": &"skin", "label": "Hautton"},
@@ -30,7 +33,7 @@ func _row(category: StringName, label: String) -> Control:
 	var box := VBoxContainer.new()
 
 	var title := Label.new()
-	title.text = "%s  %d / %d" % [label, current + 1, count]
+	title.text = label if modus == "tragen" else "%s  %d / %d" % [label, current + 1, count]
 	box.add_child(title)
 
 	# Ein Raster statt einer Reihe: elf Kopfteile nebeneinander waeren je 38
@@ -38,6 +41,9 @@ func _row(category: StringName, label: String) -> Control:
 	var grid := GridContainer.new()
 	grid.columns = CategorySwitch.COLUMNS
 	for variant in count:
+		var besitzt := Game.cosmetic_state(category, variant) == Game.CosmeticState.OWNED
+		if modus == "tragen" and not besitzt:
+			continue
 		grid.add_child(_variant_button(category, variant, current))
 	box.add_child(grid)
 
@@ -65,6 +71,10 @@ func _variant_button(category: StringName, variant: int, current: int) -> Button
 
 	match Game.cosmetic_state(category, variant):
 		Game.CosmeticState.OWNED:
+			if modus == "kaufen":
+				b.text = "%s\n✓ gekauft" % display_name
+				b.disabled = true
+				return b
 			b.toggle_mode = true
 			b.button_pressed = (variant == current)
 			b.text = "%s\n✓" % display_name

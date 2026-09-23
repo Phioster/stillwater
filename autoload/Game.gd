@@ -673,6 +673,18 @@ func quest_offer() -> Array[StringName]:
 
 ## Lohn fuer einen Auftrag: ein Vielfaches des Verkaufswerts, damit Abgeben
 ## sich lohnt, statt den Fisch einfach zu verkaufen.
+## Laesst sich gerade ein Auftrag abgeben? Dafuer der Punkt am Reiterknopf.
+func quest_ready() -> bool:
+	if ctx == null:
+		return false
+	for id in quest_offer():
+		if quests.is_done(id):
+			continue
+		for c in ctx.inventory.fish:
+			if c.fish_id == id and not c.is_favorite:
+				return true
+	return false
+
 func quest_reward(id: StringName) -> Dictionary:
 	var f: FishData = Database.fish.get(id)
 	if f == null:
