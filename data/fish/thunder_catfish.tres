@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"thunder_catfish"
-display_name = "Donnerwels"
+display_name = "Gewitterqualle"
 zone_id = &"cloud_lake"
 rarity_id = &"epic"
 base_value = 1800
 strength = 380.0
 difficulty = 3.1
 xp = 910
-weight_mean = 45.0
-weight_dev = 14.0
+weight_mean = 120.0
+weight_dev = 35.0

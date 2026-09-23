@@ -6,11 +6,11 @@
 [resource]
 script = ExtResource("2_as5vk")
 id = &"ember_ray"
-display_name = "Glutrochen"
+display_name = "Lava-Kugelfisch"
 zone_id = &"sunset_coast"
 rarity_id = &"rare"
 base_value = 180
 strength = 88.0
 xp = 75
-weight_mean = 7.0
-weight_dev = 1.6667
+weight_mean = 3.0
+weight_dev = 1.0

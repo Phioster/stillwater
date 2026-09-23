@@ -3,7 +3,7 @@ extends TestCase
 func test_all_content_loads() -> void:
 	assert_eq(Database.rarities.size(), 5)
 	assert_eq(Database.baits.size(), 8)
-	assert_eq(Database.fish.size(), 109)
+	assert_eq(Database.fish.size(), 113)
 	assert_eq(Database.zones.size(), 7)
 	# Sieben von Anfang an, dazu die drei Klingen-Ausbauten fuers Schilfschneiden.
 	assert_eq(Database.upgrades.size(), 7)
@@ -14,7 +14,7 @@ func test_validate_reports_no_problems() -> void:
 
 func test_willow_lake_has_its_full_roster_including_the_secret() -> void:
 	var f := Database.fish_of_zone(&"willow_lake")
-	assert_eq(f.size(), 16)
+	assert_eq(f.size(), 17)
 	var secrets := 0
 	for x in f:
 		if x.is_secret:

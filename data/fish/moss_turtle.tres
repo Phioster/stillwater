@@ -5,13 +5,12 @@
 
 [resource]
 script = ExtResource("2_fish")
-id = &"vault_catfish"
-display_name = "Knochenfisch"
-zone_id = &"deep_cistern"
-rarity_id = &"rare"
-base_value = 380
-strength = 150.0
-difficulty = 2.3
-xp = 190
-weight_mean = 1.5
-weight_dev = 0.5
+id = &"moss_turtle"
+display_name = "Moosschildkröte"
+zone_id = &"willow_lake"
+rarity_id = &"epic"
+base_value = 260
+strength = 190.0
+xp = 130
+weight_mean = 300.0
+weight_dev = 80.0

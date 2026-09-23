@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"altitude_ray"
-display_name = "Höhenrochen"
+display_name = "Ballonfisch"
 zone_id = &"cloud_lake"
 rarity_id = &"rare"
 base_value = 820
 strength = 220.0
 difficulty = 2.65
 xp = 415
-weight_mean = 20.0
-weight_dev = 6.0
+weight_mean = 2.5
+weight_dev = 0.8

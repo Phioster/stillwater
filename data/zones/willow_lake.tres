@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://data/fish/mirror_carp.tres" id="5_fhgja"]
 [ext_resource type="Resource" path="res://data/fish/lantern_tench.tres" id="6_704qv"]
 [ext_resource type="Resource" path="res://data/fish/hollowfin.tres" id="7_ldo3o"]
+[ext_resource type="Resource" path="res://data/fish/moss_turtle.tres" id="80_moss_t"]
 [ext_resource type="Script" path="res://resources/zone_data.gd" id="8_pkrp3"]
 [ext_resource type="Resource" path="res://data/fish/rudd.tres" id="90_rudd"]
 [ext_resource type="Resource" path="res://data/fish/gudgeon.tres" id="91_gudgeo"]
@@ -23,7 +24,7 @@
 script = ExtResource("8_pkrp3")
 id = &"willow_lake"
 display_name = "Willow Lake"
-fish = Array[ExtResource("1_tpa7w")]([ExtResource("2_jlfdw"), ExtResource("3_xirk1"), ExtResource("4_gp3an"), ExtResource("5_fhgja"), ExtResource("6_704qv"), ExtResource("7_ldo3o"), ExtResource("90_rudd"), ExtResource("91_gudgeo"), ExtResource("92_bleak"), ExtResource("93_tench"), ExtResource("94_eel"), ExtResource("95_pike"), ExtResource("96_wels_c"), ExtResource("97_moon_c"), ExtResource("70_sunhat"), ExtResource("71_archiv")])
+fish = Array[ExtResource("1_tpa7w")]([ExtResource("2_jlfdw"), ExtResource("3_xirk1"), ExtResource("4_gp3an"), ExtResource("5_fhgja"), ExtResource("6_704qv"), ExtResource("7_ldo3o"), ExtResource("90_rudd"), ExtResource("91_gudgeo"), ExtResource("92_bleak"), ExtResource("93_tench"), ExtResource("94_eel"), ExtResource("95_pike"), ExtResource("96_wels_c"), ExtResource("97_moon_c"), ExtResource("70_sunhat"), ExtResource("71_archiv"), ExtResource("80_moss_t")])
 reed_baits = Array[StringName]([&"pond_grub", &"mayfly_nymph", &"bog_leech"])
 rarity_weights = {
 &"common": 70.0,

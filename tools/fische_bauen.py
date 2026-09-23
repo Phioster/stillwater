@@ -29,6 +29,16 @@ SPIEGELN = {"bluegill", "hollowfin", "sunhat_bream",
 ## Bildfehler kann PixelLab nicht zeichnen; sie kommen hier dazu, NACH der
 ## Zonenpalette, damit Magenta und Cyan nicht weggerechnet werden.
 VERZERREN = {"glitch_fish"}
+## Die abgedrehten Wesen bekommen je eine eigene Palette: in der Zonenpalette
+## verschoeben ihre knalligen Farben die schon abgenommenen Fische der Zone.
+EIGENE_PALETTE = {
+    "horizon_whale", "zenith_wing", "blackwater_sturgeon", "aurora_salmon",
+    "duskfin", "bog_pike", "glitch_fish", "black_hole",
+    "blackfin", "star_ray", "ring_tench", "thunder_catfish", "altitude_ray",
+    "gust_tench", "well_king", "vault_catfish", "jug_pike", "frost_ray",
+    "mirefin", "ember_ray", "ice_block_fish", "cottage_fish", "pirate_shark",
+    "moss_turtle",
+}
 
 
 def zonen():
@@ -124,7 +134,12 @@ def main():
         da = [f for f in ids if os.path.exists(os.path.join(QUELLE, f + ".png"))]
         if not da:
             continue
-        for fid, bild in zip(da, gemeinsame_palette([roh(f) for f in da])):
+        zone = [f for f in da if f not in EIGENE_PALETTE]
+        bilder = dict(zip(zone, gemeinsame_palette([roh(f) for f in zone]))) if zone else {}
+        for f in da:
+            if f in EIGENE_PALETTE:
+                bilder[f] = gemeinsame_palette([roh(f)])[0]
+        for fid, bild in ((f, bilder[f]) for f in da):
             if fid in VERZERREN:
                 bild = verzerren(bild)
             bild.save(os.path.join(ZIEL, "fish_%s.png" % fid))

@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"blackfin"
-display_name = "Schwarzflosse"
+display_name = "Astronautenfisch"
 zone_id = &"star_lake"
 rarity_id = &"epic"
 base_value = 4200
 strength = 620.0
 difficulty = 3.6
 xp = 2100
-weight_mean = 60.0
-weight_dev = 18.0
+weight_mean = 45.0
+weight_dev = 14.0

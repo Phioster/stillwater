@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"frost_ray"
-display_name = "Frostrochen"
+display_name = "Narwal"
 zone_id = &"frost_bay"
 rarity_id = &"epic"
 base_value = 520
 strength = 240.0
 difficulty = 2.6
 xp = 265
-weight_mean = 18.0
-weight_dev = 5.5
+weight_mean = 900.0
+weight_dev = 250.0

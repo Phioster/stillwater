@@ -17,6 +17,7 @@
 [ext_resource type="Resource" path="res://data/fish/minnow.tres" id="80_minnow"]
 [ext_resource type="Resource" path="res://data/fish/spirlin.tres" id="81_spirli"]
 [ext_resource type="Resource" path="res://data/fish/silver_bream.tres" id="82_silver"]
+[ext_resource type="Resource" path="res://data/fish/cottage_fish.tres" id="80_cottag"]
 [ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
 
 [resource]
@@ -28,7 +29,7 @@ shore_key = &"peat_dark"
 foam_key = &"mist"
 water_light_key = &"bog_light"
 water_deep_key = &"bog_deep"
-fish = Array[ExtResource("1_fish")]([ExtResource("10_moderl"), ExtResource("11_bitter"), ExtResource("12_crucia"), ExtResource("13_stone_"), ExtResource("14_weathe"), ExtResource("15_ruffe"), ExtResource("16_burbot"), ExtResource("17_zander"), ExtResource("18_bog_pi"), ExtResource("19_mirefi"), ExtResource("20_wisp_c"), ExtResource("21_hour_w"), ExtResource("22_peat_w"), ExtResource("80_minnow"), ExtResource("81_spirli"), ExtResource("82_silver")])
+fish = Array[ExtResource("1_fish")]([ExtResource("10_moderl"), ExtResource("11_bitter"), ExtResource("12_crucia"), ExtResource("13_stone_"), ExtResource("14_weathe"), ExtResource("15_ruffe"), ExtResource("16_burbot"), ExtResource("17_zander"), ExtResource("18_bog_pi"), ExtResource("19_mirefi"), ExtResource("20_wisp_c"), ExtResource("21_hour_w"), ExtResource("22_peat_w"), ExtResource("80_minnow"), ExtResource("81_spirli"), ExtResource("82_silver"), ExtResource("80_cottag")])
 bite_time_min = 34.0
 bite_time_max = 58.0
 fight_window = 22.0

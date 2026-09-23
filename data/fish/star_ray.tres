@@ -6,12 +6,12 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"star_ray"
-display_name = "Sternenrochen"
+display_name = "UFO-Rochen"
 zone_id = &"star_lake"
 rarity_id = &"rare"
 base_value = 1900
 strength = 380.0
 difficulty = 3.25
 xp = 960
-weight_mean = 28.0
-weight_dev = 8.5
+weight_mean = 80.0
+weight_dev = 25.0

@@ -28,7 +28,7 @@ class TestFischeBauen(unittest.TestCase):
     def test_jede_zone_kennt_ihre_fische(self):
         z = fb.zonen()
         self.assertEqual(len(z), 7)
-        self.assertEqual(sum(len(v) for v in z.values()), 109)
+        self.assertEqual(sum(len(v) for v in z.values()), 113)
 
     def test_riesen_behalten_ihre_groesse(self):
         a = Image.new("RGBA", KLEIN, (10, 200, 30, 255))
@@ -44,3 +44,8 @@ class TestFischeBauen(unittest.TestCase):
         aus = fb.verzerren(bild)
         self.assertEqual(aus.size, KLEIN)
         self.assertEqual({p[3] for p in aus.get_flattened_data()}, {0, 255})
+
+    def test_eigene_palette_nennt_nur_echte_arten(self):
+        alle = {f for ids in fb.zonen().values() for f in ids}
+        self.assertEqual(fb.EIGENE_PALETTE - alle, set())
+        self.assertEqual(fb.VERZERREN - alle, set())
