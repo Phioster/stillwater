@@ -5,8 +5,8 @@ Erstes von drei Pixelart-Teilprojekten (danach Fische, dann Accessoires).
 
 ## Warum
 
-- Die 18 Tränke haben **kein Bild**. Im Laden stehen sie als Textzeilen.
-- Was gerade wirkt und wie lange noch, steht **nur** im Laden unter
+- Die 18 Tränke haben **kein Bild**. Im Beutel stehen sie als Textzeilen.
+- Was gerade wirkt und wie lange noch, steht **nur** unter Fische →
   „Tränke“ (`potion_panel.gd::_active_block`). Wer angelt, sieht es nicht.
 - Die Fanganzeige (`catch_toast.gd`) und die Kampfleiste (`catch_view.tscn`,
   Knoten `Panel`) stehen links unter der Kopfzeile, bei `x=16, y=132`. Diese
@@ -95,7 +95,7 @@ Geladen wird nach Namensregel wie bei den Fischen
 - Reihenfolge: die Reihenfolge in `Game.buffs.active`, also nach dem
   Trinken. Einträge springen nicht umher.
 - Keine Tränke aktiv: die Reihe ist unsichtbar.
-- Ein Tipp auf die Reihe öffnet Laden → Tränke (Signal an `main.gd`, wie
+- Ein Tipp auf die Reihe öffnet Fische → Tränke (dort liegt `PotionPanel`, Unterreiter 2) (Signal an `main.gd`, wie
   `_open_trader`). Antippbar über `TapButton`-Muster, wegen der
   Doppel-Tipp-Falle (Maus-Emulation) mit Sperre.
 - Aktualisierung einmal je Sekunde plus bei `Game.state_changed`, nicht in
