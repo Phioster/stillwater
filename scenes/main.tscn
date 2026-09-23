@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/fishing/world.tscn" id="2"]
@@ -21,6 +21,7 @@
 [ext_resource type="PackedScene" path="res://scenes/fishing/reed_cut.tscn" id="21"]
 [ext_resource type="PackedScene" path="res://scenes/ui/welcome_back.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/ui/fish_window.tscn" id="12"]
+[ext_resource type="Script" path="res://scenes/ui/buff_bar.gd" id="22"]
 
 [node name="Main" type="Control"]
 anchors_preset = 15
@@ -166,6 +167,11 @@ script = ExtResource("15")
 offset_left = 16.0
 offset_top = 16.0
 
+
+[node name="BuffBar" type="HBoxContainer" parent="."]
+offset_left = 16.0
+offset_top = 132.0
+script = ExtResource("22")
 [node name="WelcomeBack" parent="." instance=ExtResource("11")]
 
 [node name="FishWindow" parent="." instance=ExtResource("12")]

@@ -17,6 +17,10 @@ const FISH_SUB_SECRET := 4
 ## Laden-Reiter und darin der Haendler.
 const SHOP_TAB := 2
 const SHOP_SUB_TRADER := 1
+## Die Trankreihe steht, wo frueher die Fanganzeige stand: unter der Kopfzeile.
+const BUFF_TOP := 132.0
+const FISH_TAB := 0
+const FISH_SUB_POTION := 2
 
 var _tab: int = -1
 
@@ -37,6 +41,8 @@ func _ready() -> void:
 		world.visitor_tapped.connect(_open_trader)
 	if world.has_signal("reeds_tapped") and not world.reeds_tapped.is_connected(_open_reeds):
 		world.reeds_tapped.connect(_open_reeds)
+	if not $BuffBar.tapped.is_connected(_open_potions):
+		$BuffBar.tapped.connect(_open_potions)
 	if not _rail.tab_selected.is_connected(show_tab):
 		_rail.tab_selected.connect(show_tab)
 	if not _journal_panel.fish_tapped.is_connected(_fish_window.open):
@@ -114,6 +120,8 @@ func _apply_safe_area() -> void:
 	$Row.offset_bottom = 0.0
 	$Hud.offset_left = left + 16.0
 	$Hud.offset_top = top + 16.0
+	$BuffBar.offset_left = left + 16.0
+	$BuffBar.offset_top = top + BUFF_TOP
 	# Das Panel liegt UEBER der Welt statt neben ihr -- sonst schrumpfte das
 	# Wasser, sobald man das Menue oeffnet. Es haengt rechts, links neben der
 	# Tab-Leiste, und wandert mit dem sicheren Bereich mit.
@@ -139,6 +147,10 @@ func _update_secret_sub() -> void:
 ## Angel weiter -- es ist eine Nebenbeschaeftigung, keine zweite Partie.
 func _open_reeds() -> void:
 	$ReedCut.starte()
+
+func _open_potions() -> void:
+	_rail.select(FISH_TAB)
+	_fish_group.select_sub(FISH_SUB_POTION)
 
 func _open_trader() -> void:
 	_rail.select(SHOP_TAB)
