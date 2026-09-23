@@ -394,6 +394,9 @@ const RUTE_ZUG: float = 0.5
 const RUTE_HALT: float = 0.1
 const ZUG_HOCH: float = 0.12
 const ZUG_RUNTER: float = 0.3
+## Nach dem Kampf bleibt die Rute so lange ganz oben, wie eingeholt wird
+## (world.gd REEL_TIME) -- wie Cornerpond, bei Fang und Flucht.
+const EINHOL_HALT: float = 0.6
 ## Der letzte Schritt von der Kampfhaltung in die Ruhe.
 const RUHE_ZEIT: float = 0.15
 ## Ein Zupfer des Fischs; der Ausschlag wird je Zupfer neu gezogen, sonst
@@ -446,11 +449,12 @@ func zug_bild(zug: float, zupf: float) -> int:
 func absetzen_beginnen() -> void:
 	_absetzen = true
 	_ruhe = 0.0
+	_zug_ziel = 1.0
+	_zug_halt = EINHOL_HALT
 
-## Ohne Fisch kein Zittern mehr; ein letzter Tipp haelt die Rute noch kurz
-## oben, dann sinkt sie auf 9 und von dort in die Ruhe.
+## Ohne Fisch kein Zittern mehr: ganz hoch, oben halten, waehrend eingeholt
+## wird, dann ueber 9 in die Ruhe.
 func absetz_schritt(delta: float) -> void:
-	_zug_halt = minf(_zug_halt, ZUG_HALT)
 	if _zug_halt > 0.0:
 		_zug = move_toward(_zug, _zug_ziel, delta / ZUG_HOCH)
 		_zug_halt = maxf(0.0, _zug_halt - delta)
@@ -463,7 +467,7 @@ func absetz_schritt(delta: float) -> void:
 	_weg_pose(breath_at(_idle_time / BREATH_TIME), ABSETZ_WEG, stelle)
 
 func absetz_dauer() -> float:
-	return ZUG_HALT + ZUG_RUNTER + RUHE_ZEIT
+	return ZUG_HOCH + EINHOL_HALT + ZUG_RUNTER + RUHE_ZEIT
 
 func _weg_bild(weg: Array[int], stelle: float) -> int:
 	var a := clampi(int(floor(stelle)), 0, weg.size() - 1)

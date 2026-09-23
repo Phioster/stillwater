@@ -193,6 +193,14 @@ const LINE_SETTLE := 0.14
 ## Vorfach: beim Ausholen baumelt er an der Rutenspitze, im Flug zieht er
 ## hinterher, und mit dem Aufsetzen ist er unter Wasser.
 const BAIT_HANG := 12.0
+## Einholen nach dem Kampf, wie Cornerpond (Fisher.gd::reel_line): der
+## Schwimmer steigt erst steil auf und kommt dann zur Rutenspitze.
+const REEL_TIME := 0.5
+const REEL_RISE := 1.5
+## Der Fisch am Haken, kleiner als der Schwimmermassstab -- sonst haengt ein
+## Riese an der Rute. Die letzte Zeit der Pause blendet er aus.
+const HOOK_FISH_SCALE := 1.5
+const HOOK_FISH_FADE := 0.3
 ## Fallback, solange nicht jeder Koeder ein eigenes Bild hat.
 const BAIT_FALLBACK := &"pond_grub"
 const POP_TEXT_SCENE := preload("res://scenes/effects/pop_text.tscn")
@@ -246,6 +254,10 @@ var _applied_zone: StringName = &""
 ## Welches Koederbild gerade haengt -- damit der Wechsel nicht in jedem Bild
 ## neu geladen wird.
 var _bait_id: StringName = &""
+## Einholen: vergangene Zeit, oder < 0 wenn gerade nicht eingeholt wird.
+var _einholen: float = -1.0
+var _einhol_start: Vector2 = Vector2.ZERO
+var _haken_fisch: Sprite2D = null
 
 func _ready() -> void:
 	_bobber.texture = TextureLoader.load_texture("res://assets/art/bobber.png")
@@ -308,6 +320,15 @@ func _ready() -> void:
 		Game.bite.connect(_on_bite)
 	if not Game.caught.is_connected(_on_caught):
 		Game.caught.connect(_on_caught)
+	if not Game.escaped.is_connected(_on_escaped):
+		Game.escaped.connect(_on_escaped)
+	if _haken_fisch == null:
+		_haken_fisch = Sprite2D.new()
+		_haken_fisch.name = &"HakenFisch"
+		_haken_fisch.rotation = PI * 0.5
+		_haken_fisch.scale = Vector2(HOOK_FISH_SCALE, HOOK_FISH_SCALE)
+		_haken_fisch.visible = false
+		_bait.add_sibling(_haken_fisch)
 
 
 ## Steg ans Ufer, Figur darauf, Schwimmer aufs Wasser -- aus der Weltgroesse
@@ -400,7 +421,12 @@ func _process(delta: float) -> void:
 	_bobber_sichtbar = Game.sim.state in visible_states
 	_bobber.visible = _bobber_sichtbar
 	var kaempft := Game.sim.state == FishingSim.State.FIGHT
-	if casting:
+	if casting and _einholen >= 0.0 and Game.sim.timer <= FishingSim.CAST_TIME:
+		_einholen = -1.0
+	if casting and _einholen >= 0.0:
+		_einholen += delta
+		_bobber_mitte = _einhol_position()
+	elif casting:
 		# Der Schwimmer war waehrend des Wurfs unsichtbar und tauchte am Ende
 		# an seiner Endstelle auf -- er teleportierte. Jetzt fliegt er einen
 		# Bogen, und die Schnur folgt ihm von selbst.
@@ -429,6 +455,7 @@ func _process(delta: float) -> void:
 	# Der Koeder haengt am Vorfach unter dem Schwimmer. Er taucht vor ihm ein
 	# und verschwindet dabei von selbst -- derselbe Schnitt.
 	_update_bait(wasserlinie)
+	_update_haken_fisch(wasserlinie)
 	# Schnur von der Rutenspitze zum Schwimmer -- folgt dadurch von selbst
 	# dem Auf und Ab und dem Zappeln im Kampf. Im Flug haengt das Vorfach
 	# darunter weiter.
@@ -438,7 +465,9 @@ func _process(delta: float) -> void:
 		var gesetzt := clampf(_line_settle / LINE_SETTLE, 0.0, 1.0)
 		var punkte := _schnur(spitze, _bobber_mitte,
 			LINE_BELLY_AIR.lerp(LINE_BELLY_WATER, gesetzt))
-		if _bait.visible:
+		if _haken_fisch.visible:
+			punkte.append(_haken())
+		elif _bait.visible:
 			## Das Vorfach endet an der Wasserlinie -- darunter sieht man es
 			## nicht, und der Koeder ist dort ohnehin schon weggeschnitten.
 			punkte.append(Vector2(_bobber_mitte.x,
@@ -500,7 +529,7 @@ func _update_water_line() -> void:
 ## Der Koeder folgt dem Schwimmer, haengt aber darunter. Sein Bild kommt vom
 ## aktiven Koeder; wer noch keins hat, bekommt das der Teichmade.
 func _update_bait(wasserlinie: float) -> void:
-	if not _bobber_sichtbar:
+	if not _bobber_sichtbar or _haken_fisch.visible:
 		_bait.visible = false
 		return
 	if _bait.texture == null or _bait_id != _active_bait_id():
@@ -602,8 +631,62 @@ func _on_bite(_fish: FishData) -> void:
 
 ## Keine Spiellogik hier -- nur die Stoerung, die das Aufspritzen zeigt. Die
 ## eigentliche Reaktion (Text, Partikel) macht effects.gd auf dasselbe Signal.
-func _on_caught(_c: CaughtFish, _fish: FishData, _discovered: bool, _record: bool) -> void:
+func _on_caught(_c: CaughtFish, fish: FishData, _discovered: bool, _record: bool) -> void:
 	_water.disturb_at(_bobber_fraction(), CATCH_KICK)
+	einholen_beginnen(fish)
+
+func _on_escaped(_fish: FishData) -> void:
+	_water.disturb_at(_bobber_fraction(), CATCH_KICK)
+	einholen_beginnen(null)
+
+## Von der Stelle, an der er gerade liegt, zur Rutenspitze. fish = null heisst
+## Flucht: leerer Haken.
+func einholen_beginnen(fish: FishData) -> void:
+	_einholen = 0.0
+	var anteil := clampf(_bobber_home.x / maxf(size.x, 1.0), 0.0, 1.0)
+	_einhol_start = Vector2(_bobber_home.x,
+		_bobber_home.y + _wellenhoehe(anteil))
+	_haken_fisch.texture = null
+	if fish != null:
+		_haken_fisch.texture = TextureLoader.load_texture(
+			"res://assets/art/fish_%s.png" % fish.id)
+
+## Kubische Kurve wie Cornerponds Curve2D: der Anfasser zeigt vom Start
+## senkrecht nach oben, das Ende hat keinen. Die Spitze wird jedes Bild neu
+## gelesen, weil sich die Rute dabei bewegt.
+func _einhol_position() -> Vector2:
+	var t := clampf(_einholen / REEL_TIME, 0.0, 1.0)
+	t = 1.0 - (1.0 - t) * (1.0 - t)
+	var spitze: Vector2 = _angler.rod_tip()
+	var p1 := _einhol_start + Vector2(0.0,
+		-(_einhol_start.y - spitze.y) * REEL_RISE)
+	var g := 1.0 - t
+	return g * g * g * _einhol_start + 3.0 * g * g * t * p1 \
+		+ 3.0 * g * t * t * spitze + t * t * t * spitze
+
+## Wo der Haken sitzt: da, wo sonst der Koeder haengt.
+func _haken() -> Vector2:
+	return _bobber_mitte + Vector2(0.0, BAIT_HANG * BOBBER_SCALE)
+
+## Am Maul aufgehaengt, Kopf nach oben. Taucht mit dem Schwimmer aus dem
+## Wasser auf -- derselbe Schnitt wie beim Koeder.
+func _update_haken_fisch(wasserlinie: float) -> void:
+	if _einholen < 0.0 or _haken_fisch.texture == null or not _bobber_sichtbar:
+		_haken_fisch.visible = false
+		return
+	# Um 90 Grad gedreht: die Bildbreite laeuft senkrecht, das Maul (links im
+	# Bild) oben am Haken. Deshalb ein eigener Schnitt statt _schneide.
+	var tex := _haken_fisch.texture.get_size()
+	var oben := _haken().y
+	var sichtbar := floorf(clampf((wasserlinie - oben) / HOOK_FISH_SCALE,
+		0.0, tex.x))
+	_haken_fisch.visible = sichtbar >= 1.0
+	_haken_fisch.region_enabled = true
+	_haken_fisch.region_rect = Rect2(0.0, 0.0, sichtbar, tex.y)
+	_haken_fisch.position = Vector2(_haken().x,
+		oben + sichtbar * 0.5 * HOOK_FISH_SCALE)
+	_haken_fisch.modulate.a = clampf(
+		(Game.sim.timer - FishingSim.CAST_TIME) / HOOK_FISH_FADE, 0.0, 1.0)
 
 ## Hintergrund und Wasserfarben kommen aus der Zone. Die Flaeche zwischen
 ## gerader Uferlinie und Welle wird in der FARBE DES UFERS gefuellt: dadurch

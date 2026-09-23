@@ -216,3 +216,32 @@ func test_the_bobber_releases_after_the_windup_peak() -> void:
 	assert_true(welt.CAST_RELEASE <= angler.CAST_SWING,
 		"der Abwurf liegt bei %.2f, der Schwung endet schon bei %.2f"
 			% [welt.CAST_RELEASE, angler.CAST_SWING])
+
+## Nach dem Kampf wird eingeholt wie bei Cornerpond: der Schwimmer steigt aus
+## dem Wasser und endet an der Rutenspitze, der Fisch haengt daran.
+func test_nach_dem_fang_wird_der_schwimmer_eingeholt() -> void:
+	var w := _cast_world()
+	Game.sim.timer = FishingSim.CAST_TIME + FishingSim.LAND_PAUSE
+	var fisch: FishData = Database.fish.values()[0]
+	w.einholen_beginnen(fisch)
+	w._process(0.0)
+	var start: Vector2 = w.get_node("Bobber").position
+	assert_true(start.distance_to(w._angler.rod_tip()) > 100.0, "er beginnt draussen im Wasser")
+	w._process(w.REEL_TIME * 0.5)
+	assert_true(w.get_node("Bobber").position.y < start.y - 20.0, "er steigt aus dem Wasser")
+	assert_true(w._haken_fisch.visible, "der Fisch haengt am Haken, aufgetaucht")
+	w._process(w.REEL_TIME * 0.6)
+	assert_true(w.get_node("Bobber").position.distance_to(w._angler.rod_tip()) < 1.0,
+		"am Ende haengt er an der Rutenspitze")
+	Game.sim.timer = FishingSim.CAST_TIME
+	w._process(0.0)
+	assert_false(w._haken_fisch.visible, "beim neuen Wurf ist der Fisch weg")
+	w.free()
+
+func test_nach_der_flucht_haengt_kein_fisch() -> void:
+	var w := _cast_world()
+	Game.sim.timer = FishingSim.CAST_TIME + FishingSim.LAND_PAUSE
+	w.einholen_beginnen(null)
+	w._process(0.0)
+	assert_false(w._haken_fisch.visible)
+	w.free()

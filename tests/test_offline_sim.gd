@@ -58,7 +58,8 @@ func test_offline_equals_online() -> void:
 	var online_rng := StillRNG.new(2026)
 	var online_ids: Array = []
 	var online_escaped := 0
-	var steps := int(seconds / 0.1)
+	# Runden, nicht abschneiden: 1234.9999 Schritte sind 1235.
+	var steps := int(round(seconds / 0.1))
 	for i in steps:
 		for e in online_sim.tick(0.1, online_ctx, online_rng):
 			if e["type"] == "caught":
@@ -155,7 +156,8 @@ func test_offline_equals_online_mid_fight() -> void:
 	var online_sim := FishingSim.new()
 	var online_ctx: SimContext = make_ctx.call()
 	var online_rng := StillRNG.new(2026)
-	var steps := int(seconds / 0.1)
+	# Runden, nicht abschneiden: 1234.9999 Schritte sind 1235.
+	var steps := int(round(seconds / 0.1))
 	for i in steps:
 		online_sim.tick(0.1, online_ctx, online_rng)
 

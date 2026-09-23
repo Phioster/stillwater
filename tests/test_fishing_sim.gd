@@ -144,11 +144,12 @@ func test_many_catches_over_an_hour() -> void:
 	var ctx := _ctx(0.01, 10000)
 	sim.tick(3600.0, ctx, StillRNG.new(3))
 	# Der Zyklus ist nicht exakt: der Rang wuerfelt mit. 1 s Wurf + 10 s
-	# Warten + Kampf. Die Rute schlaegt in Schueben von 1 s, bei difficulty
-	# 0,01 braucht selbst Rang S+ (4,32 LP) nur zwei Schuebe = 2 s, Rang E
-	# einen = 1 s. Also 12 bis 13 s je Zyklus: floor(3600/13) = 276 bis
-	# floor(3600/12) = 300.
-	assert_between(float(ctx.inventory.fish.size()), 276.0, 300.0)
+	# Warten + Kampf + Einholen (LAND_PAUSE). Die Rute schlaegt in Schueben
+	# von 1 s, bei difficulty 0,01 braucht selbst Rang S+ (4,32 LP) nur zwei
+	# Schuebe = 2 s, Rang E einen = 1 s.
+	var kurz := FishingSim.CAST_TIME + 10.0 + 1.0 + FishingSim.LAND_PAUSE
+	assert_between(float(ctx.inventory.fish.size()),
+		floorf(3600.0 / (kurz + 1.0)), floorf(3600.0 / kurz))
 
 ## Ein tick(16.0) muss dieselben Zustandswechsel liefern wie sechzehn
 ## tick(1.0) hintereinander -- sonst wird derselbe tick() im Offline-
@@ -356,3 +357,8 @@ func test_nach_dem_fang_eine_kurze_pause_vor_dem_wurf() -> void:
 	assert_true("caught" in _types(events))
 	assert_eq(sim.state, FishingSim.State.CASTING)
 	assert_true(sim.timer > FishingSim.CAST_TIME, "ohne Pause bleibt keine Zeit zum Absetzen")
+
+## Auch nach einer Flucht wird eingeholt -- dieselbe Pause wie nach dem Fang.
+func test_nach_der_flucht_dieselbe_pause() -> void:
+	assert_almost_eq(FishingSim.ESCAPE_COOLDOWN,
+		FishingSim.CAST_TIME + FishingSim.LAND_PAUSE)

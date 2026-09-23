@@ -49,7 +49,7 @@ func test_absetzen_endet_in_der_ruhehaltung() -> void:
 ## sonst springt die Figur vom Zug direkt in den Schwung.
 func test_absetzen_passt_in_die_pause() -> void:
 	var a := _angler()
-	var dauer: float = a.ZUG_HALT + a.ZUG_RUNTER + a.RUHE_ZEIT
+	var dauer: float = a.absetz_dauer()
 	assert_true(dauer <= FishingSim.LAND_PAUSE + 0.0001, "Fang: %f > %f" % [dauer, FishingSim.LAND_PAUSE])
 	assert_true(dauer <= FishingSim.ESCAPE_COOLDOWN - FishingSim.CAST_TIME + 0.0001, "Flucht")
 	a.free()
@@ -89,4 +89,16 @@ func test_ein_rutenschub_bremst_keinen_tipp() -> void:
 	for i in 20:
 		a.zug_schritt(0.01)
 	assert_almost_eq(a._zug, 1.0, 0.001)
+	a.free()
+
+## Wie bei Cornerpond: nach dem Kampf geht die Rute GANZ hoch und bleibt
+## oben, solange eingeholt wird -- auch wenn zuletzt nicht getippt wurde.
+func test_nach_dem_kampf_geht_die_rute_ganz_hoch() -> void:
+	var a := _angler()
+	a.absetzen_beginnen()
+	var t := 0.0
+	while t < a.ZUG_HOCH + a.EINHOL_HALT - 0.05:
+		a.absetz_schritt(0.02)
+		t += 0.02
+	assert_eq(a._arm, 7, "Wurfbild 6 = ganz oben")
 	a.free()

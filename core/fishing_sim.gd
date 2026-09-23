@@ -6,10 +6,12 @@ extends RefCounted
 enum State { IDLE, CASTING, WAITING, FIGHT, INVENTORY_FULL }
 
 const CAST_TIME: float = 1.0
-const ESCAPE_COOLDOWN: float = 2.0
 ## Nach dem Fang: Zeit, die Rute abzusetzen, bevor ausgeholt wird. Liegt in
 ## der Simulationsuhr, damit Figur und Schwimmerflug an derselben Uhr haengen.
-const LAND_PAUSE: float = 0.8
+## Wie bei Cornerpond: Rute hoch, Schwimmer (und Fisch) einholen, absetzen.
+const LAND_PAUSE: float = 1.3
+## Nach einer Flucht wird genauso eingeholt, nur ohne Fisch.
+const ESCAPE_COOLDOWN: float = CAST_TIME + LAND_PAUSE
 ## Die Rute schlaegt in Schueben statt kontinuierlich: ein stiller Abzug ist
 ## nicht zu sehen, ein Treffer alle ROD_INTERVAL Sekunden schon.
 const ROD_INTERVAL: float = 1.0
