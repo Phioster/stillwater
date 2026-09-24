@@ -3,9 +3,11 @@
 ## aus FishRoll, Raritaet aus SimContext.rarity_of().
 extends Control
 
-## Ganzzahliger Faktor auf die 48x24-Bilder, damit sie scharf bleiben.
-const ICON_SCALE := 5.0
-const ICON_SIZE := Vector2(48.0, 24.0)
+## Fester Faktor je Bildpixel: ein Riese (96 breit) steht doppelt so gross da
+## wie ein normaler Fisch (48). Ganzzahlig, damit die Pixel scharf bleiben.
+const ICON_SCALE := 4.0
+## Breite eines normalen Fischbilds; die alten 32er werden darauf gestreckt.
+const NORMAL_WIDTH := 48.0
 
 @onready var _scrim: ColorRect = $Scrim
 @onready var _panel: PanelContainer = $Panel
@@ -31,6 +33,10 @@ func _ready() -> void:
 	_panel.offset_right = 280.0
 	_panel.offset_top = -260.0
 	_panel.offset_bottom = 260.0
+	# Wird der Inhalt hoeher (Riesen, viel Text), waechst das Fenster nach
+	# oben und unten -- nur nach unten ragte es unter den Bildschirmrand.
+	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	if not _scrim.gui_input.is_connected(_on_scrim_input):
 		_scrim.gui_input.connect(_on_scrim_input)
@@ -44,6 +50,14 @@ func _on_scrim_input(event: InputEvent) -> void:
 	var touch_tap: bool = event is InputEventScreenTouch and event.pressed
 	if mouse_tap or touch_tap:
 		close()
+
+## Anzeigegroesse aus der Bildgroesse statt einer festen Box -- sonst stuende
+## die Elritze so gross da wie der Narwal.
+static func icon_size(tex: Texture2D) -> Vector2:
+	if tex == null:
+		return Vector2(NORMAL_WIDTH, NORMAL_WIDTH * 0.5) * ICON_SCALE
+	var px := tex.get_size()
+	return px * ICON_SCALE * NORMAL_WIDTH / minf(px.x, NORMAL_WIDTH)
 
 func close() -> void:
 	visible = false
@@ -59,10 +73,8 @@ func open(id: StringName) -> void:
 	var suffix := "" if known else "_silhouette"
 	_icon.texture = TextureLoader.load_texture("res://assets/art/fish_%s%s.png" % [id, suffix])
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# Seitenverhaeltnis halten: solange nicht alle Zonen neue Bilder haben,
-	# gibt es noch alte 32x16-Fische.
 	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_icon.custom_minimum_size = ICON_SIZE * ICON_SCALE
+	_icon.custom_minimum_size = icon_size(_icon.texture)
 
 	if not known:
 		_name_label.text = "???"

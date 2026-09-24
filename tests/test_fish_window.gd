@@ -127,3 +127,37 @@ func test_window_stays_open_and_in_place_across_a_catch() -> void:
 	assert_eq(w.get_node("Panel/Box/StatsLabel").text, text_before,
 		"der Inhalt darf sich nicht mitten im Betrachten neu aufbauen")
 	w.queue_free()
+
+## Klein bleibt klein, riesig bleibt riesig: der Narwal (96 breit) steht
+## doppelt so breit da wie der Bluegill (48) -- und passt noch auf den Schirm.
+func test_ein_riese_steht_groesser_da_als_ein_kleiner_fisch() -> void:
+	Game.new_game()
+	Game.ctx.journal.record(CaughtFish.make(&"frost_ray", 1.0, true))
+	var w := _window()
+	w.open(&"bluegill")
+	var klein: Vector2 = w.get_node("Panel/Box/Icon").custom_minimum_size
+	w.open(&"frost_ray")
+	var gross: Vector2 = w.get_node("Panel/Box/Icon").custom_minimum_size
+	assert_eq(gross.x, klein.x * 2.0)
+	var panel: PanelContainer = w.get_node("Panel")
+	var platz := Vector2(panel.offset_right - panel.offset_left, panel.offset_bottom - panel.offset_top)
+	# Ohne echtes Layout umbricht ein Label nach jedem Buchstaben; die Schrift
+	# misst den Text deshalb selbst, bei Fensterbreite.
+	var hoehe := 0.0
+	var box: VBoxContainer = w.get_node("Panel/Box")
+	for c in box.get_children():
+		var ctl := c as Control
+		if ctl is Label:
+			var f := ctl.get_theme_font("font")
+			var fs := ctl.get_theme_font_size("font_size")
+			hoehe += f.get_multiline_string_size((ctl as Label).text,
+				HORIZONTAL_ALIGNMENT_LEFT, platz.x, fs).y
+		else:
+			hoehe += ctl.get_combined_minimum_size().y
+	hoehe += box.get_theme_constant("separation") * (box.get_child_count() - 1)
+	# Das Fenster darf wachsen, aber nicht ueber den 720 hohen Schirm
+	# (abzueglich Rand des Panels).
+	assert_true(gross.x <= platz.x, "%.0f breit, Fenster %.0f" % [gross.x, platz.x])
+	assert_true(hoehe <= 720.0 - 80.0, "Inhalt %.0f hoch passt nicht auf den Schirm" % hoehe)
+	assert_eq(panel.grow_vertical, Control.GROW_DIRECTION_BOTH)
+	w.queue_free()
