@@ -128,16 +128,34 @@ def silhouette(bild):
     return aus
 
 
+## Willow Lake wurde als ganzer Bogen samt Geheimfischen abgenommen -- dort
+## teilen sie weiter die Zonenpalette.
+GEHEIM_IN_ZONENPALETTE = {"willow_lake"}
+
+
+def geheimfische():
+    """Geheimfische wurden einzeln abgenommen; neue Zonenfische sollen ihre
+    Farben nicht mehr verschieben, deshalb je eine eigene Palette."""
+    aus = set()
+    for pfad in glob.glob(os.path.join(WURZEL, "data", "fish", "*.tres")):
+        with open(pfad) as f:
+            if re.search(r"^is_secret = true", f.read(), re.M):
+                aus.add(os.path.basename(pfad)[:-5])
+    return aus
+
+
 def main():
+    geheim = geheimfische()
     fertig = 0
     for zid, ids in zonen().items():
         da = [f for f in ids if os.path.exists(os.path.join(QUELLE, f + ".png"))]
         if not da:
             continue
-        zone = [f for f in da if f not in EIGENE_PALETTE]
+        allein = EIGENE_PALETTE | (set() if zid in GEHEIM_IN_ZONENPALETTE else geheim)
+        zone = [f for f in da if f not in allein]
         bilder = dict(zip(zone, gemeinsame_palette([roh(f) for f in zone]))) if zone else {}
         for f in da:
-            if f in EIGENE_PALETTE:
+            if f in allein:
                 bilder[f] = gemeinsame_palette([roh(f)])[0]
         for fid, bild in ((f, bilder[f]) for f in da):
             if fid in VERZERREN:
