@@ -128,8 +128,8 @@ func test_window_stays_open_and_in_place_across_a_catch() -> void:
 		"der Inhalt darf sich nicht mitten im Betrachten neu aufbauen")
 	w.queue_free()
 
-## Klein bleibt klein, riesig bleibt riesig: der Narwal (96 breit) steht
-## doppelt so breit da wie der Bluegill (48) -- und passt noch auf den Schirm.
+## Der Narwal (Riesenbild) steht groesser da als ein normaler Fisch -- und
+## passt mit seinem ganzen Text noch auf den Schirm.
 func test_ein_riese_steht_groesser_da_als_ein_kleiner_fisch() -> void:
 	Game.new_game()
 	Game.ctx.journal.record(CaughtFish.make(&"frost_ray", 1.0, true))
@@ -138,7 +138,7 @@ func test_ein_riese_steht_groesser_da_als_ein_kleiner_fisch() -> void:
 	var klein: Vector2 = w.get_node("Panel/Box/Icon").custom_minimum_size
 	w.open(&"frost_ray")
 	var gross: Vector2 = w.get_node("Panel/Box/Icon").custom_minimum_size
-	assert_eq(gross.x, klein.x * 2.0)
+	assert_true(gross.x > klein.x)
 	var panel: PanelContainer = w.get_node("Panel")
 	var platz := Vector2(panel.offset_right - panel.offset_left, panel.offset_bottom - panel.offset_top)
 	# Ohne echtes Layout umbricht ein Label nach jedem Buchstaben; die Schrift
@@ -160,4 +160,17 @@ func test_ein_riese_steht_groesser_da_als_ein_kleiner_fisch() -> void:
 	assert_true(gross.x <= platz.x, "%.0f breit, Fenster %.0f" % [gross.x, platz.x])
 	assert_true(hoehe <= 720.0 - 80.0, "Inhalt %.0f hoch passt nicht auf den Schirm" % hoehe)
 	assert_eq(panel.grow_vertical, Control.GROW_DIRECTION_BOTH)
+	w.queue_free()
+
+## Normale Bilder sind alle gleich gross; die Groesse kommt aus dem Gewicht:
+## Elritze < Bluegill < Schleie < Wels < Sternenwal.
+func test_die_groesse_folgt_dem_gewicht() -> void:
+	Game.new_game()
+	var w := _window()
+	var breiten: Array[float] = []
+	for id in [&"minnow", &"bluegill", &"tench", &"wels_catfish", &"horizon_whale"]:
+		w.open(id)
+		breiten.append(w.get_node("Panel/Box/Icon").custom_minimum_size.x)
+	for i in range(1, breiten.size()):
+		assert_true(breiten[i] > breiten[i - 1], "Reihenfolge stimmt nicht: %s" % [breiten])
 	w.queue_free()

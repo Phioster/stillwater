@@ -3,11 +3,15 @@
 ## aus FishRoll, Raritaet aus SimContext.rarity_of().
 extends Control
 
-## Fester Faktor je Bildpixel: ein Riese (96 breit) steht doppelt so gross da
-## wie ein normaler Fisch (48). Ganzzahlig, damit die Pixel scharf bleiben.
+## Faktor je Bildpixel fuer Riesenbilder (96 breit). Ganzzahlig, damit die
+## Pixel scharf bleiben.
 const ICON_SCALE := 4.0
 ## Breite eines normalen Fischbilds; die alten 32er werden darauf gestreckt.
 const NORMAL_WIDTH := 48.0
+## Normale Bilder sind alle 48 breit -- die Groesse kommt deshalb aus dem
+## mittleren Gewicht der Art, in Stufen wie bei Cornerpond: [bis kg, Faktor].
+const GROESSEN_STUFEN := [[0.1, 2.0], [1.0, 3.0], [10.0, 4.0]]
+const GROESSTE_STUFE := 5.0
 
 @onready var _scrim: ColorRect = $Scrim
 @onready var _panel: PanelContainer = $Panel
@@ -51,13 +55,19 @@ func _on_scrim_input(event: InputEvent) -> void:
 	if mouse_tap or touch_tap:
 		close()
 
-## Anzeigegroesse aus der Bildgroesse statt einer festen Box -- sonst stuende
-## die Elritze so gross da wie der Narwal.
-static func icon_size(tex: Texture2D) -> Vector2:
-	if tex == null:
-		return Vector2(NORMAL_WIDTH, NORMAL_WIDTH * 0.5) * ICON_SCALE
-	var px := tex.get_size()
-	return px * ICON_SCALE * NORMAL_WIDTH / minf(px.x, NORMAL_WIDTH)
+## Anzeigegroesse: Riesenbilder im festen Massstab, normale nach Gewicht der
+## Art -- sonst stuende die Elritze so gross da wie der Wels.
+static func icon_size(tex: Texture2D, fish: FishData) -> Vector2:
+	var px := Vector2(NORMAL_WIDTH, NORMAL_WIDTH * 0.5) if tex == null else tex.get_size()
+	if px.x > NORMAL_WIDTH:
+		return px * ICON_SCALE
+	return px * stufe(fish) * NORMAL_WIDTH / px.x
+
+static func stufe(fish: FishData) -> float:
+	for s in GROESSEN_STUFEN:
+		if fish.weight_mean < float(s[0]):
+			return float(s[1])
+	return GROESSTE_STUFE
 
 func close() -> void:
 	visible = false
@@ -74,7 +84,7 @@ func open(id: StringName) -> void:
 	_icon.texture = TextureLoader.load_texture("res://assets/art/fish_%s%s.png" % [id, suffix])
 	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_icon.custom_minimum_size = icon_size(_icon.texture)
+	_icon.custom_minimum_size = icon_size(_icon.texture, f)
 
 	if not known:
 		_name_label.text = "???"
