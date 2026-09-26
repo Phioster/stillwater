@@ -6,11 +6,11 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"moderlieschen"
-display_name = "Moderlieschen"
+display_name = "Lungenfisch"
 zone_id = &"night_moor"
 base_value = 8
 strength = 12.0
 difficulty = 0.9
 xp = 5
-weight_mean = 0.01
-weight_dev = 0.003
+weight_mean = 2.5
+weight_dev = 0.8

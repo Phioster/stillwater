@@ -6,11 +6,11 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"spirlin"
-display_name = "Schneider"
+display_name = "Schlangenkopffisch"
 zone_id = &"night_moor"
 base_value = 11
 strength = 15.0
 difficulty = 0.95
 xp = 6
-weight_mean = 0.02
-weight_dev = 0.005
+weight_mean = 1.5
+weight_dev = 0.5
