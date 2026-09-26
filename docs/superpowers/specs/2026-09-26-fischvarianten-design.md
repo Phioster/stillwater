@@ -16,7 +16,7 @@ eigene Umsetzung, keine Namen oder Grafiken übernommen.
 |---|---|---|---|---|
 | normal | `&""` | – | ×1 | – |
 | Schimmer | `&"shiny"` | 1/800 (wie heute) | ×4 | – |
-| Dunkel | `&"dark"` | 1/1500 | ×6 | nur 22:00–4:59 Uhr (echte Uhr, `ctx.hour_of_day`) |
+| Dunkel | `&"dark"` | 1/1500 | ×6 | nur 21:00–5:59 Uhr (echte Uhr, `ctx.hour_of_day` 21…5) |
 | Trophäe | `&"trophy"` | 1/3000 | ×10 | – |
 | Albino | `&"albino"` | 1/10000 | ×25 | – |
 
@@ -49,9 +49,11 @@ eigene Umsetzung, keine Namen oder Grafiken übernommen.
   - **Trophäe:** goldener Glanz.
   - **Albino:** weiß mit grauen Akzenten, **rotes Auge**.
   - **Dunkel:** fast schwarz, **rotes Auge**.
-- Das Auge wird automatisch gesucht; wo das danebenliegt, steht die Stelle
-  in einer Tabelle `AUGEN` im Werkzeug. Bilder ohne erkennbares Auge
-  (Krug, Wolke, Schwarzes Loch …) bekommen kein rotes Auge.
+- **Jedes** sichtbare Auge wird rot, auch mehrere (Krug-Mimik hat zwei,
+  die Eishydra drei Köpfe). Die Augen werden automatisch gesucht; wo das
+  danebenliegt, stehen die Stellen in einer Tabelle `AUGEN` im Werkzeug.
+  Nur Bilder ganz ohne Auge bleiben ohne rotes Auge – das zeigt die
+  Abnahme.
 - Abnahme vor dem Einbau auf der Vorschauseite; unsichere Fälle in
   Fünfergruppen.
 - Schimmer und Trophäe funkeln zusätzlich leicht (kleines Funkeln im Spiel)
@@ -70,7 +72,7 @@ eigene Umsetzung, keine Namen oder Grafiken übernommen.
 ## Tests
 
 - Würfelreihenfolge und „höchstens eine Variante“; Dunkel nie zwischen
-  5 und 21 Uhr; offline weder Variante noch Geheimfisch.
+  6 und 20 Uhr; offline weder Variante noch Geheimfisch.
 - Preise je Variante; alte Spielstände (`is_shiny`, `shiny_found`) laden.
 - Zu jeder Art existieren die vier Variantenbilder in Rohbildgröße.
 
