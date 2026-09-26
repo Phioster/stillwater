@@ -6,11 +6,11 @@
 [resource]
 script = ExtResource("2_fish")
 id = &"sand_smelt"
-display_name = "Sandstint"
+display_name = "Fliegender Fisch"
 zone_id = &"sunset_coast"
 base_value = 7
 strength = 11.0
 difficulty = 0.8
 xp = 4
-weight_mean = 0.08
-weight_dev = 0.02
+weight_mean = 0.3
+weight_dev = 0.09
