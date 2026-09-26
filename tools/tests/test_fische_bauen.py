@@ -28,7 +28,7 @@ class TestFischeBauen(unittest.TestCase):
     def test_jede_zone_kennt_ihre_fische(self):
         z = fb.zonen()
         self.assertEqual(len(z), 7)
-        self.assertEqual(sum(len(v) for v in z.values()), 113)
+        self.assertEqual(sum(len(v) for v in z.values()), 114)
 
     def test_riesen_behalten_ihre_groesse(self):
         a = Image.new("RGBA", KLEIN, (10, 200, 30, 255))

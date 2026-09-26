@@ -5,12 +5,13 @@
 
 [resource]
 script = ExtResource("2_fish")
-id = &"wall_perch"
-display_name = "Flösselhecht"
+id = &"tin_fish"
+display_name = "Blechfisch"
 zone_id = &"deep_cistern"
-base_value = 52
-strength = 42.0
-difficulty = 1.55
-xp = 26
-weight_mean = 0.6
-weight_dev = 0.18
+rarity_id = &"uncommon"
+base_value = 120
+strength = 82.0
+difficulty = 1.8
+xp = 62
+weight_mean = 2.0
+weight_dev = 0.6

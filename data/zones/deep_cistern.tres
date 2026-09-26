@@ -15,6 +15,7 @@
 [ext_resource type="Resource" path="res://data/fish/chain_fish.tres" id="21_chain_"]
 [ext_resource type="Resource" path="res://data/fish/eternal_light.tres" id="60_eterna"]
 [ext_resource type="Resource" path="res://data/fish/cistern_warden.tres" id="61_cister"]
+[ext_resource type="Resource" path="res://data/fish/tin_fish.tres" id="81_tin_fi"]
 [ext_resource type="Script" path="res://resources/zone_data.gd" id="99_zone"]
 
 [resource]
@@ -26,7 +27,7 @@ shore_key = &"stone"
 foam_key = &"cistern_foam"
 water_light_key = &"cistern_light"
 water_deep_key = &"cistern_deep"
-fish = Array[ExtResource("1_fish")]([ExtResource("10_cister"), ExtResource("11_stone_"), ExtResource("12_blindl"), ExtResource("13_wall_p"), ExtResource("14_jug_pi"), ExtResource("15_ash_gu"), ExtResource("16_cister"), ExtResource("17_vault_"), ExtResource("18_torch_"), ExtResource("19_well_k"), ExtResource("20_blackw"), ExtResource("21_chain_"), ExtResource("60_eterna"), ExtResource("61_cister")])
+fish = Array[ExtResource("1_fish")]([ExtResource("10_cister"), ExtResource("11_stone_"), ExtResource("12_blindl"), ExtResource("13_wall_p"), ExtResource("14_jug_pi"), ExtResource("15_ash_gu"), ExtResource("16_cister"), ExtResource("17_vault_"), ExtResource("18_torch_"), ExtResource("19_well_k"), ExtResource("20_blackw"), ExtResource("21_chain_"), ExtResource("60_eterna"), ExtResource("61_cister"), ExtResource("81_tin_fi")])
 bite_time_min = 36.0
 bite_time_max = 60.0
 fight_window = 26.0
